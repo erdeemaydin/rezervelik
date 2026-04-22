@@ -26,16 +26,17 @@ export default function SchedulingPage() {
 
         <Tabs defaultValue={isAdminOrManager ? 'roster' : 'availability'} className="space-y-4">
           <TabsList>
-            {isAdminOrManager && (
+            {isAdminOrManager ? (
               <>
                 <TabsTrigger value="roster">Roster & Assignments</TabsTrigger>
                 <TabsTrigger value="shifts">Manage Shifts</TabsTrigger>
               </>
+            ) : (
+              <TabsTrigger value="availability">My Availability</TabsTrigger>
             )}
-            <TabsTrigger value="availability">My Availability</TabsTrigger>
           </TabsList>
 
-          {isAdminOrManager && (
+          {isAdminOrManager ? (
             <>
               <TabsContent value="roster">
                 <ShiftAssigner />
@@ -44,11 +45,11 @@ export default function SchedulingPage() {
                 <ShiftManager />
               </TabsContent>
             </>
+          ) : (
+            <TabsContent value="availability">
+              <AvailabilitySubmitter />
+            </TabsContent>
           )}
-          
-          <TabsContent value="availability">
-            <AvailabilitySubmitter />
-          </TabsContent>
         </Tabs>
       </div>
     </AdminLayout>
