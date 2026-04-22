@@ -40,6 +40,3 @@ router.post('/assignments', roleMiddleware(['ADMIN', 'MANAGER']), assignShift);
 router.delete('/assignments/:id', roleMiddleware(['ADMIN', 'MANAGER']), removeAssignment);
 
 export default router;
-leware(['ADMIN', 'MANAGER']), removeAssignment);
-
-export default router;
