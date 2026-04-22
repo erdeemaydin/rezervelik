@@ -1,0 +1,41 @@
+# Project Roadmap & Checklist
+
+## Phase 1: Core Architecture & Backend (Current)
+
+### Architecture Setup
+- [x] Initialize Node.js/Express/TypeScript project
+- [x] Configure Prisma with PostgreSQL
+- [x] Design Multi-tenant Database Schema
+- [x] Set up i18n (Turkish & English)
+- [x] Implement Tenant Middleware (`X-Restaurant-ID`)
+- [x] Standardize API Response format
+
+### Features to Implement
+- [x] **Authentication & Authorization**
+  - [x] Install JWT and bcrypt
+  - [x] User login and registration (for tenant admins)
+  - [x] Role-based access control middleware (Admin, Manager, Staff)
+- [x] **Table & Capacity Management**
+  - [x] CRUD API for `TableType`
+  - [x] CRUD API for `Table`
+- [x] **Reservation Management**
+  - [x] API to create reservations
+  - [x] Logic handler for `FIXED_TIME_SLOT`, `DYNAMIC_DURATION`, `MANUAL_AVAILABILITY`
+  - [x] API to list/update reservations (for staff)
+- [x] **Restaurant Settings**
+  - [x] API to manage global reservation toggles and deposit settings
+- [x] **AI Menu Importer Placeholder**
+  - [x] Scaffold service wrapper for future OCR/LLM integration
+
+## Phase 2: Frontend Dashboard (Next)
+- [x] Initialize Next.js/React project
+- [x] Set up UI Library (shadcn/ui or Tabler)
+- [x] Implement Dashboard Layout
+- [x] Connect Authentication
+- [x] Build Table Management UI
+- [x] Build Reservation Calendar/List UI
+
+## Phase 3: External Integrations
+- [ ] Implement SMS Gateway wrapper
+- [ ] Implement iyzico/PayTR payment integration for deposits
+- [ ] Real AI Menu implementation

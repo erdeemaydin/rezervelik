@@ -1,0 +1,13 @@
+{
+  "errors": {
+    "restaurant_not_found": "Restaurant not found",
+    "unauthorized": "Unauthorized access",
+    "validation_error": "Validation error",
+    "internal_error": "Internal server error",
+    "tenant_required": "X-Restaurant-ID header is required"
+  },
+  "messages": {
+    "reservation_created": "Reservation created successfully",
+    "welcome": "Welcome to {{name}}"
+  }
+}

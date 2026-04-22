@@ -1,0 +1,13 @@
+{
+  "errors": {
+    "restaurant_not_found": "Restoran bulunamadı",
+    "unauthorized": "Yetkisiz erişim",
+    "validation_error": "Doğrulama hatası",
+    "internal_error": "Sunucu hatası",
+    "tenant_required": "X-Restaurant-ID başlığı gereklidir"
+  },
+  "messages": {
+    "reservation_created": "Rezervasyon başarıyla oluşturuldu",
+    "welcome": "{{name}} restoranına hoş geldiniz"
+  }
+}

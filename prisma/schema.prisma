@@ -1,0 +1,193 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+model Restaurant {
+  id           String              @id @default(uuid())
+  slug         String              @unique
+  name         String
+  contactEmail String
+  contactPhone String?
+  logoUrl      String?
+  isActive     Boolean             @default(true)
+  createdAt    DateTime            @default(now())
+  updatedAt    DateTime            @updatedAt
+  menus        Menu[]
+  reservations Reservation[]
+  settings     RestaurantSettings?
+  tables       Table[]
+  tableTypes   TableType[]
+  users        User[]
+  categories   ReservationCategory[]
+  daySettings  DaySetting[]
+}
+
+model RestaurantSettings {
+  id                       String     @id @default(uuid())
+  restaurantId             String     @unique
+  isReservationEnabled     Boolean    @default(true)
+  logic                    String     @default("DYNAMIC_DURATION")
+  defaultDurationMinutes   Int        @default(90)
+  isPaidReservationEnabled Boolean    @default(false)
+  depositAmount            Float?
+  currency                 String     @default("TRY")
+  operatingHours           String?
+  
+  // Feature flags controlled by System Admin
+  isVipEnabled             Boolean    @default(true)
+  isInternalNotesEnabled   Boolean    @default(true)
+  isCategoriesEnabled      Boolean    @default(true)
+  
+  updatedAt                DateTime   @updatedAt
+  restaurant               Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+}
+
+model User {
+  id           String      @id @default(uuid())
+  restaurantId String?
+  email        String      @unique
+  passwordHash String
+  firstName    String
+  lastName     String
+  role         String      @default("STAFF") // SUPER_ADMIN, ADMIN, MANAGER, STAFF
+  permissions  String?     // Comma-separated permission keys e.g. "manage_reservations,manage_menu"
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+  restaurant   Restaurant? @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+
+  @@index([restaurantId])
+}
+
+model TableType {
+  id           String     @id @default(uuid())
+  restaurantId String
+  name         String
+  description  String?
+  tables       Table[]
+  restaurant   Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+
+  @@index([restaurantId])
+}
+
+model Table {
+  id           String        @id @default(uuid())
+  restaurantId String
+  tableTypeId  String
+  identifier   String
+  capacity     Int
+  isAvailable  Boolean       @default(true)
+  reservations Reservation[]
+  tableType    TableType     @relation(fields: [tableTypeId], references: [id])
+  restaurant   Restaurant    @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+
+  @@index([restaurantId])
+  @@index([tableTypeId])
+}
+
+model DaySetting {
+  id                    String     @id @default(uuid())
+  restaurantId          String
+  date                  String     // ISO Date string (YYYY-MM-DD)
+  eventTitle            String?
+  isReservationEnabled  Boolean    @default(true)
+  autoConfirm           Boolean    @default(false) // If true, skip PENDING and go to CONFIRMED
+  maxCapacityOverride   Int?       // Optional: limit capacity for special events
+  restaurant            Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+
+  @@unique([restaurantId, date])
+  @@index([restaurantId])
+}
+
+model ReservationCategory {
+  id           String        @id @default(uuid())
+  restaurantId String
+  name         String        // Online, Phone, Walk-In
+  color        String?       // Optional color for UI
+  isActive     Boolean       @default(true)
+  reservations Reservation[]
+  restaurant   Restaurant    @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+
+  @@index([restaurantId])
+}
+
+model Reservation {
+  id            String     @id @default(uuid())
+  restaurantId  String
+  tableId       String?
+  categoryId    String?
+  customerName  String
+  customerEmail String?
+  customerPhone String
+  guestCount    Int
+  startTime     DateTime
+  endTime       DateTime?
+  status        String     @default("PENDING")
+  notes         String?    // Customer note
+  internalNote  String?    // Internal/Restaurant note
+  isVIP         Boolean    @default(false)
+  isPaid        Boolean    @default(false)
+  paymentId     String?
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+  
+  table         Table?               @relation(fields: [tableId], references: [id])
+  category      ReservationCategory? @relation(fields: [categoryId], references: [id])
+  restaurant    Restaurant           @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+
+  @@index([restaurantId])
+  @@index([tableId])
+  @@index([categoryId])
+  @@index([startTime])
+}
+
+model Menu {
+  id           String         @id @default(uuid())
+  restaurantId String
+  name         String
+  isActive     Boolean        @default(true)
+  restaurant   Restaurant     @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  categories   MenuCategory[]
+
+  @@index([restaurantId])
+}
+
+model MenuCategory {
+  id          String         @id @default(uuid())
+  menuId      String
+  name        String
+  description String?
+  imageUrl    String?
+  order       Int            @default(0)
+  
+  parentId    String?
+  parent      MenuCategory?  @relation("SubCategories", fields: [parentId], references: [id])
+  children    MenuCategory[] @relation("SubCategories")
+
+  menu        Menu           @relation(fields: [menuId], references: [id], onDelete: Cascade)
+  items       MenuItem[]
+
+  @@index([menuId])
+  @@index([parentId])
+}
+
+model MenuItem {
+  id          String       @id @default(uuid())
+  categoryId  String
+  name        String
+  description String?
+  price       Float
+  imageUrl    String?
+  isAvailable Boolean      @default(true)
+  order       Int          @default(0)
+  dietaryTags String?      // e.g., "Vegan,Gluten-Free"
+  allergens   String?      // e.g., "Nuts,Dairy"
+  spiceLevel  Int          @default(0) // 0: none, 1: mild, 2: medium, 3: spicy
+  category    MenuCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@index([categoryId])
+}
