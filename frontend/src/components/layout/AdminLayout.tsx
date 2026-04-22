@@ -78,13 +78,13 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
       {/* Sidebar - Inspired by Vue-Element-Admin & Tabler */}
       <aside 
         className={cn(
-          "fixed inset-y-0 left-0 z-30 w-64 bg-[#1e293b] text-slate-300 flex flex-col shadow-xl transition-transform duration-300 md:relative md:translate-x-0",
-          isSidebarOpen ? "translate-x-0" : "-translate-x-full"
+          "fixed inset-y-0 left-0 z-30 bg-[#1e293b] text-slate-300 flex flex-col shadow-xl transition-all duration-300 md:relative",
+          isSidebarOpen ? "w-64 translate-x-0" : "w-0 -translate-x-full overflow-hidden"
         )}
       >
         
         {/* Brand Header */}
-        <div className="h-16 flex items-center px-6 bg-[#0f172a] shadow-sm border-b border-slate-800 text-white justify-between">
+        <div className="h-16 flex w-64 items-center px-6 bg-[#0f172a] shadow-sm border-b border-slate-800 text-white justify-between">
           <div className="flex items-center">
             <div className="w-7 h-7 bg-blue-600 rounded-sm flex items-center justify-center mr-3 shadow-md">
               <span className="font-bold text-lg leading-none">R</span>
@@ -185,7 +185,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
         {/* Top Header */}
         <header className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-4 md:px-8 shadow-sm z-0">
           <div className="flex items-center">
-            <Button variant="ghost" size="icon" className="mr-2 md:hidden" onClick={() => setIsSidebarOpen(true)}>
+            <Button variant="ghost" size="icon" className="mr-2" onClick={() => setIsSidebarOpen(!isSidebarOpen)}>
               <Menu className="h-5 w-5 text-slate-600" />
             </Button>
             <h2 className="text-xl font-semibold text-slate-800 tracking-tight">
