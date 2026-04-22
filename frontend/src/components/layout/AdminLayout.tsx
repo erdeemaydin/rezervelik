@@ -1,6 +1,6 @@
 'use client';
 
-import { ReactNode } from 'react';
+import { ReactNode, useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { 
@@ -13,7 +13,9 @@ import {
   UtensilsCrossed,
   BarChart3,
   CreditCard,
-  MessageSquare
+  MessageSquare,
+  Menu,
+  X
 } from 'lucide-react';
 import { useAuthStore } from '@/store/useAuthStore';
 import { Button } from '@/components/ui/button';
@@ -29,6 +31,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
   const pathname = usePathname();
   const router = useRouter();
   const { user, logout } = useAuthStore();
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   const navigation = [
     { section: 'Overview', items: [
@@ -63,16 +66,34 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
   };
 
   return (
-    <div className="flex h-screen bg-[#f4f6f8] font-sans">
+    <div className="flex h-screen bg-[#f4f6f8] font-sans overflow-hidden">
+      {/* Mobile Sidebar Overlay */}
+      {isSidebarOpen && (
+        <div 
+          className="fixed inset-0 z-20 bg-black/50 md:hidden"
+          onClick={() => setIsSidebarOpen(false)}
+        />
+      )}
+
       {/* Sidebar - Inspired by Vue-Element-Admin & Tabler */}
-      <aside className="w-64 bg-[#1e293b] text-slate-300 flex flex-col shadow-xl z-10 transition-all duration-300">
+      <aside 
+        className={cn(
+          "fixed inset-y-0 left-0 z-30 w-64 bg-[#1e293b] text-slate-300 flex flex-col shadow-xl transition-transform duration-300 md:relative md:translate-x-0",
+          isSidebarOpen ? "translate-x-0" : "-translate-x-full"
+        )}
+      >
         
         {/* Brand Header */}
-        <div className="h-16 flex items-center px-6 bg-[#0f172a] shadow-sm border-b border-slate-800 text-white">
-          <div className="w-7 h-7 bg-blue-600 rounded-sm flex items-center justify-center mr-3 shadow-md">
-            <span className="font-bold text-lg leading-none">R</span>
+        <div className="h-16 flex items-center px-6 bg-[#0f172a] shadow-sm border-b border-slate-800 text-white justify-between">
+          <div className="flex items-center">
+            <div className="w-7 h-7 bg-blue-600 rounded-sm flex items-center justify-center mr-3 shadow-md">
+              <span className="font-bold text-lg leading-none">R</span>
+            </div>
+            <span className="font-bold text-lg tracking-tight">Reser<span className="text-blue-400">Vue</span></span>
           </div>
-          <span className="font-bold text-lg tracking-tight">Reser<span className="text-blue-400">Vue</span></span>
+          <Button variant="ghost" size="icon" className="md:hidden text-slate-400 hover:text-white" onClick={() => setIsSidebarOpen(false)}>
+            <X className="h-5 w-5" />
+          </Button>
         </div>
         
         <div className="flex-1 overflow-y-auto py-6">
@@ -107,6 +128,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
                         <li key={item.name}>
                           <Link
                             href={item.href}
+                            onClick={() => setIsSidebarOpen(false)}
                             className={cn(
                               'flex items-center justify-between px-4 py-2 text-xs font-bold rounded-sm transition-all duration-150 group',
                               isActive 
@@ -161,10 +183,15 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
       <div className="flex-1 flex flex-col overflow-hidden relative">
         
         {/* Top Header */}
-        <header className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-8 shadow-sm z-0">
-          <h2 className="text-xl font-semibold text-slate-800 tracking-tight">
-            {navigation.flatMap(g => g.items).find(i => pathname === i.href || (i.href !== '/dashboard' && pathname.startsWith(`${i.href}/`)))?.name || 'Dashboard'}
-          </h2>
+        <header className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-4 md:px-8 shadow-sm z-0">
+          <div className="flex items-center">
+            <Button variant="ghost" size="icon" className="mr-2 md:hidden" onClick={() => setIsSidebarOpen(true)}>
+              <Menu className="h-5 w-5 text-slate-600" />
+            </Button>
+            <h2 className="text-xl font-semibold text-slate-800 tracking-tight">
+              {navigation.flatMap(g => g.items).find(i => pathname === i.href || (i.href !== '/dashboard' && pathname.startsWith(`${i.href}/`)))?.name || 'Dashboard'}
+            </h2>
+          </div>
           <div className="flex items-center space-x-4">
              <div className="relative">
                 <span className="absolute top-0 right-0 w-2 h-2 bg-red-500 rounded-full border border-white"></span>
@@ -179,8 +206,8 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
         </header>
 
         {/* Scrollable Content */}
-        <main className="flex-1 overflow-y-auto p-8">
-          <div className="mx-auto max-w-7xl">
+        <main className="flex-1 overflow-y-auto p-4 md:p-8">
+          <div className="mx-auto max-w-full">
             {children}
           </div>
         </main>

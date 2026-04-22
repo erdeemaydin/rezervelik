@@ -8,6 +8,7 @@ import { useAuthStore } from '@/store/useAuthStore';
 import ShiftManager from '@/components/scheduling/ShiftManager';
 import AvailabilitySubmitter from '@/components/scheduling/AvailabilitySubmitter';
 import ShiftAssigner from '@/components/scheduling/ShiftAssigner';
+import MySchedule from '@/components/scheduling/MySchedule';
 
 export default function SchedulingPage() {
   const { t } = useTranslation();
@@ -24,7 +25,7 @@ export default function SchedulingPage() {
           </p>
         </div>
 
-        <Tabs defaultValue={isAdminOrManager ? 'roster' : 'availability'} className="space-y-4">
+        <Tabs defaultValue={isAdminOrManager ? 'roster' : 'my-schedule'} className="space-y-4">
           <TabsList>
             {isAdminOrManager ? (
               <>
@@ -32,7 +33,10 @@ export default function SchedulingPage() {
                 <TabsTrigger value="shifts">Manage Shifts</TabsTrigger>
               </>
             ) : (
-              <TabsTrigger value="availability">My Availability</TabsTrigger>
+              <>
+                <TabsTrigger value="my-schedule">My Schedule</TabsTrigger>
+                <TabsTrigger value="availability">My Availability</TabsTrigger>
+              </>
             )}
           </TabsList>
 
@@ -46,9 +50,14 @@ export default function SchedulingPage() {
               </TabsContent>
             </>
           ) : (
-            <TabsContent value="availability">
-              <AvailabilitySubmitter />
-            </TabsContent>
+            <>
+              <TabsContent value="my-schedule">
+                <MySchedule />
+              </TabsContent>
+              <TabsContent value="availability">
+                <AvailabilitySubmitter />
+              </TabsContent>
+            </>
           )}
         </Tabs>
       </div>

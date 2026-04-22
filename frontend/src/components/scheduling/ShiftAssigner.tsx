@@ -4,7 +4,9 @@ import React, { useEffect, useState, useMemo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { ChevronLeft, ChevronRight, GripVertical, Trash2, X } from 'lucide-react';
+import { ChevronLeft, ChevronRight, GripVertical, Trash2, X, Download } from 'lucide-react';
+import html2canvas from 'html2canvas';
+import jsPDF from 'jspdf';
 import api from '@/lib/api';
 import { 
   Shift, 
@@ -223,6 +225,40 @@ export default function ShiftAssigner() {
     return assignments.filter(a => a.date === dateString && a.shiftId === shiftId);
   };
 
+  const handleExportPDF = async () => {
+    const input = document.getElementById('roster-table-container');
+    if (!input) return;
+
+    try {
+      toast.info('Generating PDF, please wait...');
+      
+      // Briefly change styles to capture full table if it's scrolling
+      const originalOverflow = input.style.overflow;
+      input.style.overflow = 'visible';
+
+      const canvas = await html2canvas(input, { scale: 2 });
+      input.style.overflow = originalOverflow;
+
+      const imgData = canvas.toDataURL('image/png');
+      
+      const pdf = new jsPDF({
+        orientation: 'landscape',
+        unit: 'mm',
+        format: 'a3'
+      });
+
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+
+      pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+      pdf.save(`roster_${currentDate.getFullYear()}_${currentDate.getMonth() + 1}.pdf`);
+      toast.success('Schedule exported successfully');
+    } catch (error) {
+      console.error(error);
+      toast.error('Failed to export schedule');
+    }
+  };
+
   return (
     <DndContext
       sensors={sensors}
@@ -247,12 +283,12 @@ export default function ShiftAssigner() {
 
         {/* MAIN ROSTER GRID */}
         <Card className="flex-1 overflow-hidden">
-          <CardHeader className="flex flex-row items-center justify-between pb-4">
+          <CardHeader className="flex flex-col lg:flex-row items-start lg:items-center justify-between pb-4 gap-4">
             <div>
               <CardTitle>Schedule Builder</CardTitle>
               <CardDescription>Drag staff from the left panel onto the specific shifts.</CardDescription>
             </div>
-            <div className="flex items-center space-x-4">
+            <div className="flex flex-wrap items-center space-x-4">
               <Button variant="outline" size="icon" onClick={handlePrevMonth}>
                 <ChevronLeft className="h-4 w-4" />
               </Button>
@@ -262,6 +298,9 @@ export default function ShiftAssigner() {
               <Button variant="outline" size="icon" onClick={handleNextMonth}>
                 <ChevronRight className="h-4 w-4" />
               </Button>
+              <Button variant="default" className="bg-green-600 hover:bg-green-700 text-white" onClick={handleExportPDF}>
+                <Download className="h-4 w-4 mr-2" /> Publish & Export
+              </Button>
             </div>
           </CardHeader>
           <CardContent className="p-0">
@@ -270,18 +309,18 @@ export default function ShiftAssigner() {
             ) : shifts.length === 0 ? (
               <p className="text-muted-foreground py-4 text-center">No shifts configured for this restaurant.</p>
             ) : (
-              <div className="overflow-x-auto w-full">
-                <table className="w-full text-sm text-left border-collapse min-w-[800px]">
-                  <thead className="text-xs text-slate-700 uppercase bg-slate-100 border-b">
+              <div id="roster-table-container" className="overflow-x-auto w-full bg-white">
+                <table className="w-full text-xs text-left border-collapse min-w-[700px]">
+                  <thead className="text-[10px] text-slate-700 uppercase bg-slate-100 border-b">
                     <tr>
-                      <th scope="col" className="px-4 py-3 border-r min-w-[80px] sticky left-0 bg-slate-100 z-20 shadow-[1px_0_0_0_#e2e8f0]">
+                      <th scope="col" className="px-2 py-2 border-r min-w-[60px] max-w-[80px] sticky left-0 bg-slate-100 z-20 shadow-[1px_0_0_0_#e2e8f0]">
                         Date
                       </th>
                       {shifts.map(shift => (
-                        <th key={shift.id} scope="col" className="px-2 py-3 border-r min-w-[160px] max-w-[200px]">
-                          <div className="font-bold text-center">{shift.name}</div>
-                          <div className="text-[10px] text-slate-500 font-normal text-center mt-0.5">
-                            {shift.startTime} - {shift.endTime} | Req: {shift.requiredStaff}
+                        <th key={shift.id} scope="col" className="px-1 py-2 border-r min-w-[100px] max-w-[140px]">
+                          <div className="font-bold text-center leading-tight">{shift.name}</div>
+                          <div className="text-[9px] text-slate-500 font-normal text-center mt-0.5">
+                            {shift.startTime}-{shift.endTime} (Req:{shift.requiredStaff})
                           </div>
                         </th>
                       ))}
@@ -297,9 +336,11 @@ export default function ShiftAssigner() {
                           className={`border-b hover:bg-slate-50/50 transition-colors ${isWeekend ? 'bg-slate-50' : 'bg-white'}`}
                         >
                           {/* Date Column */}
-                          <td className={`px-4 py-2 border-r text-xs font-medium sticky left-0 z-10 shadow-[1px_0_0_0_#e2e8f0] ${isWeekend ? 'bg-slate-50 text-red-500' : 'bg-white'}`}>
-                            {day.formattedDate.split(',')[0]} <br/>
-                            <span className="text-muted-foreground">{day.dayName}</span>
+                          <td className={`px-2 py-1.5 border-r font-medium sticky left-0 z-10 shadow-[1px_0_0_0_#e2e8f0] ${isWeekend ? 'bg-slate-50 text-red-500' : 'bg-white'}`}>
+                            <div className="flex flex-col">
+                              <span>{day.formattedDate.split(',')[0]}</span>
+                              <span className="text-[9px] text-muted-foreground uppercase">{day.dayName}</span>
+                            </div>
                           </td>
 
                           {/* Shift Columns (Droppable Areas) */}
@@ -318,10 +359,10 @@ export default function ShiftAssigner() {
                                   <Badge 
                                     key={assignment.id} 
                                     variant="secondary" 
-                                    className="flex justify-between items-center py-1 px-2 text-xs bg-slate-100 hover:bg-slate-200 border-slate-200 w-full mb-1 group"
+                                    className="flex justify-between items-center py-0.5 px-1.5 text-[10px] bg-slate-100 hover:bg-slate-200 border-slate-200 w-full mb-0.5 group rounded-sm"
                                   >
-                                    <span className="truncate mr-2 flex-1">
-                                      {assignment.user?.firstName} {assignment.user?.lastName?.charAt(0)}.
+                                    <span className="truncate mr-1 flex-1 leading-tight">
+                                      {assignment.user?.firstName} {assignment.user?.lastName}
                                     </span>
                                     <button 
                                       className="text-slate-400 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100 shrink-0"
