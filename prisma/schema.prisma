@@ -217,6 +217,7 @@ model ShiftAssignment {
   shiftId      String
   userId       String
   date         String     // ISO Date string (YYYY-MM-DD)
+  isPublished  Boolean    @default(false)
   createdAt    DateTime   @default(now())
   updatedAt    DateTime   @updatedAt
 

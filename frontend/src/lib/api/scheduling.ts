@@ -67,6 +67,11 @@ export const assignShift = async (payload: { shiftId: string; userId: string; da
   return data.data;
 };
 
+export const publishAssignments = async (payload: { startDate: string; endDate: string }) => {
+  const { data } = await api.post('/scheduling/assignments/publish', payload);
+  return data.data;
+};
+
 export const removeAssignment = async (id: string) => {
   await api.delete(`/scheduling/assignments/${id}`);
 };

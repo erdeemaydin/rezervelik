@@ -79,32 +79,32 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
       <aside 
         className={cn(
           "fixed inset-y-0 left-0 z-30 bg-[#1e293b] text-slate-300 flex flex-col shadow-xl transition-all duration-300 md:relative",
-          isSidebarOpen ? "w-64 translate-x-0" : "w-0 -translate-x-full overflow-hidden"
+          isSidebarOpen ? "w-64 translate-x-0" : "w-0 -translate-x-full md:w-16 md:translate-x-0 overflow-hidden"
         )}
       >
         
         {/* Brand Header */}
-        <div className="h-16 flex w-64 items-center px-6 bg-[#0f172a] shadow-sm border-b border-slate-800 text-white justify-between">
-          <div className="flex items-center">
-            <div className="w-7 h-7 bg-blue-600 rounded-sm flex items-center justify-center mr-3 shadow-md">
+        <div className="h-16 flex w-64 items-center px-4 bg-[#0f172a] shadow-sm border-b border-slate-800 text-white justify-between">
+          <div className="flex items-center cursor-pointer" onClick={() => !isSidebarOpen && setIsSidebarOpen(true)}>
+            <div className="w-8 h-8 bg-blue-600 rounded-sm flex items-center justify-center mr-3 shadow-md shrink-0">
               <span className="font-bold text-lg leading-none">R</span>
             </div>
-            <span className="font-bold text-lg tracking-tight">Reser<span className="text-blue-400">Vue</span></span>
+            <span className={cn("font-bold text-lg tracking-tight transition-opacity", !isSidebarOpen && "md:opacity-0 md:hidden")}>Reser<span className="text-blue-400">Vue</span></span>
           </div>
           <Button variant="ghost" size="icon" className="md:hidden text-slate-400 hover:text-white" onClick={() => setIsSidebarOpen(false)}>
             <X className="h-5 w-5" />
           </Button>
         </div>
         
-        <div className="flex-1 overflow-y-auto py-6">
+        <div className="flex-1 overflow-y-auto py-6 overflow-x-hidden">
           
           {/* User Profile Mini */}
-          <div className="px-6 mb-8 flex items-center space-x-3">
-            <Avatar className="h-9 w-9 border border-slate-700 rounded-md">
+          <div className="px-4 mb-8 flex items-center space-x-3">
+            <Avatar className="h-8 w-8 border border-slate-700 rounded-md shrink-0">
               <AvatarImage src={`https://api.dicebear.com/7.x/initials/svg?seed=${user?.firstName}`} className="rounded-md" />
               <AvatarFallback className="bg-slate-800 text-slate-300 rounded-md text-xs">{user?.firstName?.charAt(0)}</AvatarFallback>
             </Avatar>
-            <div className="overflow-hidden">
+            <div className={cn("overflow-hidden transition-opacity", !isSidebarOpen && "md:opacity-0 md:hidden")}>
               <p className="text-xs font-bold text-white truncate">{user?.firstName} {user?.lastName}</p>
               <p className="text-[10px] text-slate-500 font-black uppercase tracking-tighter">{user?.role?.toLowerCase() || 'Admin'}</p>
             </div>
@@ -118,39 +118,49 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
 
               return (
                 <div key={idx}>
-                  <h3 className="px-6 text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mb-3">
+                  <h3 className={cn("px-4 text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mb-3 transition-opacity", !isSidebarOpen && "md:opacity-0 md:h-0 md:overflow-hidden md:mb-0")}>
                     {group.section}
                   </h3>
-                  <ul className="space-y-0.5 px-2">
+                  <ul className="space-y-1 px-2">
                     {visibleItems.map((item) => {
                       const isActive = pathname === item.href || (item.href !== '/dashboard' && pathname.startsWith(`${item.href}/`));
                       return (
                         <li key={item.name}>
                           <Link
                             href={item.href}
-                            onClick={() => setIsSidebarOpen(false)}
+                            onClick={(e) => {
+                              if (window.innerWidth < 768) {
+                                setIsSidebarOpen(false);
+                              } else if (!isSidebarOpen) {
+                                setIsSidebarOpen(true);
+                              }
+                            }}
                             className={cn(
-                              'flex items-center justify-between px-4 py-2 text-xs font-bold rounded-sm transition-all duration-150 group',
+                              'flex items-center justify-between px-3 py-2 text-xs font-bold rounded-md transition-all duration-150 group',
                               isActive 
                                 ? 'bg-blue-600 text-white shadow-md' 
-                                : 'text-slate-400 hover:bg-slate-800 hover:text-slate-200'
+                                : 'text-slate-400 hover:bg-slate-800 hover:text-slate-200',
+                              !isSidebarOpen && "md:justify-center"
                             )}
+                            title={!isSidebarOpen ? item.name : undefined}
                           >
                           <div className="flex items-center">
                             <item.icon
                               className={cn(
-                                'mr-3 h-4 w-4 transition-colors',
+                                'h-4 w-4 transition-colors shrink-0',
+                                isSidebarOpen && 'mr-3',
                                 isActive ? 'text-white' : 'text-slate-500 group-hover:text-slate-300'
                               )}
                               aria-hidden="true"
                             />
-                            {item.name}
+                            <span className={cn("transition-opacity whitespace-nowrap", !isSidebarOpen && "md:opacity-0 md:hidden")}>{item.name}</span>
                           </div>
                           {(item as any).badge && (
                             <Badge variant={isActive ? "secondary" : "default"} className={cn(
                               "text-[9px] px-1.5 py-0 rounded-sm font-black uppercase tracking-tighter",
                               !isActive && (item as any).badge === 'AI' ? "bg-purple-600/20 text-purple-400 border-purple-800" : "",
-                              !isActive && (item as any).badge === 'New' ? "bg-emerald-600/20 text-emerald-400 border-emerald-800" : ""
+                              !isActive && (item as any).badge === 'New' ? "bg-emerald-600/20 text-emerald-400 border-emerald-800" : "",
+                              !isSidebarOpen && "md:hidden"
                             )}>
                               {(item as any).badge}
                             </Badge>
@@ -170,11 +180,12 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
         <div className="p-4 border-t border-slate-800 bg-[#0f172a]">
           <Button 
             variant="ghost" 
-            className="w-full justify-start text-slate-400 hover:text-white hover:bg-red-500/10 hover:text-red-400 transition-colors"
+            className={cn("w-full justify-start text-slate-400 hover:text-white hover:bg-red-500/10 hover:text-red-400 transition-colors", !isSidebarOpen && "px-0 justify-center md:px-0")}
             onClick={handleLogout}
+            title={!isSidebarOpen ? "Logout Securely" : undefined}
           >
-            <LogOut className="mr-3 h-5 w-5" />
-            Logout Securely
+            <LogOut className={cn("h-5 w-5 shrink-0", isSidebarOpen ? "mr-3" : "mr-0")} />
+            <span className={cn("whitespace-nowrap transition-opacity", !isSidebarOpen && "md:opacity-0 md:hidden")}>Logout Securely</span>
           </Button>
         </div>
       </aside>

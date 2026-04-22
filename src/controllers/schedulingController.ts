@@ -187,10 +187,16 @@ export const getAssignments = async (req: Request, res: Response) => {
   try {
     const restaurantId = req.restaurantId!;
     const { startDate, endDate, userId, shiftId } = req.query;
+    
+    const isAdmin = req.user?.role === 'ADMIN' || req.user?.role === 'MANAGER';
 
     const whereClause: any = {
       shift: { restaurantId }
     };
+
+    if (!isAdmin) {
+      whereClause.isPublished = true;
+    }
 
     if (userId) whereClause.userId = userId as string;
     if (shiftId) whereClause.shiftId = shiftId as string;
@@ -215,6 +221,36 @@ export const getAssignments = async (req: Request, res: Response) => {
     return successResponse(res, assignments);
   } catch (error) {
     console.error('Get assignments error:', error);
+    return errorResponse(res, 'errors.internal_error', 500);
+  }
+};
+
+export const publishAssignments = async (req: Request, res: Response) => {
+  try {
+    const restaurantId = req.restaurantId!;
+    const { startDate, endDate } = req.body;
+
+    if (!startDate || !endDate) {
+      return errorResponse(res, 'errors.validation_error', 400, { message: 'Missing required fields: startDate and endDate' });
+    }
+
+    // Publish all assignments within this date range for this restaurant
+    const updated = await prisma.shiftAssignment.updateMany({
+      where: {
+        shift: { restaurantId },
+        date: {
+          gte: startDate,
+          lte: endDate
+        }
+      },
+      data: {
+        isPublished: true
+      }
+    });
+
+    return successResponse(res, { count: updated.count }, 'Assignments published successfully');
+  } catch (error) {
+    console.error('Publish assignments error:', error);
     return errorResponse(res, 'errors.internal_error', 500);
   }
 };

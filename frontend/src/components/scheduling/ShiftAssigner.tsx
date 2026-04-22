@@ -4,7 +4,7 @@ import React, { useEffect, useState, useMemo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { ChevronLeft, ChevronRight, GripVertical, Trash2, X, Download } from 'lucide-react';
+import { ChevronLeft, ChevronRight, GripVertical, Trash2, X, Download, Send } from 'lucide-react';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 import api from '@/lib/api';
@@ -16,6 +16,7 @@ import {
   getAvailabilities, 
   getAssignments, 
   assignShift, 
+  publishAssignments,
   removeAssignment 
 } from '@/lib/api/scheduling';
 import { toast } from 'sonner';
@@ -225,6 +226,23 @@ export default function ShiftAssigner() {
     return assignments.filter(a => a.date === dateString && a.shiftId === shiftId);
   };
 
+  const handlePublishSchedule = async () => {
+    try {
+      const startDate = days[0].dateString;
+      const endDate = days[days.length - 1].dateString;
+      
+      toast.info('Publishing schedule to staff...');
+      await publishAssignments({ startDate, endDate });
+      
+      // Update local state to reflect published status
+      setAssignments(prev => prev.map(a => ({ ...a, isPublished: true })));
+      toast.success('Schedule published successfully!');
+    } catch (error) {
+      console.error(error);
+      toast.error('Failed to publish schedule');
+    }
+  };
+
   const handleExportPDF = async () => {
     const input = document.getElementById('roster-table-container');
     if (!input) return;
@@ -298,8 +316,11 @@ export default function ShiftAssigner() {
               <Button variant="outline" size="icon" onClick={handleNextMonth}>
                 <ChevronRight className="h-4 w-4" />
               </Button>
-              <Button variant="default" className="bg-green-600 hover:bg-green-700 text-white" onClick={handleExportPDF}>
-                <Download className="h-4 w-4 mr-2" /> Publish & Export
+              <Button variant="default" className="bg-blue-600 hover:bg-blue-700 text-white" onClick={handlePublishSchedule}>
+                <Send className="h-4 w-4 mr-2" /> Publish Schedule
+              </Button>
+              <Button variant="outline" className="border-slate-300" onClick={handleExportPDF}>
+                <Download className="h-4 w-4 mr-2" /> Export PDF
               </Button>
             </div>
           </CardHeader>
