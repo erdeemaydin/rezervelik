@@ -40,6 +40,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
       { name: 'Calendar Master', href: '/dashboard/calendar', icon: Calendar, badge: 'New', perm: 'manage_calendar' },
       { name: 'Tables & Floor', href: '/dashboard/tables', icon: Grid, perm: 'manage_tables' },
       { name: 'Menu', href: '/dashboard/menus', icon: UtensilsCrossed, perm: 'manage_menu' },
+      { name: 'Scheduling', href: '/dashboard/scheduling', icon: Calendar, badge: 'New' },
     ]},
     { section: 'Administration', items: [
       { name: 'Transactions', href: '/dashboard/payments', icon: CreditCard },
