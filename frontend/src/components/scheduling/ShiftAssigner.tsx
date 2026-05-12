@@ -337,33 +337,38 @@ export default function ShiftAssigner({ viewMode = 'MONTHLY' }: { viewMode?: 'WE
       // Small delay for rendering
       await new Promise(resolve => setTimeout(resolve, 500));
 
-      const html2canvas = (await import('html2canvas')).default;
+      const { toPng } = await import('html-to-image');
       const { jsPDF } = await import('jspdf');
 
-      const canvas = await html2canvas(input, { 
-        scale: 2,
-        useCORS: true,
-        logging: false,
+      const dataUrl = await toPng(input, { 
+        pixelRatio: 2,
         backgroundColor: '#ffffff',
-        windowWidth: input.scrollWidth,
-        windowHeight: input.scrollHeight
+        style: {
+          transform: 'scale(1)',
+          transformOrigin: 'top left'
+        }
       });
 
       input.style.backgroundColor = originalBg;
       input.style.width = originalWidth;
-
-      const imgData = canvas.toDataURL('image/png');
       
+      // Calculate dimensions preserving aspect ratio
+      const imgProps = new Image();
+      imgProps.src = dataUrl;
+      await new Promise((resolve) => {
+        imgProps.onload = resolve;
+      });
+
       const pdf = new jsPDF({
-        orientation: canvas.width > canvas.height ? 'landscape' : 'portrait',
+        orientation: imgProps.width > imgProps.height ? 'landscape' : 'portrait',
         unit: 'px',
-        format: [canvas.width / 2, canvas.height / 2]
+        format: [imgProps.width, imgProps.height]
       });
 
       const pdfWidth = pdf.internal.pageSize.getWidth();
       const pdfHeight = pdf.internal.pageSize.getHeight();
 
-      pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+      pdf.addImage(dataUrl, 'PNG', 0, 0, pdfWidth, pdfHeight);
       pdf.save(`roster_${viewMode}_${currentDate.toISOString().split('T')[0]}.pdf`);
       toast.success('PDF exported successfully');
     } catch (error) {
@@ -384,22 +389,22 @@ export default function ShiftAssigner({ viewMode = 'MONTHLY' }: { viewMode?: 'WE
 
       await new Promise(resolve => setTimeout(resolve, 500));
 
-      const html2canvas = (await import('html2canvas')).default;
+      const { toPng } = await import('html-to-image');
 
-      const canvas = await html2canvas(input, { 
-        scale: 3, // Higher scale for better quality PNG
-        useCORS: true,
-        logging: false,
+      const dataUrl = await toPng(input, { 
+        pixelRatio: 3, // Higher scale for better quality PNG
         backgroundColor: '#ffffff',
-        windowWidth: input.scrollWidth,
-        windowHeight: input.scrollHeight
+        style: {
+          transform: 'scale(1)',
+          transformOrigin: 'top left'
+        }
       });
 
       input.style.backgroundColor = originalBg;
 
       const link = document.createElement('a');
       link.download = `roster_${viewMode}_${currentDate.toISOString().split('T')[0]}.png`;
-      link.href = canvas.toDataURL('image/png');
+      link.href = dataUrl;
       link.click();
       
       toast.success('PNG exported successfully');
