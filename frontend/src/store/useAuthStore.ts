@@ -18,19 +18,25 @@ interface AuthState {
   logout: () => void;
 }
 
-export const useAuthStore = create<AuthState>((set) => ({
-  user: null,
-  isAuthenticated: !!Cookies.get('token'),
+export const useAuthStore = create<AuthState>((set) => {
+  const savedUser = Cookies.get('user');
   
-  login: (token, user) => {
-    Cookies.set('token', token, { expires: 1 });
-    Cookies.set('restaurantId', user.restaurantId, { expires: 1 });
-    set({ user, isAuthenticated: true });
-  },
-  
-  logout: () => {
-    Cookies.remove('token');
-    Cookies.remove('restaurantId');
-    set({ user: null, isAuthenticated: false });
-  },
-}));
+  return {
+    user: savedUser ? JSON.parse(savedUser) : null,
+    isAuthenticated: !!Cookies.get('token'),
+    
+    login: (token, user) => {
+      Cookies.set('token', token, { expires: 1 });
+      Cookies.set('restaurantId', user.restaurantId, { expires: 1 });
+      Cookies.set('user', JSON.stringify(user), { expires: 1 });
+      set({ user, isAuthenticated: true });
+    },
+    
+    logout: () => {
+      Cookies.remove('token');
+      Cookies.remove('restaurantId');
+      Cookies.remove('user');
+      set({ user: null, isAuthenticated: false });
+    },
+  };
+});
