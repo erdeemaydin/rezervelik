@@ -13,7 +13,7 @@ import axios from 'axios';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || (typeof window !== 'undefined' ? `${window.location.protocol}//${window.location.hostname}:3000/api` : 'http://localhost:3000/api');
 
 type ViewState = 'welcome' | 'menu' | 'booking' | 'success';
 

@@ -45,14 +45,22 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
   const pathname = usePathname();
   const router = useRouter();
   const { user, isAuthenticated, logout } = useAuthStore();
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+    if (window.innerWidth >= 768) {
+      setIsSidebarOpen(true);
+    }
+  }, []);
 
   // AUTH GUARD - Prevent "ghost" staff login
   useEffect(() => {
-    if (!isAuthenticated) {
+    if (isMounted && !isAuthenticated) {
       router.push('/auth/login');
     }
-  }, [isAuthenticated, router]);
+  }, [isMounted, isAuthenticated, router]);
 
   const navigation: NavSection[] = [
     { section: 'Overview', items: [
@@ -87,15 +95,24 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
     router.push('/auth/login');
   };
 
-  if (!isAuthenticated) return null;
+  if (!isMounted) return null; // Avoid hydration mismatch
+  if (!isAuthenticated) return null; // Wait for redirect
 
   return (
     <div className="flex h-screen bg-[#f8fafc] overflow-hidden">
+      {/* Mobile overlay */}
+      {isSidebarOpen && (
+        <div 
+          className="fixed inset-0 bg-slate-900/50 z-40 md:hidden backdrop-blur-sm"
+          onClick={() => setIsSidebarOpen(false)}
+        />
+      )}
+
       {/* Sidebar */}
       <aside 
         className={cn(
-          "bg-[#0f172a] text-slate-300 transition-all duration-300 ease-in-out flex flex-col z-50 shadow-xl",
-          isSidebarOpen ? "w-64" : "w-16"
+          "bg-[#0f172a] text-slate-300 transition-all duration-300 ease-in-out flex flex-col z-50 shadow-xl absolute md:relative inset-y-0 left-0 h-full",
+          isSidebarOpen ? "w-64 translate-x-0" : "w-64 -translate-x-full md:w-16 md:translate-x-0"
         )}
       >
         {/* Sidebar Header */}
