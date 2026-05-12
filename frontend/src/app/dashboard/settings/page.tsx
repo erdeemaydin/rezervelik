@@ -22,6 +22,7 @@ interface RestaurantSettings {
     currency: string;
     operatingHours: string;
     schedulingSystem: string;
+    staffScheduleView: string;
 }
 
 export default function SettingsPage() {
@@ -36,7 +37,8 @@ export default function SettingsPage() {
         depositAmount: 0,
         currency: 'TRY',
         operatingHours: '',
-        schedulingSystem: 'MONTHLY'
+        schedulingSystem: 'MONTHLY',
+        staffScheduleView: 'OWN_ONLY'
     });
 
     const fetchSettings = useCallback(async () => {
@@ -54,7 +56,8 @@ export default function SettingsPage() {
                     depositAmount: data.depositAmount ?? 0,
                     currency: data.currency ?? 'TRY',
                     operatingHours: data.operatingHours ?? '',
-                    schedulingSystem: data.schedulingSystem ?? 'MONTHLY'
+                    schedulingSystem: data.schedulingSystem ?? 'MONTHLY',
+                    staffScheduleView: data.staffScheduleView ?? 'OWN_ONLY'
                 });
             }
         } catch (error) {
@@ -138,6 +141,26 @@ export default function SettingsPage() {
                                             <p className="text-[10px] text-slate-500 mt-1 leading-relaxed">Full calendar overview for long-term planning. Best for stable teams.</p>
                                         </div>
                                     </div>
+                                </div>
+                                
+                                <div className="pt-4 border-t border-slate-100 space-y-3">
+                                    <div className="space-y-0.5">
+                                        <Label className="text-xs font-bold text-slate-700">Staff Privacy & Visibility</Label>
+                                        <p className="text-[10px] text-slate-400">Determine what information staff can see on the scheduling dashboard</p>
+                                    </div>
+                                    <Select 
+                                        value={settings.staffScheduleView} 
+                                        onValueChange={(v: string | null) => setSettings(prev => ({...prev, staffScheduleView: v || 'OWN_ONLY'}))}
+                                    >
+                                        <SelectTrigger className="h-9 text-xs font-bold rounded-sm w-full">
+                                            <SelectValue placeholder="Select view mode" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="OWN_ONLY" className="text-xs">Only My Shifts (Maximum Privacy)</SelectItem>
+                                            <SelectItem value="SHIFT_TEAM" className="text-xs">My Shifts & Team Members (On Same Shift)</SelectItem>
+                                            <SelectItem value="FULL_ROSTER" className="text-xs">Complete Roster Grid (Public Table)</SelectItem>
+                                        </SelectContent>
+                                    </Select>
                                 </div>
                             </div>
                         </CardContent>

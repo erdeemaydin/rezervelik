@@ -13,6 +13,7 @@ import api from '@/lib/api';
 export default function SchedulingPage() {
   const { user } = useAuthStore();
   const [viewMode, setViewMode] = useState<'WEEKLY' | 'MONTHLY'>('MONTHLY');
+  const [staffScheduleView, setStaffScheduleView] = useState('OWN_ONLY');
   const isAdminOrManager = user?.role === 'ADMIN' || user?.role === 'MANAGER';
 
   const fetchSettings = useCallback(async () => {
@@ -20,6 +21,9 @@ export default function SchedulingPage() {
       const res = await api.get('/settings');
       if (res.data.data?.schedulingSystem) {
         setViewMode(res.data.data.schedulingSystem);
+      }
+      if (res.data.data?.staffScheduleView) {
+        setStaffScheduleView(res.data.data.staffScheduleView);
       }
     } catch (error) {
       console.error('Failed to load scheduling settings');
@@ -51,23 +55,25 @@ export default function SchedulingPage() {
               <>
                 <TabsTrigger value="my-schedule">My Schedule</TabsTrigger>
                 <TabsTrigger value="availability">My Availability</TabsTrigger>
+                {staffScheduleView === 'FULL_ROSTER' && (
+                  <TabsTrigger value="roster">Full Roster</TabsTrigger>
+                )}
               </>
             )}
           </TabsList>
 
+          <TabsContent value="roster">
+            <ShiftAssigner viewMode={viewMode} />
+          </TabsContent>
+
           {isAdminOrManager ? (
-            <>
-              <TabsContent value="roster">
-                <ShiftAssigner viewMode={viewMode} />
-              </TabsContent>
-              <TabsContent value="shifts">
-                <ShiftManager />
-              </TabsContent>
-            </>
+            <TabsContent value="shifts">
+              <ShiftManager />
+            </TabsContent>
           ) : (
             <>
               <TabsContent value="my-schedule">
-                <MySchedule viewMode={viewMode} />
+                <MySchedule viewMode={viewMode} staffScheduleView={staffScheduleView} />
               </TabsContent>
               <TabsContent value="availability">
                 <AvailabilitySubmitter viewMode={viewMode} />

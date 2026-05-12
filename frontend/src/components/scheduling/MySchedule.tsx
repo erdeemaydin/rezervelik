@@ -12,7 +12,7 @@ import {
 import { toast } from 'sonner';
 import { useAuthStore } from '@/store/useAuthStore';
 
-export default function MySchedule({ viewMode = 'MONTHLY' }: { viewMode?: 'WEEKLY' | 'MONTHLY' }) {
+export default function MySchedule({ viewMode = 'MONTHLY', staffScheduleView = 'OWN_ONLY' }: { viewMode?: 'WEEKLY' | 'MONTHLY', staffScheduleView?: string }) {
   const [currentDate, setCurrentDate] = useState<Date>(new Date());
   const [assignments, setAssignments] = useState<ShiftAssignment[]>([]);
   const [loading, setLoading] = useState(false);
@@ -60,7 +60,15 @@ export default function MySchedule({ viewMode = 'MONTHLY' }: { viewMode?: 'WEEKL
         setLoading(true);
         const startDate = days[0].dateString;
         const endDate = days[days.length - 1].dateString;
-        const data = await getAssignments({ startDate, endDate, userId: user?.id });
+        
+        // If staffScheduleView is OWN_ONLY, only fetch own assignments
+        // Otherwise, fetch all published assignments and filter locally
+        const params: any = { startDate, endDate };
+        if (staffScheduleView === 'OWN_ONLY') {
+            params.userId = user?.id;
+        }
+
+        const data = await getAssignments(params);
         setAssignments(data);
       } catch (error) {
         toast.error('Failed to load your schedule');
@@ -72,7 +80,7 @@ export default function MySchedule({ viewMode = 'MONTHLY' }: { viewMode?: 'WEEKL
     if (user?.id) {
       fetchAssignments();
     }
-  }, [days, user?.id]);
+  }, [days, user?.id, staffScheduleView]);
 
   const handlePrev = () => {
     if (viewMode === 'WEEKLY') {
@@ -95,7 +103,24 @@ export default function MySchedule({ viewMode = 'MONTHLY' }: { viewMode?: 'WEEKL
   };
 
   const getAssignmentsForDay = (dateString: string) => {
-    return assignments.filter(a => a.date === dateString);
+    const dayAssignments = assignments.filter(a => a.date === dateString);
+    
+    if (staffScheduleView === 'OWN_ONLY') {
+        return dayAssignments.filter(a => a.userId === user?.id);
+    }
+    
+    if (staffScheduleView === 'SHIFT_TEAM') {
+        // Find shift IDs the user is working on this day
+        const userShiftIds = dayAssignments
+            .filter(a => a.userId === user?.id)
+            .map(a => a.shiftId);
+        
+        // Return assignments for those shifts (user + teammates)
+        return dayAssignments.filter(a => userShiftIds.includes(a.shiftId));
+    }
+    
+    // FULL_ROSTER case or fallback: show all assigned shifts for the day
+    return dayAssignments;
   };
 
   return (
@@ -134,20 +159,37 @@ export default function MySchedule({ viewMode = 'MONTHLY' }: { viewMode?: 'WEEKL
               <CardContent className="p-4 pt-0">
                 <div className="space-y-2 mt-2">
                   {dayAssignments.length > 0 ? (
-                    dayAssignments.map((assignment) => (
-                      <div key={assignment.id} className="p-2 bg-slate-50 rounded-md border border-slate-100">
-                        <div className="flex items-center gap-2 text-sm font-semibold text-slate-800">
-                          <Clock className="w-3 h-3 text-blue-500" />
-                          {assignment.shift?.name}
+                    dayAssignments.map((assignment) => {
+                      const isOwnShift = assignment.userId === user?.id;
+                      const isTeammate = !isOwnShift && staffScheduleView === 'SHIFT_TEAM';
+
+                      return (
+                        <div key={assignment.id} className={`p-2 rounded-md border ${isOwnShift ? 'bg-blue-50 border-blue-100' : 'bg-slate-50 border-slate-100'}`}>
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2 text-sm font-semibold text-slate-800">
+                              <Clock className={`w-3 h-3 ${isOwnShift ? 'text-blue-500' : 'text-slate-400'}`} />
+                              {assignment.shift?.name}
+                            </div>
+                            {isTeammate && (
+                                <Badge variant="secondary" className="text-[8px] h-3 px-1 bg-slate-200">Teammate</Badge>
+                            )}
+                          </div>
+                          <div className="text-[10px] text-slate-500 mt-1 ml-5 font-medium">
+                            {assignment.shift?.startTime} - {assignment.shift?.endTime}
+                          </div>
+                          
+                          {(staffScheduleView === 'SHIFT_TEAM' || staffScheduleView === 'FULL_ROSTER') && (
+                            <div className={`text-[10px] mt-2 ml-5 px-2 py-1 rounded ${isOwnShift ? 'bg-blue-100 text-blue-700 font-bold' : 'bg-white text-slate-600 border border-slate-100'}`}>
+                              {assignment.user?.firstName} {assignment.user?.lastName} {isOwnShift && '(You)'}
+                            </div>
+                          )}
+
+                          {isOwnShift && assignment.isPublished && (
+                             <Badge variant="outline" className="mt-2 text-[8px] h-4 bg-green-50 text-green-600 border-green-100 uppercase font-black ml-5">Published</Badge>
+                          )}
                         </div>
-                        <div className="text-[10px] text-slate-500 mt-1 ml-5 font-medium">
-                          {assignment.shift?.startTime} - {assignment.shift?.endTime}
-                        </div>
-                        {assignment.isPublished && (
-                           <Badge variant="outline" className="mt-2 text-[8px] h-4 bg-green-50 text-green-600 border-green-100 uppercase font-black">Published</Badge>
-                        )}
-                      </div>
-                    ))
+                      );
+                    })
                   ) : (
                     <p className="text-[10px] text-slate-400 italic py-2">No shifts assigned</p>
                   )}

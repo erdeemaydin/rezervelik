@@ -20,6 +20,7 @@ import {
   removeAssignment 
 } from '@/lib/api/scheduling';
 import { toast } from 'sonner';
+import { useAuthStore } from '@/store/useAuthStore';
 
 import {
   DndContext,
@@ -68,13 +69,15 @@ function DraggableStaff({ staff }: { staff: Staff }) {
 function DroppableCell({ 
   id, 
   children, 
-  isUnderstaffed 
+  isUnderstaffed,
+  disabled = false
 }: { 
   id: string; 
   children: React.ReactNode; 
-  isUnderstaffed: boolean 
+  isUnderstaffed: boolean;
+  disabled?: boolean;
 }) {
-  const { isOver, setNodeRef } = useDroppable({ id });
+  const { isOver, setNodeRef } = useDroppable({ id, disabled });
 
   return (
     <td
@@ -82,14 +85,14 @@ function DroppableCell({
       className={`px-2 py-2 border-r align-top relative transition-colors ${
         isOver 
           ? 'bg-blue-50 ring-2 ring-blue-400 ring-inset' 
-          : isUnderstaffed 
+          : isUnderstaffed && !disabled
             ? 'bg-red-50/30' 
             : ''
       }`}
     >
       <div className="flex flex-col gap-1 min-h-[50px] w-full">
         {children}
-        {isUnderstaffed && !isOver && (
+        {isUnderstaffed && !isOver && !disabled && (
            <div className="text-[10px] text-red-400 opacity-50 italic text-center mt-1 select-none pointer-events-none">Drag staff here</div>
         )}
       </div>
@@ -98,6 +101,9 @@ function DroppableCell({
 }
 
 export default function ShiftAssigner({ viewMode = 'MONTHLY' }: { viewMode?: 'WEEKLY' | 'MONTHLY' }) {
+  const { user } = useAuthStore();
+  const isAdminOrManager = user?.role === 'ADMIN' || user?.role === 'MANAGER';
+  
   const [currentDate, setCurrentDate] = useState<Date>(new Date());
   const [shifts, setShifts] = useState<Shift[]>([]);
   const [staff, setStaff] = useState<Staff[]>([]);
@@ -433,31 +439,33 @@ export default function ShiftAssigner({ viewMode = 'MONTHLY' }: { viewMode?: 'WE
       <div className="flex flex-col gap-6 w-full max-w-[95vw] mx-auto">
         
         {/* DRAGGABLE STAFF SECTION - NOW ON TOP */}
-        <Card className="w-full">
-          <CardHeader className="pb-4 pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <CardTitle className="text-lg flex items-center">
-                  <Users className="h-5 w-5 mr-2 text-blue-600" />
-                  Staff Pool
-                </CardTitle>
-                <CardDescription className="text-xs">Drag members onto the shifts below.</CardDescription>
-              </div>
-              <Badge variant="outline" className="text-[10px] font-normal border-slate-200">
-                {staff.length} Members Available
-              </Badge>
-            </div>
-          </CardHeader>
-          <CardContent className="pb-6">
-            <div className="flex flex-wrap gap-2 overflow-x-auto pb-2 max-h-40">
-              {staff.map(s => (
-                <div key={s.id} className="shrink-0 min-w-[140px]">
-                  <DraggableStaff staff={s} />
+        {isAdminOrManager && (
+          <Card className="w-full">
+            <CardHeader className="pb-4 pt-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="text-lg flex items-center">
+                    <Users className="h-5 w-5 mr-2 text-blue-600" />
+                    Staff Pool
+                  </CardTitle>
+                  <CardDescription className="text-xs">Drag members onto the shifts below.</CardDescription>
                 </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
+                <Badge variant="outline" className="text-[10px] font-normal border-slate-200">
+                  {staff.length} Members Available
+                </Badge>
+              </div>
+            </CardHeader>
+            <CardContent className="pb-6">
+              <div className="flex flex-wrap gap-2 overflow-x-auto pb-2 max-h-40">
+                {staff.map(s => (
+                  <div key={s.id} className="shrink-0 min-w-[140px]">
+                    <DraggableStaff staff={s} />
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* MAIN ROSTER GRID */}
         <Card className="flex-1 overflow-hidden">
@@ -483,36 +491,40 @@ export default function ShiftAssigner({ viewMode = 'MONTHLY' }: { viewMode?: 'WE
               </div>
 
               <div className="flex items-center gap-2">
-                <Button 
-                  variant={isCurrentRangePublished ? "outline" : "default"} 
-                  size="sm"
-                  className={cn(
-                    "h-9 px-3",
-                    isCurrentRangePublished 
-                      ? "border-green-200 bg-green-50 text-green-700 hover:bg-green-100 hover:text-green-800" 
-                      : "bg-blue-600 hover:bg-blue-700 text-white"
-                  )} 
-                  onClick={handlePublishSchedule}
-                >
-                  {isCurrentRangePublished ? (
-                    <><CheckCircle2 className="h-4 w-4 mr-2" /> Published</>
-                  ) : (
-                    <><Send className="h-4 w-4 mr-2" /> Publish</>
-                  )}
-                </Button>
+                {isAdminOrManager && (
+                  <>
+                    <Button 
+                      variant={isCurrentRangePublished ? "outline" : "default"} 
+                      size="sm"
+                      className={cn(
+                        "h-9 px-3",
+                        isCurrentRangePublished 
+                          ? "border-green-200 bg-green-50 text-green-700 hover:bg-green-100 hover:text-green-800" 
+                          : "bg-blue-600 hover:bg-blue-700 text-white"
+                      )} 
+                      onClick={handlePublishSchedule}
+                    >
+                      {isCurrentRangePublished ? (
+                        <><CheckCircle2 className="h-4 w-4 mr-2" /> Published</>
+                      ) : (
+                        <><Send className="h-4 w-4 mr-2" /> Publish</>
+                      )}
+                    </Button>
 
-                {isCurrentRangePublished && (
-                  <Button 
-                    variant="ghost" 
-                    size="sm"
-                    className="h-9 px-2 text-red-600 hover:bg-red-50 hover:text-red-700 text-[9px] font-black uppercase"
-                    onClick={handleUnpublishSchedule}
-                  >
-                    <Ban className="h-3.5 w-3.5 mr-1" /> Unpublish
-                  </Button>
+                    {isCurrentRangePublished && (
+                      <Button 
+                        variant="ghost" 
+                        size="sm"
+                        className="h-9 px-2 text-red-600 hover:bg-red-50 hover:text-red-700 text-[9px] font-black uppercase"
+                        onClick={handleUnpublishSchedule}
+                      >
+                        <Ban className="h-3.5 w-3.5 mr-1" /> Unpublish
+                      </Button>
+                    )}
+                    
+                    <div className="h-6 w-[1px] bg-slate-200 mx-1 hidden sm:block"></div>
+                  </>
                 )}
-                
-                <div className="h-6 w-[1px] bg-slate-200 mx-1 hidden sm:block"></div>
                 
                 <Button variant="outline" size="sm" className="h-9 border-slate-300" onClick={handleExportPDF}>
                   <Download className="h-4 w-4 mr-2" /> PDF
@@ -545,9 +557,11 @@ export default function ShiftAssigner({ viewMode = 'MONTHLY' }: { viewMode?: 'WE
                           <div className="text-[9px] text-slate-500 font-normal text-center mt-1 bg-white/50 rounded-sm py-0.5 border border-slate-100">
                             {shift.startTime} - {shift.endTime}
                           </div>
-                          <div className="text-[8px] text-blue-600 font-semibold text-center mt-1 uppercase">
-                            Required: {shift.requiredStaff}
-                          </div>
+                          {isAdminOrManager && (
+                            <div className="text-[8px] text-blue-600 font-semibold text-center mt-1 uppercase">
+                                Required: {shift.requiredStaff}
+                            </div>
+                          )}
                         </th>
                       ))}
                     </tr>
@@ -588,6 +602,7 @@ export default function ShiftAssigner({ viewMode = 'MONTHLY' }: { viewMode?: 'WE
                                 key={cellId} 
                                 id={cellId} 
                                 isUnderstaffed={isUnderstaffed && cellAssignments.length === 0}
+                                disabled={!isAdminOrManager}
                               >
                                 {cellAssignments.map(assignment => (
                                   <Badge 
@@ -598,12 +613,14 @@ export default function ShiftAssigner({ viewMode = 'MONTHLY' }: { viewMode?: 'WE
                                     <span className="truncate mr-1 flex-1 font-medium">
                                       {assignment.user?.firstName} {assignment.user?.lastName}
                                     </span>
-                                    <button 
-                                      className="text-slate-400 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100 shrink-0"
-                                      onClick={() => handleRemoveAssignment(assignment.id)}
-                                    >
-                                      <X className="h-3 w-3" />
-                                    </button>
+                                    {isAdminOrManager && (
+                                        <button 
+                                        className="text-slate-400 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100 shrink-0"
+                                        onClick={() => handleRemoveAssignment(assignment.id)}
+                                        >
+                                        <X className="h-3 w-3" />
+                                        </button>
+                                    )}
                                   </Badge>
                                 ))}
                               </DroppableCell>

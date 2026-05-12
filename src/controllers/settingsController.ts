@@ -25,7 +25,8 @@ export const updateSettings = async (req: Request, res: Response) => {
       depositAmount, 
       currency, 
       operatingHours,
-      schedulingSystem
+      schedulingSystem,
+      staffScheduleView
     } = req.body;
 
     const settings = await prisma.restaurantSettings.update({
@@ -38,7 +39,8 @@ export const updateSettings = async (req: Request, res: Response) => {
         depositAmount,
         currency,
         operatingHours,
-        schedulingSystem
+        schedulingSystem,
+        staffScheduleView
       }
     });
 

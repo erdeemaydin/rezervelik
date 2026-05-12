@@ -47,6 +47,9 @@ model RestaurantSettings {
   isInternalNotesEnabled   Boolean    @default(true)
   isCategoriesEnabled      Boolean    @default(true)
   
+  // Privacy & Staff View Settings
+  staffScheduleView        String     @default("OWN_ONLY") // "OWN_ONLY", "SHIFT_TEAM", "FULL_ROSTER"
+  
   updatedAt                DateTime   @updatedAt
   restaurant               Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
 }
