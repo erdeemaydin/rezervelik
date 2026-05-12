@@ -27,9 +27,11 @@ export const updateWaitTimeConfig = async (req: Request, res: Response) => {
     const { 
       isWaitTimeEnabled,
       isWaitTimeCalculated,
-      manualWaitTime,
+      manualWaitTimeLower,
+      manualWaitTimeUpper,
       peopleWaiting,
-      waitTimePerPerson
+      waitTimePerPersonLower,
+      waitTimePerPersonUpper
     } = req.body;
 
     const config = await prisma.waitTimeConfig.upsert({
@@ -37,17 +39,21 @@ export const updateWaitTimeConfig = async (req: Request, res: Response) => {
       update: {
         isWaitTimeEnabled,
         isWaitTimeCalculated,
-        manualWaitTime,
+        manualWaitTimeLower,
+        manualWaitTimeUpper,
         peopleWaiting,
-        waitTimePerPerson
+        waitTimePerPersonLower,
+        waitTimePerPersonUpper
       },
       create: {
         restaurantId,
         isWaitTimeEnabled,
         isWaitTimeCalculated,
-        manualWaitTime,
+        manualWaitTimeLower,
+        manualWaitTimeUpper,
         peopleWaiting,
-        waitTimePerPerson
+        waitTimePerPersonLower,
+        waitTimePerPersonUpper
       }
     });
 

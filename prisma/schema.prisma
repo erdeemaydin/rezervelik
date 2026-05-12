@@ -52,16 +52,23 @@ model RestaurantSettings {
 }
 
 model WaitTimeConfig {
-  id                   String     @id @default(uuid())
-  restaurantId         String     @unique
-  isWaitTimeEnabled    Boolean    @default(false)
-  isWaitTimeCalculated Boolean    @default(false) // false = manual, true = calculated
-  manualWaitTime       Int?       // in minutes
-  peopleWaiting        Int        @default(0)
-  waitTimePerPerson    Int        @default(5) // in minutes
-  updatedAt            DateTime   @updatedAt
+  id                     String     @id @default(uuid())
+  restaurantId           String     @unique
+  isWaitTimeEnabled      Boolean    @default(false)
+  isWaitTimeCalculated   Boolean    @default(false) // false = manual, true = calculated
+  
+  // Manual Mode
+  manualWaitTimeLower    Int?       // e.g., 30
+  manualWaitTimeUpper    Int?       // e.g., 40
+  
+  // Calculated Mode
+  peopleWaiting          Int        @default(0)
+  waitTimePerPersonLower Int        @default(5) // in minutes
+  waitTimePerPersonUpper Int        @default(8) // in minutes
+  
+  updatedAt              DateTime   @updatedAt
 
-  restaurant           Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  restaurant             Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
 }
 
 model User {

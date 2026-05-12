@@ -16,9 +16,11 @@ import { useRouter } from 'next/navigation';
 interface WaitTimeConfig {
     isWaitTimeEnabled: boolean;
     isWaitTimeCalculated: boolean;
-    manualWaitTime: number | null;
+    manualWaitTimeLower: number | null;
+    manualWaitTimeUpper: number | null;
     peopleWaiting: number;
-    waitTimePerPerson: number;
+    waitTimePerPersonLower: number;
+    waitTimePerPersonUpper: number;
 }
 
 export default function WaitlistPage() {
@@ -28,9 +30,11 @@ export default function WaitlistPage() {
     const [config, setConfig] = useState<WaitTimeConfig>({
         isWaitTimeEnabled: false,
         isWaitTimeCalculated: false,
-        manualWaitTime: null,
+        manualWaitTimeLower: null,
+        manualWaitTimeUpper: null,
         peopleWaiting: 0,
-        waitTimePerPerson: 5
+        waitTimePerPersonLower: 5,
+        waitTimePerPersonUpper: 8
     });
 
     const fetchConfig = useCallback(async () => {
@@ -42,9 +46,11 @@ export default function WaitlistPage() {
                 setConfig({
                     isWaitTimeEnabled: data.isWaitTimeEnabled ?? false,
                     isWaitTimeCalculated: data.isWaitTimeCalculated ?? false,
-                    manualWaitTime: data.manualWaitTime ?? null,
+                    manualWaitTimeLower: data.manualWaitTimeLower ?? null,
+                    manualWaitTimeUpper: data.manualWaitTimeUpper ?? null,
                     peopleWaiting: data.peopleWaiting ?? 0,
-                    waitTimePerPerson: data.waitTimePerPerson ?? 5
+                    waitTimePerPersonLower: data.waitTimePerPersonLower ?? 5,
+                    waitTimePerPersonUpper: data.waitTimePerPersonUpper ?? 8
                 });
             }
         } catch (error) {
@@ -122,20 +128,26 @@ export default function WaitlistPage() {
                                                 <SelectValue placeholder="Select mode" />
                                             </SelectTrigger>
                                             <SelectContent>
-                                                <SelectItem value="MANUAL" className="text-xs">Manual Entry</SelectItem>
-                                                <SelectItem value="CALCULATED" className="text-xs">Calculated automatically</SelectItem>
+                                                <SelectItem value="MANUAL" className="text-xs">Manual Entry (Interval)</SelectItem>
+                                                <SelectItem value="CALCULATED" className="text-xs">Calculated automatically (Interval)</SelectItem>
                                             </SelectContent>
                                         </Select>
                                     </div>
                                     
                                     {!config.isWaitTimeCalculated ? (
-                                        <div className="grid gap-1.5">
-                                            <Label className="text-[10px] font-black uppercase text-slate-400">Estimated Wait Time (Minutes)</Label>
-                                            <Input type="number" value={config.manualWaitTime || ''} onChange={(e) => setConfig({...config, manualWaitTime: e.target.value ? parseInt(e.target.value) : null})} className="h-9 text-sm font-bold rounded-sm" placeholder="e.g. 20" />
-                                        </div>
-                                    ) : (
                                         <div className="grid grid-cols-2 gap-4">
                                             <div className="grid gap-1.5">
+                                                <Label className="text-[10px] font-black uppercase text-slate-400">Min. Wait Time (Mins)</Label>
+                                                <Input type="number" value={config.manualWaitTimeLower || ''} onChange={(e) => setConfig({...config, manualWaitTimeLower: e.target.value ? parseInt(e.target.value) : null})} className="h-9 text-sm font-bold rounded-sm" placeholder="e.g. 30" />
+                                            </div>
+                                            <div className="grid gap-1.5">
+                                                <Label className="text-[10px] font-black uppercase text-slate-400">Max. Wait Time (Mins)</Label>
+                                                <Input type="number" value={config.manualWaitTimeUpper || ''} onChange={(e) => setConfig({...config, manualWaitTimeUpper: e.target.value ? parseInt(e.target.value) : null})} className="h-9 text-sm font-bold rounded-sm" placeholder="e.g. 40" />
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                                            <div className="grid gap-1.5 sm:col-span-3">
                                                 <Label className="text-[10px] font-black uppercase text-slate-400">People Waiting</Label>
                                                 <div className="flex items-center gap-2">
                                                     <Users className="w-4 h-4 text-slate-400" />
@@ -144,11 +156,18 @@ export default function WaitlistPage() {
                                             </div>
                                             <div className="grid gap-1.5">
                                                 <Label className="text-[10px] font-black uppercase text-slate-400">Min. Per Person</Label>
-                                                <Input type="number" value={config.waitTimePerPerson} onChange={(e) => setConfig({...config, waitTimePerPerson: parseInt(e.target.value) || 0})} className="h-9 text-sm font-bold rounded-sm" />
+                                                <Input type="number" value={config.waitTimePerPersonLower} onChange={(e) => setConfig({...config, waitTimePerPersonLower: parseInt(e.target.value) || 0})} className="h-9 text-sm font-bold rounded-sm" />
                                             </div>
-                                            <div className="col-span-2 bg-slate-50 p-3 rounded-md border border-slate-100 flex items-center justify-between mt-2">
-                                                <span className="text-xs font-bold text-slate-600">Calculated Wait:</span>
-                                                <span className="text-sm font-black text-amber-600">{config.peopleWaiting * config.waitTimePerPerson} mins</span>
+                                            <div className="flex items-center justify-center pt-5">
+                                                <span className="text-slate-400 font-black">to</span>
+                                            </div>
+                                            <div className="grid gap-1.5">
+                                                <Label className="text-[10px] font-black uppercase text-slate-400">Max. Per Person</Label>
+                                                <Input type="number" value={config.waitTimePerPersonUpper} onChange={(e) => setConfig({...config, waitTimePerPersonUpper: parseInt(e.target.value) || 0})} className="h-9 text-sm font-bold rounded-sm" />
+                                            </div>
+                                            <div className="sm:col-span-3 bg-slate-50 p-3 rounded-md border border-slate-100 flex items-center justify-between mt-2">
+                                                <span className="text-xs font-bold text-slate-600">Calculated Wait Interval:</span>
+                                                <span className="text-sm font-black text-amber-600">{config.peopleWaiting * config.waitTimePerPersonLower} - {config.peopleWaiting * config.waitTimePerPersonUpper} mins</span>
                                             </div>
                                         </div>
                                     )}

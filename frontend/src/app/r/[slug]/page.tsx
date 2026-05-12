@@ -162,10 +162,17 @@ export default function RestaurantPublicPage() {
       const s = restaurant?.waitTimeConfig;
       if (!s || !s.isWaitTimeEnabled) return null;
       if (s.isWaitTimeCalculated) {
-          const calculated = s.peopleWaiting * s.waitTimePerPerson;
-          return calculated > 0 ? `~${calculated} min wait` : 'No wait time';
+          const lower = s.peopleWaiting * s.waitTimePerPersonLower;
+          const upper = s.peopleWaiting * s.waitTimePerPersonUpper;
+          if (lower === 0 && upper === 0) return 'No wait time';
+          if (lower === upper) return `~${lower} min wait`;
+          return `~${lower}-${upper} min wait`;
       } else {
-          return s.manualWaitTime ? `~${s.manualWaitTime} min wait` : 'No wait time';
+          if (!s.manualWaitTimeLower && !s.manualWaitTimeUpper) return 'No wait time';
+          if (s.manualWaitTimeLower && !s.manualWaitTimeUpper) return `~${s.manualWaitTimeLower} min wait`;
+          if (!s.manualWaitTimeLower && s.manualWaitTimeUpper) return `~${s.manualWaitTimeUpper} min wait`;
+          if (s.manualWaitTimeLower === s.manualWaitTimeUpper) return `~${s.manualWaitTimeLower} min wait`;
+          return `~${s.manualWaitTimeLower}-${s.manualWaitTimeUpper} min wait`;
       }
   };
 
