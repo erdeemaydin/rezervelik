@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { useTranslation } from 'react-i18next';
 import AdminLayout from '@/components/layout/AdminLayout';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuthStore } from '@/store/useAuthStore';
@@ -12,7 +11,6 @@ import MySchedule from '@/components/scheduling/MySchedule';
 import api from '@/lib/api';
 
 export default function SchedulingPage() {
-  const { t } = useTranslation();
   const { user } = useAuthStore();
   const [viewMode, setViewMode] = useState<'WEEKLY' | 'MONTHLY'>('MONTHLY');
   const isAdminOrManager = user?.role === 'ADMIN' || user?.role === 'MANAGER';

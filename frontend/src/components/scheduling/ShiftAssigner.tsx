@@ -6,8 +6,6 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ChevronLeft, ChevronRight, GripVertical, X, Download, Send, CheckCircle2, Ban, Users, Activity } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import html2canvas from 'html2canvas';
-import jsPDF from 'jspdf';
 import api from '@/lib/api';
 import { 
   Shift, 
@@ -339,6 +337,9 @@ export default function ShiftAssigner({ viewMode = 'MONTHLY' }: { viewMode?: 'WE
       // Small delay for rendering
       await new Promise(resolve => setTimeout(resolve, 500));
 
+      const html2canvas = (await import('html2canvas')).default;
+      const { jsPDF } = await import('jspdf');
+
       const canvas = await html2canvas(input, { 
         scale: 2,
         useCORS: true,
@@ -382,6 +383,8 @@ export default function ShiftAssigner({ viewMode = 'MONTHLY' }: { viewMode?: 'WE
       input.style.backgroundColor = '#ffffff';
 
       await new Promise(resolve => setTimeout(resolve, 500));
+
+      const html2canvas = (await import('html2canvas')).default;
 
       const canvas = await html2canvas(input, { 
         scale: 3, // Higher scale for better quality PNG
