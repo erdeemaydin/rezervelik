@@ -351,7 +351,7 @@ export default function ShiftAssigner({ viewMode = 'MONTHLY' }: { viewMode?: 'WE
           const staffNames = shiftAssignments.map(a => {
             const user = a.user || staff.find(s => s.id === a.userId);
             return `${user?.firstName || ''} ${user?.lastName || ''}`.trim();
-          }).join('\\n');
+          }).join('\n');
           rowData.push(staffNames || 'Unassigned');
         });
 
@@ -363,7 +363,7 @@ export default function ShiftAssigner({ viewMode = 'MONTHLY' }: { viewMode?: 'WE
         body: tableRows,
         startY: 35,
         theme: 'grid',
-        styles: { fontSize: 9, cellPadding: 4 },
+        styles: { fontSize: 11, cellPadding: 6 },
         headStyles: { fillColor: [15, 23, 42], textColor: 255, fontStyle: 'bold' },
         bodyStyles: { valign: 'top' },
       });
