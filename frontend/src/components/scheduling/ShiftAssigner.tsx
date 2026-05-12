@@ -337,11 +337,12 @@ export default function ShiftAssigner({ viewMode = 'MONTHLY' }: { viewMode?: 'WE
       // Small delay for rendering
       await new Promise(resolve => setTimeout(resolve, 500));
 
-      const { toPng } = await import('html-to-image');
+      const { toJpeg } = await import('html-to-image');
       const { jsPDF } = await import('jspdf');
 
-      const dataUrl = await toPng(input, { 
-        pixelRatio: 2,
+      const dataUrl = await toJpeg(input, { 
+        pixelRatio: 1.5, // Reduced from 2 to save size while maintaining readability
+        quality: 0.8, // 80% JPEG quality for huge size savings
         backgroundColor: '#ffffff',
         style: {
           transform: 'scale(1)',
@@ -368,7 +369,8 @@ export default function ShiftAssigner({ viewMode = 'MONTHLY' }: { viewMode?: 'WE
       const pdfWidth = pdf.internal.pageSize.getWidth();
       const pdfHeight = pdf.internal.pageSize.getHeight();
 
-      pdf.addImage(dataUrl, 'PNG', 0, 0, pdfWidth, pdfHeight);
+      // Use JPEG compression
+      pdf.addImage(dataUrl, 'JPEG', 0, 0, pdfWidth, pdfHeight, undefined, 'FAST');
       pdf.save(`roster_${viewMode}_${currentDate.toISOString().split('T')[0]}.pdf`);
       toast.success('PDF exported successfully');
     } catch (error) {
