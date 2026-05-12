@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import AdminLayout from '@/components/layout/AdminLayout';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -76,18 +76,24 @@ export default function MenuManagementPage() {
       imageUrl: '', dietaryTags: '', allergens: '', spiceLevel: '0' 
   });
 
-  useEffect(() => {
-    fetchMenus();
-  }, []);
-
-  const fetchMenus = async () => {
+  const fetchMenus = useCallback(async () => {
     try {
       setLoading(true);
       const res = await api.get('/menus');
       const data = res.data.data;
       setMenus(data);
-      if (data.length > 0 && !activeMenuId) {
-          setActiveMenuId(data[0].id);
+      
+      if (data.length > 0) {
+          // If no active ID is set, or the current active ID no longer exists
+          setActiveMenuId(prev => {
+              if (!prev || !data.some((m: Menu) => m.id === prev)) {
+                  const active = data.find((m: Menu) => m.isActive);
+                  return active ? active.id : data[0].id;
+              }
+              return prev;
+          });
+      } else {
+          setActiveMenuId(null);
       }
     } catch (error) {
       console.error('Error fetching menus:', error);
@@ -95,7 +101,11 @@ export default function MenuManagementPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    fetchMenus();
+  }, [fetchMenus]);
 
   const activeMenu = menus.find(m => m.id === activeMenuId);
 
@@ -121,6 +131,16 @@ export default function MenuManagementPage() {
           setIsMenuDialogOpen(false);
           fetchMenus();
       } catch (err) { toast.error('Failed to save menu'); }
+  };
+
+  const handleDeleteMenu = async (id: string) => {
+      if (!confirm('Delete this entire menu? This cannot be undone.')) return;
+      try {
+          await api.delete(`/menus/${id}`);
+          toast.success('Menu deleted');
+          if (activeMenuId === id) setActiveMenuId(null);
+          fetchMenus();
+      } catch (err) { toast.error('Failed to delete menu'); }
   };
 
   // --- CATEGORY ACTIONS ---
@@ -371,6 +391,9 @@ export default function MenuManagementPage() {
                                 setIsEditMode(true); setEditId(activeMenu.id); setMenuForm({name: activeMenu.name, isActive: activeMenu.isActive}); setIsMenuDialogOpen(true);
                             }}>
                                 <Edit2 className="w-3 h-3 mr-1" /> Edit Meta
+                            </Button>
+                            <Button variant="ghost" size="sm" className="h-8 text-[10px] font-bold text-red-600 hover:bg-red-50" onClick={() => handleDeleteMenu(activeMenu.id)}>
+                                <Trash2 className="w-3 h-3 mr-1" /> Delete Menu
                             </Button>
                         </div>
                     )}
