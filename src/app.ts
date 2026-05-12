@@ -50,6 +50,6 @@ app.use('/api/categories', tenantMiddleware, categoryRoutes);
 app.use('/api/day-settings', daySettingRoutes);
 app.use('/api/menus', tenantMiddleware, menuRoutes);
 app.use('/api/staff', tenantMiddleware, staffRoutes);
-app.use('/api/scheduling', schedulingRoutes);
+app.use('/api/scheduling', tenantMiddleware, schedulingRoutes);
 
 export default app;

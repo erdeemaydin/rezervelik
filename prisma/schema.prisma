@@ -26,6 +26,7 @@ model Restaurant {
   categories   ReservationCategory[]
   daySettings  DaySetting[]
   shifts       Shift[]
+  waitTimeConfig WaitTimeConfig?
 }
 
 model RestaurantSettings {
@@ -39,6 +40,8 @@ model RestaurantSettings {
   currency                 String     @default("TRY")
   operatingHours           String?
   
+  schedulingSystem         String     @default("MONTHLY") // "WEEKLY" or "MONTHLY"
+
   // Feature flags controlled by System Admin
   isVipEnabled             Boolean    @default(true)
   isInternalNotesEnabled   Boolean    @default(true)
@@ -46,6 +49,19 @@ model RestaurantSettings {
   
   updatedAt                DateTime   @updatedAt
   restaurant               Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+}
+
+model WaitTimeConfig {
+  id                   String     @id @default(uuid())
+  restaurantId         String     @unique
+  isWaitTimeEnabled    Boolean    @default(false)
+  isWaitTimeCalculated Boolean    @default(false) // false = manual, true = calculated
+  manualWaitTime       Int?       // in minutes
+  peopleWaiting        Int        @default(0)
+  waitTimePerPerson    Int        @default(5) // in minutes
+  updatedAt            DateTime   @updatedAt
+
+  restaurant           Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
 }
 
 model User {

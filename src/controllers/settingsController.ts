@@ -24,7 +24,8 @@ export const updateSettings = async (req: Request, res: Response) => {
       isPaidReservationEnabled, 
       depositAmount, 
       currency, 
-      operatingHours 
+      operatingHours,
+      schedulingSystem
     } = req.body;
 
     const settings = await prisma.restaurantSettings.update({
@@ -36,7 +37,8 @@ export const updateSettings = async (req: Request, res: Response) => {
         isPaidReservationEnabled,
         depositAmount,
         currency,
-        operatingHours
+        operatingHours,
+        schedulingSystem
       }
     });
 

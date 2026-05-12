@@ -9,6 +9,7 @@ export const getRestaurantBySlug = async (req: Request, res: Response) => {
       where: { slug },
       include: {
         settings: true,
+        waitTimeConfig: true,
         menus: {
           where: { isActive: true },
           include: {

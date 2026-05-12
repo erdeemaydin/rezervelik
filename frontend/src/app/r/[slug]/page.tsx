@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Utensils, Calendar as CalendarIcon, Clock, Users, ChevronRight, Star, ArrowLeft, MapPin, Phone, Info, MessageSquare, Sparkles, CheckCircle2, Ticket, XCircle, Flame, Leaf } from 'lucide-react';
+import { Utensils, Calendar as CalendarIcon, Clock, Users, ChevronRight, Star, ArrowLeft, MapPin, Phone, Info, MessageSquare, Sparkles, CheckCircle2, Ticket, XCircle, Flame, Leaf, Hourglass } from 'lucide-react';
 import axios from 'axios';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
@@ -157,7 +157,20 @@ export default function RestaurantPublicPage() {
   if (loading) return <div className="min-h-screen flex items-center justify-center bg-white"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-slate-900"></div></div>;
   if (!restaurant) return <div className="min-h-screen flex items-center justify-center bg-slate-50 text-slate-500 font-medium">Restaurant not found.</div>;
 
+
+  const getWaitTimeText = () => {
+      const s = restaurant?.waitTimeConfig;
+      if (!s || !s.isWaitTimeEnabled) return null;
+      if (s.isWaitTimeCalculated) {
+          const calculated = s.peopleWaiting * s.waitTimePerPerson;
+          return calculated > 0 ? `~${calculated} min wait` : 'No wait time';
+      } else {
+          return s.manualWaitTime ? `~${s.manualWaitTime} min wait` : 'No wait time';
+      }
+  };
+
   const { week, weekend } = getDaySuggestions();
+
   const times = getTimeSuggestions();
 
   return (
@@ -176,9 +189,17 @@ export default function RestaurantPublicPage() {
           </div>
 
           <div className="relative z-10 text-center px-6 max-w-4xl animate-in fade-in zoom-in duration-700">
-            <Badge className="bg-white/20 hover:bg-white/30 text-white border-0 backdrop-blur-md mb-6 px-4 py-1 text-sm tracking-widest uppercase font-black">
-                <Sparkles className="w-3 h-3 mr-2" /> Welcome to Excellence
-            </Badge>
+            
+            <div className="flex flex-wrap justify-center gap-2 mb-6">
+                <Badge className="bg-white/20 hover:bg-white/30 text-white border-0 backdrop-blur-md px-4 py-1 text-sm tracking-widest uppercase font-black">
+                    <Sparkles className="w-3 h-3 mr-2" /> Welcome to Excellence
+                </Badge>
+                {getWaitTimeText() && (
+                    <Badge className="bg-amber-500/80 hover:bg-amber-500 text-white border-0 backdrop-blur-md px-4 py-1 text-sm tracking-widest uppercase font-black">
+                        <Hourglass className="w-3 h-3 mr-2" /> Walk-in: {getWaitTimeText()}
+                    </Badge>
+                )}
+            </div>
             <h1 className="text-6xl md:text-8xl font-black text-white tracking-tighter mb-8 leading-none">
                 {restaurant.name}
             </h1>
@@ -206,7 +227,16 @@ export default function RestaurantPublicPage() {
                 <Button variant="ghost" onClick={() => setView('welcome')} className="font-bold text-slate-600 hover:text-slate-900">
                     <ArrowLeft className="mr-2 h-5 w-5" /> Back
                 </Button>
-                <div className="font-black text-xl tracking-tighter">{restaurant.name}</div>
+                
+                <div className="flex flex-col items-center">
+                    <div className="font-black text-xl tracking-tighter">{restaurant.name}</div>
+                    {getWaitTimeText() && (
+                        <div className="text-[10px] font-black uppercase text-amber-600 tracking-widest flex items-center mt-0.5">
+                            <Hourglass className="w-3 h-3 mr-1" /> Walk-in: {getWaitTimeText()}
+                        </div>
+                    )}
+                </div>
+
                 <Button onClick={() => setView('booking')} className="bg-slate-900 text-white font-black rounded-xl px-6 h-10 shadow-xl shadow-slate-900/20">Book Table</Button>
             </div>
             
@@ -321,7 +351,16 @@ export default function RestaurantPublicPage() {
             <Button variant="ghost" onClick={() => setView('welcome')} className="font-bold text-slate-600 hover:text-slate-900">
                 <ArrowLeft className="mr-2 h-5 w-5" /> Back
             </Button>
-            <div className="font-black text-lg tracking-tighter">Secure Your Table</div>
+            
+            <div className="flex flex-col items-center">
+                <div className="font-black text-lg tracking-tighter">Secure Your Table</div>
+                {getWaitTimeText() && (
+                    <div className="text-[10px] font-black uppercase text-amber-600 tracking-widest flex items-center mt-0.5">
+                        <Hourglass className="w-3 h-3 mr-1" /> Walk-in: {getWaitTimeText()}
+                    </div>
+                )}
+            </div>
+
             <div className="w-10"></div>
           </header>
 
