@@ -321,57 +321,54 @@ export default function ShiftAssigner({ viewMode = 'MONTHLY' }: { viewMode?: 'WE
   };
 
   const handleExportPDF = async () => {
-    const input = document.getElementById('roster-table-container');
-    if (!input) return;
-
     try {
-      toast.info('Generating PDF, please wait...');
+      toast.info('Generating PDF document...');
       
-      const originalBg = input.style.backgroundColor;
-      const originalWidth = input.style.width;
-      
-      // Temporarily expand to full width for capture if it's scrollable
-      input.style.width = 'auto';
-      input.style.backgroundColor = '#ffffff';
-
-      // Small delay for rendering
-      await new Promise(resolve => setTimeout(resolve, 500));
-
-      const { toJpeg } = await import('html-to-image');
       const { jsPDF } = await import('jspdf');
+      const autoTable = (await import('jspdf-autotable')).default;
 
-      const dataUrl = await toJpeg(input, { 
-        pixelRatio: 1.5, // Reduced from 2 to save size while maintaining readability
-        quality: 0.8, // 80% JPEG quality for huge size savings
-        backgroundColor: '#ffffff',
-        style: {
-          transform: 'scale(1)',
-          transformOrigin: 'top left'
-        }
-      });
+      const doc = new jsPDF({ orientation: 'landscape' });
 
-      input.style.backgroundColor = originalBg;
-      input.style.width = originalWidth;
+      // Title
+      doc.setFontSize(18);
+      doc.text(`Staff Schedule - ${viewMode}`, 14, 20);
+      doc.setFontSize(11);
+      doc.text(`Generated on: ${new Date().toLocaleDateString()}`, 14, 28);
+
+      // Define table columns
+      const tableColumn = ["Date", ...shifts.map(s => `${s.name} (${s.startTime}-${s.endTime})`)];
       
-      // Calculate dimensions preserving aspect ratio
-      const imgProps = new Image();
-      imgProps.src = dataUrl;
-      await new Promise((resolve) => {
-        imgProps.onload = resolve;
+      // Define table rows
+      const tableRows: any[][] = [];
+
+      days.forEach(day => {
+        const rowData = [
+          `${day.dayName}, ${day.formattedDate}`
+        ];
+
+        shifts.forEach(shift => {
+          const shiftAssignments = assignments.filter(a => a.date === day.dateString && a.shiftId === shift.id);
+          const staffNames = shiftAssignments.map(a => {
+            const user = a.user || staff.find(s => s.id === a.userId);
+            return `${user?.firstName || ''} ${user?.lastName || ''}`.trim();
+          }).join('\\n');
+          rowData.push(staffNames || 'Unassigned');
+        });
+
+        tableRows.push(rowData);
       });
 
-      const pdf = new jsPDF({
-        orientation: imgProps.width > imgProps.height ? 'landscape' : 'portrait',
-        unit: 'px',
-        format: [imgProps.width, imgProps.height]
+      autoTable(doc, {
+        head: [tableColumn],
+        body: tableRows,
+        startY: 35,
+        theme: 'grid',
+        styles: { fontSize: 9, cellPadding: 4 },
+        headStyles: { fillColor: [15, 23, 42], textColor: 255, fontStyle: 'bold' },
+        bodyStyles: { valign: 'top' },
       });
 
-      const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = pdf.internal.pageSize.getHeight();
-
-      // Use JPEG compression
-      pdf.addImage(dataUrl, 'JPEG', 0, 0, pdfWidth, pdfHeight, undefined, 'FAST');
-      pdf.save(`roster_${viewMode}_${currentDate.toISOString().split('T')[0]}.pdf`);
+      doc.save(`roster_${viewMode}_${currentDate.toISOString().split('T')[0]}.pdf`);
       toast.success('PDF exported successfully');
     } catch (error) {
       console.error('PDF Export Error:', error);
