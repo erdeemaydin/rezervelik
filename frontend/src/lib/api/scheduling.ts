@@ -24,6 +24,7 @@ export interface ShiftAssignment {
   shiftId: string;
   userId: string;
   date: string;
+  isPublished: boolean;
   shift?: Shift;
   user?: { id: string; firstName: string; lastName: string };
 }
@@ -69,6 +70,11 @@ export const assignShift = async (payload: { shiftId: string; userId: string; da
 
 export const publishAssignments = async (payload: { startDate: string; endDate: string }) => {
   const { data } = await api.post('/scheduling/assignments/publish', payload);
+  return data.data;
+};
+
+export const unpublishAssignments = async (payload: { startDate: string; endDate: string }) => {
+  const { data } = await api.post('/scheduling/assignments/unpublish', payload);
   return data.data;
 };
 

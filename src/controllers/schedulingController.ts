@@ -255,6 +255,35 @@ export const publishAssignments = async (req: Request, res: Response) => {
   }
 };
 
+export const unpublishAssignments = async (req: Request, res: Response) => {
+  try {
+    const restaurantId = req.restaurantId!;
+    const { startDate, endDate } = req.body;
+
+    if (!startDate || !endDate) {
+      return errorResponse(res, 'errors.validation_error', 400, { message: 'Missing required fields: startDate and endDate' });
+    }
+
+    const updated = await prisma.shiftAssignment.updateMany({
+      where: {
+        shift: { restaurantId },
+        date: {
+          gte: startDate,
+          lte: endDate
+        }
+      },
+      data: {
+        isPublished: false
+      }
+    });
+
+    return successResponse(res, { count: updated.count }, 'Assignments unpublished successfully');
+  } catch (error) {
+    console.error('Unpublish assignments error:', error);
+    return errorResponse(res, 'errors.internal_error', 500);
+  }
+};
+
 export const assignShift = async (req: Request, res: Response) => {
   try {
     const restaurantId = req.restaurantId!;

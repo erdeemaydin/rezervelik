@@ -1,10 +1,11 @@
 'use client';
 
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { ChevronLeft, ChevronRight, GripVertical, Trash2, X, Download, Send } from 'lucide-react';
+import { ChevronLeft, ChevronRight, GripVertical, X, Download, Send, CheckCircle2, Ban, Users, Activity } from 'lucide-react';
+import { cn } from '@/lib/utils';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 import api from '@/lib/api';
@@ -17,6 +18,7 @@ import {
   getAssignments, 
   assignShift, 
   publishAssignments,
+  unpublishAssignments,
   removeAssignment 
 } from '@/lib/api/scheduling';
 import { toast } from 'sonner';
@@ -97,8 +99,8 @@ function DroppableCell({
   );
 }
 
-export default function ShiftAssigner() {
-  const [currentDate, setCurrentDate] = useState<Date>(new Date(new Date().getFullYear(), new Date().getMonth(), 1));
+export default function ShiftAssigner({ viewMode = 'MONTHLY' }: { viewMode?: 'WEEKLY' | 'MONTHLY' }) {
+  const [currentDate, setCurrentDate] = useState<Date>(new Date());
   const [shifts, setShifts] = useState<Shift[]>([]);
   const [staff, setStaff] = useState<Staff[]>([]);
   const [availabilities, setAvailabilities] = useState<EmployeeAvailability[]>([]);
@@ -116,13 +118,29 @@ export default function ShiftAssigner() {
     })
   );
 
-  useEffect(() => {
-    loadData();
-  }, [currentDate]);
-
-  const getMonthDates = (date: Date) => {
+  const getMonthDates = useCallback((date: Date) => {
     const year = date.getFullYear();
     const month = date.getMonth();
+
+    if (viewMode === 'WEEKLY') {
+      const d = new Date(date);
+      const dayNum = d.getDay();
+      const diff = d.getDate() - dayNum + (dayNum === 0 ? -6 : 1); 
+      const startOfWeek = new Date(d.setDate(diff));
+      
+      return Array.from({ length: 7 }, (_, i) => {
+        const curr = new Date(startOfWeek);
+        curr.setDate(startOfWeek.getDate() + i);
+        const dateString = `${curr.getFullYear()}-${String(curr.getMonth() + 1).padStart(2, '0')}-${String(curr.getDate()).padStart(2, '0')}`;
+        return {
+          dateObj: curr,
+          dateString,
+          dayName: curr.toLocaleDateString('en-US', { weekday: 'short' }),
+          formattedDate: curr.toLocaleDateString('en-US', { month: 'numeric', day: 'numeric', year: 'numeric' })
+        };
+      });
+    }
+    
     const daysInMonth = new Date(year, month + 1, 0).getDate();
     
     return Array.from({ length: daysInMonth }, (_, i) => {
@@ -135,11 +153,11 @@ export default function ShiftAssigner() {
         formattedDate: d.toLocaleDateString('en-US', { month: 'numeric', day: 'numeric', year: 'numeric' })
       };
     });
-  };
+  }, [viewMode]);
 
-  const days = useMemo(() => getMonthDates(currentDate), [currentDate]);
+  const days = useMemo(() => getMonthDates(currentDate), [currentDate, getMonthDates]);
 
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     try {
       setLoading(true);
       const startDate = days[0].dateString;
@@ -161,7 +179,11 @@ export default function ShiftAssigner() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [days]);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
 
   const handleAssign = async (shiftId: string, userId: string, date: string) => {
     // Prevent duplicate assignment in the UI first
@@ -218,15 +240,43 @@ export default function ShiftAssigner() {
     }
   };
 
-  const handlePrevMonth = () => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1));
-  const handleNextMonth = () => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1));
+  const handlePrevMonth = () => {
+    if (viewMode === 'WEEKLY') {
+        const d = new Date(currentDate);
+        d.setDate(d.getDate() - 7);
+        setCurrentDate(d);
+    } else {
+        setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1));
+    }
+  };
+  const handleNextMonth = () => {
+    if (viewMode === 'WEEKLY') {
+        const d = new Date(currentDate);
+        d.setDate(d.getDate() + 7);
+        setCurrentDate(d);
+    } else {
+        setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1));
+    }
+  };
 
   // Helper to find assignments for a specific cell
   const getCellAssignments = (dateString: string, shiftId: string) => {
     return assignments.filter(a => a.date === dateString && a.shiftId === shiftId);
   };
 
+  const isCurrentRangePublished = useMemo(() => {
+    if (assignments.length === 0) return false;
+    const rangeAssignments = assignments.filter(a => days.some(d => d.dateString === a.date));
+    if (rangeAssignments.length === 0) return false;
+    return rangeAssignments.every(a => a.isPublished);
+  }, [assignments, days]);
+
   const handlePublishSchedule = async () => {
+    if (isCurrentRangePublished) {
+      toast.info('This schedule is already published to staff.');
+      return;
+    }
+
     try {
       const startDate = days[0].dateString;
       const endDate = days[days.length - 1].dateString;
@@ -234,12 +284,41 @@ export default function ShiftAssigner() {
       toast.info('Publishing schedule to staff...');
       await publishAssignments({ startDate, endDate });
       
-      // Update local state to reflect published status
-      setAssignments(prev => prev.map(a => ({ ...a, isPublished: true })));
+      // Update local state to reflect published status for the current range
+      setAssignments(prev => prev.map(a => {
+        if (days.some(d => d.dateString === a.date)) {
+           return { ...a, isPublished: true };
+        }
+        return a;
+      }));
       toast.success('Schedule published successfully!');
     } catch (error) {
       console.error(error);
       toast.error('Failed to publish schedule');
+    }
+  };
+
+  const handleUnpublishSchedule = async () => {
+    if (!isCurrentRangePublished) return;
+
+    try {
+      const startDate = days[0].dateString;
+      const endDate = days[days.length - 1].dateString;
+      
+      toast.info('Unpublishing schedule...');
+      await unpublishAssignments({ startDate, endDate });
+      
+      // Update local state
+      setAssignments(prev => prev.map(a => {
+        if (days.some(d => d.dateString === a.date)) {
+           return { ...a, isPublished: false };
+        }
+        return a;
+      }));
+      toast.success('Schedule unpublished. It is no longer visible to staff.');
+    } catch (error) {
+      console.error(error);
+      toast.error('Failed to unpublish schedule');
     }
   };
 
@@ -250,30 +329,80 @@ export default function ShiftAssigner() {
     try {
       toast.info('Generating PDF, please wait...');
       
-      // Briefly change styles to capture full table if it's scrolling
-      const originalOverflow = input.style.overflow;
-      input.style.overflow = 'visible';
+      const originalBg = input.style.backgroundColor;
+      const originalWidth = input.style.width;
+      
+      // Temporarily expand to full width for capture if it's scrollable
+      input.style.width = 'auto';
+      input.style.backgroundColor = '#ffffff';
 
-      const canvas = await html2canvas(input, { scale: 2 });
-      input.style.overflow = originalOverflow;
+      // Small delay for rendering
+      await new Promise(resolve => setTimeout(resolve, 500));
+
+      const canvas = await html2canvas(input, { 
+        scale: 2,
+        useCORS: true,
+        logging: false,
+        backgroundColor: '#ffffff',
+        windowWidth: input.scrollWidth,
+        windowHeight: input.scrollHeight
+      });
+
+      input.style.backgroundColor = originalBg;
+      input.style.width = originalWidth;
 
       const imgData = canvas.toDataURL('image/png');
       
       const pdf = new jsPDF({
-        orientation: 'landscape',
-        unit: 'mm',
-        format: 'a3'
+        orientation: canvas.width > canvas.height ? 'landscape' : 'portrait',
+        unit: 'px',
+        format: [canvas.width / 2, canvas.height / 2]
       });
 
       const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+      const pdfHeight = pdf.internal.pageSize.getHeight();
 
       pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
-      pdf.save(`roster_${currentDate.getFullYear()}_${currentDate.getMonth() + 1}.pdf`);
-      toast.success('Schedule exported successfully');
+      pdf.save(`roster_${viewMode}_${currentDate.toISOString().split('T')[0]}.pdf`);
+      toast.success('PDF exported successfully');
     } catch (error) {
-      console.error(error);
-      toast.error('Failed to export schedule');
+      console.error('PDF Export Error:', error);
+      toast.error('Failed to export PDF');
+    }
+  };
+
+  const handleExportPNG = async () => {
+    const input = document.getElementById('roster-table-container');
+    if (!input) return;
+
+    try {
+      toast.info('Generating PNG image...');
+      
+      const originalBg = input.style.backgroundColor;
+      input.style.backgroundColor = '#ffffff';
+
+      await new Promise(resolve => setTimeout(resolve, 500));
+
+      const canvas = await html2canvas(input, { 
+        scale: 3, // Higher scale for better quality PNG
+        useCORS: true,
+        logging: false,
+        backgroundColor: '#ffffff',
+        windowWidth: input.scrollWidth,
+        windowHeight: input.scrollHeight
+      });
+
+      input.style.backgroundColor = originalBg;
+
+      const link = document.createElement('a');
+      link.download = `roster_${viewMode}_${currentDate.toISOString().split('T')[0]}.png`;
+      link.href = canvas.toDataURL('image/png');
+      link.click();
+      
+      toast.success('PNG exported successfully');
+    } catch (error) {
+      console.error('PNG Export Error:', error);
+      toast.error('Failed to export PNG');
     }
   };
 
@@ -284,64 +413,123 @@ export default function ShiftAssigner() {
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
     >
-      <div className="flex flex-col xl:flex-row gap-6">
+      <div className="flex flex-col gap-6 w-full max-w-[95vw] mx-auto">
         
-        {/* DRAGGABLE STAFF SIDEBAR */}
-        <Card className="w-full xl:w-64 shrink-0 h-fit sticky top-6">
-          <CardHeader className="pb-4">
-            <CardTitle className="text-lg">Staff Pool</CardTitle>
-            <CardDescription className="text-xs">Drag members into the schedule grid.</CardDescription>
+        {/* DRAGGABLE STAFF SECTION - NOW ON TOP */}
+        <Card className="w-full">
+          <CardHeader className="pb-4 pt-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="text-lg flex items-center">
+                  <Users className="h-5 w-5 mr-2 text-blue-600" />
+                  Staff Pool
+                </CardTitle>
+                <CardDescription className="text-xs">Drag members onto the shifts below.</CardDescription>
+              </div>
+              <Badge variant="outline" className="text-[10px] font-normal border-slate-200">
+                {staff.length} Members Available
+              </Badge>
+            </div>
           </CardHeader>
-          <CardContent className="max-h-[70vh] overflow-y-auto pr-2">
-            {staff.map(s => (
-              <DraggableStaff key={s.id} staff={s} />
-            ))}
+          <CardContent className="pb-6">
+            <div className="flex flex-wrap gap-2 overflow-x-auto pb-2 max-h-40">
+              {staff.map(s => (
+                <div key={s.id} className="shrink-0 min-w-[140px]">
+                  <DraggableStaff staff={s} />
+                </div>
+              ))}
+            </div>
           </CardContent>
         </Card>
 
         {/* MAIN ROSTER GRID */}
         <Card className="flex-1 overflow-hidden">
-          <CardHeader className="flex flex-col lg:flex-row items-start lg:items-center justify-between pb-4 gap-4">
+          <CardHeader className="flex flex-col lg:flex-row items-start lg:items-center justify-between pb-6 gap-4">
             <div>
-              <CardTitle>Schedule Builder</CardTitle>
-              <CardDescription>Drag staff from the left panel onto the specific shifts.</CardDescription>
+              <CardTitle className="text-xl">Schedule Builder</CardTitle>
+              <CardDescription>Plan and manage restaurant shifts.</CardDescription>
             </div>
-            <div className="flex flex-wrap items-center space-x-4">
-              <Button variant="outline" size="icon" onClick={handlePrevMonth}>
-                <ChevronLeft className="h-4 w-4" />
-              </Button>
-              <h3 className="text-lg font-semibold w-40 text-center">
-                {currentDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
-              </h3>
-              <Button variant="outline" size="icon" onClick={handleNextMonth}>
-                <ChevronRight className="h-4 w-4" />
-              </Button>
-              <Button variant="default" className="bg-blue-600 hover:bg-blue-700 text-white" onClick={handlePublishSchedule}>
-                <Send className="h-4 w-4 mr-2" /> Publish Schedule
-              </Button>
-              <Button variant="outline" className="border-slate-300" onClick={handleExportPDF}>
-                <Download className="h-4 w-4 mr-2" /> Export PDF
-              </Button>
+            <div className="flex flex-wrap items-center gap-2">
+              <div className="flex items-center bg-white border rounded-md p-1 shadow-sm mr-2">
+                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handlePrevMonth}>
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+                <h3 className="text-sm font-bold px-2 min-w-[140px] text-center">
+                  {viewMode === 'WEEKLY' 
+                    ? `Week of ${days[0]?.dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`
+                    : currentDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
+                  }
+                </h3>
+                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleNextMonth}>
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <Button 
+                  variant={isCurrentRangePublished ? "outline" : "default"} 
+                  size="sm"
+                  className={cn(
+                    "h-9 px-3",
+                    isCurrentRangePublished 
+                      ? "border-green-200 bg-green-50 text-green-700 hover:bg-green-100 hover:text-green-800" 
+                      : "bg-blue-600 hover:bg-blue-700 text-white"
+                  )} 
+                  onClick={handlePublishSchedule}
+                >
+                  {isCurrentRangePublished ? (
+                    <><CheckCircle2 className="h-4 w-4 mr-2" /> Published</>
+                  ) : (
+                    <><Send className="h-4 w-4 mr-2" /> Publish</>
+                  )}
+                </Button>
+
+                {isCurrentRangePublished && (
+                  <Button 
+                    variant="ghost" 
+                    size="sm"
+                    className="h-9 px-2 text-red-600 hover:bg-red-50 hover:text-red-700 text-[9px] font-black uppercase"
+                    onClick={handleUnpublishSchedule}
+                  >
+                    <Ban className="h-3.5 w-3.5 mr-1" /> Unpublish
+                  </Button>
+                )}
+                
+                <div className="h-6 w-[1px] bg-slate-200 mx-1 hidden sm:block"></div>
+                
+                <Button variant="outline" size="sm" className="h-9 border-slate-300" onClick={handleExportPDF}>
+                  <Download className="h-4 w-4 mr-2" /> PDF
+                </Button>
+                <Button variant="outline" size="sm" className="h-9 border-slate-300" onClick={handleExportPNG}>
+                  <Activity className="h-4 w-4 mr-2" /> PNG
+                </Button>
+              </div>
             </div>
           </CardHeader>
-          <CardContent className="p-0">
+          <CardContent className="p-0 overflow-auto max-h-[calc(100vh-350px)]">
             {loading ? (
-              <div className="flex justify-center p-8"><p>Loading roster data...</p></div>
+              <div className="flex justify-center p-12"><p className="text-slate-500 animate-pulse">Loading roster data...</p></div>
             ) : shifts.length === 0 ? (
-              <p className="text-muted-foreground py-4 text-center">No shifts configured for this restaurant.</p>
+              <div className="p-12 text-center bg-slate-50">
+                <p className="text-muted-foreground">No shifts configured for this restaurant.</p>
+                <Button variant="link" className="mt-2 text-blue-600">Setup Shifts</Button>
+              </div>
             ) : (
-              <div id="roster-table-container" className="overflow-x-auto w-full bg-white">
-                <table className="w-full text-xs text-left border-collapse min-w-[700px]">
-                  <thead className="text-[10px] text-slate-700 uppercase bg-slate-100 border-b">
+              <div id="roster-table-container" className="w-full bg-white p-4">
+                <table className="w-full text-xs text-left border-collapse min-w-[900px]">
+                  <thead className="text-[10px] text-slate-700 uppercase bg-slate-50 sticky top-0 z-30">
                     <tr>
-                      <th scope="col" className="px-2 py-2 border-r min-w-[60px] max-w-[80px] sticky left-0 bg-slate-100 z-20 shadow-[1px_0_0_0_#e2e8f0]">
-                        Date
+                      <th scope="col" className="px-3 py-3 border-b border-slate-100 min-w-[100px] sticky left-0 bg-slate-50 z-40">
+                        Date & Weekday
                       </th>
                       {shifts.map(shift => (
-                        <th key={shift.id} scope="col" className="px-1 py-2 border-r min-w-[100px] max-w-[140px]">
-                          <div className="font-bold text-center leading-tight">{shift.name}</div>
-                          <div className="text-[9px] text-slate-500 font-normal text-center mt-0.5">
-                            {shift.startTime}-{shift.endTime} (Req:{shift.requiredStaff})
+                        <th key={shift.id} scope="col" className="px-2 py-3 border-b border-slate-100 min-w-[140px]">
+                          <div className="font-bold text-center text-slate-900 leading-tight">{shift.name}</div>
+                          <div className="text-[9px] text-slate-500 font-normal text-center mt-1 bg-white/50 rounded-sm py-0.5 border border-slate-100">
+                            {shift.startTime} - {shift.endTime}
+                          </div>
+                          <div className="text-[8px] text-blue-600 font-semibold text-center mt-1 uppercase">
+                            Required: {shift.requiredStaff}
                           </div>
                         </th>
                       ))}
@@ -350,17 +538,25 @@ export default function ShiftAssigner() {
                   <tbody>
                     {days.map((day) => {
                       const isWeekend = day.dateObj.getDay() === 0 || day.dateObj.getDay() === 6;
+                      const isToday = new Date().toISOString().split('T')[0] === day.dateString;
                       
                       return (
                         <tr 
                           key={day.dateString} 
-                          className={`border-b hover:bg-slate-50/50 transition-colors ${isWeekend ? 'bg-slate-50' : 'bg-white'}`}
+                          className={cn(
+                            "border-b transition-colors",
+                            isToday ? 'bg-blue-50/40' : isWeekend ? 'bg-slate-50/50' : 'bg-white',
+                            "hover:bg-slate-100/50"
+                          )}
                         >
                           {/* Date Column */}
-                          <td className={`px-2 py-1.5 border-r font-medium sticky left-0 z-10 shadow-[1px_0_0_0_#e2e8f0] ${isWeekend ? 'bg-slate-50 text-red-500' : 'bg-white'}`}>
+                          <td className={cn(
+                            "px-3 py-2 border-b border-slate-100 font-medium sticky left-0 z-20",
+                            isToday ? 'bg-blue-50 text-blue-700' : isWeekend ? 'bg-slate-50 text-red-500' : 'bg-white'
+                          )}>
                             <div className="flex flex-col">
-                              <span>{day.formattedDate.split(',')[0]}</span>
-                              <span className="text-[9px] text-muted-foreground uppercase">{day.dayName}</span>
+                              <span className="text-sm font-bold">{day.dateObj.getDate()} {day.dateObj.toLocaleDateString('en-US', { month: 'short' })}</span>
+                              <span className="text-[10px] text-muted-foreground uppercase font-semibold">{day.dayName}</span>
                             </div>
                           </td>
 
@@ -380,9 +576,9 @@ export default function ShiftAssigner() {
                                   <Badge 
                                     key={assignment.id} 
                                     variant="secondary" 
-                                    className="flex justify-between items-center py-0.5 px-1.5 text-[10px] bg-slate-100 hover:bg-slate-200 border-slate-200 w-full mb-0.5 group rounded-sm"
+                                    className="flex justify-between items-center py-1 px-2 text-[10px] bg-slate-50 text-slate-700 shadow-none w-full mb-1 group rounded-md hover:bg-blue-50 transition-all border-none"
                                   >
-                                    <span className="truncate mr-1 flex-1 leading-tight">
+                                    <span className="truncate mr-1 flex-1 font-medium">
                                       {assignment.user?.firstName} {assignment.user?.lastName}
                                     </span>
                                     <button 

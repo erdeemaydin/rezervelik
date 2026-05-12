@@ -8,6 +8,7 @@ import {
   setAvailability,
   getAssignments,
   publishAssignments,
+  unpublishAssignments,
   assignShift,
   removeAssignment
 } from '../controllers/schedulingController';
@@ -35,8 +36,10 @@ router.post('/availabilities', setAvailability);
 // --- ASSIGNMENTS ---
 // Everyone can view assignments
 router.get('/assignments', getAssignments);
-// Only Admin/Manager can assign/remove shifts
+// Only Admin/Manager can assign/remove shifts/publish
 router.post('/assignments', roleMiddleware(['ADMIN', 'MANAGER']), assignShift);
+router.post('/assignments/publish', roleMiddleware(['ADMIN', 'MANAGER']), publishAssignments);
+router.post('/assignments/unpublish', roleMiddleware(['ADMIN', 'MANAGER']), unpublishAssignments);
 router.delete('/assignments/:id', roleMiddleware(['ADMIN', 'MANAGER']), removeAssignment);
 
 export default router;

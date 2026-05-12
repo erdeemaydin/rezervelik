@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import AdminLayout from '@/components/layout/AdminLayout';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -9,11 +9,28 @@ import ShiftManager from '@/components/scheduling/ShiftManager';
 import AvailabilitySubmitter from '@/components/scheduling/AvailabilitySubmitter';
 import ShiftAssigner from '@/components/scheduling/ShiftAssigner';
 import MySchedule from '@/components/scheduling/MySchedule';
+import api from '@/lib/api';
 
 export default function SchedulingPage() {
   const { t } = useTranslation();
   const { user } = useAuthStore();
+  const [viewMode, setViewMode] = useState<'WEEKLY' | 'MONTHLY'>('MONTHLY');
   const isAdminOrManager = user?.role === 'ADMIN' || user?.role === 'MANAGER';
+
+  const fetchSettings = useCallback(async () => {
+    try {
+      const res = await api.get('/settings');
+      if (res.data.data?.schedulingSystem) {
+        setViewMode(res.data.data.schedulingSystem);
+      }
+    } catch (error) {
+      console.error('Failed to load scheduling settings');
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchSettings();
+  }, [fetchSettings]);
 
   return (
     <AdminLayout>
@@ -43,7 +60,7 @@ export default function SchedulingPage() {
           {isAdminOrManager ? (
             <>
               <TabsContent value="roster">
-                <ShiftAssigner />
+                <ShiftAssigner viewMode={viewMode} />
               </TabsContent>
               <TabsContent value="shifts">
                 <ShiftManager />
@@ -52,10 +69,10 @@ export default function SchedulingPage() {
           ) : (
             <>
               <TabsContent value="my-schedule">
-                <MySchedule />
+                <MySchedule viewMode={viewMode} />
               </TabsContent>
               <TabsContent value="availability">
-                <AvailabilitySubmitter />
+                <AvailabilitySubmitter viewMode={viewMode} />
               </TabsContent>
             </>
           )}
