@@ -17,6 +17,7 @@ import systemRoutes from './routes/systemRoutes';
 import publicRoutes from './routes/publicRoutes';
 import staffRoutes from './routes/staffRoutes';
 import schedulingRoutes from './routes/schedulingRoutes';
+import waitTimeRoutes from './routes/waitTimeRoutes';
 
 const app = express();
 
@@ -51,5 +52,6 @@ app.use('/api/day-settings', daySettingRoutes);
 app.use('/api/menus', tenantMiddleware, menuRoutes);
 app.use('/api/staff', tenantMiddleware, staffRoutes);
 app.use('/api/scheduling', tenantMiddleware, schedulingRoutes);
+app.use('/api/wait-time', tenantMiddleware, waitTimeRoutes);
 
 export default app;
