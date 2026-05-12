@@ -327,32 +327,39 @@ export default function ShiftAssigner({ viewMode = 'MONTHLY' }: { viewMode?: 'WE
       const { jsPDF } = await import('jspdf');
       const autoTable = (await import('jspdf-autotable')).default;
 
-      const doc = new jsPDF({ orientation: 'landscape' });
+      // Calculate dynamic width so columns are never squished
+      const pageWidth = Math.max(297, 60 + (shifts.length * 55));
+      const doc = new jsPDF({ orientation: 'landscape', format: [pageWidth, 210] });
 
       // Title
-      doc.setFontSize(18);
+      doc.setFontSize(22);
       doc.text(`Staff Schedule - ${viewMode}`, 14, 20);
-      doc.setFontSize(11);
+      doc.setFontSize(12);
       doc.text(`Generated on: ${new Date().toLocaleDateString()}`, 14, 28);
 
       // Define table columns
-      const tableColumn = ["Date", ...shifts.map(s => `${s.name} (${s.startTime}-${s.endTime})`)];
+      const tableColumn = ["Date", ...shifts.map(s => `${s.name}\n(${s.startTime}-${s.endTime})`)];
       
       // Define table rows
       const tableRows: any[][] = [];
 
       days.forEach(day => {
-        const rowData = [
+        const rowData: any[] = [
           `${day.dayName}, ${day.formattedDate}`
         ];
 
         shifts.forEach(shift => {
           const shiftAssignments = assignments.filter(a => a.date === day.dateString && a.shiftId === shift.id);
-          const staffNames = shiftAssignments.map(a => {
-            const user = a.user || staff.find(s => s.id === a.userId);
-            return `${user?.firstName || ''} ${user?.lastName || ''}`.trim();
-          }).join('\n');
-          rowData.push(staffNames || 'Unassigned');
+          if (shiftAssignments.length === 0) {
+            rowData.push('Unassigned');
+          } else {
+            // Passing an array to autoTable guarantees each element gets its own line
+            const staffNames = shiftAssignments.map(a => {
+              const user = a.user || staff.find(s => s.id === a.userId);
+              return `${user?.firstName || ''} ${user?.lastName || ''}`.trim();
+            });
+            rowData.push(staffNames.join('\n'));
+          }
         });
 
         tableRows.push(rowData);
@@ -363,9 +370,12 @@ export default function ShiftAssigner({ viewMode = 'MONTHLY' }: { viewMode?: 'WE
         body: tableRows,
         startY: 35,
         theme: 'grid',
-        styles: { fontSize: 11, cellPadding: 6 },
-        headStyles: { fillColor: [15, 23, 42], textColor: 255, fontStyle: 'bold' },
-        bodyStyles: { valign: 'top' },
+        styles: { fontSize: 12, cellPadding: 6, minCellHeight: 14, overflow: 'linebreak' },
+        headStyles: { fillColor: [15, 23, 42], textColor: 255, fontStyle: 'bold', halign: 'center' },
+        bodyStyles: { valign: 'middle' },
+        columnStyles: {
+          0: { cellWidth: 45, fontStyle: 'bold' }
+        }
       });
 
       doc.save(`roster_${viewMode}_${currentDate.toISOString().split('T')[0]}.pdf`);
