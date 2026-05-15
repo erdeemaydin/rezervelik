@@ -34,6 +34,7 @@ interface NavItem {
   icon: any;
   badge?: string;
   perm?: string;
+  feature?: string;
 }
 
 interface NavSection {
@@ -47,13 +48,23 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
   const { user, isAuthenticated, logout } = useAuthStore();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
+  const [tenantSettings, setTenantSettings] = useState<any>(null);
 
   useEffect(() => {
     setIsMounted(true);
     if (window.innerWidth >= 768) {
       setIsSidebarOpen(true);
     }
-  }, []);
+    
+    if (isAuthenticated) {
+      // Fetch tenant settings to check feature flags
+      import('@/lib/api').then(({ default: api }) => {
+        api.get('/settings').then((res) => {
+          setTenantSettings(res.data.data);
+        }).catch(err => console.error('Failed to fetch settings:', err));
+      });
+    }
+  }, [isAuthenticated]);
 
   // AUTH GUARD - Prevent "ghost" staff login
   useEffect(() => {
@@ -71,12 +82,12 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
       { name: 'Reservations', href: '/dashboard/reservations', icon: Calendar, badge: '12', perm: 'manage_reservations' },
       { name: 'Calendar Master', href: '/dashboard/calendar', icon: Calendar, badge: 'New', perm: 'manage_calendar' },
       { name: 'Tables & Floor', href: '/dashboard/tables', icon: Grid, perm: 'manage_tables' },
-      { name: 'Menu', href: '/dashboard/menus', icon: UtensilsCrossed, perm: 'manage_menu' },
-      { name: 'Wait Time / Queue', href: '/dashboard/wait-time', icon: Clock, badge: 'Live', perm: 'manage_settings' },
-      { name: 'Scheduling', href: '/dashboard/scheduling', icon: Calendar, badge: 'New' },
+      { name: 'Menu', href: '/dashboard/menus', icon: UtensilsCrossed, perm: 'manage_menu', feature: 'hasMenuFeature' },
+      { name: 'Wait Time / Queue', href: '/dashboard/wait-time', icon: Clock, badge: 'Live', perm: 'manage_settings', feature: 'hasWaitTimeFeature' },
+      { name: 'Scheduling', href: '/dashboard/scheduling', icon: Calendar, badge: 'New', feature: 'hasShiftFeature' },
     ]},
     { section: 'Administration', items: [
-      { name: 'Transactions', href: '/dashboard/payments', icon: CreditCard },
+      { name: 'Transactions', href: '/dashboard/payments', icon: CreditCard, feature: 'hasPaymentFeature' },
       { name: 'Staff Members', href: '/dashboard/staff', icon: Users, perm: 'manage_staff' },
       { name: 'Reviews', href: '/dashboard/reviews', icon: MessageSquare },
       { name: 'Settings', href: '/dashboard/settings', icon: Settings, perm: 'manage_settings' },
@@ -88,6 +99,12 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
     if (user?.role === 'SUPER_ADMIN' || user?.role === 'ADMIN') return true;
     if (!user?.permissions) return false;
     return user.permissions.includes(perm);
+  };
+
+  const hasFeature = (feature?: string) => {
+    if (!feature) return true;
+    if (!tenantSettings) return true; // Show by default until loaded
+    return tenantSettings[feature] !== false;
   };
 
   const handleLogout = () => {
@@ -133,7 +150,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
         <nav className="flex-1 overflow-y-auto py-6 scrollbar-none">
           <div className="px-3 space-y-8">
             {navigation.map((group) => {
-              const visibleItems = group.items.filter(item => hasPermission(item.perm));
+              const visibleItems = group.items.filter(item => hasPermission(item.perm) && hasFeature((item as any).feature));
               if (visibleItems.length === 0) return null;
 
               return (

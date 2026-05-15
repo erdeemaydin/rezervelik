@@ -30,7 +30,12 @@ export default function TenantManagementPage() {
   });
 
   const [settingsForm, setSettingsForm] = useState({
-    isVipEnabled: true, isInternalNotesEnabled: true, isCategoriesEnabled: true
+    isVipEnabled: true, isInternalNotesEnabled: true, isCategoriesEnabled: true,
+    hasWaitTimeFeature: true, hasShiftFeature: true, hasMenuFeature: true, hasPaymentFeature: true
+  });
+  
+  const [subscriptionForm, setSubscriptionForm] = useState({
+    subscriptionPlan: 'TRIAL', subscriptionStatus: 'ACTIVE', trialEndsAt: ''
   });
   
   const [adminPermissions, setAdminPermissions] = useState<Set<string>>(new Set());
@@ -66,7 +71,21 @@ export default function TenantManagementPage() {
 
   const openSettings = (tenant: any) => {
     setSelectedTenant(tenant);
-    setSettingsForm(tenant.settings || { isVipEnabled: true, isInternalNotesEnabled: true, isCategoriesEnabled: true });
+    setSettingsForm({
+      isVipEnabled: tenant.settings?.isVipEnabled ?? true,
+      isInternalNotesEnabled: tenant.settings?.isInternalNotesEnabled ?? true,
+      isCategoriesEnabled: tenant.settings?.isCategoriesEnabled ?? true,
+      hasWaitTimeFeature: tenant.settings?.hasWaitTimeFeature ?? true,
+      hasShiftFeature: tenant.settings?.hasShiftFeature ?? true,
+      hasMenuFeature: tenant.settings?.hasMenuFeature ?? true,
+      hasPaymentFeature: tenant.settings?.hasPaymentFeature ?? true,
+    });
+    
+    setSubscriptionForm({
+      subscriptionPlan: tenant.subscriptionPlan || 'TRIAL',
+      subscriptionStatus: tenant.subscriptionStatus || 'ACTIVE',
+      trialEndsAt: tenant.trialEndsAt ? new Date(tenant.trialEndsAt).toISOString().split('T')[0] : ''
+    });
     
     const adminUser = tenant.users?.find((u: any) => u.role === 'ADMIN');
     setAdminPermissions(new Set(adminUser?.permissions ? adminUser.permissions.split(',') : []));
@@ -84,6 +103,7 @@ export default function TenantManagementPage() {
     e.preventDefault();
     try {
       await api.put(`/system/tenants/${selectedTenant.id}/settings`, settingsForm);
+      await api.put(`/system/tenants/${selectedTenant.id}/subscription`, subscriptionForm);
       
       const adminUser = selectedTenant.users?.find((u: any) => u.role === 'ADMIN');
       if (adminUser) {
@@ -129,6 +149,7 @@ export default function TenantManagementPage() {
               <TableHeader className="bg-slate-50/80">
                 <TableRow className="h-9">
                   <TableHead className="text-[9px] font-black text-slate-400 uppercase tracking-widest px-4">Restaurant / Domain</TableHead>
+                  <TableHead className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Subscription</TableHead>
                   <TableHead className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Feature Flags</TableHead>
                   <TableHead className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Provisioned</TableHead>
                   <TableHead className="text-[9px] font-black text-slate-400 uppercase tracking-widest text-right px-4">Command</TableHead>
@@ -148,6 +169,24 @@ export default function TenantManagementPage() {
                             <div className="font-bold text-slate-900 text-xs uppercase tracking-tight">{tenant.name}</div>
                             <div className="text-[9px] text-slate-400 font-mono">{tenant.slug}.reservue.com</div>
                         </div>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex flex-col items-start justify-center gap-1">
+                        <Badge variant="outline" className={cn(
+                          "text-[9px] font-black uppercase px-1.5 py-0 border",
+                          tenant.subscriptionPlan === 'PREMIUM' ? 'bg-indigo-50 text-indigo-700 border-indigo-200' :
+                          tenant.subscriptionPlan === 'PRO' ? 'bg-purple-50 text-purple-700 border-purple-200' :
+                          tenant.subscriptionPlan === 'BASIC' ? 'bg-blue-50 text-blue-700 border-blue-200' :
+                          'bg-amber-50 text-amber-700 border-amber-200'
+                        )}>{tenant.subscriptionPlan || 'TRIAL'}</Badge>
+                        {tenant.subscriptionPlan === 'TRIAL' && tenant.trialEndsAt ? (
+                          <span className="text-[8px] font-bold text-slate-400">
+                            {Math.max(0, Math.ceil((new Date(tenant.trialEndsAt).getTime() - new Date().getTime()) / (1000 * 3600 * 24)))} days left
+                          </span>
+                        ) : tenant.subscriptionStatus !== 'ACTIVE' ? (
+                           <span className="text-[8px] font-bold text-red-500 uppercase">{tenant.subscriptionStatus}</span>
+                        ) : null}
                       </div>
                     </TableCell>
                     <TableCell>
@@ -223,6 +262,48 @@ export default function TenantManagementPage() {
                         </DialogHeader>
                     </div>
                     <div className="p-6 grid grid-cols-2 gap-8 bg-white">
+                        <div className="col-span-2 border-b border-slate-100 pb-6 mb-2">
+                            <div className="flex items-center gap-2 mb-4">
+                                <Label className="text-xs font-black uppercase text-slate-800 tracking-tight">Subscription Management</Label>
+                            </div>
+                            <div className="grid grid-cols-3 gap-4">
+                                <div className="space-y-1.5">
+                                    <Label className="text-[10px] font-black uppercase text-slate-400">Plan Tier</Label>
+                                    <select 
+                                      className="w-full h-9 px-3 text-xs font-bold border border-slate-200 rounded-sm bg-slate-50"
+                                      value={subscriptionForm.subscriptionPlan}
+                                      onChange={e => setSubscriptionForm({...subscriptionForm, subscriptionPlan: e.target.value})}
+                                    >
+                                      <option value="TRIAL">Trial</option>
+                                      <option value="BASIC">Basic</option>
+                                      <option value="PRO">Pro</option>
+                                      <option value="PREMIUM">Premium</option>
+                                    </select>
+                                </div>
+                                <div className="space-y-1.5">
+                                    <Label className="text-[10px] font-black uppercase text-slate-400">Status</Label>
+                                    <select 
+                                      className="w-full h-9 px-3 text-xs font-bold border border-slate-200 rounded-sm bg-slate-50"
+                                      value={subscriptionForm.subscriptionStatus}
+                                      onChange={e => setSubscriptionForm({...subscriptionForm, subscriptionStatus: e.target.value})}
+                                    >
+                                      <option value="ACTIVE">Active</option>
+                                      <option value="PAST_DUE">Past Due</option>
+                                      <option value="CANCELED">Canceled</option>
+                                    </select>
+                                </div>
+                                <div className="space-y-1.5">
+                                    <Label className="text-[10px] font-black uppercase text-slate-400">Trial Ends At</Label>
+                                    <Input 
+                                      type="date" 
+                                      className="h-9 text-xs font-bold border-slate-200 rounded-sm bg-slate-50"
+                                      value={subscriptionForm.trialEndsAt}
+                                      onChange={e => setSubscriptionForm({...subscriptionForm, trialEndsAt: e.target.value})}
+                                    />
+                                </div>
+                            </div>
+                        </div>
+
                         <div className="space-y-4">
                             <div className="flex items-center gap-2 mb-2">
                                 <Label className="text-xs font-black uppercase text-slate-800 tracking-tight">Feature Flags</Label>
@@ -247,6 +328,34 @@ export default function TenantManagementPage() {
                                     <p className="text-[9px] text-slate-400 font-bold uppercase">Source Tracking</p>
                                 </div>
                                 <Checkbox checked={settingsForm.isCategoriesEnabled} onCheckedChange={(c) => setSettingsForm({...settingsForm, isCategoriesEnabled: !!c})} />
+                            </div>
+                            <div className="flex items-center justify-between p-3 border border-slate-100 rounded-sm bg-indigo-50/30">
+                                <div className="space-y-0.5">
+                                    <Label className="text-xs font-black uppercase text-indigo-900">Wait Time Module</Label>
+                                    <p className="text-[9px] text-indigo-400 font-bold uppercase">Enable Waitlist</p>
+                                </div>
+                                <Checkbox checked={settingsForm.hasWaitTimeFeature} onCheckedChange={(c) => setSettingsForm({...settingsForm, hasWaitTimeFeature: !!c})} />
+                            </div>
+                            <div className="flex items-center justify-between p-3 border border-slate-100 rounded-sm bg-indigo-50/30">
+                                <div className="space-y-0.5">
+                                    <Label className="text-xs font-black uppercase text-indigo-900">Shift Management</Label>
+                                    <p className="text-[9px] text-indigo-400 font-bold uppercase">Staff Rostering</p>
+                                </div>
+                                <Checkbox checked={settingsForm.hasShiftFeature} onCheckedChange={(c) => setSettingsForm({...settingsForm, hasShiftFeature: !!c})} />
+                            </div>
+                            <div className="flex items-center justify-between p-3 border border-slate-100 rounded-sm bg-indigo-50/30">
+                                <div className="space-y-0.5">
+                                    <Label className="text-xs font-black uppercase text-indigo-900">Digital Menu</Label>
+                                    <p className="text-[9px] text-indigo-400 font-bold uppercase">Menu & QR</p>
+                                </div>
+                                <Checkbox checked={settingsForm.hasMenuFeature} onCheckedChange={(c) => setSettingsForm({...settingsForm, hasMenuFeature: !!c})} />
+                            </div>
+                            <div className="flex items-center justify-between p-3 border border-slate-100 rounded-sm bg-indigo-50/30">
+                                <div className="space-y-0.5">
+                                    <Label className="text-xs font-black uppercase text-indigo-900">Paid Reservations</Label>
+                                    <p className="text-[9px] text-indigo-400 font-bold uppercase">Deposits & Payment</p>
+                                </div>
+                                <Checkbox checked={settingsForm.hasPaymentFeature} onCheckedChange={(c) => setSettingsForm({...settingsForm, hasPaymentFeature: !!c})} />
                             </div>
                         </div>
 

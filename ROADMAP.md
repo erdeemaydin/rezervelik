@@ -1,5 +1,8 @@
 # Project Roadmap & Checklist
 
+## Documentation Rule (Important!)
+*Every time a feature is implemented using only a frontend mockup or a backend placeholder (e.g., `console.log` for SMS, mocked payment gateways), a corresponding documentation file MUST be created in the `docs/MOCK_IMPLEMENTATIONS.md` file. This document must explain and document all of the API requests, webhooks, and integrations that need to be built to bring that feature to life in a production environment.*
+
 ## Phase 1: Core Architecture & Backend (Current)
 
 ### Architecture Setup

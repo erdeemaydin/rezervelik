@@ -8,25 +8,34 @@ datasource db {
 }
 
 model Restaurant {
-  id           String              @id @default(uuid())
-  slug         String              @unique
-  name         String
-  contactEmail String
-  contactPhone String?
-  logoUrl      String?
-  isActive     Boolean             @default(true)
-  createdAt    DateTime            @default(now())
-  updatedAt    DateTime            @updatedAt
-  menus        Menu[]
+  id                 String              @id @default(uuid())
+  slug               String              @unique
+  name               String
+  contactEmail       String
+  contactPhone       String?
+  logoUrl            String?
+  isActive           Boolean             @default(true)
+  
+  // Subscription & Billing
+  subscriptionPlan   String              @default("TRIAL") // TRIAL, BASIC, PRO, PREMIUM
+  subscriptionStatus String              @default("ACTIVE") // ACTIVE, PAST_DUE, CANCELED
+  trialEndsAt        DateTime?
+  currentPeriodEnd   DateTime?
+  stripeCustomerId   String?
+  
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+  menus              Menu[]
   reservations Reservation[]
   settings     RestaurantSettings?
   tables       Table[]
   tableTypes   TableType[]
   users        User[]
-  categories   ReservationCategory[]
-  daySettings  DaySetting[]
-  shifts       Shift[]
-  waitTimeConfig WaitTimeConfig?
+  categories         ReservationCategory[]
+  daySettings        DaySetting[]
+  shifts             Shift[]
+  waitTimeConfig     WaitTimeConfig?
+  waitlistEntries    WaitlistEntry[]
 }
 
 model RestaurantSettings {
@@ -46,6 +55,11 @@ model RestaurantSettings {
   isVipEnabled             Boolean    @default(true)
   isInternalNotesEnabled   Boolean    @default(true)
   isCategoriesEnabled      Boolean    @default(true)
+  
+  hasWaitTimeFeature       Boolean    @default(true)
+  hasShiftFeature          Boolean    @default(true)
+  hasMenuFeature           Boolean    @default(true)
+  hasPaymentFeature        Boolean    @default(true)
   
   // Privacy & Staff View Settings
   staffScheduleView        String     @default("OWN_ONLY") // "OWN_ONLY", "SHIFT_TEAM", "FULL_ROSTER"
@@ -72,6 +86,26 @@ model WaitTimeConfig {
   updatedAt              DateTime   @updatedAt
 
   restaurant             Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+}
+
+model WaitlistEntry {
+  id             String     @id @default(uuid())
+  restaurantId   String
+  customerName   String
+  customerPhone  String
+  partySize      Int
+  quotedWaitTime Int?       // in minutes
+  status         String     @default("WAITING") // WAITING, NOTIFIED, SEATED, CANCELED, NO_SHOW
+  notes          String?
+  
+  joinedAt       DateTime   @default(now())
+  notifiedAt     DateTime?
+  seatedAt       DateTime?
+  
+  restaurant     Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  
+  @@index([restaurantId])
+  @@index([status])
 }
 
 model User {

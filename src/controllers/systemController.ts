@@ -44,11 +44,18 @@ export const createTenant = async (req: Request, res: Response) => {
     const hashedPassword = await bcrypt.hash(adminPassword, 10);
 
     const result = await prisma.$transaction(async (prisma) => {
+      // Set trial end date to 14 days from now
+      const trialEndsAt = new Date();
+      trialEndsAt.setDate(trialEndsAt.getDate() + 14);
+
       const restaurant = await prisma.restaurant.create({
         data: {
           name,
           slug: `${slug}-${Date.now()}`,
           contactEmail,
+          subscriptionPlan: 'TRIAL',
+          subscriptionStatus: 'ACTIVE',
+          trialEndsAt,
           settings: {
             create: {}
           }
@@ -77,17 +84,50 @@ export const createTenant = async (req: Request, res: Response) => {
   }
 };
 
+export const updateTenantSubscription = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { subscriptionPlan, subscriptionStatus, trialEndsAt } = req.body;
+
+    const updated = await prisma.restaurant.update({
+      where: { id },
+      data: {
+        subscriptionPlan,
+        subscriptionStatus,
+        trialEndsAt: trialEndsAt ? new Date(trialEndsAt) : null,
+      }
+    });
+
+    return successResponse(res, updated);
+  } catch (error) {
+    console.error('Update tenant subscription error:', error);
+    return errorResponse(res, 'errors.internal_error', 500);
+  }
+};
+
 export const updateTenantSettings = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const { isVipEnabled, isInternalNotesEnabled, isCategoriesEnabled } = req.body;
+    const { 
+      isVipEnabled, 
+      isInternalNotesEnabled, 
+      isCategoriesEnabled,
+      hasWaitTimeFeature,
+      hasShiftFeature,
+      hasMenuFeature,
+      hasPaymentFeature
+    } = req.body;
 
     const updated = await prisma.restaurantSettings.update({
       where: { restaurantId: id },
       data: {
         isVipEnabled,
         isInternalNotesEnabled,
-        isCategoriesEnabled
+        isCategoriesEnabled,
+        hasWaitTimeFeature,
+        hasShiftFeature,
+        hasMenuFeature,
+        hasPaymentFeature
       }
     });
 

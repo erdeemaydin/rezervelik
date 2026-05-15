@@ -79,3 +79,55 @@ export const getDayStatus = async (req: Request, res: Response) => {
     return errorResponse(res, 'errors.internal_error', 500);
   }
 };
+
+export const joinPublicWaitlist = async (req: Request, res: Response) => {
+  try {
+    const { slug } = req.params;
+    const { customerName, customerPhone, partySize } = req.body;
+
+    if (!customerName || !customerPhone || !partySize) {
+      return errorResponse(res, 'Missing parameters', 400);
+    }
+
+    const restaurant = await prisma.restaurant.findUnique({
+      where: { slug },
+      include: { waitTimeConfig: true }
+    });
+
+    if (!restaurant) return errorResponse(res, 'Restaurant not found', 404);
+    
+    const config = restaurant.waitTimeConfig;
+    if (!config || !config.isWaitTimeEnabled) {
+      return errorResponse(res, 'Waitlist is not currently open', 403);
+    }
+
+    let quotedWaitTime = null;
+    if (config.isWaitTimeCalculated) {
+      quotedWaitTime = config.peopleWaiting * config.waitTimePerPersonUpper; // Conservative estimate
+      
+      // Auto increment the people waiting so the next person gets a higher quote
+      await prisma.waitTimeConfig.update({
+        where: { id: config.id },
+        data: { peopleWaiting: { increment: parseInt(partySize) } }
+      });
+    } else if (config.manualWaitTimeUpper) {
+      quotedWaitTime = config.manualWaitTimeUpper;
+    }
+
+    const entry = await prisma.waitlistEntry.create({
+      data: {
+        restaurantId: restaurant.id,
+        customerName,
+        customerPhone,
+        partySize: parseInt(partySize),
+        quotedWaitTime,
+        status: 'WAITING'
+      }
+    });
+
+    return successResponse(res, entry, undefined, 201);
+  } catch (error) {
+    console.error('Public join waitlist error:', error);
+    return errorResponse(res, 'errors.internal_error', 500);
+  }
+};

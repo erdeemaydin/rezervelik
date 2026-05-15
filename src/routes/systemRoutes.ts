@@ -13,6 +13,7 @@ router.use(roleMiddleware(['SUPER_ADMIN']));
 
 router.get('/tenants', systemController.getAllTenants);
 router.post('/tenants', systemController.createTenant);
+router.put('/tenants/:id/subscription', systemController.updateTenantSubscription);
 router.put('/tenants/:id/settings', systemController.updateTenantSettings);
 router.put('/users/:userId/permissions', systemController.updateTenantUserPermissions);
 
