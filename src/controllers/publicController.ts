@@ -97,7 +97,7 @@ export const joinPublicWaitlist = async (req: Request, res: Response) => {
     if (!restaurant) return errorResponse(res, 'Restaurant not found', 404);
     
     const config = restaurant.waitTimeConfig;
-    if (!config || !config.isWaitTimeEnabled) {
+    if (!config || !config.isWaitlistOpen) {
       return errorResponse(res, 'Waitlist is not currently open', 403);
     }
 

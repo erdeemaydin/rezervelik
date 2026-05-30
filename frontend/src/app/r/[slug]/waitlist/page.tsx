@@ -105,16 +105,18 @@ export default function PublicWaitlistPage({ params }: { params: Promise<{ slug:
                                 We've reserved your spot. We will send you an SMS when your table is almost ready.
                             </p>
                             
-                            <div className="bg-slate-50 p-4 rounded-xl w-full border border-slate-100 mt-4 space-y-2">
-                                <div className="text-[10px] font-black uppercase text-slate-400">Estimated Wait</div>
-                                <div className="text-xl font-black text-slate-800 flex items-center justify-center gap-2">
-                                    <Clock className="w-5 h-5 text-amber-500" />
-                                    {quotedTime ? `~${quotedTime} mins` : 'Waiting for estimate...'}
+                            {config?.isWaitTimeEnabled && (
+                                <div className="bg-slate-50 p-4 rounded-xl w-full border border-slate-100 mt-4 space-y-2">
+                                    <div className="text-[10px] font-black uppercase text-slate-400">Estimated Wait</div>
+                                    <div className="text-xl font-black text-slate-800 flex items-center justify-center gap-2">
+                                        <Clock className="w-5 h-5 text-amber-500" />
+                                        {quotedTime ? `~${quotedTime} mins` : 'Waiting for estimate...'}
+                                    </div>
                                 </div>
-                            </div>
+                            )}
                         </CardContent>
                     </Card>
-                ) : !config?.isWaitTimeEnabled ? (
+                ) : !config?.isWaitlistOpen ? (
                     <Card className="border-0 shadow-lg mt-8 text-center p-8">
                         <Hourglass className="w-12 h-12 text-slate-300 mx-auto mb-4" />
                         <h2 className="text-lg font-bold text-slate-800">Waitlist Closed</h2>
@@ -130,7 +132,7 @@ export default function PublicWaitlistPage({ params }: { params: Promise<{ slug:
                         </CardHeader>
                         <form onSubmit={handleSubmit} className="p-6 space-y-5">
                             
-                            {quotedTime && (
+                            {config?.isWaitTimeEnabled && quotedTime && (
                                 <div className="bg-amber-50 text-amber-800 p-3 rounded-md border border-amber-100 flex items-center justify-center gap-2 mb-2">
                                     <Clock className="w-4 h-4" />
                                     <span className="text-sm font-bold">Current wait is approx. {quotedTime} mins</span>

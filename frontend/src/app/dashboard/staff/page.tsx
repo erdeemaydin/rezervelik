@@ -33,7 +33,8 @@ interface StaffMember {
 
 const AVAILABLE_PERMISSIONS = [
   { id: 'manage_reservations', label: 'Manage Reservations', desc: 'Create, edit, cancel bookings' },
-  { id: 'manage_tables', label: 'Manage Tables', desc: 'Edit floor plan and zones' },
+  { id: 'manage_tables', label: 'Manage Tables', desc: 'Manage tables capacity and properties' },
+  { id: 'edit_floor_plan', label: 'Edit Floor Plan', desc: 'Allow drag/drop and visual floor plan editing' },
   { id: 'manage_menu', label: 'Manage Menu', desc: 'Create and update dishes/categories' },
   { id: 'manage_calendar', label: 'Manage Calendar', desc: 'Set blackout days and events' },
   { id: 'manage_staff', label: 'Manage Staff', desc: 'Add/remove users and set permissions' },
@@ -41,7 +42,7 @@ const AVAILABLE_PERMISSIONS = [
 ];
 
 const PRESET_ROLES = {
-  "MANAGER": ['manage_reservations', 'manage_tables', 'manage_menu', 'manage_calendar', 'manage_staff', 'manage_settings'],
+  "MANAGER": ['manage_reservations', 'manage_tables', 'edit_floor_plan', 'manage_menu', 'manage_calendar', 'manage_staff', 'manage_settings'],
   "HOST": ['manage_reservations', 'manage_tables'],
   "STAFF": []
 };

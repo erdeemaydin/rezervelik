@@ -18,6 +18,7 @@ import publicRoutes from './routes/publicRoutes';
 import staffRoutes from './routes/staffRoutes';
 import schedulingRoutes from './routes/schedulingRoutes';
 import waitTimeRoutes from './routes/waitTimeRoutes';
+import floorElementRoutes from './routes/floorElementRoutes';
 
 const app = express();
 
@@ -45,6 +46,7 @@ app.use('/api/system', systemRoutes);
 app.use('/api/restaurants', tenantMiddleware, restaurantRoutes);
 app.use('/api/table-types', tenantMiddleware, tableTypeRoutes);
 app.use('/api/tables', tenantMiddleware, tableRoutes);
+app.use('/api/floor-elements', tenantMiddleware, floorElementRoutes);
 app.use('/api/settings', tenantMiddleware, settingsRoutes);
 app.use('/api/reservations', tenantMiddleware, reservationRoutes);
 app.use('/api/categories', tenantMiddleware, categoryRoutes);

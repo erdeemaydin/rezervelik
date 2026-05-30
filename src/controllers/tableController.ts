@@ -18,7 +18,7 @@ export const getTables = async (req: Request, res: Response) => {
 export const createTable = async (req: Request, res: Response) => {
   try {
     const restaurantId = req.restaurantId!;
-    const { tableTypeId, identifier, capacity, isAvailable } = req.body;
+    const { tableTypeId, identifier, capacity, isAvailable, positionX, positionY, shape, width, height } = req.body;
 
     if (!tableTypeId || !identifier || !capacity) {
       return errorResponse(res, 'errors.validation_error', 400, { message: 'Required fields missing' });
@@ -38,7 +38,12 @@ export const createTable = async (req: Request, res: Response) => {
         capacity,
         isAvailable: isAvailable ?? true,
         restaurantId,
-        tableTypeId
+        tableTypeId,
+        positionX: positionX ?? 0,
+        positionY: positionY ?? 0,
+        shape: shape ?? 'rectangle',
+        width: width ?? 80,
+        height: height ?? 80
       }
     });
 
@@ -52,7 +57,7 @@ export const updateTable = async (req: Request, res: Response) => {
   try {
     const restaurantId = req.restaurantId!;
     const { id } = req.params;
-    const { tableTypeId, identifier, capacity, isAvailable } = req.body;
+    const { tableTypeId, identifier, capacity, isAvailable, positionX, positionY, shape, width, height } = req.body;
 
     const existingTable = await prisma.table.findFirst({
       where: { id, restaurantId }
@@ -67,9 +72,20 @@ export const updateTable = async (req: Request, res: Response) => {
       if (!typeExists) return errorResponse(res, 'errors.validation_error', 400, { message: 'Invalid TableType' });
     }
 
+    const dataToUpdate: any = {};
+    if (tableTypeId !== undefined) dataToUpdate.tableTypeId = tableTypeId;
+    if (identifier !== undefined) dataToUpdate.identifier = identifier;
+    if (capacity !== undefined) dataToUpdate.capacity = capacity;
+    if (isAvailable !== undefined) dataToUpdate.isAvailable = isAvailable;
+    if (positionX !== undefined) dataToUpdate.positionX = positionX;
+    if (positionY !== undefined) dataToUpdate.positionY = positionY;
+    if (shape !== undefined) dataToUpdate.shape = shape;
+    if (width !== undefined) dataToUpdate.width = width;
+    if (height !== undefined) dataToUpdate.height = height;
+
     const table = await prisma.table.update({
       where: { id },
-      data: { tableTypeId, identifier, capacity, isAvailable }
+      data: dataToUpdate
     });
 
     return successResponse(res, table);

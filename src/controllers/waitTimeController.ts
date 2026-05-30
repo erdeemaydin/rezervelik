@@ -25,6 +25,7 @@ export const updateWaitTimeConfig = async (req: Request, res: Response) => {
   try {
     const restaurantId = req.restaurantId!;
     const { 
+      isWaitlistOpen,
       isWaitTimeEnabled,
       isWaitTimeCalculated,
       manualWaitTimeLower,
@@ -37,6 +38,7 @@ export const updateWaitTimeConfig = async (req: Request, res: Response) => {
     const config = await prisma.waitTimeConfig.upsert({
       where: { restaurantId },
       update: {
+        isWaitlistOpen,
         isWaitTimeEnabled,
         isWaitTimeCalculated,
         manualWaitTimeLower,
@@ -47,6 +49,7 @@ export const updateWaitTimeConfig = async (req: Request, res: Response) => {
       },
       create: {
         restaurantId,
+        isWaitlistOpen,
         isWaitTimeEnabled,
         isWaitTimeCalculated,
         manualWaitTimeLower,

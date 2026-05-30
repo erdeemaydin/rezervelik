@@ -36,6 +36,7 @@ model Restaurant {
   shifts             Shift[]
   waitTimeConfig     WaitTimeConfig?
   waitlistEntries    WaitlistEntry[]
+  floorElements      FloorElement[]
 }
 
 model RestaurantSettings {
@@ -71,6 +72,7 @@ model RestaurantSettings {
 model WaitTimeConfig {
   id                     String     @id @default(uuid())
   restaurantId           String     @unique
+  isWaitlistOpen         Boolean    @default(false)
   isWaitTimeEnabled      Boolean    @default(false)
   isWaitTimeCalculated   Boolean    @default(false) // false = manual, true = calculated
   
@@ -131,10 +133,17 @@ model TableType {
   restaurantId String
   name         String
   description  String?
+  
+  parentId     String?
+  parent       TableType? @relation("SubZones", fields: [parentId], references: [id])
+  children     TableType[] @relation("SubZones")
+  
   tables       Table[]
+  floorElements FloorElement[]
   restaurant   Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
 
   @@index([restaurantId])
+  @@index([parentId])
 }
 
 model Table {
@@ -144,7 +153,34 @@ model Table {
   identifier   String
   capacity     Int
   isAvailable  Boolean       @default(true)
+  
+  // Floor Plan Visuals
+  positionX    Float         @default(0)
+  positionY    Float         @default(0)
+  shape        String        @default("rectangle") // rectangle, circle
+  width        Float         @default(60)
+  height       Float         @default(60)
+  
   reservations Reservation[]
+  tableType    TableType     @relation(fields: [tableTypeId], references: [id])
+  restaurant   Restaurant    @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+
+  @@index([restaurantId])
+  @@index([tableTypeId])
+}
+
+model FloorElement {
+  id           String        @id @default(uuid())
+  restaurantId String
+  tableTypeId  String
+  type         String        @default("box") // 'box', 'text', 'wall', 'divider'
+  label        String?
+  positionX    Float         @default(0)
+  positionY    Float         @default(0)
+  width        Float         @default(200)
+  height       Float         @default(200)
+  color        String?       @default("#f8fafc")
+  
   tableType    TableType     @relation(fields: [tableTypeId], references: [id])
   restaurant   Restaurant    @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
 

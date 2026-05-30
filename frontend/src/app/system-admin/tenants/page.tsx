@@ -43,10 +43,11 @@ export default function TenantManagementPage() {
   const AVAILABLE_PERMISSIONS = [
     { id: 'manage_reservations', label: 'Reservations' },
     { id: 'manage_tables', label: 'Tables & Floor' },
-    { id: 'manage_menu', label: 'Menus' },
-    { id: 'manage_calendar', label: 'Calendar' },
-    { id: 'manage_staff', label: 'Staff' },
-    { id: 'manage_settings', label: 'Settings' },
+    { id: 'edit_floor_plan', label: 'Edit Floor Plan' },
+    { id: 'manage_menu', label: 'Digital Menu' },
+    { id: 'manage_calendar', label: 'Calendar Settings' },
+    { id: 'manage_staff', label: 'Staff Roster' },
+    { id: 'manage_settings', label: 'Global Settings' },
   ];
 
   useEffect(() => { fetchTenants(); }, []);

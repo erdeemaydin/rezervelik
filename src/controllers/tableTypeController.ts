@@ -7,7 +7,7 @@ export const getTableTypes = async (req: Request, res: Response) => {
     const restaurantId = req.restaurantId!;
     const tableTypes = await prisma.tableType.findMany({
       where: { restaurantId },
-      include: { tables: true }
+      include: { tables: true, children: true }
     });
     return successResponse(res, tableTypes);
   } catch (error) {
@@ -18,14 +18,19 @@ export const getTableTypes = async (req: Request, res: Response) => {
 export const createTableType = async (req: Request, res: Response) => {
   try {
     const restaurantId = req.restaurantId!;
-    const { name, description } = req.body;
+    const { name, description, parentId } = req.body;
 
     if (!name) {
       return errorResponse(res, 'errors.validation_error', 400, { message: 'Name is required' });
     }
 
+    if (parentId) {
+      const parentExists = await prisma.tableType.findFirst({ where: { id: parentId, restaurantId } });
+      if (!parentExists) return errorResponse(res, 'errors.validation_error', 400, { message: 'Invalid parent zone' });
+    }
+
     const tableType = await prisma.tableType.create({
-      data: { name, description, restaurantId }
+      data: { name, description, parentId, restaurantId }
     });
 
     return successResponse(res, tableType, undefined, 201);
@@ -38,7 +43,7 @@ export const updateTableType = async (req: Request, res: Response) => {
   try {
     const restaurantId = req.restaurantId!;
     const { id } = req.params;
-    const { name, description } = req.body;
+    const { name, description, parentId } = req.body;
 
     const existingType = await prisma.tableType.findFirst({
       where: { id, restaurantId }
@@ -46,9 +51,20 @@ export const updateTableType = async (req: Request, res: Response) => {
 
     if (!existingType) return errorResponse(res, 'errors.validation_error', 404, { message: 'TableType not found' });
 
+    if (parentId !== undefined && parentId !== null) {
+      if (parentId === id) return errorResponse(res, 'errors.validation_error', 400, { message: 'Cannot be parent of itself' });
+      const parentExists = await prisma.tableType.findFirst({ where: { id: parentId, restaurantId } });
+      if (!parentExists) return errorResponse(res, 'errors.validation_error', 400, { message: 'Invalid parent zone' });
+    }
+
+    const dataToUpdate: any = {};
+    if (name !== undefined) dataToUpdate.name = name;
+    if (description !== undefined) dataToUpdate.description = description;
+    if (parentId !== undefined) dataToUpdate.parentId = parentId;
+
     const tableType = await prisma.tableType.update({
       where: { id },
-      data: { name, description }
+      data: dataToUpdate
     });
 
     return successResponse(res, tableType);

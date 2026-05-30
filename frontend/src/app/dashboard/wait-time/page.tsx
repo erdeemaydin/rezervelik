@@ -18,6 +18,7 @@ import { useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
 
 interface WaitTimeConfig {
+    isWaitlistOpen: boolean;
     isWaitTimeEnabled: boolean;
     isWaitTimeCalculated: boolean;
     manualWaitTimeLower: number | null;
@@ -45,6 +46,7 @@ export default function WaitlistPage() {
     
     // Config state
     const [config, setConfig] = useState<WaitTimeConfig>({
+        isWaitlistOpen: false,
         isWaitTimeEnabled: false,
         isWaitTimeCalculated: false,
         manualWaitTimeLower: null,
@@ -72,6 +74,7 @@ export default function WaitlistPage() {
             if (configRes.data.data) {
                 const data = configRes.data.data;
                 setConfig({
+                    isWaitlistOpen: data.isWaitlistOpen ?? false,
                     isWaitTimeEnabled: data.isWaitTimeEnabled ?? false,
                     isWaitTimeCalculated: data.isWaitTimeCalculated ?? false,
                     manualWaitTimeLower: data.manualWaitTimeLower ?? null,
@@ -163,11 +166,24 @@ export default function WaitlistPage() {
                             <CardHeader className="p-4 bg-slate-50 border-b border-slate-100 flex flex-row items-center justify-between gap-3">
                                 <div className="flex items-center gap-2">
                                     <div className="p-2 bg-amber-100 rounded-sm text-amber-600"><Hourglass className="w-4 h-4" /></div>
-                                    <CardTitle className="text-sm font-black uppercase tracking-tight">Display Config</CardTitle>
+                                    <CardTitle className="text-sm font-black uppercase tracking-tight">Waitlist Config</CardTitle>
                                 </div>
-                                <Switch checked={config.isWaitTimeEnabled} onCheckedChange={(v: boolean) => setConfig(prev => ({...prev, isWaitTimeEnabled: v}))} />
                             </CardHeader>
                             <CardContent className="p-4 space-y-4">
+                                <div className="flex items-center justify-between bg-slate-50 p-3 rounded-md border border-slate-100">
+                                    <div className="space-y-0.5">
+                                        <Label className="text-xs font-bold text-slate-800">Accept Public Walk-ins (QR)</Label>
+                                        <p className="text-[10px] text-slate-500">Allow guests to join via waitlist URL.</p>
+                                    </div>
+                                    <Switch checked={config.isWaitlistOpen} onCheckedChange={(v: boolean) => setConfig(prev => ({...prev, isWaitlistOpen: v}))} />
+                                </div>
+                                <div className="flex items-center justify-between bg-slate-50 p-3 rounded-md border border-slate-100">
+                                    <div className="space-y-0.5">
+                                        <Label className="text-xs font-bold text-slate-800">Display Estimated Time</Label>
+                                        <p className="text-[10px] text-slate-500">Show calculated or manual wait time.</p>
+                                    </div>
+                                    <Switch checked={config.isWaitTimeEnabled} onCheckedChange={(v: boolean) => setConfig(prev => ({...prev, isWaitTimeEnabled: v}))} />
+                                </div>
                                 {config.isWaitTimeEnabled && (
                                     <>
                                         <div className="bg-blue-50 border border-blue-100 p-3 rounded-md mb-4 flex items-center justify-between">
