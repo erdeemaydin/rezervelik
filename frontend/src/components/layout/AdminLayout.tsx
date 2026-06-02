@@ -90,6 +90,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
       { name: 'Transactions', href: '/dashboard/payments', icon: CreditCard, feature: 'hasPaymentFeature' },
       { name: 'Staff Members', href: '/dashboard/staff', icon: Users, perm: 'manage_staff' },
       { name: 'Reviews', href: '/dashboard/reviews', icon: MessageSquare },
+      { name: 'Customization', href: '/dashboard/customization', icon: Settings, perm: 'manage_settings' },
       { name: 'Settings', href: '/dashboard/settings', icon: Settings, perm: 'manage_settings' },
     ]}
   ];

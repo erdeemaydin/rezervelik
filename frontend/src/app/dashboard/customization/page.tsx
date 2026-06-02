@@ -237,6 +237,54 @@ export default function CustomizationPage() {
                                     className="w-full h-32 rounded-md shadow-inner flex flex-col items-center justify-center border-2 border-dashed border-slate-300"
                                     style={{ backgroundColor: `${customization.primaryColor}20`, borderColor: customization.primaryColor }}
                                 >
+                                    <div className="font-black uppercase tracking-widest text-xs" style={{ color: customization.primaryColor }}>{customization.layoutStyle.replace('_', ' ')}</div>
+                                    <div className="text-[10px] font-bold mt-1 text-slate-600">{customization.colorPalette} PALETTE / {customization.typography}</div>
+                                    <div className="mt-2 w-1/2 h-1 rounded-full opacity-50" style={{ backgroundColor: customization.primaryColor }}></div>
+                                </div>
+                            </CardContent>
+                        </Card>
+                    </div>
+                </div>
+            </div>
+        </AdminLayout>
+    );
+}
+                <CardTitle className="text-sm font-black uppercase tracking-tight">Legal / Terms</CardTitle>
+                                            <CardDescription className="text-[10px]">Terms of service or privacy policy</CardDescription>
+                                        </div>
+                                        <Switch checked={customization.showLegal} onCheckedChange={(c) => setCustomization({...customization, showLegal: c})} />
+                                    </CardHeader>
+                                    {customization.showLegal && (
+                                        <CardContent className="p-6">
+                                            <Textarea 
+                                                placeholder="Write your legal terms here..." 
+                                                value={customization.legalText} 
+                                                onChange={(e) => setCustomization({...customization, legalText: e.target.value})}
+                                                className="min-h-[150px] text-sm" 
+                                            />
+                                        </CardContent>
+                                    )}
+                                </Card>
+                            </TabsContent>
+                        </Tabs>
+                    </div>
+
+                    {/* Preview / Instructions */}
+                    <div className="lg:col-span-1">
+                        <Card className="rounded-sm border-slate-200 shadow-sm bg-slate-50 sticky top-6">
+                            <CardHeader className="p-6 border-b border-slate-200">
+                                <CardTitle className="text-sm font-black uppercase tracking-tight flex items-center gap-2">
+                                    <Smartphone className="w-4 h-4" /> Live Preview
+                                </CardTitle>
+                            </CardHeader>
+                            <CardContent className="p-6">
+                                <div className="text-xs text-slate-500 mb-6 leading-relaxed">
+                                    Changes made here will immediately affect your public reservation page.
+                                </div>
+                                <div 
+                                    className="w-full h-32 rounded-md shadow-inner flex flex-col items-center justify-center border-2 border-dashed border-slate-300"
+                                    style={{ backgroundColor: `${customization.primaryColor}20`, borderColor: customization.primaryColor }}
+                                >
                                     <div className="font-black uppercase tracking-widest text-xs" style={{ color: customization.primaryColor }}>{customization.theme} THEME</div>
                                     <div className="mt-2 w-1/2 h-1 rounded-full opacity-50" style={{ backgroundColor: customization.primaryColor }}></div>
                                 </div>

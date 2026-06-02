@@ -25,7 +25,9 @@ export const updateCustomization = async (req: Request, res: Response) => {
   try {
     const restaurantId = req.restaurantId!;
     const { 
-      theme, 
+      layoutStyle,
+      typography,
+      colorPalette,
       primaryColor, 
       announcementText, 
       showAboutUs, 
@@ -38,7 +40,9 @@ export const updateCustomization = async (req: Request, res: Response) => {
     const customization = await prisma.frontendCustomization.upsert({
       where: { restaurantId },
       update: {
-        theme,
+        layoutStyle,
+        typography,
+        colorPalette,
         primaryColor,
         announcementText,
         showAboutUs,
@@ -49,7 +53,9 @@ export const updateCustomization = async (req: Request, res: Response) => {
       },
       create: {
         restaurantId,
-        theme,
+        layoutStyle,
+        typography,
+        colorPalette,
         primaryColor,
         announcementText,
         showAboutUs,

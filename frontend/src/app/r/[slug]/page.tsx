@@ -184,20 +184,50 @@ export default function RestaurantPublicPage() {
   const times = getTimeSuggestions();
 
   const customization = restaurant?.customization || {
-      theme: 'CLASSIC',
+      layoutStyle: 'CLASSIC_LIST',
+      typography: 'SANS',
+      colorPalette: 'OBSIDIAN',
       primaryColor: '#0f172a',
       announcementText: null,
       showAboutUs: false,
       showLegal: false,
   };
 
-  const primaryColor = customization.primaryColor;
-  const isModern = customization.theme === 'MODERN';
+  // Map Typography
+  const getFontClass = (type: string) => {
+      switch(type) {
+          case 'SERIF': return 'font-serif tracking-tight';
+          case 'MONO': return 'font-mono uppercase tracking-widest';
+          case 'SANS':
+          default: return 'font-sans';
+      }
+  };
+  const fontClass = getFontClass(customization.typography);
+
+  // Map Palette
+  const getPalette = (preset: string) => {
+      switch(preset) {
+          case 'EARTH': return { bg: '#fdfbf7', text: '#292524', primary: '#5c4033', accent: '#d6d3d1' };
+          case 'CRIMSON': return { bg: '#fffbfb', text: '#450a0a', primary: '#7f1d1d', accent: '#fecaca' };
+          case 'OBSIDIAN':
+          default: return { bg: '#ffffff', text: '#0f172a', primary: '#0f172a', accent: '#e2e8f0' };
+      }
+  };
+  const palette = getPalette(customization.colorPalette);
+  
+  // Override with custom hex if provided
+  const primaryColor = customization.primaryColor !== '#0f172a' ? customization.primaryColor : palette.primary;
+  const isEditorial = customization.layoutStyle === 'EDITORIAL_IMAGE';
 
   return (
     <div 
-        className={cn("min-h-screen bg-white font-sans text-slate-900 selection:bg-[var(--primary)] selection:text-white", isModern ? "font-sans" : "font-serif")}
-        style={{ '--primary': primaryColor, '--primary-hover': primaryColor + 'cc' } as React.CSSProperties}
+        className={cn("min-h-screen selection:bg-[var(--primary)] selection:text-white transition-colors duration-500", fontClass)}
+        style={{ 
+            '--primary': primaryColor, 
+            '--primary-hover': primaryColor + 'cc',
+            backgroundColor: palette.bg,
+            color: palette.text
+        } as React.CSSProperties}
     >
       {customization.announcementText && (
           <div className="w-full bg-[var(--primary)] text-white text-xs font-bold text-center py-2 px-4 shadow-md sticky top-0 z-50">

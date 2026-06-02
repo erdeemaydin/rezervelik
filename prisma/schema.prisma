@@ -45,9 +45,12 @@ model FrontendCustomization {
   id               String     @id @default(uuid())
   restaurantId     String     @unique
   
-  // Theming
-  theme            String     @default("CLASSIC") // CLASSIC, MODERN
-  primaryColor     String     @default("#0f172a") // Tailwind slate-900
+  // New Theming Architecture
+  layoutStyle      String     @default("CLASSIC_LIST") // CLASSIC_LIST, EDITORIAL_IMAGE
+  typography       String     @default("SANS")         // SANS, SERIF, MONO
+  colorPalette     String     @default("OBSIDIAN")     // OBSIDIAN, PEARL, EARTH
+  
+  primaryColor     String     @default("#0f172a")      // Keep for backwards compat or custom overrides
   
   // Features
   announcementText String?
