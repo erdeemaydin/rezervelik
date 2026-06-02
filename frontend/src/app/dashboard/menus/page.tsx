@@ -64,6 +64,7 @@ export default function MenuManagementPage() {
   const [isMenuDialogOpen, setIsMenuDialogOpen] = useState(false);
   const [isCategoryDialogOpen, setIsCategoryDialogOpen] = useState(false);
   const [isItemDialogOpen, setIsItemDialogOpen] = useState(false);
+  const [isBulkPriceDialogOpen, setIsBulkPriceDialogOpen] = useState(false);
   
   const [isEditMode, setIsEditMode] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
@@ -75,6 +76,40 @@ export default function MenuManagementPage() {
       categoryId: '', name: '', description: '', price: '', 
       imageUrl: '', dietaryTags: '', allergens: '', spiceLevel: '0' 
   });
+  
+  // Bulk Pricing Form
+  const [bulkPriceForm, setBulkPriceForm] = useState({
+      updateType: 'PERCENTAGE', // PERCENTAGE or FIXED_AMOUNT
+      value: '',
+      isIncrease: true,
+      scheduleUpdate: false,
+      scheduledFor: ''
+  });
+
+  const handleBulkPriceSubmit = async (e: React.FormEvent) => {
+      e.preventDefault();
+      if (!bulkPriceForm.value) return toast.error('Value is required');
+
+      try {
+          const payload: any = {
+              updateType: bulkPriceForm.updateType,
+              value: parseFloat(bulkPriceForm.value),
+              isIncrease: bulkPriceForm.isIncrease
+          };
+
+          if (bulkPriceForm.scheduleUpdate && bulkPriceForm.scheduledFor) {
+              payload.scheduledFor = new Date(bulkPriceForm.scheduledFor).toISOString();
+          }
+
+          await api.post('/menus/prices/bulk', payload);
+          toast.success(bulkPriceForm.scheduleUpdate ? 'Price update scheduled' : 'Prices updated immediately');
+          setIsBulkPriceDialogOpen(false);
+          setBulkPriceForm({ updateType: 'PERCENTAGE', value: '', isIncrease: true, scheduleUpdate: false, scheduledFor: '' });
+          if (!bulkPriceForm.scheduleUpdate) fetchMenus();
+      } catch (err) {
+          toast.error('Failed to apply bulk price update');
+      }
+  };
 
   const fetchMenus = useCallback(async () => {
     try {
@@ -553,6 +588,68 @@ export default function MenuManagementPage() {
                     <div className="p-4 bg-slate-50 border-t border-slate-100 flex justify-end gap-2">
                         <Button type="button" variant="ghost" onClick={() => setIsItemDialogOpen(false)} className="h-9 text-xs font-bold text-slate-400 uppercase">Cancel</Button>
                         <Button type="submit" className="h-9 bg-blue-600 hover:bg-blue-700 text-xs font-black uppercase px-8 rounded-sm">Save Dish Details</Button>
+                    </div>
+                </form>
+            </DialogContent>
+        </Dialog>
+        {/* Bulk Price Update Dialog */}
+        <Dialog open={isBulkPriceDialogOpen} onOpenChange={setIsBulkPriceDialogOpen}>
+            <DialogContent maxWidth="sm:max-w-md" className="p-0 rounded-md border-0 shadow-2xl">
+                <form onSubmit={handleBulkPriceSubmit}>
+                    <div className="bg-slate-900 p-4 text-white">
+                        <DialogHeader><DialogTitle className="text-sm font-bold uppercase tracking-widest">Bulk Price Update</DialogTitle></DialogHeader>
+                    </div>
+                    <div className="p-6 space-y-6 bg-white">
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-1.5">
+                                <Label className="text-[10px] font-black uppercase text-slate-400 ml-1">Type</Label>
+                                <Select value={bulkPriceForm.updateType} onValueChange={v => setBulkPriceForm({...bulkPriceForm, updateType: v})}>
+                                    <SelectTrigger className="h-10 text-xs font-bold border-slate-200 rounded-sm">
+                                        <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="PERCENTAGE" className="text-xs">Percentage (%)</SelectItem>
+                                        <SelectItem value="FIXED_AMOUNT" className="text-xs">Fixed Amount</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                            <div className="space-y-1.5">
+                                <Label className="text-[10px] font-black uppercase text-slate-400 ml-1">Direction</Label>
+                                <Select value={bulkPriceForm.isIncrease ? 'true' : 'false'} onValueChange={v => setBulkPriceForm({...bulkPriceForm, isIncrease: v === 'true'})}>
+                                    <SelectTrigger className="h-10 text-xs font-bold border-slate-200 rounded-sm">
+                                        <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="true" className="text-xs">Increase (+)</SelectItem>
+                                        <SelectItem value="false" className="text-xs">Decrease (-)</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                        </div>
+
+                        <div className="space-y-1.5">
+                            <Label className="text-[10px] font-black uppercase text-slate-400 ml-1">Value ({bulkPriceForm.updateType === 'PERCENTAGE' ? '%' : 'TRY'})</Label>
+                            <Input required type="number" step="0.01" value={bulkPriceForm.value} onChange={e => setBulkPriceForm({...bulkPriceForm, value: e.target.value})} className="h-10 text-sm font-bold border-slate-200 rounded-sm font-mono" />
+                        </div>
+
+                        <div className="pt-4 border-t border-slate-100 space-y-4">
+                            <div className="flex items-center justify-between">
+                                <Label className="text-xs font-bold text-slate-700">Schedule for Later?</Label>
+                                <Checkbox checked={bulkPriceForm.scheduleUpdate} onCheckedChange={c => setBulkPriceForm({...bulkPriceForm, scheduleUpdate: !!c})} />
+                            </div>
+                            {bulkPriceForm.scheduleUpdate && (
+                                <div className="space-y-1.5">
+                                    <Label className="text-[10px] font-black uppercase text-slate-400 ml-1">Date & Time</Label>
+                                    <Input required type="datetime-local" value={bulkPriceForm.scheduledFor} onChange={e => setBulkPriceForm({...bulkPriceForm, scheduledFor: e.target.value})} className="h-10 text-xs font-medium border-slate-200 rounded-sm" />
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                    <div className="p-4 bg-slate-50 border-t border-slate-100 flex justify-end gap-2">
+                        <Button type="button" variant="ghost" onClick={() => setIsBulkPriceDialogOpen(false)} className="h-9 text-xs font-bold text-slate-400 uppercase">Cancel</Button>
+                        <Button type="submit" className="h-9 bg-blue-600 hover:bg-blue-700 text-white text-xs font-black uppercase px-6 rounded-sm">
+                            {bulkPriceForm.scheduleUpdate ? 'Schedule Update' : 'Apply Now'}
+                        </Button>
                     </div>
                 </form>
             </DialogContent>

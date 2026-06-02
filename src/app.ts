@@ -19,6 +19,7 @@ import staffRoutes from './routes/staffRoutes';
 import schedulingRoutes from './routes/schedulingRoutes';
 import waitTimeRoutes from './routes/waitTimeRoutes';
 import floorElementRoutes from './routes/floorElementRoutes';
+import customizationRoutes from './routes/customizationRoutes';
 
 const app = express();
 
@@ -55,5 +56,6 @@ app.use('/api/menus', tenantMiddleware, menuRoutes);
 app.use('/api/staff', tenantMiddleware, staffRoutes);
 app.use('/api/scheduling', tenantMiddleware, schedulingRoutes);
 app.use('/api/wait-time', tenantMiddleware, waitTimeRoutes);
+app.use('/api/customization', tenantMiddleware, customizationRoutes);
 
 export default app;

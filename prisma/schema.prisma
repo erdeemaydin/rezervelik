@@ -37,6 +37,45 @@ model Restaurant {
   waitTimeConfig     WaitTimeConfig?
   waitlistEntries    WaitlistEntry[]
   floorElements      FloorElement[]
+  customization      FrontendCustomization?
+  scheduledPriceUpdates ScheduledPriceUpdate[]
+}
+
+model FrontendCustomization {
+  id               String     @id @default(uuid())
+  restaurantId     String     @unique
+  
+  // Theming
+  theme            String     @default("CLASSIC") // CLASSIC, MODERN
+  primaryColor     String     @default("#0f172a") // Tailwind slate-900
+  
+  // Features
+  announcementText String?
+  showAboutUs      Boolean    @default(false)
+  aboutUsText      String?
+  showLegal        Boolean    @default(false)
+  legalText        String?
+  socialLinks      String?    // JSON string
+  
+  updatedAt        DateTime   @updatedAt
+  restaurant       Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+}
+
+model ScheduledPriceUpdate {
+  id           String     @id @default(uuid())
+  restaurantId String
+  updateType   String     // PERCENTAGE, FIXED_AMOUNT
+  value        Float
+  isIncrease   Boolean    @default(true)
+  status       String     @default("PENDING") // PENDING, APPLIED, FAILED
+  scheduledFor DateTime
+  appliedAt    DateTime?
+  
+  createdAt    DateTime   @default(now())
+  restaurant   Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  
+  @@index([status, scheduledFor])
+  @@index([restaurantId])
 }
 
 model RestaurantSettings {
