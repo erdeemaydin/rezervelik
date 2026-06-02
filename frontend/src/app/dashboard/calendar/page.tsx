@@ -8,7 +8,9 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Calendar as CalendarIcon, Save, Trash2, ChevronLeft, ChevronRight, Star, Settings2, Info, AlertCircle, Check, MousePointer2, Layers, ToggleLeft, ToggleRight, Timer } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Calendar as CalendarIcon, Save, Trash2, ChevronLeft, ChevronRight, Star, Settings2, Info, AlertCircle, Check, MousePointer2, Layers, ToggleLeft, ToggleRight, Timer, CalendarClock } from 'lucide-react';
 import api from '@/lib/api';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
@@ -30,6 +32,10 @@ export default function CalendarSettingsPage() {
   // Selection Logic
   const [isBulkMode, setIsBulkMode] = useState(false);
   const [selectedDays, setSelectedDays] = useState<Set<string>>(new Set());
+
+  // Future Reset Logic
+  const [futureModeAction, setFutureModeAction] = useState<string | null>(null);
+  const [isFutureDialogOpen, setIsFutureDialogOpen] = useState(false);
 
   const [form, setForm] = useState({
     eventTitle: '',
@@ -57,6 +63,10 @@ export default function CalendarSettingsPage() {
     }
   };
 
+  const formatLocalDate = (d: Date) => {
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  };
+
   const handleDayClick = (dateStr: string) => {
     if (isBulkMode) {
       const newSelected = new Set(selectedDays);
@@ -67,12 +77,10 @@ export default function CalendarSettingsPage() {
       }
       setSelectedDays(newSelected);
       
-      // If first selection in bulk mode, grab its data
       if (newSelected.size === 1) {
           populateForm(dateStr);
       }
     } else {
-      // Single selection mode
       setSelectedDays(new Set([dateStr]));
       populateForm(dateStr);
     }
@@ -102,8 +110,52 @@ export default function CalendarSettingsPage() {
     }
   };
 
-  const formatLocalDate = (year: number, month: number, day: number) => {
-    return `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+  const handleFutureApply = async (overwriteAll: boolean) => {
+    if (!futureModeAction) return;
+    setIsFutureDialogOpen(false);
+    const modeToastId = toast.loading('Applying settings to future days...');
+
+    const isReservationEnabled = futureModeAction !== 'BLACKOUT';
+    const autoConfirm = futureModeAction === 'AUTO_CONFIRM';
+
+    const today = new Date();
+    today.setHours(0,0,0,0);
+    const datesToUpdate = [];
+
+    // Generate next 365 days
+    for (let i = 0; i < 365; i++) {
+        const d = new Date(today);
+        d.setDate(d.getDate() + i);
+        const dateStr = formatLocalDate(d);
+
+        if (!overwriteAll && daySettings[dateStr]) {
+            continue; // Skip if it has manual settings already
+        }
+        datesToUpdate.push(dateStr);
+    }
+
+    if (datesToUpdate.length === 0) {
+        toast.dismiss(modeToastId);
+        toast.info('No new days to update.');
+        setFutureModeAction(null);
+        return;
+    }
+
+    try {
+        await api.post('/day-settings/bulk', {
+            dates: datesToUpdate,
+            eventTitle: '', // clear event title on bulk future overwrite
+            isReservationEnabled,
+            autoConfirm
+        });
+        toast.dismiss(modeToastId);
+        toast.success(`Successfully applied mode to ${datesToUpdate.length} future days.`);
+        fetchDaySettings();
+    } catch (err) {
+        toast.dismiss(modeToastId);
+        toast.error('Failed to apply future settings');
+    }
+    setFutureModeAction(null);
   };
 
   const renderCalendar = () => {
@@ -117,12 +169,12 @@ export default function CalendarSettingsPage() {
     for (let i = 0; i < padding; i++) days.push(<div key={`pad-${i}`} className="h-32 bg-slate-50/20 border border-slate-100/30" />);
 
     for (let d = 1; d <= totalDays; d++) {
-      const dateStr = formatLocalDate(year, month, d);
+      const dateStr = formatLocalDate(new Date(year, month, d));
       const setting = daySettings[dateStr];
       const isSelected = selectedDays.has(dateStr);
-      const isToday = new Date().toISOString().split('T')[0] === dateStr;
+      const isToday = formatLocalDate(new Date()) === dateStr;
 
-      let bgColor = "bg-amber-200 hover:bg-amber-300"; // Unified Yellow for Standard
+      let bgColor = "bg-amber-200 hover:bg-amber-300"; 
       if (setting) {
           if (!setting.isReservationEnabled) {
               bgColor = "bg-red-100 hover:bg-red-200";
@@ -177,43 +229,57 @@ export default function CalendarSettingsPage() {
   return (
     <AdminLayout>
       <div className="flex flex-col gap-6">
-        <div className="flex flex-col md:flex-row justify-between md:items-center gap-4">
+        <div className="flex flex-col md:flex-row justify-between md:items-start gap-4">
           <div>
             <h1 className="text-2xl font-black text-slate-800 uppercase tracking-tight">Calendar Master</h1>
             <p className="text-[10px] text-slate-400 font-black uppercase tracking-[0.2em] mt-1 italic">Operations Orchestrator</p>
           </div>
           
-          <div className="flex items-center gap-6">
-            {/* Mode Toggle */}
-            <div className="flex items-center gap-2 bg-slate-100 p-1 rounded-md border border-slate-200">
-                <Button 
-                    variant={!isBulkMode ? "default" : "ghost"} 
-                    size="sm" 
-                    onClick={() => { setIsBulkMode(false); setSelectedDays(new Set()); }}
-                    className={cn("h-8 text-[9px] font-black uppercase px-4 rounded-sm", !isBulkMode ? "bg-white text-slate-900 shadow-sm" : "text-slate-500")}
-                >
-                    Single Edit
-                </Button>
-                <Button 
-                    variant={isBulkMode ? "default" : "ghost"} 
-                    size="sm" 
-                    onClick={() => { setIsBulkMode(true); setSelectedDays(new Set()); }}
-                    className={cn("h-8 text-[9px] font-black uppercase px-4 rounded-sm", isBulkMode ? "bg-blue-600 text-white shadow-sm" : "text-slate-500")}
-                >
-                    <Layers className="w-3 h-3 mr-1.5" /> Bulk Mode
-                </Button>
+          <div className="flex flex-col items-end gap-2">
+            <div className="flex items-center gap-4">
+                <Select value={futureModeAction || ''} onValueChange={(v) => { setFutureModeAction(v); setIsFutureDialogOpen(true); }}>
+                    <SelectTrigger className="h-10 w-[240px] text-xs font-black uppercase border-slate-200 shadow-sm bg-white">
+                        <CalendarClock className="w-4 h-4 mr-2 text-blue-600" />
+                        <SelectValue placeholder="Set Future Default Mode" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="AUTO_CONFIRM" className="text-xs font-bold"><div className="flex items-center text-emerald-700"><Check className="w-3 h-3 mr-2" /> Auto-Confirm</div></SelectItem>
+                        <SelectItem value="STANDARD" className="text-xs font-bold"><div className="flex items-center text-amber-700"><Timer className="w-3 h-3 mr-2" /> Standard (Manual)</div></SelectItem>
+                        <SelectItem value="BLACKOUT" className="text-xs font-bold"><div className="flex items-center text-red-700"><AlertCircle className="w-3 h-3 mr-2" /> Blackout</div></SelectItem>
+                    </SelectContent>
+                </Select>
             </div>
+            <div className="flex items-center gap-6 mt-2">
+                <div className="flex items-center gap-2 bg-slate-100 p-1 rounded-md border border-slate-200">
+                    <Button 
+                        variant={!isBulkMode ? "default" : "ghost"} 
+                        size="sm" 
+                        onClick={() => { setIsBulkMode(false); setSelectedDays(new Set()); }}
+                        className={cn("h-8 text-[9px] font-black uppercase px-4 rounded-sm", !isBulkMode ? "bg-white text-slate-900 shadow-sm" : "text-slate-500")}
+                    >
+                        Single Edit
+                    </Button>
+                    <Button 
+                        variant={isBulkMode ? "default" : "ghost"} 
+                        size="sm" 
+                        onClick={() => { setIsBulkMode(true); setSelectedDays(new Set()); }}
+                        className={cn("h-8 text-[9px] font-black uppercase px-4 rounded-sm", isBulkMode ? "bg-blue-600 text-white shadow-sm" : "text-slate-500")}
+                    >
+                        <Layers className="w-3 h-3 mr-1.5" /> Bulk Mode
+                    </Button>
+                </div>
 
-            <div className="flex items-center gap-4 bg-white p-1 rounded-md shadow-sm border border-slate-200">
-                <Button variant="ghost" size="icon" className="h-8 w-8 rounded-sm hover:bg-slate-100" onClick={() => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1))}>
-                    <ChevronLeft className="h-4 h-4" />
-                </Button>
-                <span className="font-black text-sm min-w-[150px] text-center uppercase tracking-widest text-slate-800">
-                    {currentMonth.toLocaleDateString([], { month: 'long', year: 'numeric' })}
-                </span>
-                <Button variant="ghost" size="icon" className="h-8 w-8 rounded-sm hover:bg-slate-100" onClick={() => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1))}>
-                    <ChevronRight className="h-4 h-4" />
-                </Button>
+                <div className="flex items-center gap-4 bg-white p-1 rounded-md shadow-sm border border-slate-200">
+                    <Button variant="ghost" size="icon" className="h-8 w-8 rounded-sm hover:bg-slate-100" onClick={() => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1))}>
+                        <ChevronLeft className="h-4 h-4" />
+                    </Button>
+                    <span className="font-black text-sm min-w-[150px] text-center uppercase tracking-widest text-slate-800">
+                        {currentMonth.toLocaleDateString([], { month: 'long', year: 'numeric' })}
+                    </span>
+                    <Button variant="ghost" size="icon" className="h-8 w-8 rounded-sm hover:bg-slate-100" onClick={() => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1))}>
+                        <ChevronRight className="h-4 h-4" />
+                    </Button>
+                </div>
             </div>
           </div>
         </div>
