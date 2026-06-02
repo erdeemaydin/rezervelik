@@ -43,6 +43,7 @@ export const register = async (req: Request, res: Response) => {
           firstName,
           lastName,
           role: 'ADMIN',
+          permissions: 'manage_reservations,manage_tables,manage_menu,manage_calendar,manage_staff,manage_settings',
           restaurantId: restaurant.id
         }
       });
