@@ -395,6 +395,9 @@ export default function MenuManagementPage() {
             <p className="text-[10px] text-slate-400 font-black uppercase tracking-[0.2em] mt-1 italic">Digital Catalogue & Pricing</p>
           </div>
           <div className="flex gap-2">
+            <Button size="sm" variant="outline" onClick={() => setIsBulkPriceDialogOpen(true)} className="h-9 px-4 text-[10px] font-black uppercase border-blue-200 text-blue-700 shadow-sm bg-blue-50 hover:bg-blue-100">
+                <Edit2 className="w-3.5 h-3.5 mr-1.5" /> Bulk Price Update
+            </Button>
             <Button size="sm" variant="outline" onClick={() => { setIsEditMode(false); setMenuForm({name:'', isActive:true}); setIsMenuDialogOpen(true); }} className="h-9 px-4 text-[10px] font-black uppercase border-slate-200 text-slate-600 shadow-sm bg-white">
                 <Plus className="w-3.5 h-3.5 mr-1.5" /> Create Menu
             </Button>
