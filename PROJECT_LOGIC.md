@@ -46,3 +46,16 @@ The system supports three distinct operational modes, configurable per restauran
 
 ## 7. UI/UX Rules & Guidelines
 - **Dropdown/Select Menus:** Never display raw database IDs (UUIDs) to the user in any dropdown or select menu on the admin panels. Always ensure the `<SelectValue>` or equivalent component maps the selected `id` to its corresponding `name` or `identifier` (e.g., displaying the Category Name instead of Category ID, or Table Identifier instead of Table ID).
+
+## 8. Frontend Customization CMS
+- A `FrontendCustomization` model allows tenant admins to tailor the public-facing booking and menu page (`/r/[slug]`).
+- Configurable elements include:
+  - **Theme:** Selection between predefined templates (e.g., CLASSIC, MODERN).
+  - **Primary Color:** Custom hex code for branding matching.
+  - **Announcement Banner:** Temporary text for promotions or important notices.
+  - **Static Pages:** Configurable "About Us" and "Legal" text sections.
+
+## 9. Scheduled Bulk Menu Pricing
+- Tenant admins can easily update all menu prices at once using the `ScheduledPriceUpdate` model.
+- Prices can be adjusted by a percentage or a fixed amount (increase or decrease).
+- Updates can be applied immediately or scheduled for a specific date/time in the future, seamlessly executed by a background worker task.

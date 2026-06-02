@@ -71,12 +71,15 @@
 *   **`GET /api/settings`** - Retrieves tenant-level settings (Deposit amounts, reservation logic).
 *   **`PUT /api/settings`** - Updates tenant-level settings.
 *   **`GET /api/day-settings`** - Manages exceptional days (e.g., New Year's Eve capacity overrides).
+*   **`GET /api/customization`** - Retrieves the frontend page customization settings (theme, color, text).
+*   **`PUT /api/customization`** - Updates the frontend page customization settings.
 
 ### Digital Menu Management
 *   **`GET /api/menus`** - Lists all menus.
 *   **`POST /api/menus`** - Creates a new menu.
 *   **`GET /api/menus/:id/categories`** - Gets menu categories.
 *   **`POST /api/menus/:id/categories/:categoryId/items`** - Adds items to a menu category.
+*   **`POST /api/menus/prices/bulk`** - Schedules or immediately executes a bulk menu price update (percentage or fixed).
 
 ### Staff & Scheduling
 *   **`GET /api/staff`** - Lists staff members.

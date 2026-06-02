@@ -42,3 +42,12 @@
 - [ ] Implement SMS Gateway wrapper
 - [ ] Implement iyzico/PayTR payment integration for deposits
 - [ ] Real AI Menu implementation
+
+## Phase 4: Customization & Bulk Operations (Completed)
+- [x] **Frontend Customization CMS**
+  - [x] Add `FrontendCustomization` model for Theme, Primary Color, Announcements, and Static Text
+  - [x] Integrate `/api/customization` endpoints
+- [x] **Scheduled Bulk Menu Pricing**
+  - [x] Add `ScheduledPriceUpdate` model for bulk price changes
+  - [x] Create worker logic for scheduled execution
+  - [x] Implement `/api/menus/prices/bulk` endpoint
