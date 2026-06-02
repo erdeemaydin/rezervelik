@@ -10,8 +10,9 @@ import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import api from '@/lib/api';
 import { toast } from 'sonner';
-import { Save, Calendar, Clock, CreditCard, ArrowLeft } from 'lucide-react';
+import { Save, Calendar, Clock, CreditCard, ArrowLeft, CalendarClock, AlertCircle, Check, Timer } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
 interface RestaurantSettings {
     isReservationEnabled: boolean;
@@ -81,6 +82,65 @@ export default function SettingsPage() {
         } finally {
             setLoading(false);
         }
+    };
+
+    const [futureModeAction, setFutureModeAction] = useState<string | null>(null);
+    const [isFutureDialogOpen, setIsFutureDialogOpen] = useState(false);
+
+    const handleFutureApply = async (overwriteAll: boolean) => {
+        if (!futureModeAction) return;
+        setIsFutureDialogOpen(false);
+        const modeToastId = toast.loading('Applying settings to future days...');
+
+        const isReservationEnabled = futureModeAction !== 'BLACKOUT';
+        const autoConfirm = futureModeAction === 'AUTO_CONFIRM';
+
+        try {
+            let existingMap: Record<string, boolean> = {};
+            if (!overwriteAll) {
+                const res = await api.get('/day-settings');
+                res.data.data.forEach((s: any) => {
+                    existingMap[s.date] = true;
+                });
+            }
+
+            const today = new Date();
+            today.setHours(0,0,0,0);
+            const datesToUpdate = [];
+
+            const formatLocalDate = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+
+            for (let i = 0; i < 365; i++) {
+                const d = new Date(today);
+                d.setDate(d.getDate() + i);
+                const dateStr = formatLocalDate(d);
+
+                if (!overwriteAll && existingMap[dateStr]) {
+                    continue;
+                }
+                datesToUpdate.push(dateStr);
+            }
+
+            if (datesToUpdate.length === 0) {
+                toast.dismiss(modeToastId);
+                toast.info('No new days to update.');
+                setFutureModeAction(null);
+                return;
+            }
+
+            await api.post('/day-settings/bulk', {
+                dates: datesToUpdate,
+                eventTitle: '',
+                isReservationEnabled,
+                autoConfirm
+            });
+            toast.dismiss(modeToastId);
+            toast.success(`Successfully applied mode to ${datesToUpdate.length} future days.`);
+        } catch (err) {
+            toast.dismiss(modeToastId);
+            toast.error('Failed to apply future settings');
+        }
+        setFutureModeAction(null);
     };
 
     if (fetching) {
@@ -193,8 +253,35 @@ export default function SettingsPage() {
                                     <SelectContent>
                                         <SelectItem value="DYNAMIC_DURATION" className="text-xs">Dynamic Duration</SelectItem>
                                         <SelectItem value="FIXED_SLOTS" className="text-xs">Fixed Time Slots</SelectItem>
+                                        </SelectContent>
+                                </Select>
+                            </div>
+                        </CardContent>
+                    </Card>
+
+                    {/* Calendar Master Customization */}
+                    <Card className="rounded-md border-slate-300 shadow-sm overflow-hidden bg-white md:col-span-2">
+                        <CardHeader className="p-4 bg-slate-50 border-b border-slate-100 flex flex-row items-center gap-3">
+                            <div className="p-2 bg-indigo-100 rounded-sm text-indigo-600"><CalendarClock className="w-4 h-4" /></div>
+                            <div>
+                                <CardTitle className="text-sm font-black uppercase tracking-tight">Calendar Customization</CardTitle>
+                                <CardDescription className="text-[10px]">Manage global calendar behavior and bulk operations</CardDescription>
+                            </div>
+                        </CardHeader>
+                        <CardContent className="p-6 space-y-4">
+                            <div className="grid gap-1.5">
+                                <Label className="text-[10px] font-black uppercase text-slate-400">Set Future Default Mode</Label>
+                                <Select value={futureModeAction || ''} onValueChange={(v) => { setFutureModeAction(v); setIsFutureDialogOpen(true); }}>
+                                    <SelectTrigger className="h-9 text-xs font-bold rounded-sm border-slate-200 w-full sm:w-1/2">
+                                        <SelectValue placeholder="Select bulk action..." />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="AUTO_CONFIRM" className="text-xs font-bold"><div className="flex items-center text-emerald-700"><Check className="w-3 h-3 mr-2" /> Auto-Confirm (Skip Review)</div></SelectItem>
+                                        <SelectItem value="STANDARD" className="text-xs font-bold"><div className="flex items-center text-amber-700"><Timer className="w-3 h-3 mr-2" /> Standard (Manual Review)</div></SelectItem>
+                                        <SelectItem value="BLACKOUT" className="text-xs font-bold"><div className="flex items-center text-red-700"><AlertCircle className="w-3 h-3 mr-2" /> Blackout (Close Bookings)</div></SelectItem>
                                     </SelectContent>
                                 </Select>
+                                <p className="text-[10px] text-slate-500 leading-relaxed mt-1">This action allows you to mass-apply an operational mode to the next 365 days in your Calendar Master.</p>
                             </div>
                         </CardContent>
                     </Card>
@@ -241,6 +328,47 @@ export default function SettingsPage() {
                     </Card>
                 </div>
             </div>
+
+            <Dialog open={isFutureDialogOpen} onOpenChange={(open) => { if (!open) setFutureModeAction(null); setIsFutureDialogOpen(open); }}>
+                <DialogContent className="sm:max-w-md bg-white border-0 shadow-2xl p-0 rounded-md overflow-hidden">
+                    <div className="bg-amber-500 p-6">
+                        <DialogHeader>
+                            <DialogTitle className="text-white text-xl font-black uppercase tracking-tight flex items-center gap-2">
+                                <AlertCircle className="w-6 h-6" /> Future Override Warning
+                            </DialogTitle>
+                        </DialogHeader>
+                    </div>
+                    <div className="p-6 space-y-4">
+                        <DialogDescription className="text-slate-700 font-medium leading-relaxed">
+                            You are about to change the default operational mode to <span className="font-black">
+                                {futureModeAction === 'AUTO_CONFIRM' ? 'Auto-Confirm' : futureModeAction === 'BLACKOUT' ? 'Blackout' : 'Standard'}
+                            </span> for the next 365 days. How would you like to apply this?
+                        </DialogDescription>
+                    </div>
+                    <div className="p-4 bg-slate-50 flex flex-col gap-2 border-t border-slate-100">
+                        <Button 
+                            onClick={() => handleFutureApply(true)} 
+                            className="w-full h-12 bg-red-600 hover:bg-red-700 text-white font-black uppercase"
+                        >
+                            1. Overwrite ALL Future Days
+                        </Button>
+                        <Button 
+                            onClick={() => handleFutureApply(false)} 
+                            variant="outline"
+                            className="w-full h-12 border-blue-200 text-blue-700 hover:bg-blue-50 font-black uppercase"
+                        >
+                            2. Overwrite Only Unmodified Days
+                        </Button>
+                        <Button 
+                            onClick={() => { setIsFutureDialogOpen(false); setFutureModeAction(null); }} 
+                            variant="ghost"
+                            className="w-full h-10 text-slate-400 hover:text-slate-600 font-bold uppercase"
+                        >
+                            3. Cancel Action
+                        </Button>
+                    </div>
+                </DialogContent>
+            </Dialog>
         </AdminLayout>
     );
 }

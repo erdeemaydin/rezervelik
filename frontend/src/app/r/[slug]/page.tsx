@@ -12,6 +12,7 @@ import { Utensils, Calendar as CalendarIcon, Clock, Users, ChevronRight, Star, A
 import axios from 'axios';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from '@/components/ui/dialog';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || (typeof window !== 'undefined' ? `${window.location.protocol}//${window.location.hostname}:3000/api` : 'http://localhost:3000/api');
 
@@ -35,7 +36,9 @@ export default function RestaurantPublicPage() {
     notes: ''
   });
 
-  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
+  const getLocalYYYYMMDD = (d: Date) => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+
+  const [selectedDate, setSelectedDate] = useState(getLocalYYYYMMDD(new Date()));
   const [selectedTime, setSelectedTime] = useState('19:30');
   const dateInputRef = useRef<HTMLInputElement>(null);
 
@@ -74,7 +77,7 @@ export default function RestaurantPublicPage() {
 
   const handleBooking = async (e: React.FormEvent) => {
     e.preventDefault();
-    const combinedDateTime = new Date(`${selectedDate}T${selectedTime}`);
+    const combinedDateTime = new Date(`${selectedDate}T${selectedTime}:00+03:00`);
     
     if (combinedDateTime < new Date()) {
       toast.error('Cannot create reservations for the past');
@@ -180,9 +183,28 @@ export default function RestaurantPublicPage() {
 
   const times = getTimeSuggestions();
 
+  const customization = restaurant?.customization || {
+      theme: 'CLASSIC',
+      primaryColor: '#0f172a',
+      announcementText: null,
+      showAboutUs: false,
+      showLegal: false,
+  };
+
+  const primaryColor = customization.primaryColor;
+  const isModern = customization.theme === 'MODERN';
+
   return (
-    <div className="min-h-screen bg-white font-sans text-slate-900 selection:bg-slate-900 selection:text-white">
-      
+    <div 
+        className={cn("min-h-screen bg-white font-sans text-slate-900 selection:bg-[var(--primary)] selection:text-white", isModern ? "font-sans" : "font-serif")}
+        style={{ '--primary': primaryColor, '--primary-hover': primaryColor + 'cc' } as React.CSSProperties}
+    >
+      {customization.announcementText && (
+          <div className="w-full bg-[var(--primary)] text-white text-xs font-bold text-center py-2 px-4 shadow-md sticky top-0 z-50">
+              {customization.announcementText}
+          </div>
+      )}
+
       {/* Welcome View */}
       {view === 'welcome' && (
         <div className="relative h-screen w-full flex flex-col items-center justify-center overflow-hidden">
@@ -218,7 +240,7 @@ export default function RestaurantPublicPage() {
               <Button onClick={() => setView('menu')} size="lg" className="w-full sm:w-64 h-20 text-xl font-black rounded-2xl bg-white text-slate-900 hover:bg-slate-100 transition-all shadow-2xl hover:scale-105">
                 <Utensils className="mr-3 h-6 w-6" /> Explore Menu
               </Button>
-              <Button onClick={() => setView('booking')} size="lg" className="w-full sm:w-64 h-20 text-xl font-black rounded-2xl bg-slate-900 text-white hover:bg-slate-800 transition-all shadow-2xl border border-white/20 hover:scale-105">
+              <Button onClick={() => setView('booking')} size="lg" className="w-full sm:w-64 h-20 text-xl font-black rounded-2xl bg-slate-900 text-white hover:bg-[var(--primary-hover)] transition-all shadow-2xl border border-white/20 hover:scale-105">
                 <CalendarIcon className="mr-3 h-6 w-6 text-amber-400" /> Book a Table
               </Button>
             </div>
@@ -283,27 +305,55 @@ export default function RestaurantPublicPage() {
 
                             {/* Handle Items directly under this category */}
                             {cat.items && cat.items.length > 0 && (
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-6 mb-8">
+                                <div className={cn("grid gap-x-12 gap-y-6 mb-8", isModern ? "grid-cols-1 md:grid-cols-3" : "grid-cols-1 md:grid-cols-2")}>
                                     {cat.items.map((item: any) => (
-                                        <div key={item.id} className="flex flex-col">
-                                            <div className="flex justify-between items-baseline gap-4">
-                                                <div className="flex items-center gap-1.5 flex-wrap">
-                                                    <span className="font-black text-sm text-slate-900 uppercase tracking-tight">{item.name}</span>
-                                                    <div className="flex items-center gap-1">
-                                                        {item.spiceLevel > 0 && (
-                                                            <span title={`Spice Level ${item.spiceLevel}`} className="text-red-600"><Flame className="w-3 h-3" /></span>
-                                                        )}
+                                        isModern ? (
+                                            <div key={item.id} className="flex flex-col bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-all border border-slate-100 group">
+                                                {item.imageUrl && (
+                                                    <div className="w-full h-48 overflow-hidden bg-slate-100">
+                                                        <img src={item.imageUrl} alt={item.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                                                    </div>
+                                                )}
+                                                <div className="p-4 flex flex-col flex-1">
+                                                    <div className="flex justify-between items-start gap-4 mb-2">
+                                                        <span className="font-black text-sm text-[var(--primary)] uppercase tracking-tight">{item.name}</span>
+                                                        <div className="font-black text-[var(--primary)] text-sm whitespace-nowrap bg-slate-50 px-2 py-0.5 rounded-sm">
+                                                            {item.price.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}
+                                                        </div>
+                                                    </div>
+                                                    {item.description && <p className="text-slate-500 text-xs leading-relaxed font-medium mb-4 flex-1">{item.description}</p>}
+                                                    <div className="flex flex-wrap items-center gap-1 mt-auto">
+                                                        {item.spiceLevel > 0 && <span title={`Spice Level ${item.spiceLevel}`} className="text-red-600 bg-red-50 p-1 rounded-sm"><Flame className="w-3 h-3" /></span>}
                                                         {item.dietaryTags && item.dietaryTags.split(',').map((tag: string, i: number) => (
-                                                            <span key={i} title={tag.trim()} className="text-green-700"><Leaf className="w-3 h-3" /></span>
+                                                            <span key={i} title={tag.trim()} className="text-[9px] font-black uppercase text-green-700 bg-green-50 px-1.5 py-0.5 rounded-sm">{tag.trim()}</span>
                                                         ))}
                                                     </div>
                                                 </div>
-                                                <div className="font-bold text-slate-900 text-sm whitespace-nowrap">
-                                                    {item.price.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}
+                                            </div>
+                                        ) : (
+                                            <div key={item.id} className="flex gap-4">
+                                                {item.imageUrl && (
+                                                    <img src={item.imageUrl} alt={item.name} className="w-16 h-16 rounded-md object-cover shrink-0 bg-slate-100" />
+                                                )}
+                                                <div className="flex-1">
+                                                    <div className="flex justify-between items-baseline gap-4">
+                                                        <div className="flex items-center gap-1.5 flex-wrap">
+                                                            <span className="font-black text-sm text-[var(--primary)] uppercase tracking-tight">{item.name}</span>
+                                                            <div className="flex items-center gap-1">
+                                                                {item.spiceLevel > 0 && <span title={`Spice Level ${item.spiceLevel}`} className="text-red-600"><Flame className="w-3 h-3" /></span>}
+                                                                {item.dietaryTags && item.dietaryTags.split(',').map((tag: string, i: number) => (
+                                                                    <span key={i} title={tag.trim()} className="text-green-700"><Leaf className="w-3 h-3" /></span>
+                                                                ))}
+                                                            </div>
+                                                        </div>
+                                                        <div className="font-bold text-[var(--primary)] text-sm whitespace-nowrap">
+                                                            {item.price.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}
+                                                        </div>
+                                                    </div>
+                                                    {item.description && <p className="text-slate-500 mt-1 text-[11px] leading-tight font-medium">{item.description}</p>}
                                                 </div>
                                             </div>
-                                            {item.description && <p className="text-slate-600 mt-1 text-[11px] leading-tight font-medium">{item.description}</p>}
-                                        </div>
+                                        )
                                     ))}
                                 </div>
                             )}
@@ -316,27 +366,55 @@ export default function RestaurantPublicPage() {
                                             <div className="mb-4">
                                                 <h3 className="text-xl font-bold text-red-800 tracking-tight">{sub.name}</h3>
                                             </div>
-                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-6">
+                                            <div className={cn("grid gap-x-12 gap-y-6", isModern ? "grid-cols-1 md:grid-cols-3" : "grid-cols-1 md:grid-cols-2")}>
                                                 {sub.items?.map((item: any) => (
-                                                    <div key={item.id} className="flex flex-col">
-                                                        <div className="flex justify-between items-baseline gap-4">
-                                                            <div className="flex items-center gap-1.5 flex-wrap">
-                                                                <span className="font-black text-sm text-slate-900 uppercase tracking-tight">{item.name}</span>
-                                                                <div className="flex items-center gap-1">
-                                                                    {item.spiceLevel > 0 && (
-                                                                        <span title={`Spice Level ${item.spiceLevel}`} className="text-red-600"><Flame className="w-3 h-3" /></span>
-                                                                    )}
+                                                    isModern ? (
+                                                        <div key={item.id} className="flex flex-col bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-all border border-slate-100 group">
+                                                            {item.imageUrl && (
+                                                                <div className="w-full h-48 overflow-hidden bg-slate-100">
+                                                                    <img src={item.imageUrl} alt={item.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                                                                </div>
+                                                            )}
+                                                            <div className="p-4 flex flex-col flex-1">
+                                                                <div className="flex justify-between items-start gap-4 mb-2">
+                                                                    <span className="font-black text-sm text-[var(--primary)] uppercase tracking-tight">{item.name}</span>
+                                                                    <div className="font-black text-[var(--primary)] text-sm whitespace-nowrap bg-slate-50 px-2 py-0.5 rounded-sm">
+                                                                        {item.price.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}
+                                                                    </div>
+                                                                </div>
+                                                                {item.description && <p className="text-slate-500 text-xs leading-relaxed font-medium mb-4 flex-1">{item.description}</p>}
+                                                                <div className="flex flex-wrap items-center gap-1 mt-auto">
+                                                                    {item.spiceLevel > 0 && <span title={`Spice Level ${item.spiceLevel}`} className="text-red-600 bg-red-50 p-1 rounded-sm"><Flame className="w-3 h-3" /></span>}
                                                                     {item.dietaryTags && item.dietaryTags.split(',').map((tag: string, i: number) => (
-                                                                        <span key={i} title={tag.trim()} className="text-green-700"><Leaf className="w-3 h-3" /></span>
+                                                                        <span key={i} title={tag.trim()} className="text-[9px] font-black uppercase text-green-700 bg-green-50 px-1.5 py-0.5 rounded-sm">{tag.trim()}</span>
                                                                     ))}
                                                                 </div>
                                                             </div>
-                                                            <div className="font-bold text-slate-900 text-sm whitespace-nowrap">
-                                                                {item.price.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}
+                                                        </div>
+                                                    ) : (
+                                                        <div key={item.id} className="flex gap-4">
+                                                            {item.imageUrl && (
+                                                                <img src={item.imageUrl} alt={item.name} className="w-16 h-16 rounded-md object-cover shrink-0 bg-slate-100" />
+                                                            )}
+                                                            <div className="flex-1">
+                                                                <div className="flex justify-between items-baseline gap-4">
+                                                                    <div className="flex items-center gap-1.5 flex-wrap">
+                                                                        <span className="font-black text-sm text-[var(--primary)] uppercase tracking-tight">{item.name}</span>
+                                                                        <div className="flex items-center gap-1">
+                                                                            {item.spiceLevel > 0 && <span title={`Spice Level ${item.spiceLevel}`} className="text-red-600"><Flame className="w-3 h-3" /></span>}
+                                                                            {item.dietaryTags && item.dietaryTags.split(',').map((tag: string, i: number) => (
+                                                                                <span key={i} title={tag.trim()} className="text-green-700"><Leaf className="w-3 h-3" /></span>
+                                                                            ))}
+                                                                        </div>
+                                                                    </div>
+                                                                    <div className="font-bold text-[var(--primary)] text-sm whitespace-nowrap">
+                                                                        {item.price.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}
+                                                                    </div>
+                                                                </div>
+                                                                {item.description && <p className="text-slate-500 mt-1 text-[11px] leading-tight font-medium">{item.description}</p>}
                                                             </div>
                                                         </div>
-                                                        {item.description && <p className="text-slate-600 mt-1 text-[11px] leading-tight font-medium">{item.description}</p>}
-                                                    </div>
+                                                    )
                                                 ))}
                                             </div>
                                         </div>
@@ -467,9 +545,11 @@ export default function RestaurantPublicPage() {
                                         ))}
                                         <div className="relative">
                                             <input type="date" ref={dateInputRef} value={selectedDate} onChange={(e) => setSelectedDate(e.target.value)} className="sr-only" />
-                                            <Button type="button" variant="outline" className="w-full h-16 rounded-2xl border-2 flex flex-col items-center justify-center hover:bg-slate-50 transition-colors" onClick={() => dateInputRef.current?.showPicker()}>
-                                                <CalendarIcon className="h-5 w-5 mb-1 text-slate-400" />
-                                                <span className="text-[9px] font-black uppercase text-slate-400">Custom</span>
+                                            <Button type="button" variant={(!week.find(d=>d.value===selectedDate) && !weekend.find(d=>d.value===selectedDate)) ? 'default' : 'outline'} className={cn("w-full h-16 rounded-2xl border-2 flex flex-col items-center justify-center transition-colors", (!week.find(d=>d.value===selectedDate) && !weekend.find(d=>d.value===selectedDate)) ? "bg-slate-900 border-slate-900 text-white" : "hover:bg-slate-50")} onClick={() => dateInputRef.current?.showPicker()}>
+                                                <CalendarIcon className={cn("h-5 w-5 mb-1", (!week.find(d=>d.value===selectedDate) && !weekend.find(d=>d.value===selectedDate)) ? "text-white" : "text-slate-400")} />
+                                                <span className={cn("text-[9px] font-black uppercase", (!week.find(d=>d.value===selectedDate) && !weekend.find(d=>d.value===selectedDate)) ? "text-white" : "text-slate-400")}>
+                                                    {(!week.find(d=>d.value===selectedDate) && !weekend.find(d=>d.value===selectedDate)) ? new Date(selectedDate).toLocaleDateString([], { month: 'short', day: 'numeric' }) : 'Custom'}
+                                                </span>
                                             </Button>
                                         </div>
                                     </div>
@@ -499,7 +579,7 @@ export default function RestaurantPublicPage() {
                             </div>
                         </div>
 
-                        <Button type="submit" disabled={checkingDay || (dayStatus && !dayStatus.daySetting?.isReservationEnabled && dayStatus.daySetting)} className="w-full h-20 rounded-[1.5rem] bg-slate-900 text-white hover:bg-slate-800 text-xl font-black shadow-2xl transition-all hover:scale-[1.02] active:scale-95">
+                        <Button type="submit" disabled={checkingDay || (dayStatus && !dayStatus.daySetting?.isReservationEnabled && dayStatus.daySetting)} className="w-full h-20 rounded-[1.5rem] bg-slate-900 text-white hover:bg-[var(--primary-hover)] text-xl font-black shadow-2xl transition-all hover:scale-[1.02] active:scale-95">
                             {checkingDay ? "Checking Availability..." : 
                              (dayStatus && !dayStatus.daySetting?.isReservationEnabled && dayStatus.daySetting) ? "Sold Out" : "Send Booking Request"}
                         </Button>

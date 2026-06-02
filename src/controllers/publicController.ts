@@ -10,6 +10,7 @@ export const getRestaurantBySlug = async (req: Request, res: Response) => {
       include: {
         settings: true,
         waitTimeConfig: true,
+        customization: true,
         menus: {
           where: { isActive: true },
           include: {
@@ -50,7 +51,8 @@ export const getDayStatus = async (req: Request, res: Response) => {
     if (!slug || !date) return errorResponse(res, 'Missing parameters', 400);
 
     const restaurant = await prisma.restaurant.findUnique({
-      where: { slug: slug as string }
+      where: { slug: slug as string },
+      include: { settings: true }
     });
 
     if (!restaurant) return errorResponse(res, 'Restaurant not found', 404);
@@ -72,7 +74,10 @@ export const getDayStatus = async (req: Request, res: Response) => {
           isReservationEnabled: daySetting.isReservationEnabled,
           autoConfirm: daySetting.autoConfirm,
           maxCapacityOverride: daySetting.maxCapacityOverride
-      } : null,
+      } : {
+          isReservationEnabled: restaurant.settings?.isReservationEnabled ?? true,
+          autoConfirm: false,
+      },
       hasTables: tablesCount > 0
     });
   } catch (error) {
