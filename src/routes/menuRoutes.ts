@@ -15,9 +15,9 @@ router.post('/', menuController.createMenu);
 router.put('/:id', menuController.updateMenu);
 router.delete('/:id', menuController.deleteMenu);
 
-router.post('/categories', menuController.createMenuCategory);
-router.put('/categories/:id', menuController.updateMenuCategory);
-router.delete('/categories/:id', menuController.deleteMenuCategory);
+router.post('/categories', menuController.createCategory);
+router.put('/categories/:id', menuController.updateCategory);
+router.delete('/categories/:id', menuController.deleteCategory);
 
 router.post('/items', menuController.createMenuItem);
 router.put('/items/:id', menuController.updateMenuItem);
