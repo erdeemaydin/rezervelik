@@ -15,7 +15,9 @@ import { toast } from 'sonner';
 import { Save, Palette, Megaphone, FileText, Smartphone } from 'lucide-react';
 
 interface Customization {
-    theme: string;
+    layoutStyle: string;
+    typography: string;
+    colorPalette: string;
     primaryColor: string;
     announcementText: string;
     showAboutUs: boolean;
@@ -28,7 +30,9 @@ export default function CustomizationPage() {
     const [loading, setLoading] = useState(false);
     const [fetching, setFetching] = useState(true);
     const [customization, setCustomization] = useState<Customization>({
-        theme: 'CLASSIC',
+        layoutStyle: 'CLASSIC_LIST',
+        typography: 'SANS',
+        colorPalette: 'OBSIDIAN',
         primaryColor: '#0f172a',
         announcementText: '',
         showAboutUs: false,
@@ -44,7 +48,9 @@ export default function CustomizationPage() {
             if (res.data.data) {
                 const data = res.data.data;
                 setCustomization({
-                    theme: data.theme || 'CLASSIC',
+                    layoutStyle: data.layoutStyle || 'CLASSIC_LIST',
+                    typography: data.typography || 'SANS',
+                    colorPalette: data.colorPalette || 'OBSIDIAN',
                     primaryColor: data.primaryColor || '#0f172a',
                     announcementText: data.announcementText || '',
                     showAboutUs: data.showAboutUs || false,
@@ -119,15 +125,15 @@ export default function CustomizationPage() {
                                             <Label className="text-[10px] font-black uppercase text-slate-400">Menu Template</Label>
                                             <div className="grid grid-cols-2 gap-4">
                                                 <div 
-                                                    onClick={() => setCustomization({...customization, theme: 'CLASSIC'})}
-                                                    className={`p-4 border-2 rounded-md cursor-pointer transition-all ${customization.theme === 'CLASSIC' ? 'border-blue-600 bg-blue-50/50' : 'border-slate-100 hover:border-slate-300'}`}
+                                                    onClick={() => setCustomization({...customization, layoutStyle: 'CLASSIC_LIST'})}
+                                                    className={`p-4 border-2 rounded-md cursor-pointer transition-all ${customization.layoutStyle === 'CLASSIC_LIST' ? 'border-blue-600 bg-blue-50/50' : 'border-slate-100 hover:border-slate-300'}`}
                                                 >
                                                     <div className="font-black text-sm text-slate-800 uppercase">Classic</div>
                                                     <p className="text-[10px] text-slate-500 mt-1 leading-relaxed">Elegant, text-focused list style perfect for fine dining.</p>
                                                 </div>
                                                 <div 
-                                                    onClick={() => setCustomization({...customization, theme: 'MODERN'})}
-                                                    className={`p-4 border-2 rounded-md cursor-pointer transition-all ${customization.theme === 'MODERN' ? 'border-blue-600 bg-blue-50/50' : 'border-slate-100 hover:border-slate-300'}`}
+                                                    onClick={() => setCustomization({...customization, layoutStyle: 'EDITORIAL_IMAGE'})}
+                                                    className={`p-4 border-2 rounded-md cursor-pointer transition-all ${customization.layoutStyle === 'EDITORIAL_IMAGE' ? 'border-blue-600 bg-blue-50/50' : 'border-slate-100 hover:border-slate-300'}`}
                                                 >
                                                     <div className="font-black text-sm text-slate-800 uppercase">Modern Grid</div>
                                                     <p className="text-[10px] text-slate-500 mt-1 leading-relaxed">Image-heavy card layout for casual or visual menus.</p>
@@ -135,6 +141,40 @@ export default function CustomizationPage() {
                                             </div>
                                         </div>
                                         
+                                        <div className="space-y-3 pt-4 border-t border-slate-100">
+                                            <Label className="text-[10px] font-black uppercase text-slate-400">Typography</Label>
+                                            <Select 
+                                                value={customization.typography} 
+                                                onValueChange={(v) => { if (v) setCustomization({...customization, typography: v}); }}
+                                            >
+                                                <SelectTrigger className="w-full">
+                                                    <SelectValue placeholder="Select typography" />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem value="SANS">Sans-Serif</SelectItem>
+                                                    <SelectItem value="SERIF">Serif</SelectItem>
+                                                    <SelectItem value="MONO">Monospace</SelectItem>
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+
+                                        <div className="space-y-3 pt-4 border-t border-slate-100">
+                                            <Label className="text-[10px] font-black uppercase text-slate-400">Color Palette Preset</Label>
+                                            <Select 
+                                                value={customization.colorPalette} 
+                                                onValueChange={(v) => { if (v) setCustomization({...customization, colorPalette: v}); }}
+                                            >
+                                                <SelectTrigger className="w-full">
+                                                    <SelectValue placeholder="Select color palette" />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem value="OBSIDIAN">Obsidian (Dark / Clean)</SelectItem>
+                                                    <SelectItem value="EARTH">Earth (Warm / Rustic)</SelectItem>
+                                                    <SelectItem value="CRIMSON">Crimson (Bold / Wine)</SelectItem>
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+
                                         <div className="space-y-3 pt-4 border-t border-slate-100">
                                             <Label className="text-[10px] font-black uppercase text-slate-400">Primary Brand Color (Hex)</Label>
                                             <div className="flex gap-4">

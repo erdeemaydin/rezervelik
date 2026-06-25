@@ -606,7 +606,7 @@ export default function MenuManagementPage() {
                         <div className="grid grid-cols-2 gap-4">
                             <div className="space-y-1.5">
                                 <Label className="text-[10px] font-black uppercase text-slate-400 ml-1">Type</Label>
-                                <Select value={bulkPriceForm.updateType} onValueChange={v => setBulkPriceForm({...bulkPriceForm, updateType: v})}>
+                                <Select value={bulkPriceForm.updateType} onValueChange={v => { if (v) setBulkPriceForm({...bulkPriceForm, updateType: v}); }}>
                                     <SelectTrigger className="h-10 text-xs font-bold border-slate-200 rounded-sm">
                                         <SelectValue />
                                     </SelectTrigger>

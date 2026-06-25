@@ -217,7 +217,7 @@ export default function RestaurantPublicPage() {
   
   // Override with custom hex if provided
   const primaryColor = customization.primaryColor !== '#0f172a' ? customization.primaryColor : palette.primary;
-  const isEditorial = customization.layoutStyle === 'EDITORIAL_IMAGE';
+  const isModern = customization.layoutStyle === 'EDITORIAL_IMAGE';
 
   return (
     <div 
