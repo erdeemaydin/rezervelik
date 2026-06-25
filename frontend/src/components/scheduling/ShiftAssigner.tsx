@@ -4,9 +4,10 @@ import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { ChevronLeft, ChevronRight, GripVertical, X, Download, Send, CheckCircle2, Ban, Users, Activity } from 'lucide-react';
+import { ChevronLeft, ChevronRight, GripVertical, X, Download, Send, CheckCircle2, Ban, Users, Activity, AlertTriangle, Plus } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import api from '@/lib/api';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { 
   Shift, 
   EmployeeAvailability, 
@@ -41,8 +42,24 @@ interface Staff {
   role: string;
 }
 
+interface ScheduleWarning {
+  userId: string;
+  date: string;
+  shiftId: string;
+  type: 'DOUBLE_SHIFT' | 'CONSECUTIVE_REST' | 'UNAVAILABLE' | 'UNSPECIFIED';
+  message: string;
+}
+
 // DRAGGABLE STAFF COMPONENT
-function DraggableStaff({ staff }: { staff: Staff }) {
+function DraggableStaff({ 
+  staff, 
+  isHighlighted, 
+  onToggleHighlight 
+}: { 
+  staff: Staff; 
+  isHighlighted: boolean; 
+  onToggleHighlight: () => void; 
+}) {
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
     id: `staff-${staff.id}`,
     data: { staff },
@@ -51,16 +68,39 @@ function DraggableStaff({ staff }: { staff: Staff }) {
   return (
     <div
       ref={setNodeRef}
-      {...listeners}
-      {...attributes}
-      className={`flex items-center justify-between p-2 mb-2 bg-white border rounded cursor-grab active:cursor-grabbing shadow-sm hover:border-blue-400 hover:shadow transition-all ${
-        isDragging ? 'opacity-50' : 'opacity-100'
-      }`}
+      className={cn(
+        "flex items-center justify-between p-2 mb-2 bg-white border rounded shadow-sm hover:border-blue-400 hover:shadow transition-all relative group",
+        isDragging && 'opacity-50',
+        isHighlighted ? 'border-blue-600 bg-blue-50/50 ring-2 ring-blue-500/20' : 'border-slate-200'
+      )}
     >
-      <div className="flex items-center">
-        <GripVertical className="h-4 w-4 text-slate-400 mr-2" />
-        <span className="text-sm font-medium">{staff.firstName} {staff.lastName}</span>
+      <div 
+        {...listeners} 
+        {...attributes} 
+        className="cursor-grab active:cursor-grabbing p-1 hover:bg-slate-100 rounded mr-1 shrink-0"
+        title="Drag to assign"
+      >
+        <GripVertical className="h-4 w-4 text-slate-400" />
       </div>
+
+      <span className="text-sm font-medium flex-1 truncate">{staff.firstName} {staff.lastName}</span>
+      
+      <button
+        type="button"
+        onClick={(e) => {
+          e.stopPropagation();
+          onToggleHighlight();
+        }}
+        className={cn(
+          "h-7 w-7 rounded-md flex items-center justify-center border transition-all shrink-0 ml-1.5",
+          isHighlighted 
+            ? "bg-blue-600 text-white border-blue-600 shadow-sm" 
+            : "bg-slate-50 text-slate-400 border-slate-200 hover:text-blue-600 hover:border-blue-300"
+        )}
+        title={isHighlighted ? "Clear Highlight" : "Highlight shifts"}
+      >
+        <Activity className="h-3.5 w-3.5" />
+      </button>
     </div>
   );
 }
@@ -70,25 +110,36 @@ function DroppableCell({
   id, 
   children, 
   isUnderstaffed,
-  disabled = false
+  disabled = false,
+  isHighlightedAssigned = false,
+  availabilityStatus = null
 }: { 
   id: string; 
   children: React.ReactNode; 
   isUnderstaffed: boolean;
   disabled?: boolean;
+  isHighlightedAssigned?: boolean;
+  availabilityStatus?: 'available' | 'unavailable' | null;
 }) {
   const { isOver, setNodeRef } = useDroppable({ id, disabled });
 
   return (
     <td
       ref={setNodeRef}
-      className={`px-2 py-2 border-r align-top relative transition-colors ${
+      className={cn(
+        "px-2 py-2 border-r align-top relative transition-all duration-300",
         isOver 
           ? 'bg-blue-50 ring-2 ring-blue-400 ring-inset' 
-          : isUnderstaffed && !disabled
-            ? 'bg-red-50/30' 
-            : ''
-      }`}
+          : isHighlightedAssigned
+            ? 'bg-blue-50/80 ring-2 ring-blue-500 ring-inset shadow-md shadow-blue-500/10'
+            : availabilityStatus === 'available'
+              ? 'bg-emerald-50/40 border-emerald-300 border-2 border-dashed'
+              : availabilityStatus === 'unavailable'
+                ? 'bg-red-50/40 border-red-300 border-2 border-dashed'
+                : isUnderstaffed && !disabled
+                  ? 'bg-red-50/30' 
+                  : ''
+      )}
     >
       <div className="flex flex-col gap-1 min-h-[50px] w-full">
         {children}
@@ -113,6 +164,12 @@ export default function ShiftAssigner({ viewMode = 'MONTHLY' }: { viewMode?: 'WE
 
   // Drag state
   const [activeStaff, setActiveStaff] = useState<Staff | null>(null);
+
+  // Highlighting and Quick Assign Selector
+  const [highlightedStaffId, setHighlightedStaffId] = useState<string | null>(null);
+  const [isAssignSelectorOpen, setIsAssignSelectorOpen] = useState(false);
+  const [selectorDate, setSelectorDate] = useState<string>('');
+  const [selectorShift, setSelectorShift] = useState<Shift | null>(null);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -267,6 +324,160 @@ export default function ShiftAssigner({ viewMode = 'MONTHLY' }: { viewMode?: 'WE
   const getCellAssignments = (dateString: string, shiftId: string) => {
     return assignments.filter(a => a.date === dateString && a.shiftId === shiftId);
   };
+
+  const handleOpenAssignSelector = (date: string, shift: Shift) => {
+    setSelectorDate(date);
+    setSelectorShift(shift);
+    setIsAssignSelectorOpen(true);
+  };
+
+  const staffByAvailability = useMemo(() => {
+    if (!selectorDate || !selectorShift) return { available: [], unspecified: [], unavailable: [] };
+
+    const avail = availabilities.filter(
+      a => a.date === selectorDate && a.shiftId === selectorShift.id
+    );
+
+    const available: Staff[] = [];
+    const unspecified: Staff[] = [];
+    const unavailable: Staff[] = [];
+
+    staff.forEach(s => {
+      const record = avail.find(a => a.userId === s.id);
+      if (record) {
+        if (record.isAvailable) {
+          available.push(s);
+        } else {
+          unavailable.push(s);
+        }
+      } else {
+        unspecified.push(s);
+      }
+    });
+
+    return { available, unspecified, unavailable };
+  }, [selectorDate, selectorShift, staff, availabilities]);
+
+  // Compute shift warnings
+  const assignmentWarnings = useMemo(() => {
+    const warningsMap: Record<string, ScheduleWarning[]> = {};
+
+    const getShiftDateTime = (dateStr: string, timeStr: string) => {
+      return new Date(`${dateStr}T${timeStr}:00`);
+    };
+
+    const userAssignments: Record<string, typeof assignments> = {};
+    assignments.forEach(a => {
+      if (!userAssignments[a.userId]) {
+        userAssignments[a.userId] = [];
+      }
+      userAssignments[a.userId].push(a);
+    });
+
+    Object.entries(userAssignments).forEach(([userId, userAssigns]) => {
+      const enrichedAssigns = userAssigns.map(a => {
+        const shift = shifts.find(s => s.id === a.shiftId);
+        return {
+          id: a.id,
+          date: a.date,
+          shiftId: a.shiftId,
+          userId: a.userId,
+          shift,
+          startDt: shift ? getShiftDateTime(a.date, shift.startTime) : new Date(0),
+          endDt: shift ? getShiftDateTime(a.date, shift.endTime) : new Date(0)
+        };
+      }).sort((a, b) => a.startDt.getTime() - b.startDt.getTime());
+
+      enrichedAssigns.forEach(ea => {
+        if (ea.endDt.getTime() <= ea.startDt.getTime()) {
+          const nextDay = new Date(ea.endDt);
+          nextDay.setDate(nextDay.getDate() + 1);
+          ea.endDt = nextDay;
+        }
+      });
+
+      for (let i = 0; i < enrichedAssigns.length; i++) {
+        const current = enrichedAssigns[i];
+        const warnings: ScheduleWarning[] = [];
+
+        const availability = availabilities.find(
+          av => av.userId === userId && av.date === current.date && av.shiftId === current.shiftId
+        );
+
+        if (availability) {
+          if (!availability.isAvailable) {
+            warnings.push({
+              userId,
+              date: current.date,
+              shiftId: current.shiftId,
+              type: 'UNAVAILABLE',
+              message: 'Staff marked this day/shift as Unavailable.'
+            });
+          }
+        } else {
+          warnings.push({
+            userId,
+            date: current.date,
+            shiftId: current.shiftId,
+            type: 'UNSPECIFIED',
+            message: 'Staff did not submit availability for this day.'
+          });
+        }
+
+        if (i < enrichedAssigns.length - 1) {
+          const next = enrichedAssigns[i + 1];
+          const diffMs = next.startDt.getTime() - current.endDt.getTime();
+          const diffHours = diffMs / (1000 * 60 * 60);
+
+          if (current.date === next.date) {
+            const msg = `Double shift on same day (${current.shift?.name} & ${next.shift?.name}).`;
+            warnings.push({
+              userId,
+              date: current.date,
+              shiftId: current.shiftId,
+              type: 'DOUBLE_SHIFT',
+              message: msg
+            });
+            if (!warningsMap[next.id]) warningsMap[next.id] = [];
+            warningsMap[next.id].push({
+              userId,
+              date: next.date,
+              shiftId: next.shiftId,
+              type: 'DOUBLE_SHIFT',
+              message: msg
+            });
+          } else if (diffHours >= 0 && diffHours < 11) {
+            const roundedHours = Math.round(diffHours * 10) / 10;
+            const msg = `Short rest warning: only ${roundedHours}h off between shifts (${current.shift?.name} and tomorrow's ${next.shift?.name}).`;
+            warnings.push({
+              userId,
+              date: current.date,
+              shiftId: current.shiftId,
+              type: 'CONSECUTIVE_REST',
+              message: msg
+            });
+            if (!warningsMap[next.id]) warningsMap[next.id] = [];
+            warningsMap[next.id].push({
+              userId,
+              date: next.date,
+              shiftId: next.shiftId,
+              type: 'CONSECUTIVE_REST',
+              message: msg
+            });
+          }
+        }
+
+        if (warnings.length > 0) {
+          if (!warningsMap[current.id]) {
+            warningsMap[current.id] = [];
+          }
+          warningsMap[current.id].push(...warnings);
+        }
+      }
+    });
+
+    return warningsMap;
+  }, [assignments, shifts, availabilities]);
 
   const isCurrentRangePublished = useMemo(() => {
     if (assignments.length === 0) return false;
@@ -448,18 +659,34 @@ export default function ShiftAssigner({ viewMode = 'MONTHLY' }: { viewMode?: 'WE
                     <Users className="h-5 w-5 mr-2 text-blue-600" />
                     Staff Pool
                   </CardTitle>
-                  <CardDescription className="text-xs">Drag members onto the shifts below.</CardDescription>
+                  <CardDescription className="text-xs">Drag the grip handle to assign or click the highlight pulse icon to analyze shifts.</CardDescription>
                 </div>
-                <Badge variant="outline" className="text-[10px] font-normal border-slate-200">
-                  {staff.length} Members Available
-                </Badge>
+                <div className="flex items-center gap-2">
+                  {highlightedStaffId && (
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      onClick={() => setHighlightedStaffId(null)}
+                      className="h-7 text-[9px] font-black uppercase text-blue-600 bg-blue-50 hover:bg-blue-100 hover:text-blue-700"
+                    >
+                      Clear Highlight
+                    </Button>
+                  )}
+                  <Badge variant="outline" className="text-[10px] font-normal border-slate-200">
+                    {staff.length} Members Available
+                  </Badge>
+                </div>
               </div>
             </CardHeader>
             <CardContent className="pb-6">
               <div className="flex flex-wrap gap-2 overflow-x-auto pb-2 max-h-40">
                 {staff.map(s => (
-                  <div key={s.id} className="shrink-0 min-w-[140px]">
-                    <DraggableStaff staff={s} />
+                  <div key={s.id} className="shrink-0 min-w-[180px]">
+                    <DraggableStaff 
+                      staff={s} 
+                      isHighlighted={highlightedStaffId === s.id}
+                      onToggleHighlight={() => setHighlightedStaffId(prev => prev === s.id ? null : s.id)}
+                    />
                   </div>
                 ))}
               </div>
@@ -597,32 +824,102 @@ export default function ShiftAssigner({ viewMode = 'MONTHLY' }: { viewMode?: 'WE
                             const isUnderstaffed = cellAssignments.length < shift.requiredStaff;
                             const cellId = `cell-${day.dateString}-${shift.id}`;
                             
+                            const isHighlightedStaffAssigned = highlightedStaffId 
+                              ? cellAssignments.some(a => a.userId === highlightedStaffId) 
+                              : false;
+                            
+                            const highlightedAvailability = highlightedStaffId
+                              ? availabilities.find(av => av.userId === highlightedStaffId && av.date === day.dateString && av.shiftId === shift.id)
+                              : null;
+                            const availabilityStatus = highlightedAvailability
+                              ? (highlightedAvailability.isAvailable ? 'available' as const : 'unavailable' as const)
+                              : null;
+
+                            const cellAvailabilities = availabilities.filter(
+                              a => a.date === day.dateString && a.shiftId === shift.id
+                            );
+                            const availableCount = cellAvailabilities.filter(a => a.isAvailable).length;
+
                             return (
                               <DroppableCell 
                                 key={cellId} 
                                 id={cellId} 
                                 isUnderstaffed={isUnderstaffed && cellAssignments.length === 0}
                                 disabled={!isAdminOrManager}
+                                isHighlightedAssigned={isHighlightedStaffAssigned}
+                                availabilityStatus={availabilityStatus}
                               >
-                                {cellAssignments.map(assignment => (
-                                  <Badge 
-                                    key={assignment.id} 
-                                    variant="secondary" 
-                                    className="flex justify-between items-center py-1 px-2 text-[10px] bg-slate-50 text-slate-700 shadow-none w-full mb-1 group rounded-md hover:bg-blue-50 transition-all border-none"
-                                  >
-                                    <span className="truncate mr-1 flex-1 font-medium">
-                                      {assignment.user?.firstName} {assignment.user?.lastName}
-                                    </span>
-                                    {isAdminOrManager && (
-                                        <button 
-                                        className="text-slate-400 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100 shrink-0"
-                                        onClick={() => handleRemoveAssignment(assignment.id)}
-                                        >
-                                        <X className="h-3 w-3" />
-                                        </button>
+                                {cellAssignments.map(assignment => {
+                                  const warnings = assignmentWarnings[assignment.id] || [];
+                                  const hasCritical = warnings.some(w => ['UNAVAILABLE', 'DOUBLE_SHIFT', 'CONSECUTIVE_REST'].includes(w.type));
+                                  const hasUnspecified = warnings.some(w => w.type === 'UNSPECIFIED');
+
+                                  const isHighlighted = highlightedStaffId === assignment.userId;
+                                  const isDimmed = highlightedStaffId && !isHighlighted;
+
+                                  return (
+                                    <Badge 
+                                      key={assignment.id} 
+                                      variant="secondary" 
+                                      className={cn(
+                                        "flex justify-between items-center py-1 px-2 text-[10px] shadow-none w-full mb-1 group rounded-md transition-all border",
+                                        isDimmed 
+                                          ? "opacity-30 scale-95" 
+                                          : isHighlighted 
+                                            ? "bg-blue-600 text-white border-blue-600 ring-2 ring-blue-300 shadow-md animate-pulse"
+                                            : hasCritical 
+                                              ? "bg-red-50 text-red-700 border-red-200 hover:bg-red-100" 
+                                              : hasUnspecified 
+                                                ? "bg-amber-50 text-amber-800 border-amber-200 hover:bg-amber-100" 
+                                                : "bg-slate-50 text-slate-700 border-slate-100 hover:bg-blue-50"
+                                      )}
+                                    >
+                                      <span className="truncate mr-1 flex-1 font-medium flex items-center gap-1">
+                                        {assignment.user?.firstName} {assignment.user?.lastName}
+                                        {warnings.length > 0 && !isDimmed && (
+                                          <span 
+                                            title={warnings.map(w => w.message).join('\n')}
+                                            className={cn(
+                                              "shrink-0 w-3 h-3 flex items-center justify-center rounded-full text-[8px] font-black cursor-help",
+                                              hasCritical 
+                                                ? (isHighlighted ? "bg-white text-red-600" : "bg-red-500 text-white") 
+                                                : (isHighlighted ? "bg-white text-amber-600" : "bg-amber-500 text-white")
+                                            )}
+                                          >
+                                            !
+                                          </span>
+                                        )}
+                                      </span>
+                                      {isAdminOrManager && (
+                                          <button 
+                                            className={cn(
+                                              "hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100 shrink-0",
+                                              isHighlighted ? "text-blue-200 hover:text-white" : "text-slate-400"
+                                            )}
+                                            onClick={() => handleRemoveAssignment(assignment.id)}
+                                          >
+                                            <X className="h-3 w-3" />
+                                          </button>
+                                      )}
+                                    </Badge>
+                                  );
+                                })}
+
+                                {isAdminOrManager && (
+                                  <button
+                                    type="button"
+                                    onClick={() => handleOpenAssignSelector(day.dateString, shift)}
+                                    className={cn(
+                                      "text-[9px] font-black uppercase tracking-wider rounded px-1.5 py-0.5 mt-1 w-full text-center flex items-center justify-center gap-1 transition-all border",
+                                      availableCount > 0
+                                        ? "bg-emerald-50 border-emerald-100 text-emerald-700 hover:bg-emerald-100"
+                                        : "bg-slate-50 border-slate-100 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
                                     )}
-                                  </Badge>
-                                ))}
+                                  >
+                                    <Plus className="w-2.5 h-2.5" />
+                                    <span>{availableCount > 0 ? `${availableCount} Avail` : "Add"}</span>
+                                  </button>
+                                )}
                               </DroppableCell>
                             );
                           })}
@@ -645,6 +942,178 @@ export default function ShiftAssigner({ viewMode = 'MONTHLY' }: { viewMode?: 'WE
           </div>
         ) : null}
       </DragOverlay>
+
+      {/* QUICK ASSIGN SELECTOR MODAL */}
+      <Dialog open={isAssignSelectorOpen} onOpenChange={setIsAssignSelectorOpen}>
+        <DialogContent className="max-w-md w-full p-0 rounded-2xl overflow-hidden border-0 bg-white shadow-2xl">
+          <div className="bg-slate-900 p-6 text-white">
+            <DialogHeader>
+              <DialogTitle className="text-base font-black uppercase tracking-widest flex items-center gap-2">
+                <Users className="w-5 h-5 text-blue-400 stroke-[3]" />
+                Assign Staff to Shift
+              </DialogTitle>
+              <DialogDescription className="text-slate-400 text-xs mt-1 font-bold uppercase tracking-wider">
+                {selectorShift?.name} • {selectorDate} ({selectorShift?.startTime} - {selectorShift?.endTime})
+              </DialogDescription>
+            </DialogHeader>
+          </div>
+
+          <div className="p-6 space-y-6 max-h-[60vh] overflow-y-auto pr-1">
+            {/* 1. AVAILABLE STAFF */}
+            <div className="space-y-2">
+              <h4 className="text-[10px] font-black uppercase text-emerald-600 tracking-wider flex items-center gap-1.5">
+                🟢 Available Staff ({staffByAvailability.available.length})
+              </h4>
+              {staffByAvailability.available.length === 0 ? (
+                <p className="text-[10px] text-slate-400 italic pl-3 uppercase font-bold">No staff explicitly marked available</p>
+              ) : (
+                <div className="space-y-1.5">
+                  {staffByAvailability.available.map(s => {
+                    const isAssigned = assignments.some(a => a.date === selectorDate && a.shiftId === selectorShift?.id && a.userId === s.id);
+                    const others = assignments.filter(a => a.date === selectorDate && a.shiftId !== selectorShift?.id && a.userId === s.id);
+                    
+                    return (
+                      <div key={s.id} className="flex items-center justify-between p-2.5 rounded-xl border border-slate-100 bg-slate-50/50 hover:bg-slate-50">
+                        <div className="flex flex-col">
+                          <span className="text-xs font-bold text-slate-800">{s.firstName} {s.lastName}</span>
+                          {others.length > 0 && (
+                            <span className="text-[9px] text-amber-600 font-black uppercase tracking-tight mt-1">
+                              ⚠️ Works: {others.map(o => shifts.find(sh => sh.id === o.shiftId)?.name).join(', ')}
+                            </span>
+                          )}
+                        </div>
+                        {isAssigned ? (
+                          <span className="text-[9px] font-black uppercase text-slate-400 tracking-wider">Assigned</span>
+                        ) : (
+                          <Button 
+                            size="sm" 
+                            className="h-8 bg-emerald-600 hover:bg-emerald-700 text-white font-black uppercase text-[9px] tracking-wider rounded-lg shadow-sm"
+                            onClick={() => {
+                              handleAssign(selectorShift!.id, s.id, selectorDate);
+                              setIsAssignSelectorOpen(false);
+                            }}
+                          >
+                            Assign
+                          </Button>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+            {/* 2. UNSPECIFIED AVAILABILITY */}
+            <div className="space-y-2 pt-4 border-t border-slate-100">
+              <h4 className="text-[10px] font-black uppercase text-amber-600 tracking-wider flex items-center gap-1.5">
+                ⚪ Unspecified / No Avail. Submitted ({staffByAvailability.unspecified.length})
+              </h4>
+              {staffByAvailability.unspecified.length === 0 ? (
+                <p className="text-[10px] text-slate-400 italic pl-3 uppercase font-bold">All staff accounted for</p>
+              ) : (
+                <div className="space-y-1.5">
+                  {staffByAvailability.unspecified.map(s => {
+                    const isAssigned = assignments.some(a => a.date === selectorDate && a.shiftId === selectorShift?.id && a.userId === s.id);
+                    const others = assignments.filter(a => a.date === selectorDate && a.shiftId !== selectorShift?.id && a.userId === s.id);
+                    
+                    return (
+                      <div key={s.id} className="flex items-center justify-between p-2.5 rounded-xl border border-slate-100 bg-slate-50/50 hover:bg-slate-50">
+                        <div className="flex flex-col">
+                          <span className="text-xs font-bold text-slate-700">{s.firstName} {s.lastName}</span>
+                          {others.length > 0 && (
+                            <span className="text-[9px] text-amber-600 font-black uppercase tracking-tight mt-1">
+                              ⚠️ Works: {others.map(o => shifts.find(sh => sh.id === o.shiftId)?.name).join(', ')}
+                            </span>
+                          )}
+                        </div>
+                        {isAssigned ? (
+                          <span className="text-[9px] font-black uppercase text-slate-400 tracking-wider">Assigned</span>
+                        ) : (
+                          <Button 
+                            size="sm" 
+                            variant="outline"
+                            className="h-8 border-amber-200 bg-amber-50/30 text-amber-700 hover:bg-amber-100 font-black uppercase text-[9px] tracking-wider rounded-lg shadow-none"
+                            onClick={() => {
+                              handleAssign(selectorShift!.id, s.id, selectorDate);
+                              setIsAssignSelectorOpen(false);
+                            }}
+                          >
+                            Assign
+                          </Button>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+            {/* 3. EXPLICITLY UNAVAILABLE */}
+            <div className="space-y-2 pt-4 border-t border-slate-100">
+              <h4 className="text-[10px] font-black uppercase text-red-600 tracking-wider flex items-center gap-1.5">
+                🔴 Explicitly Unavailable ({staffByAvailability.unavailable.length})
+              </h4>
+              {staffByAvailability.unavailable.length === 0 ? (
+                <p className="text-[10px] text-slate-400 italic pl-3 uppercase font-bold">No unavailable requests</p>
+              ) : (
+                <div className="space-y-1.5">
+                  {staffByAvailability.unavailable.map(s => {
+                    const isAssigned = assignments.some(a => a.date === selectorDate && a.shiftId === selectorShift?.id && a.userId === s.id);
+                    const others = assignments.filter(a => a.date === selectorDate && a.shiftId !== selectorShift?.id && a.userId === s.id);
+                    const availRecord = availabilities.find(a => a.date === selectorDate && a.shiftId === selectorShift?.id && a.userId === s.id);
+                    
+                    return (
+                      <div key={s.id} className="flex items-center justify-between p-2.5 rounded-xl border border-red-100 bg-red-50/10 hover:bg-red-50/30">
+                        <div className="flex flex-col">
+                          <span className="text-xs font-bold text-red-950">{s.firstName} {s.lastName}</span>
+                          {availRecord?.notes && (
+                            <span className="text-[10px] text-red-500 font-medium italic mt-1 bg-red-50 px-2 py-0.5 rounded border border-red-100 self-start">
+                              Reason: "{availRecord.notes}"
+                            </span>
+                          )}
+                          {others.length > 0 && (
+                            <span className="text-[9px] text-amber-600 font-black uppercase tracking-tight mt-1">
+                              ⚠️ Works: {others.map(o => shifts.find(sh => sh.id === o.shiftId)?.name).join(', ')}
+                            </span>
+                          )}
+                        </div>
+                        {isAssigned ? (
+                          <span className="text-[9px] font-black uppercase text-slate-400 tracking-wider">Assigned</span>
+                        ) : (
+                          <Button 
+                            size="sm" 
+                            variant="destructive"
+                            className="h-8 bg-red-600 hover:bg-red-700 font-black uppercase text-[9px] tracking-wider rounded-lg shadow-sm"
+                            onClick={() => {
+                              if (confirm(`Warning: ${s.firstName} marked themselves as UNAVAILABLE for this shift. Do you still want to assign them?`)) {
+                                handleAssign(selectorShift!.id, s.id, selectorDate);
+                                setIsAssignSelectorOpen(false);
+                              }
+                            }}
+                          >
+                            Force
+                          </Button>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          </div>
+
+          <DialogFooter className="p-4 bg-slate-50 border-t border-slate-100 shrink-0">
+            <Button 
+              type="button" 
+              variant="outline" 
+              onClick={() => setIsAssignSelectorOpen(false)}
+              className="h-12 w-full text-slate-500 font-black uppercase text-[10px] tracking-wider rounded-xl border-slate-200 bg-white"
+            >
+              Cancel
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </DndContext>
   );
 }
