@@ -27,6 +27,7 @@ export default function RestaurantPublicPage() {
   // Day Status Cache
   const [dayStatus, setDayStatus] = useState<any>(null);
   const [checkingDay, setCheckingDay] = useState(false);
+  const [isWaitlistSuccess, setIsWaitlistSuccess] = useState(false);
 
   const [resForm, setResForm] = useState({
     customerName: '',
@@ -81,6 +82,24 @@ export default function RestaurantPublicPage() {
     
     if (combinedDateTime < new Date()) {
       toast.error('Cannot create reservations for the past');
+      return;
+    }
+
+    if (dayStatus?.daySetting?.isFullyBooked) {
+      try {
+        await axios.post(`${API_URL}/public/restaurant/${slug}/waitlist`, {
+          customerName: resForm.customerName,
+          customerPhone: resForm.customerPhone,
+          partySize: parseInt(resForm.guestCount),
+          targetDate: selectedDate,
+          notes: `Requested Time: ${selectedTime}`
+        });
+        setIsWaitlistSuccess(true);
+        setView('success');
+        setResForm({ customerName: '', customerPhone: '', customerEmail: '', guestCount: '2', notes: '' });
+      } catch (err: any) {
+        toast.error(err.response?.data?.error || 'Failed to join waitlist');
+      }
       return;
     }
 
@@ -507,6 +526,14 @@ export default function RestaurantPublicPage() {
                     {/* Operational Status Boxes */}
                     {checkingDay ? (
                         <div className="bg-slate-200 animate-pulse h-24 rounded-[2rem]"></div>
+                    ) : dayStatus?.daySetting?.isFullyBooked === true ? (
+                        <div className="bg-amber-600 text-white p-6 rounded-[2rem] shadow-xl shadow-amber-600/30 flex gap-4 items-start animate-in fade-in duration-300">
+                            <Clock className="h-6 w-6 shrink-0 mt-1" />
+                            <div>
+                                <p className="font-black tracking-tight text-lg leading-none mb-2">Fully Booked (Waitlist Open)</p>
+                                <p className="text-sm font-medium opacity-80">We are fully booked for reservations on this day, but you can join our online waitlist to be notified if a table opens up.</p>
+                            </div>
+                        </div>
                     ) : dayStatus?.daySetting?.isReservationEnabled === false ? (
                         <div className="bg-red-600 text-white p-6 rounded-[2rem] shadow-xl shadow-red-600/30 flex gap-4 items-start animate-in fade-in duration-300">
                             <XCircle className="h-6 w-6 shrink-0 mt-1" />
@@ -609,8 +636,9 @@ export default function RestaurantPublicPage() {
                             </div>
                         </div>
 
-                        <Button type="submit" disabled={checkingDay || (dayStatus && !dayStatus.daySetting?.isReservationEnabled && dayStatus.daySetting)} className="w-full h-20 rounded-[1.5rem] bg-slate-900 text-white hover:bg-[var(--primary-hover)] text-xl font-black shadow-2xl transition-all hover:scale-[1.02] active:scale-95">
+                        <Button type="submit" disabled={checkingDay || (dayStatus && !dayStatus.daySetting?.isReservationEnabled && dayStatus.daySetting && !dayStatus.daySetting?.isFullyBooked)} className="w-full h-20 rounded-[1.5rem] bg-slate-900 text-white hover:bg-[var(--primary-hover)] text-xl font-black shadow-2xl transition-all hover:scale-[1.02] active:scale-95">
                             {checkingDay ? "Checking Availability..." : 
+                             (dayStatus && dayStatus.daySetting?.isFullyBooked) ? "Join Waitlist for this Day" :
                              (dayStatus && !dayStatus.daySetting?.isReservationEnabled && dayStatus.daySetting) ? "Sold Out" : "Send Booking Request"}
                         </Button>
                     </form>
@@ -626,16 +654,26 @@ export default function RestaurantPublicPage() {
               <div className="w-24 h-24 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mb-8 shadow-xl shadow-emerald-500/20">
                   <CheckCircle2 className="h-12 w-12" />
               </div>
-              <h1 className="text-4xl font-black tracking-tighter mb-4 text-center">Reservation Request Sent!</h1>
+              <h1 className="text-4xl font-black tracking-tighter mb-4 text-center">
+                  {isWaitlistSuccess ? "Added to Waitlist!" : "Reservation Request Sent!"}
+              </h1>
               <div className="text-xl text-slate-500 font-medium text-center max-w-lg mb-12 leading-relaxed">
-                  You are going to receive an SMS confirmation soon. We are excited that you chose <span className="font-bold text-slate-900">{restaurant.name}</span>.
+                  {isWaitlistSuccess ? (
+                      <>
+                          You've successfully joined the waitlist for <span className="font-bold text-slate-900">{new Date(selectedDate).toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' })}</span>. You will receive an SMS if a table becomes available.
+                      </>
+                  ) : (
+                      <>
+                          You are going to receive an SMS confirmation soon. We are excited that you chose <span className="font-bold text-slate-900">{restaurant.name}</span>.
+                      </>
+                  )}
                   <p className="mt-4 text-sm font-bold uppercase tracking-widest text-emerald-600">See you soon!</p>
               </div>
               <div className="flex flex-col sm:flex-row gap-4">
-                  <Button onClick={() => setView('menu')} variant="outline" className="h-16 px-10 text-lg font-bold rounded-2xl border-2">
+                  <Button onClick={() => { setView('menu'); setIsWaitlistSuccess(false); }} variant="outline" className="h-16 px-10 text-lg font-bold rounded-2xl border-2">
                       <Utensils className="mr-2 h-5 w-5" /> Explore Our Menu
                   </Button>
-                  <Button onClick={() => setView('welcome')} className="h-16 px-10 text-lg font-bold rounded-2xl bg-slate-900 text-white">
+                  <Button onClick={() => { setView('welcome'); setIsWaitlistSuccess(false); }} className="h-16 px-10 text-lg font-bold rounded-2xl bg-slate-900 text-white">
                       Return to Home
                   </Button>
               </div>

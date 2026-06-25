@@ -20,6 +20,7 @@ interface DaySetting {
   date: string;
   eventTitle: string | null;
   isReservationEnabled: boolean;
+  isFullyBooked: boolean;
   autoConfirm: boolean;
   maxCapacityOverride: number | null;
 }
@@ -40,6 +41,7 @@ export default function CalendarSettingsPage() {
   const [form, setForm] = useState({
     eventTitle: '',
     isReservationEnabled: true,
+    isFullyBooked: false,
     autoConfirm: false
   });
 
@@ -91,6 +93,7 @@ export default function CalendarSettingsPage() {
     setForm({
         eventTitle: existing?.eventTitle || '',
         isReservationEnabled: existing ? existing.isReservationEnabled : true,
+        isFullyBooked: existing ? existing.isFullyBooked : false,
         autoConfirm: existing ? existing.autoConfirm : false
     });
   };
@@ -315,33 +318,57 @@ export default function CalendarSettingsPage() {
                                 <Input placeholder="..." value={form.eventTitle} onChange={e => setForm({...form, eventTitle: e.target.value})} className="h-10 text-xs font-bold bg-slate-50 border-slate-200 rounded-sm" />
                             </div>
 
-                            <div className="space-y-6 py-4 border-y border-slate-50">
-                                <div className="flex items-center justify-between">
-                                    <div className="space-y-0.5">
-                                        <Label className="text-xs font-black text-slate-800 uppercase">Allow Bookings</Label>
-                                        <p className="text-[8px] text-slate-400 font-bold uppercase tracking-tighter">Customer Side Requests</p>
-                                    </div>
-                                    <Checkbox 
-                                        checked={form.isReservationEnabled} 
-                                        onCheckedChange={(c) => {
-                                            const enabled = !!c;
-                                            setForm(prev => ({...prev, isReservationEnabled: enabled, autoConfirm: enabled ? prev.autoConfirm : false}));
-                                        }} 
-                                    />
-                                </div>
+                             <div className="space-y-6 py-4 border-y border-slate-50">
+                                 <div className="flex items-center justify-between">
+                                     <div className="space-y-0.5">
+                                         <Label className="text-xs font-black text-slate-800 uppercase">Allow Bookings</Label>
+                                         <p className="text-[8px] text-slate-400 font-bold uppercase tracking-tighter">Customer Side Requests</p>
+                                     </div>
+                                     <Checkbox 
+                                         checked={form.isReservationEnabled} 
+                                         onCheckedChange={(c) => {
+                                             const enabled = !!c;
+                                             setForm(prev => ({
+                                                 ...prev, 
+                                                 isReservationEnabled: enabled, 
+                                                 isFullyBooked: enabled ? false : prev.isFullyBooked,
+                                                 autoConfirm: enabled ? prev.autoConfirm : false
+                                             }));
+                                         }} 
+                                     />
+                                 </div>
 
-                                <div className={cn("flex items-center justify-between transition-opacity", !form.isReservationEnabled && "opacity-30")}>
-                                    <div className="space-y-0.5">
-                                        <Label className="text-xs font-black text-slate-800 uppercase">Auto-Confirm</Label>
-                                        <p className="text-[8px] text-slate-400 font-bold uppercase tracking-tighter">Skip Review Queue</p>
-                                    </div>
-                                    <Checkbox 
-                                        disabled={!form.isReservationEnabled}
-                                        checked={form.autoConfirm} 
-                                        onCheckedChange={(c) => setForm({...form, autoConfirm: !!c})} 
-                                    />
-                                </div>
-                            </div>
+                                 <div className="flex items-center justify-between">
+                                     <div className="space-y-0.5">
+                                         <Label className="text-xs font-black text-slate-800 uppercase font-bold text-blue-600">Fully Booked (Waitlist)</Label>
+                                         <p className="text-[8px] text-slate-400 font-bold uppercase tracking-tighter">Accept Date Waitlist Entries</p>
+                                     </div>
+                                     <Checkbox 
+                                         checked={form.isFullyBooked} 
+                                         onCheckedChange={(c) => {
+                                             const isFull = !!c;
+                                             setForm(prev => ({
+                                                 ...prev, 
+                                                 isFullyBooked: isFull, 
+                                                 isReservationEnabled: isFull ? false : prev.isReservationEnabled,
+                                                 autoConfirm: isFull ? false : prev.autoConfirm
+                                             }));
+                                         }} 
+                                     />
+                                 </div>
+
+                                 <div className={cn("flex items-center justify-between transition-opacity", !form.isReservationEnabled && "opacity-30")}>
+                                     <div className="space-y-0.5">
+                                         <Label className="text-xs font-black text-slate-800 uppercase">Auto-Confirm</Label>
+                                         <p className="text-[8px] text-slate-400 font-bold uppercase tracking-tighter">Skip Review Queue</p>
+                                     </div>
+                                     <Checkbox 
+                                         disabled={!form.isReservationEnabled}
+                                         checked={form.autoConfirm} 
+                                         onCheckedChange={(c) => setForm({...form, autoConfirm: !!c})} 
+                                     />
+                                 </div>
+                             </div>
 
                             <div className="flex gap-2">
                                 {isBulkMode && (

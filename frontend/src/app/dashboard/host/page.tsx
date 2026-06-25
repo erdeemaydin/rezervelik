@@ -41,6 +41,7 @@ interface WaitlistEntry {
   notes: string | null;
   joinedAt: string;
   notifiedAt: string | null;
+  targetDate: string | null;
 }
 
 export default function HostConsolePage() {
@@ -308,13 +309,24 @@ export default function HostConsolePage() {
     }).sort((a, b) => new Date(b.startTime).getTime() - new Date(a.startTime).getTime());
   }, [reservations]);
 
+  // Filter waitlist to walk-ins (targetDate === null) or today's date-specific waitlist
+  const todayWaitlist = useMemo(() => {
+    const todayStr = new Date().toISOString().split('T')[0];
+    return waitlist.filter(entry => entry.targetDate === null || entry.targetDate === todayStr);
+  }, [waitlist]);
+
   const filteredWaitlist = useMemo(() => {
-    return waitlist.filter(entry => {
+    return todayWaitlist.filter(entry => {
       const nameMatch = entry.customerName.toLowerCase().includes(searchQuery.toLowerCase());
       const phoneMatch = entry.customerPhone.includes(searchQuery);
       return nameMatch || phoneMatch;
     });
-  }, [waitlist, searchQuery]);
+  }, [todayWaitlist, searchQuery]);
+
+  const filteredWaitlistHistory = useMemo(() => {
+    const todayStr = new Date().toISOString().split('T')[0];
+    return waitlistHistory.filter(entry => entry.targetDate === null || entry.targetDate === todayStr);
+  }, [waitlistHistory]);
 
   // Hourly slots for navigation (e.g. 11:00 to 23:00)
   const hourSlots = [
@@ -401,7 +413,7 @@ export default function HostConsolePage() {
                     : "text-slate-400 hover:text-white"
                 )}
               >
-                <Clock className="w-4 h-4" /> Waitlist Queue ({waitlist.length})
+                <Clock className="w-4 h-4" /> Waitlist Queue ({todayWaitlist.length})
               </button>
             </div>
 
@@ -638,14 +650,20 @@ export default function HostConsolePage() {
                       <div className="flex gap-4">
                         <div className={cn(
                           "h-16 w-20 rounded-xl flex flex-col items-center justify-center text-white shrink-0 shadow-sm",
-                          isOvertime 
-                            ? "bg-rose-600 animate-pulse" 
-                            : entry.status === 'NOTIFIED'
-                              ? "bg-purple-600"
-                              : "bg-blue-600"
+                          entry.targetDate
+                            ? "bg-amber-600"
+                            : isOvertime 
+                              ? "bg-rose-600 animate-pulse" 
+                              : entry.status === 'NOTIFIED'
+                                ? "bg-purple-600"
+                                : "bg-blue-600"
                         )}>
-                          <span className="text-[10px] font-black uppercase opacity-75 tracking-wider leading-none mb-1">Waiting</span>
-                          <span className="text-lg font-black tracking-tight leading-none">{elapsed}</span>
+                          <span className="text-[10px] font-black uppercase opacity-75 tracking-wider leading-none mb-1">
+                            {entry.targetDate ? "Book Wait" : "Waiting"}
+                          </span>
+                          <span className="text-sm font-black tracking-tight leading-none">
+                            {entry.targetDate ? "DATE" : elapsed}
+                          </span>
                         </div>
                         <div className="space-y-1">
                           <div className="flex items-center gap-2 flex-wrap">
@@ -653,7 +671,12 @@ export default function HostConsolePage() {
                             <Badge className={cn("text-[9px] font-black uppercase px-2 py-0.5 rounded-sm border", getStatusBadgeClass(entry.status))}>
                               {entry.status}
                             </Badge>
-                            {entry.quotedWaitTime && (
+                            {entry.targetDate && (
+                              <Badge className="bg-amber-100 text-amber-800 border-amber-200 text-[8px] font-black uppercase px-2 py-0.5 rounded-sm">
+                                Date Waitlist ({entry.targetDate})
+                              </Badge>
+                            )}
+                            {entry.quotedWaitTime && !entry.targetDate && (
                               <span className="text-[10px] font-bold text-slate-400 uppercase tracking-tight">
                                 (Quote: {entry.quotedWaitTime} min)
                               </span>
@@ -1038,10 +1061,10 @@ export default function HostConsolePage() {
             <div className="space-y-3 pt-4 border-t border-slate-100">
               <h3 className="text-xs font-black uppercase text-slate-400 tracking-wider">Recently Seated / Cancelled Walk-ins</h3>
               <div className="space-y-3">
-                {waitlistHistory.length === 0 ? (
+                {filteredWaitlistHistory.length === 0 ? (
                   <div className="text-xs text-slate-400 italic py-4 bg-slate-50 text-center rounded-lg border border-slate-100">No recent waitlist changes</div>
                 ) : (
-                  waitlistHistory.map((entry) => (
+                  filteredWaitlistHistory.map((entry) => (
                     <div key={entry.id} className="p-3 border border-slate-200 rounded-xl bg-slate-50 flex items-center justify-between gap-3">
                       <div>
                         <div className="font-bold text-xs uppercase text-slate-800 flex items-center gap-1.5">
@@ -1051,7 +1074,7 @@ export default function HostConsolePage() {
                           </Badge>
                         </div>
                         <div className="text-[10px] text-slate-400 font-bold uppercase mt-0.5">
-                          {entry.partySize} Pax • Waited {getElapsedTime(entry.joinedAt)}
+                          {entry.partySize} Pax • {entry.targetDate ? `Date Waitlist (${entry.targetDate})` : `Waited ${getElapsedTime(entry.joinedAt)}`}
                         </div>
                       </div>
                       <Button 
