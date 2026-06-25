@@ -141,6 +141,7 @@ model WaitlistEntry {
   quotedWaitTime Int?       // in minutes
   status         String     @default("WAITING") // WAITING, NOTIFIED, SEATED, CANCELED, NO_SHOW
   notes          String?
+  targetDate     String?    // YYYY-MM-DD for date-based reservations waitlist
   
   joinedAt       DateTime   @default(now())
   notifiedAt     DateTime?
@@ -236,6 +237,7 @@ model DaySetting {
   date                  String     // ISO Date string (YYYY-MM-DD)
   eventTitle            String?
   isReservationEnabled  Boolean    @default(true)
+  isFullyBooked         Boolean    @default(false)
   autoConfirm           Boolean    @default(false) // If true, skip PENDING and go to CONFIRMED
   maxCapacityOverride   Int?       // Optional: limit capacity for special events
   restaurant            Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
