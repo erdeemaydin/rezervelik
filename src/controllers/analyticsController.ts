@@ -1,0 +1,347 @@
+import { Request, Response } from 'express';
+import prisma from '../config/prisma';
+import { successResponse, errorResponse } from '../utils/response';
+
+/**
+ * GET /analytics?period=30
+ * Returns comprehensive analytics for a restaurant over a given period.
+ */
+export const getAnalytics = async (req: Request, res: Response) => {
+  try {
+    const restaurantId = req.restaurantId!;
+    const periodDays = parseInt(req.query.period as string) || 30;
+
+    // Validate period
+    const allowedPeriods = [7, 30, 60, 90];
+    const period = allowedPeriods.includes(periodDays) ? periodDays : 30;
+
+    const now = new Date();
+    const periodStart = new Date(now.getTime() - period * 24 * 60 * 60 * 1000);
+    const prevPeriodStart = new Date(periodStart.getTime() - period * 24 * 60 * 60 * 1000);
+
+    // ─── 1. Fetch all reservations in current & previous period ───
+    const [currentReservations, prevReservations] = await Promise.all([
+      prisma.reservation.findMany({
+        where: {
+          restaurantId,
+          startTime: { gte: periodStart, lte: now },
+        },
+        include: {
+          table: { include: { tableType: true } },
+          category: true,
+        },
+      }),
+      prisma.reservation.findMany({
+        where: {
+          restaurantId,
+          startTime: { gte: prevPeriodStart, lt: periodStart },
+        },
+        select: {
+          guestCount: true,
+          status: true,
+        },
+      }),
+    ]);
+
+    // ─── 2. Summary Stats ───
+    const totalReservations = currentReservations.length;
+
+    const confirmedOrCompleted = currentReservations.filter(
+      (r) => r.status === 'CONFIRMED' || r.status === 'COMPLETED'
+    );
+    const totalGuests = confirmedOrCompleted.reduce((sum, r) => sum + r.guestCount, 0);
+
+    const avgPartySize =
+      totalReservations > 0
+        ? Math.round(
+            (currentReservations.reduce((sum, r) => sum + r.guestCount, 0) / totalReservations) * 10
+          ) / 10
+        : 0;
+
+    const cancelledCount = currentReservations.filter((r) => r.status === 'CANCELLED').length;
+    const noShowCount = currentReservations.filter((r) => r.status === 'NO_SHOW').length;
+
+    const cancelRate =
+      totalReservations > 0
+        ? Math.round((cancelledCount / totalReservations) * 1000) / 10
+        : 0;
+
+    const noShowRate =
+      totalReservations > 0
+        ? Math.round((noShowCount / totalReservations) * 1000) / 10
+        : 0;
+
+    const vipCount = currentReservations.filter((r) => r.isVIP).length;
+
+    // ─── 3. Previous Period Comparison ───
+    const prevTotalReservations = prevReservations.length;
+    const prevConfirmedOrCompleted = prevReservations.filter(
+      (r) => r.status === 'CONFIRMED' || r.status === 'COMPLETED'
+    );
+    const prevTotalGuests = prevConfirmedOrCompleted.reduce((sum, r) => sum + r.guestCount, 0);
+
+    const reservationsChange =
+      prevTotalReservations > 0
+        ? Math.round(((totalReservations - prevTotalReservations) / prevTotalReservations) * 1000) / 10
+        : totalReservations > 0
+          ? 100
+          : 0;
+
+    const guestsChange =
+      prevTotalGuests > 0
+        ? Math.round(((totalGuests - prevTotalGuests) / prevTotalGuests) * 1000) / 10
+        : totalGuests > 0
+          ? 100
+          : 0;
+
+    // ─── 4. Daily Trend ───
+    const dailyMap = new Map<string, { reservations: number; guests: number }>();
+
+    // Initialize all days in the period
+    for (let d = new Date(periodStart); d <= now; d = new Date(d.getTime() + 24 * 60 * 60 * 1000)) {
+      const dateStr = d.toISOString().split('T')[0];
+      dailyMap.set(dateStr, { reservations: 0, guests: 0 });
+    }
+
+    currentReservations.forEach((r) => {
+      const dateStr = r.startTime.toISOString().split('T')[0];
+      const entry = dailyMap.get(dateStr);
+      if (entry) {
+        entry.reservations += 1;
+        entry.guests += r.guestCount;
+      }
+    });
+
+    const dailyTrend = Array.from(dailyMap.entries()).map(([date, data]) => ({
+      date,
+      reservations: data.reservations,
+      guests: data.guests,
+    }));
+
+    // ─── 5. Peak Hours Heatmap ───
+    const peakHoursMap = new Map<string, number>();
+
+    currentReservations.forEach((r) => {
+      const dayOfWeek = r.startTime.getDay();
+      const hour = r.startTime.getHours();
+      const key = `${dayOfWeek}-${hour}`;
+      peakHoursMap.set(key, (peakHoursMap.get(key) || 0) + 1);
+    });
+
+    const peakHours: { dayOfWeek: number; hour: number; count: number }[] = [];
+    peakHoursMap.forEach((count, key) => {
+      const [dayOfWeek, hour] = key.split('-').map(Number);
+      peakHours.push({ dayOfWeek, hour, count });
+    });
+
+    // ─── 6. Status Breakdown ───
+    const statusMap = new Map<string, number>();
+    currentReservations.forEach((r) => {
+      statusMap.set(r.status, (statusMap.get(r.status) || 0) + 1);
+    });
+
+    const statusBreakdown = Array.from(statusMap.entries()).map(([status, count]) => ({
+      status,
+      count,
+    }));
+
+    // ─── 7. Category Breakdown ───
+    const categoryMap = new Map<string, { count: number; color: string | null }>();
+    currentReservations.forEach((r) => {
+      if (r.category) {
+        const existing = categoryMap.get(r.category.name);
+        if (existing) {
+          existing.count += 1;
+        } else {
+          categoryMap.set(r.category.name, { count: 1, color: r.category.color });
+        }
+      }
+    });
+
+    const categoryBreakdown = Array.from(categoryMap.entries()).map(([name, data]) => ({
+      name,
+      count: data.count,
+      color: data.color,
+    }));
+
+    // ─── 8. Zone Utilization ───
+    const zoneMap = new Map<string, { reservations: number; totalGuests: number }>();
+    currentReservations.forEach((r) => {
+      if (r.table?.tableType) {
+        const zoneName = r.table.tableType.name;
+        const existing = zoneMap.get(zoneName);
+        if (existing) {
+          existing.reservations += 1;
+          existing.totalGuests += r.guestCount;
+        } else {
+          zoneMap.set(zoneName, { reservations: 1, totalGuests: r.guestCount });
+        }
+      }
+    });
+
+    const zoneUtilization = Array.from(zoneMap.entries()).map(([zone, data]) => ({
+      zone,
+      reservations: data.reservations,
+      avgGuests: Math.round((data.totalGuests / data.reservations) * 10) / 10,
+    }));
+
+    // ─── 9. Waitlist Metrics ───
+    const waitlistEntries = await prisma.waitlistEntry.findMany({
+      where: {
+        restaurantId,
+        joinedAt: { gte: periodStart, lte: now },
+      },
+    });
+
+    const totalJoined = waitlistEntries.length;
+    const seated = waitlistEntries.filter((w) => w.status === 'SEATED').length;
+    const waitlistNoShow = waitlistEntries.filter((w) => w.status === 'NO_SHOW').length;
+    const waitlistCanceled = waitlistEntries.filter((w) => w.status === 'CANCELED').length;
+
+    // Average wait time for SEATED entries (in minutes)
+    const seatedEntries = waitlistEntries.filter((w) => w.status === 'SEATED' && w.seatedAt);
+    const avgWaitMinutes =
+      seatedEntries.length > 0
+        ? Math.round(
+            seatedEntries.reduce((sum, w) => {
+              const waitMs = w.seatedAt!.getTime() - w.joinedAt.getTime();
+              return sum + waitMs / 60000;
+            }, 0) / seatedEntries.length
+          )
+        : 0;
+
+    const conversionRate =
+      totalJoined > 0
+        ? Math.round((seated / totalJoined) * 1000) / 10
+        : 0;
+
+    return successResponse(res, {
+      period,
+      summary: {
+        totalReservations,
+        totalGuests,
+        avgPartySize,
+        cancelRate,
+        noShowRate,
+        vipCount,
+      },
+      comparison: {
+        totalReservations: {
+          current: totalReservations,
+          previous: prevTotalReservations,
+          changePercent: reservationsChange,
+        },
+        totalGuests: {
+          current: totalGuests,
+          previous: prevTotalGuests,
+          changePercent: guestsChange,
+        },
+      },
+      dailyTrend,
+      peakHours,
+      statusBreakdown,
+      categoryBreakdown,
+      zoneUtilization,
+      waitlistMetrics: {
+        totalJoined,
+        seated,
+        noShow: waitlistNoShow,
+        canceled: waitlistCanceled,
+        avgWaitMinutes,
+        conversionRate,
+      },
+    });
+  } catch (error) {
+    console.error('Get analytics error:', error);
+    return errorResponse(res, 'errors.internal_error', 500);
+  }
+};
+
+/**
+ * GET /today
+ * Returns today's real-time reservation stats and upcoming schedule.
+ */
+export const getTodayStats = async (req: Request, res: Response) => {
+  try {
+    const restaurantId = req.restaurantId!;
+    const now = new Date();
+    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const todayEnd = new Date(todayStart.getTime() + 24 * 60 * 60 * 1000);
+
+    // Fetch all of today's reservations in one query
+    const todayReservations = await prisma.reservation.findMany({
+      where: {
+        restaurantId,
+        startTime: { gte: todayStart, lt: todayEnd },
+      },
+      include: {
+        table: true,
+      },
+    });
+
+    // ─── 1. Basic counts ───
+    const todayReservationsCount = todayReservations.length;
+
+    const confirmedToday = todayReservations.filter((r) => r.status === 'CONFIRMED');
+    const todayGuests = confirmedToday.reduce((sum, r) => sum + r.guestCount, 0);
+
+    const pendingCount = todayReservations.filter((r) => r.status === 'PENDING').length;
+    const confirmedCount = confirmedToday.length;
+    const canceledCount = todayReservations.filter((r) => r.status === 'CANCELLED').length;
+    const noShowCount = todayReservations.filter((r) => r.status === 'NO_SHOW').length;
+
+    // ─── 2. Upcoming reservations (next 10, startTime > now, today only) ───
+    const upcomingReservations = todayReservations
+      .filter((r) => r.startTime > now)
+      .sort((a, b) => a.startTime.getTime() - b.startTime.getTime())
+      .slice(0, 10)
+      .map((r) => ({
+        customerName: r.customerName,
+        guestCount: r.guestCount,
+        startTime: r.startTime,
+        table: r.table ? { identifier: r.table.identifier } : null,
+        status: r.status,
+        isVIP: r.isVIP,
+      }));
+
+    // ─── 3. Today by hour ───
+    const todayByHour: { hour: number; count: number }[] = [];
+    const hourMap = new Map<number, number>();
+
+    todayReservations.forEach((r) => {
+      const hour = r.startTime.getHours();
+      hourMap.set(hour, (hourMap.get(hour) || 0) + 1);
+    });
+
+    for (let h = 0; h < 24; h++) {
+      todayByHour.push({ hour: h, count: hourMap.get(h) || 0 });
+    }
+
+    // ─── 4. Average duration (in minutes) ───
+    const reservationsWithDuration = todayReservations.filter((r) => r.endTime);
+    const avgDuration =
+      reservationsWithDuration.length > 0
+        ? Math.round(
+            reservationsWithDuration.reduce((sum, r) => {
+              const durationMs = r.endTime!.getTime() - r.startTime.getTime();
+              return sum + durationMs / 60000;
+            }, 0) / reservationsWithDuration.length
+          )
+        : 0;
+
+    return successResponse(res, {
+      todayReservations: todayReservationsCount,
+      todayGuests,
+      pendingCount,
+      confirmedCount,
+      canceledCount,
+      noShowCount,
+      upcomingReservations,
+      todayByHour,
+      avgDuration,
+    });
+  } catch (error) {
+    console.error('Get today stats error:', error);
+    return errorResponse(res, 'errors.internal_error', 500);
+  }
+};
