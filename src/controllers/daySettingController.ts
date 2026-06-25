@@ -18,7 +18,7 @@ export const getDaySettings = async (req: Request, res: Response) => {
 export const upsertDaySetting = async (req: Request, res: Response) => {
   try {
     const restaurantId = req.restaurantId!;
-    const { date, eventTitle, isReservationEnabled, autoConfirm, maxCapacityOverride } = req.body;
+    const { date, eventTitle, isReservationEnabled, isFullyBooked, autoConfirm, maxCapacityOverride } = req.body;
 
     if (!date) return errorResponse(res, 'errors.validation_error', 400, { message: 'Date is required' });
 
@@ -29,6 +29,7 @@ export const upsertDaySetting = async (req: Request, res: Response) => {
       update: {
         eventTitle,
         isReservationEnabled,
+        isFullyBooked: isFullyBooked ?? false,
         autoConfirm,
         maxCapacityOverride
       },
@@ -37,6 +38,7 @@ export const upsertDaySetting = async (req: Request, res: Response) => {
         date,
         eventTitle,
         isReservationEnabled,
+        isFullyBooked: isFullyBooked ?? false,
         autoConfirm,
         maxCapacityOverride
       }
@@ -52,7 +54,7 @@ export const upsertDaySetting = async (req: Request, res: Response) => {
 export const bulkUpsertDaySettings = async (req: Request, res: Response) => {
   try {
     const restaurantId = req.restaurantId!;
-    const { dates, eventTitle, isReservationEnabled, autoConfirm } = req.body;
+    const { dates, eventTitle, isReservationEnabled, isFullyBooked, autoConfirm } = req.body;
 
     if (!dates || !Array.isArray(dates)) {
       return errorResponse(res, 'errors.validation_error', 400, { message: 'Dates array is required' });
@@ -61,8 +63,8 @@ export const bulkUpsertDaySettings = async (req: Request, res: Response) => {
     const operations = dates.map(date => 
       prisma.daySetting.upsert({
         where: { restaurantId_date: { restaurantId, date } },
-        update: { eventTitle, isReservationEnabled, autoConfirm },
-        create: { restaurantId, date, eventTitle, isReservationEnabled, autoConfirm }
+        update: { eventTitle, isReservationEnabled, isFullyBooked: isFullyBooked ?? false, autoConfirm },
+        create: { restaurantId, date, eventTitle, isReservationEnabled, isFullyBooked: isFullyBooked ?? false, autoConfirm }
       })
     );
 

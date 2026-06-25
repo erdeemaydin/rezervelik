@@ -72,10 +72,12 @@ export const getDayStatus = async (req: Request, res: Response) => {
     return successResponse(res, {
       daySetting: daySetting ? {
           isReservationEnabled: daySetting.isReservationEnabled,
+          isFullyBooked: daySetting.isFullyBooked,
           autoConfirm: daySetting.autoConfirm,
           maxCapacityOverride: daySetting.maxCapacityOverride
       } : {
           isReservationEnabled: restaurant.settings?.isReservationEnabled ?? true,
+          isFullyBooked: false,
           autoConfirm: false,
       },
       hasTables: tablesCount > 0
@@ -88,7 +90,7 @@ export const getDayStatus = async (req: Request, res: Response) => {
 export const joinPublicWaitlist = async (req: Request, res: Response) => {
   try {
     const { slug } = req.params;
-    const { customerName, customerPhone, partySize } = req.body;
+    const { customerName, customerPhone, partySize, targetDate, notes } = req.body;
 
     if (!customerName || !customerPhone || !partySize) {
       return errorResponse(res, 'Missing parameters', 400);
@@ -126,7 +128,9 @@ export const joinPublicWaitlist = async (req: Request, res: Response) => {
         customerPhone,
         partySize: parseInt(partySize),
         quotedWaitTime,
-        status: 'WAITING'
+        status: 'WAITING',
+        targetDate: targetDate || null,
+        notes: notes || null
       }
     });
 
