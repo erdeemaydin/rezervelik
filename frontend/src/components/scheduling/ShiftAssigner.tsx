@@ -8,6 +8,7 @@ import { ChevronLeft, ChevronRight, GripVertical, X, Download, Send, CheckCircle
 import { cn } from '@/lib/utils';
 import api from '@/lib/api';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { 
   Shift, 
   EmployeeAvailability, 
@@ -165,11 +166,9 @@ export default function ShiftAssigner({ viewMode = 'MONTHLY' }: { viewMode?: 'WE
   // Drag state
   const [activeStaff, setActiveStaff] = useState<Staff | null>(null);
 
-  // Highlighting and Quick Assign Selector
+  // Highlighting and Quick Assign Selector Popover
   const [highlightedStaffId, setHighlightedStaffId] = useState<string | null>(null);
-  const [isAssignSelectorOpen, setIsAssignSelectorOpen] = useState(false);
-  const [selectorDate, setSelectorDate] = useState<string>('');
-  const [selectorShift, setSelectorShift] = useState<Shift | null>(null);
+  const [openPopoverCellId, setOpenPopoverCellId] = useState<string | null>(null);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -325,38 +324,7 @@ export default function ShiftAssigner({ viewMode = 'MONTHLY' }: { viewMode?: 'WE
     return assignments.filter(a => a.date === dateString && a.shiftId === shiftId);
   };
 
-  const handleOpenAssignSelector = (date: string, shift: Shift) => {
-    setSelectorDate(date);
-    setSelectorShift(shift);
-    setIsAssignSelectorOpen(true);
-  };
-
-  const staffByAvailability = useMemo(() => {
-    if (!selectorDate || !selectorShift) return { available: [], unspecified: [], unavailable: [] };
-
-    const avail = availabilities.filter(
-      a => a.date === selectorDate && a.shiftId === selectorShift.id
-    );
-
-    const available: Staff[] = [];
-    const unspecified: Staff[] = [];
-    const unavailable: Staff[] = [];
-
-    staff.forEach(s => {
-      const record = avail.find(a => a.userId === s.id);
-      if (record) {
-        if (record.isAvailable) {
-          available.push(s);
-        } else {
-          unavailable.push(s);
-        }
-      } else {
-        unspecified.push(s);
-      }
-    });
-
-    return { available, unspecified, unavailable };
-  }, [selectorDate, selectorShift, staff, availabilities]);
+  // Dialog selection removed. Availability popover triggers inline.
 
   // Compute shift warnings
   const assignmentWarnings = useMemo(() => {
@@ -905,21 +873,198 @@ export default function ShiftAssigner({ viewMode = 'MONTHLY' }: { viewMode?: 'WE
                                   );
                                 })}
 
-                                {isAdminOrManager && (
-                                  <button
-                                    type="button"
-                                    onClick={() => handleOpenAssignSelector(day.dateString, shift)}
-                                    className={cn(
-                                      "text-[9px] font-black uppercase tracking-wider rounded px-1.5 py-0.5 mt-1 w-full text-center flex items-center justify-center gap-1 transition-all border",
-                                      availableCount > 0
-                                        ? "bg-emerald-50 border-emerald-100 text-emerald-700 hover:bg-emerald-100"
-                                        : "bg-slate-50 border-slate-100 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
-                                    )}
-                                  >
-                                    <Plus className="w-2.5 h-2.5" />
-                                    <span>{availableCount > 0 ? `${availableCount} Avail` : "Add"}</span>
-                                  </button>
-                                )}
+                                {isAdminOrManager && (() => {
+                                  // Compute inline availability for this cell
+                                  const available: Staff[] = [];
+                                  const unspecified: Staff[] = [];
+                                  const unavailable: Staff[] = [];
+
+                                  staff.forEach(s => {
+                                    const record = cellAvailabilities.find(a => a.userId === s.id);
+                                    if (record) {
+                                      if (record.isAvailable) {
+                                        available.push(s);
+                                      } else {
+                                        unavailable.push(s);
+                                      }
+                                    } else {
+                                      unspecified.push(s);
+                                    }
+                                  });
+
+                                  return (
+                                    <Popover 
+                                      open={openPopoverCellId === cellId} 
+                                      onOpenChange={(open) => setOpenPopoverCellId(open ? cellId : null)}
+                                    >
+                                       <PopoverTrigger
+                                         className={cn(
+                                           "text-[9px] font-black uppercase tracking-wider rounded px-1.5 py-0.5 mt-1 w-full text-center flex items-center justify-center gap-1 transition-all border cursor-pointer",
+                                           availableCount > 0
+                                             ? "bg-emerald-50 border-emerald-100 text-emerald-700 hover:bg-emerald-100"
+                                             : "bg-slate-50 border-slate-100 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+                                         )}
+                                       >
+                                         <Plus className="w-2.5 h-2.5" />
+                                         <span>{availableCount > 0 ? `${availableCount} Avail` : "Add"}</span>
+                                       </PopoverTrigger>
+                                      <PopoverContent className="w-64 p-0 bg-white border border-slate-200 shadow-xl rounded-xl overflow-hidden z-50">
+                                        <div className="bg-slate-900 p-3 text-white">
+                                          <div className="text-xs font-black uppercase tracking-wider">
+                                            Assign Staff
+                                          </div>
+                                          <div className="text-[9px] text-slate-400 font-bold uppercase mt-0.5">
+                                            {shift.name} • {day.dateString}
+                                          </div>
+                                        </div>
+                                        
+                                        <div className="p-3 space-y-4 max-h-[300px] overflow-y-auto">
+                                          {/* 1. AVAILABLE STAFF */}
+                                          <div className="space-y-1">
+                                            <h4 className="text-[9px] font-black uppercase text-emerald-600 tracking-wider">
+                                              🟢 Available ({available.length})
+                                            </h4>
+                                            {available.length === 0 ? (
+                                              <p className="text-[9px] text-slate-400 italic pl-1 uppercase font-bold">None marked available</p>
+                                            ) : (
+                                              <div className="space-y-1">
+                                                {available.map(s => {
+                                                  const isAssigned = assignments.some(a => a.date === day.dateString && a.shiftId === shift.id && a.userId === s.id);
+                                                  const others = assignments.filter(a => a.date === day.dateString && a.shiftId !== shift.id && a.userId === s.id);
+                                                  
+                                                  return (
+                                                    <div key={s.id} className="flex items-center justify-between p-1.5 rounded-lg border border-slate-100 bg-slate-50/50 hover:bg-slate-50 gap-2">
+                                                      <div className="flex flex-col min-w-0 flex-1">
+                                                        <span className="text-[10px] font-bold text-slate-800 truncate">{s.firstName} {s.lastName}</span>
+                                                        {others.length > 0 && (
+                                                          <span className="text-[8px] text-amber-600 font-black uppercase tracking-tight truncate mt-0.5">
+                                                            Works other shift
+                                                          </span>
+                                                        )}
+                                                      </div>
+                                                      {isAssigned ? (
+                                                        <span className="text-[8px] font-black uppercase text-slate-400 shrink-0">Assigned</span>
+                                                      ) : (
+                                                        <Button 
+                                                          size="sm" 
+                                                          className="h-6 bg-emerald-600 hover:bg-emerald-700 text-white font-black uppercase text-[8px] px-2 rounded shrink-0"
+                                                          onClick={() => {
+                                                            handleAssign(shift.id, s.id, day.dateString);
+                                                            setOpenPopoverCellId(null);
+                                                          }}
+                                                        >
+                                                          Add
+                                                        </Button>
+                                                      )}
+                                                    </div>
+                                                  );
+                                                })}
+                                              </div>
+                                            )}
+                                          </div>
+
+                                          {/* 2. UNSPECIFIED AVAILABILITY */}
+                                          <div className="space-y-1 pt-2 border-t border-slate-100">
+                                            <h4 className="text-[9px] font-black uppercase text-amber-600 tracking-wider">
+                                              ⚪ Unspecified ({unspecified.length})
+                                            </h4>
+                                            {unspecified.length === 0 ? (
+                                              <p className="text-[9px] text-slate-400 italic pl-1 uppercase font-bold">All staff accounted</p>
+                                            ) : (
+                                              <div className="space-y-1">
+                                                {unspecified.map(s => {
+                                                  const isAssigned = assignments.some(a => a.date === day.dateString && a.shiftId === shift.id && a.userId === s.id);
+                                                  const others = assignments.filter(a => a.date === day.dateString && a.shiftId !== shift.id && a.userId === s.id);
+                                                  
+                                                  return (
+                                                    <div key={s.id} className="flex items-center justify-between p-1.5 rounded-lg border border-slate-100 bg-slate-50/50 hover:bg-slate-50 gap-2">
+                                                      <div className="flex flex-col min-w-0 flex-1">
+                                                        <span className="text-[10px] font-bold text-slate-700 truncate">{s.firstName} {s.lastName}</span>
+                                                        {others.length > 0 && (
+                                                          <span className="text-[8px] text-amber-600 font-black uppercase tracking-tight truncate mt-0.5">
+                                                            Works other shift
+                                                          </span>
+                                                        )}
+                                                      </div>
+                                                      {isAssigned ? (
+                                                        <span className="text-[8px] font-black uppercase text-slate-400 shrink-0">Assigned</span>
+                                                      ) : (
+                                                        <Button 
+                                                          size="sm" 
+                                                          variant="outline"
+                                                          className="h-6 border-amber-200 bg-amber-50/30 text-amber-700 hover:bg-amber-100 font-black uppercase text-[8px] px-2 rounded shrink-0"
+                                                          onClick={() => {
+                                                            handleAssign(shift.id, s.id, day.dateString);
+                                                            setOpenPopoverCellId(null);
+                                                          }}
+                                                        >
+                                                          Add
+                                                        </Button>
+                                                      )}
+                                                    </div>
+                                                  );
+                                                })}
+                                              </div>
+                                            )}
+                                          </div>
+
+                                          {/* 3. EXPLICITLY UNAVAILABLE */}
+                                          <div className="space-y-1 pt-2 border-t border-slate-100">
+                                            <h4 className="text-[9px] font-black uppercase text-red-600 tracking-wider">
+                                              🔴 Unavailable ({unavailable.length})
+                                            </h4>
+                                            {unavailable.length === 0 ? (
+                                              <p className="text-[9px] text-slate-400 italic pl-1 uppercase font-bold">No unavailable requests</p>
+                                            ) : (
+                                              <div className="space-y-1">
+                                                {unavailable.map(s => {
+                                                  const isAssigned = assignments.some(a => a.date === day.dateString && a.shiftId === shift.id && a.userId === s.id);
+                                                  const others = assignments.filter(a => a.date === day.dateString && a.shiftId !== shift.id && a.userId === s.id);
+                                                  const availRecord = cellAvailabilities.find(a => a.userId === s.id);
+                                                  
+                                                  return (
+                                                    <div key={s.id} className="flex flex-col p-1.5 rounded-lg border border-red-100 bg-red-50/10 hover:bg-red-50/30 gap-1">
+                                                      <div className="flex items-center justify-between gap-2 w-full">
+                                                        <span className="text-[10px] font-bold text-red-955 truncate flex-1">{s.firstName} {s.lastName}</span>
+                                                        {isAssigned ? (
+                                                          <span className="text-[8px] font-black uppercase text-slate-400 shrink-0">Assigned</span>
+                                                        ) : (
+                                                          <Button 
+                                                            size="sm" 
+                                                            variant="destructive"
+                                                            className="h-6 bg-red-600 hover:bg-red-700 font-black uppercase text-[8px] px-1.5 rounded shrink-0"
+                                                            onClick={() => {
+                                                              if (confirm(`Warning: ${s.firstName} marked themselves as UNAVAILABLE for this shift. Do you still want to assign them?`)) {
+                                                                handleAssign(shift.id, s.id, day.dateString);
+                                                                setOpenPopoverCellId(null);
+                                                              }
+                                                            }}
+                                                          >
+                                                            Force
+                                                          </Button>
+                                                        )}
+                                                      </div>
+                                                      {availRecord?.notes && (
+                                                        <span className="text-[8px] text-red-500 font-medium italic mt-0.5 block bg-red-50/50 p-1 rounded border border-red-100/50 truncate" title={availRecord.notes}>
+                                                          "{availRecord.notes}"
+                                                        </span>
+                                                      )}
+                                                      {others.length > 0 && (
+                                                        <span className="text-[8px] text-amber-600 font-black uppercase tracking-tight truncate">
+                                                          ⚠️ Works other shift
+                                                        </span>
+                                                      )}
+                                                    </div>
+                                                  );
+                                                })}
+                                              </div>
+                                            )}
+                                          </div>
+                                        </div>
+                                      </PopoverContent>
+                                    </Popover>
+                                  );
+                                })()}
                               </DroppableCell>
                             );
                           })}
@@ -943,177 +1088,7 @@ export default function ShiftAssigner({ viewMode = 'MONTHLY' }: { viewMode?: 'WE
         ) : null}
       </DragOverlay>
 
-      {/* QUICK ASSIGN SELECTOR MODAL */}
-      <Dialog open={isAssignSelectorOpen} onOpenChange={setIsAssignSelectorOpen}>
-        <DialogContent className="max-w-md w-full p-0 rounded-2xl overflow-hidden border-0 bg-white shadow-2xl">
-          <div className="bg-slate-900 p-6 text-white">
-            <DialogHeader>
-              <DialogTitle className="text-base font-black uppercase tracking-widest flex items-center gap-2">
-                <Users className="w-5 h-5 text-blue-400 stroke-[3]" />
-                Assign Staff to Shift
-              </DialogTitle>
-              <DialogDescription className="text-slate-400 text-xs mt-1 font-bold uppercase tracking-wider">
-                {selectorShift?.name} • {selectorDate} ({selectorShift?.startTime} - {selectorShift?.endTime})
-              </DialogDescription>
-            </DialogHeader>
-          </div>
-
-          <div className="p-6 space-y-6 max-h-[60vh] overflow-y-auto pr-1">
-            {/* 1. AVAILABLE STAFF */}
-            <div className="space-y-2">
-              <h4 className="text-[10px] font-black uppercase text-emerald-600 tracking-wider flex items-center gap-1.5">
-                🟢 Available Staff ({staffByAvailability.available.length})
-              </h4>
-              {staffByAvailability.available.length === 0 ? (
-                <p className="text-[10px] text-slate-400 italic pl-3 uppercase font-bold">No staff explicitly marked available</p>
-              ) : (
-                <div className="space-y-1.5">
-                  {staffByAvailability.available.map(s => {
-                    const isAssigned = assignments.some(a => a.date === selectorDate && a.shiftId === selectorShift?.id && a.userId === s.id);
-                    const others = assignments.filter(a => a.date === selectorDate && a.shiftId !== selectorShift?.id && a.userId === s.id);
-                    
-                    return (
-                      <div key={s.id} className="flex items-center justify-between p-2.5 rounded-xl border border-slate-100 bg-slate-50/50 hover:bg-slate-50">
-                        <div className="flex flex-col">
-                          <span className="text-xs font-bold text-slate-800">{s.firstName} {s.lastName}</span>
-                          {others.length > 0 && (
-                            <span className="text-[9px] text-amber-600 font-black uppercase tracking-tight mt-1">
-                              ⚠️ Works: {others.map(o => shifts.find(sh => sh.id === o.shiftId)?.name).join(', ')}
-                            </span>
-                          )}
-                        </div>
-                        {isAssigned ? (
-                          <span className="text-[9px] font-black uppercase text-slate-400 tracking-wider">Assigned</span>
-                        ) : (
-                          <Button 
-                            size="sm" 
-                            className="h-8 bg-emerald-600 hover:bg-emerald-700 text-white font-black uppercase text-[9px] tracking-wider rounded-lg shadow-sm"
-                            onClick={() => {
-                              handleAssign(selectorShift!.id, s.id, selectorDate);
-                              setIsAssignSelectorOpen(false);
-                            }}
-                          >
-                            Assign
-                          </Button>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-
-            {/* 2. UNSPECIFIED AVAILABILITY */}
-            <div className="space-y-2 pt-4 border-t border-slate-100">
-              <h4 className="text-[10px] font-black uppercase text-amber-600 tracking-wider flex items-center gap-1.5">
-                ⚪ Unspecified / No Avail. Submitted ({staffByAvailability.unspecified.length})
-              </h4>
-              {staffByAvailability.unspecified.length === 0 ? (
-                <p className="text-[10px] text-slate-400 italic pl-3 uppercase font-bold">All staff accounted for</p>
-              ) : (
-                <div className="space-y-1.5">
-                  {staffByAvailability.unspecified.map(s => {
-                    const isAssigned = assignments.some(a => a.date === selectorDate && a.shiftId === selectorShift?.id && a.userId === s.id);
-                    const others = assignments.filter(a => a.date === selectorDate && a.shiftId !== selectorShift?.id && a.userId === s.id);
-                    
-                    return (
-                      <div key={s.id} className="flex items-center justify-between p-2.5 rounded-xl border border-slate-100 bg-slate-50/50 hover:bg-slate-50">
-                        <div className="flex flex-col">
-                          <span className="text-xs font-bold text-slate-700">{s.firstName} {s.lastName}</span>
-                          {others.length > 0 && (
-                            <span className="text-[9px] text-amber-600 font-black uppercase tracking-tight mt-1">
-                              ⚠️ Works: {others.map(o => shifts.find(sh => sh.id === o.shiftId)?.name).join(', ')}
-                            </span>
-                          )}
-                        </div>
-                        {isAssigned ? (
-                          <span className="text-[9px] font-black uppercase text-slate-400 tracking-wider">Assigned</span>
-                        ) : (
-                          <Button 
-                            size="sm" 
-                            variant="outline"
-                            className="h-8 border-amber-200 bg-amber-50/30 text-amber-700 hover:bg-amber-100 font-black uppercase text-[9px] tracking-wider rounded-lg shadow-none"
-                            onClick={() => {
-                              handleAssign(selectorShift!.id, s.id, selectorDate);
-                              setIsAssignSelectorOpen(false);
-                            }}
-                          >
-                            Assign
-                          </Button>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-
-            {/* 3. EXPLICITLY UNAVAILABLE */}
-            <div className="space-y-2 pt-4 border-t border-slate-100">
-              <h4 className="text-[10px] font-black uppercase text-red-600 tracking-wider flex items-center gap-1.5">
-                🔴 Explicitly Unavailable ({staffByAvailability.unavailable.length})
-              </h4>
-              {staffByAvailability.unavailable.length === 0 ? (
-                <p className="text-[10px] text-slate-400 italic pl-3 uppercase font-bold">No unavailable requests</p>
-              ) : (
-                <div className="space-y-1.5">
-                  {staffByAvailability.unavailable.map(s => {
-                    const isAssigned = assignments.some(a => a.date === selectorDate && a.shiftId === selectorShift?.id && a.userId === s.id);
-                    const others = assignments.filter(a => a.date === selectorDate && a.shiftId !== selectorShift?.id && a.userId === s.id);
-                    const availRecord = availabilities.find(a => a.date === selectorDate && a.shiftId === selectorShift?.id && a.userId === s.id);
-                    
-                    return (
-                      <div key={s.id} className="flex items-center justify-between p-2.5 rounded-xl border border-red-100 bg-red-50/10 hover:bg-red-50/30">
-                        <div className="flex flex-col">
-                          <span className="text-xs font-bold text-red-950">{s.firstName} {s.lastName}</span>
-                          {availRecord?.notes && (
-                            <span className="text-[10px] text-red-500 font-medium italic mt-1 bg-red-50 px-2 py-0.5 rounded border border-red-100 self-start">
-                              Reason: "{availRecord.notes}"
-                            </span>
-                          )}
-                          {others.length > 0 && (
-                            <span className="text-[9px] text-amber-600 font-black uppercase tracking-tight mt-1">
-                              ⚠️ Works: {others.map(o => shifts.find(sh => sh.id === o.shiftId)?.name).join(', ')}
-                            </span>
-                          )}
-                        </div>
-                        {isAssigned ? (
-                          <span className="text-[9px] font-black uppercase text-slate-400 tracking-wider">Assigned</span>
-                        ) : (
-                          <Button 
-                            size="sm" 
-                            variant="destructive"
-                            className="h-8 bg-red-600 hover:bg-red-700 font-black uppercase text-[9px] tracking-wider rounded-lg shadow-sm"
-                            onClick={() => {
-                              if (confirm(`Warning: ${s.firstName} marked themselves as UNAVAILABLE for this shift. Do you still want to assign them?`)) {
-                                handleAssign(selectorShift!.id, s.id, selectorDate);
-                                setIsAssignSelectorOpen(false);
-                              }
-                            }}
-                          >
-                            Force
-                          </Button>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-          </div>
-
-          <DialogFooter className="p-4 bg-slate-50 border-t border-slate-100 shrink-0">
-            <Button 
-              type="button" 
-              variant="outline" 
-              onClick={() => setIsAssignSelectorOpen(false)}
-              className="h-12 w-full text-slate-500 font-black uppercase text-[10px] tracking-wider rounded-xl border-slate-200 bg-white"
-            >
-              Cancel
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      {/* Availability popovers render inline next to triggers */}
     </DndContext>
   );
 }
