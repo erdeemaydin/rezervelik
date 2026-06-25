@@ -16,7 +16,8 @@ import {
   CreditCard,
   ChevronLeft,
   ChevronRight,
-  Clock
+  Clock,
+  Tablet
 } from 'lucide-react';
 import { useAuthStore } from '@/store/useAuthStore';
 import { cn } from '@/lib/utils';
@@ -80,6 +81,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
     ]},
     { section: 'Operations', items: [
       { name: 'Reservations', href: '/dashboard/reservations', icon: Calendar, badge: '12', perm: 'manage_reservations' },
+      { name: 'Host Console', href: '/dashboard/host', icon: Tablet, badge: 'iPad', perm: 'manage_reservations' },
       { name: 'Calendar Master', href: '/dashboard/calendar', icon: Calendar, badge: 'New', perm: 'manage_calendar' },
       { name: 'Tables & Floor', href: '/dashboard/tables', icon: Grid, perm: 'manage_tables' },
       { name: 'Menu', href: '/dashboard/menus', icon: UtensilsCrossed, perm: 'manage_menu', feature: 'hasMenuFeature' },
