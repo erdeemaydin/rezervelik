@@ -70,12 +70,19 @@ export const updateWaitTimeConfig = async (req: Request, res: Response) => {
 export const getWaitlist = async (req: Request, res: Response) => {
   try {
     const restaurantId = req.restaurantId!;
+    const { history } = req.query;
+
+    const statuses = history === 'true' 
+      ? ['SEATED', 'CANCELED', 'NO_SHOW'] 
+      : ['WAITING', 'NOTIFIED'];
+
     const waitlist = await prisma.waitlistEntry.findMany({
       where: { 
         restaurantId,
-        status: { in: ['WAITING', 'NOTIFIED'] } 
+        status: { in: statuses } 
       },
-      orderBy: { joinedAt: 'asc' }
+      orderBy: history === 'true' ? { joinedAt: 'desc' } : { joinedAt: 'asc' },
+      take: history === 'true' ? 30 : undefined
     });
     return successResponse(res, waitlist);
   } catch (error) {

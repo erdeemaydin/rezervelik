@@ -11,7 +11,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { 
   Users, Clock, Search, Calendar, Plus, Star, Phone, Check, X, Bell, 
-  ChevronRight, RefreshCw, Smile, ArrowRight, UserCheck, Flame, Leaf, HelpCircle, Utensils
+  ChevronRight, RefreshCw, Smile, ArrowRight, UserCheck, Flame, Leaf, HelpCircle, Utensils, RotateCcw
 } from 'lucide-react';
 import api from '@/lib/api';
 import { toast } from 'sonner';
@@ -51,9 +51,13 @@ export default function HostConsolePage() {
   // Data State
   const [reservations, setReservations] = useState<Reservation[]>([]);
   const [waitlist, setWaitlist] = useState<WaitlistEntry[]>([]);
+  const [waitlistHistory, setWaitlistHistory] = useState<WaitlistEntry[]>([]);
   const [tables, setTables] = useState<any[]>([]);
   const [categories, setCategories] = useState<any[]>([]);
   
+  // History Drawer State
+  const [isHistoryDrawerOpen, setIsHistoryDrawerOpen] = useState(false);
+
   // Time focus anchor state (Default to current hour, e.g. 18 for 18:00)
   const currentHourNum = new Date().getHours();
   const [selectedHour, setSelectedHour] = useState<number | 'all'>(currentHourNum);
@@ -97,15 +101,16 @@ export default function HostConsolePage() {
   const fetchData = async () => {
     try {
       setLoading(true);
-      const [resRes, waitlistRes, tablesRes, catRes] = await Promise.all([
+      const [resRes, waitlistRes, waitlistHistoryRes, tablesRes, catRes] = await Promise.all([
         api.get('/reservations'),
         api.get('/wait-time/entries'),
+        api.get('/wait-time/entries', { params: { history: 'true' } }),
         api.get('/tables'),
         api.get('/categories')
       ]);
       setReservations(resRes.data.data);
-      // Backend status endpoint filters to only active, let's keep all active queue items
       setWaitlist(waitlistRes.data.data);
+      setWaitlistHistory(waitlistHistoryRes.data.data);
       setTables(tablesRes.data.data);
       setCategories(catRes.data.data);
     } catch (error) {
@@ -116,25 +121,79 @@ export default function HostConsolePage() {
     }
   };
 
-  // Switch Reservation Status
-  const handleUpdateResStatus = async (id: string, status: string) => {
+  // Revert reservation status
+  const handleRevertResStatus = async (id: string, status: string) => {
     try {
       await api.put(`/reservations/${id}/status`, { status });
-      toast.success(`Reservation marked as ${status.toLowerCase()}`);
+      toast.success('Action reverted successfully');
+      fetchData();
+    } catch (err) {
+      toast.error('Revert failed');
+    }
+  };
+
+  // Switch Reservation Status
+  const handleUpdateResStatus = async (id: string, status: string, previousStatus?: string) => {
+    try {
+      await api.put(`/reservations/${id}/status`, { status });
+      const statusLabels = {
+        CONFIRMED: 'confirmed',
+        COMPLETED: 'seated',
+        CANCELLED: 'cancelled',
+        NO_SHOW: 'marked as no-show',
+        PENDING: 'marked as pending'
+      };
+      const label = statusLabels[status as keyof typeof statusLabels] || status.toLowerCase();
+      
+      toast.success(`Reservation ${label}`, {
+        action: {
+          label: 'Undo',
+          onClick: () => {
+            handleRevertResStatus(id, previousStatus || 'CONFIRMED');
+          }
+        }
+      });
       fetchData();
     } catch (err) {
       toast.error('Failed to update status');
     }
   };
 
-  // Switch Waitlist Status
-  const handleUpdateWaitlistStatus = async (entryId: string, status: string) => {
+  // Revert Waitlist status
+  const handleRevertWaitlistStatus = async (entryId: string, status: string) => {
     try {
       await api.put(`/wait-time/entries/${entryId}/status`, { status });
-      toast.success(`Guest status updated`);
+      toast.success('Action reverted successfully');
       fetchData();
     } catch (err) {
-      toast.error('Failed to update waitlist entry');
+      toast.error('Revert failed');
+    }
+  };
+
+  // Switch Waitlist Status
+  const handleUpdateWaitlistStatus = async (entryId: string, status: string, previousStatus?: string) => {
+    try {
+      await api.put(`/wait-time/entries/${entryId}/status`, { status });
+      const statusLabels = {
+        WAITING: 'waiting',
+        NOTIFIED: 'notified',
+        SEATED: 'seated',
+        CANCELED: 'cancelled',
+        NO_SHOW: 'marked as no-show'
+      };
+      const label = statusLabels[status as keyof typeof statusLabels] || status.toLowerCase();
+      
+      toast.success(`Guest ${label}`, {
+        action: {
+          label: 'Undo',
+          onClick: () => {
+            handleRevertWaitlistStatus(entryId, previousStatus || 'WAITING');
+          }
+        }
+      });
+      fetchData();
+    } catch (err) {
+      toast.error('Failed to update status');
     }
   };
 
@@ -239,6 +298,15 @@ export default function HostConsolePage() {
       return resHour === selectedHour;
     }).sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
   }, [reservations, searchQuery, selectedHour]);
+
+  const reservationsHistory = useMemo(() => {
+    const todayStr = new Date().toISOString().split('T')[0];
+    return reservations.filter(res => {
+      const isToday = res.startTime.startsWith(todayStr);
+      const isResolved = ['COMPLETED', 'CANCELLED', 'NO_SHOW'].includes(res.status);
+      return isToday && isResolved;
+    }).sort((a, b) => new Date(b.startTime).getTime() - new Date(a.startTime).getTime());
+  }, [reservations]);
 
   const filteredWaitlist = useMemo(() => {
     return waitlist.filter(entry => {
@@ -379,6 +447,15 @@ export default function HostConsolePage() {
 
           <Button 
             variant="outline" 
+            onClick={() => setIsHistoryDrawerOpen(true)}
+            className="h-14 px-6 shrink-0 rounded-xl border-slate-200 hover:bg-slate-50 flex items-center gap-2 font-bold text-xs uppercase text-slate-600"
+          >
+            <RotateCcw className="w-4 h-4 text-blue-600 stroke-[2.5]" />
+            Activity Log
+          </Button>
+
+          <Button 
+            variant="outline" 
             onClick={fetchData} 
             disabled={loading}
             className="h-14 w-14 shrink-0 rounded-xl border-slate-200 hover:bg-slate-50"
@@ -500,22 +577,22 @@ export default function HostConsolePage() {
                           >
                             Details
                           </button>
-                          {res.status === 'PENDING' && (
+                           {res.status === 'PENDING' && (
                             <button
-                              onClick={() => handleUpdateResStatus(res.id, 'CONFIRMED')}
+                              onClick={() => handleUpdateResStatus(res.id, 'CONFIRMED', res.status)}
                               className="flex-1 sm:flex-none h-14 px-4 bg-blue-50 border border-blue-200 hover:bg-blue-100 text-blue-700 font-black uppercase text-[10px] tracking-wider rounded-lg transition-all flex items-center justify-center gap-1"
                             >
                               Confirm
                             </button>
                           )}
                           <button
-                            onClick={() => handleUpdateResStatus(res.id, 'COMPLETED')}
+                            onClick={() => handleUpdateResStatus(res.id, 'COMPLETED', res.status)}
                             className="flex-1 sm:flex-none h-14 px-5 bg-emerald-600 hover:bg-emerald-700 text-white font-black uppercase text-[10px] tracking-wider rounded-lg shadow-md shadow-emerald-600/10 transition-all flex items-center justify-center gap-1.5"
                           >
                             <Check className="w-4 h-4 stroke-[3]" /> Seat
                           </button>
                           <button
-                            onClick={() => handleUpdateResStatus(res.id, 'NO_SHOW')}
+                            onClick={() => handleUpdateResStatus(res.id, 'NO_SHOW', res.status)}
                             className="h-14 w-14 bg-rose-50 border border-rose-100 hover:bg-rose-100 text-rose-600 rounded-lg flex items-center justify-center transition-all shrink-0"
                             title="No Show"
                           >
@@ -597,19 +674,19 @@ export default function HostConsolePage() {
                       {/* Right: Touch actions */}
                       <div className="flex items-center gap-2 w-full sm:w-auto shrink-0 self-stretch sm:self-center justify-end">
                         <button
-                          onClick={() => handleUpdateWaitlistStatus(entry.id, 'NOTIFIED')}
+                          onClick={() => handleUpdateWaitlistStatus(entry.id, 'NOTIFIED', entry.status)}
                           className="flex-1 sm:flex-none h-14 px-5 bg-purple-50 border border-purple-200 hover:bg-purple-100 text-purple-700 font-black uppercase text-[10px] tracking-wider rounded-lg transition-all flex items-center justify-center gap-1.5"
                         >
                           <Bell className="w-4 h-4 stroke-[2.5]" /> Notify Ready
                         </button>
                         <button
-                          onClick={() => handleUpdateWaitlistStatus(entry.id, 'SEATED')}
+                          onClick={() => handleUpdateWaitlistStatus(entry.id, 'SEATED', entry.status)}
                           className="flex-1 sm:flex-none h-14 px-6 bg-emerald-600 hover:bg-emerald-700 text-white font-black uppercase text-[10px] tracking-wider rounded-lg shadow-md shadow-emerald-600/10 transition-all flex items-center justify-center gap-1.5"
                         >
                           <Check className="w-4 h-4 stroke-[3]" /> Seat Guest
                         </button>
                         <button
-                          onClick={() => handleUpdateWaitlistStatus(entry.id, 'CANCELED')}
+                          onClick={() => handleUpdateWaitlistStatus(entry.id, 'CANCELED', entry.status)}
                           className="h-14 w-14 bg-rose-50 border border-rose-100 hover:bg-rose-100 text-rose-600 rounded-lg flex items-center justify-center transition-all shrink-0"
                           title="Remove Guest"
                         >
@@ -901,6 +978,110 @@ export default function HostConsolePage() {
               </Button>
             </DialogFooter>
           </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* 📱 C. Touch Activity History / Recovery Drawer */}
+      <Dialog open={isHistoryDrawerOpen} onOpenChange={setIsHistoryDrawerOpen}>
+        <DialogContent className="!fixed !top-0 !left-auto !right-0 !-translate-x-0 !-translate-y-0 !h-screen !rounded-r-none !rounded-l-2xl !max-w-md !gap-0 !p-0 flex flex-col animate-in slide-in-from-right duration-300">
+          <div className="bg-slate-900 p-6 text-white shrink-0">
+            <DialogHeader>
+              <DialogTitle className="text-base font-black uppercase tracking-widest flex items-center gap-2">
+                <RotateCcw className="w-5 h-5 text-blue-400 stroke-[3]" /> Activity & Recovery Log
+              </DialogTitle>
+              <DialogDescription className="text-slate-400 text-xs">
+                View recently seated or cancelled guests and restore them to the queue or timeline.
+              </DialogDescription>
+            </DialogHeader>
+          </div>
+
+          <div className="flex-1 overflow-y-auto p-6 space-y-6">
+            
+            {/* Reservations Resolved History */}
+            <div className="space-y-3">
+              <h3 className="text-xs font-black uppercase text-slate-400 tracking-wider">Recently Seated / Cancelled Bookings</h3>
+              <div className="space-y-3">
+                {reservationsHistory.length === 0 ? (
+                  <div className="text-xs text-slate-400 italic py-4 bg-slate-50 text-center rounded-lg border border-slate-100">No recent reservation changes</div>
+                ) : (
+                  reservationsHistory.map((res) => (
+                    <div key={res.id} className="p-3 border border-slate-200 rounded-xl bg-slate-50 flex items-center justify-between gap-3">
+                      <div>
+                        <div className="font-bold text-xs uppercase text-slate-800 flex items-center gap-1.5">
+                          {res.customerName}
+                          <Badge variant="outline" className="text-[8px] font-black uppercase px-1">
+                            {res.status === 'COMPLETED' ? 'Seated' : res.status.toLowerCase()}
+                          </Badge>
+                        </div>
+                        <div className="text-[10px] text-slate-400 font-bold uppercase mt-0.5">
+                          {res.guestCount} Pax • {new Date(res.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        </div>
+                      </div>
+                      <Button 
+                        size="sm" 
+                        variant="outline" 
+                        onClick={() => {
+                          handleRevertResStatus(res.id, 'CONFIRMED');
+                          setIsHistoryDrawerOpen(false);
+                        }}
+                        className="h-8 text-[10px] font-black uppercase tracking-wider text-blue-600 border-blue-200 bg-blue-50/50 hover:bg-blue-100 hover:text-blue-700"
+                      >
+                        Undo
+                      </Button>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+
+            {/* Waitlist Resolved History */}
+            <div className="space-y-3 pt-4 border-t border-slate-100">
+              <h3 className="text-xs font-black uppercase text-slate-400 tracking-wider">Recently Seated / Cancelled Walk-ins</h3>
+              <div className="space-y-3">
+                {waitlistHistory.length === 0 ? (
+                  <div className="text-xs text-slate-400 italic py-4 bg-slate-50 text-center rounded-lg border border-slate-100">No recent waitlist changes</div>
+                ) : (
+                  waitlistHistory.map((entry) => (
+                    <div key={entry.id} className="p-3 border border-slate-200 rounded-xl bg-slate-50 flex items-center justify-between gap-3">
+                      <div>
+                        <div className="font-bold text-xs uppercase text-slate-800 flex items-center gap-1.5">
+                          {entry.customerName}
+                          <Badge variant="outline" className="text-[8px] font-black uppercase px-1">
+                            {entry.status === 'SEATED' ? 'Seated' : entry.status.toLowerCase()}
+                          </Badge>
+                        </div>
+                        <div className="text-[10px] text-slate-400 font-bold uppercase mt-0.5">
+                          {entry.partySize} Pax • Waited {getElapsedTime(entry.joinedAt)}
+                        </div>
+                      </div>
+                      <Button 
+                        size="sm" 
+                        variant="outline" 
+                        onClick={() => {
+                          handleRevertWaitlistStatus(entry.id, 'WAITING');
+                          setIsHistoryDrawerOpen(false);
+                        }}
+                        className="h-8 text-[10px] font-black uppercase tracking-wider text-blue-600 border-blue-200 bg-blue-50/50 hover:bg-blue-100 hover:text-blue-700"
+                      >
+                        Undo
+                      </Button>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+
+          </div>
+
+          <div className="p-6 bg-slate-50 border-t border-slate-100 shrink-0">
+            <Button 
+              variant="outline" 
+              onClick={() => setIsHistoryDrawerOpen(false)}
+              className="w-full h-12 font-black uppercase text-xs"
+            >
+              Close Activity Log
+            </Button>
+          </div>
         </DialogContent>
       </Dialog>
 
