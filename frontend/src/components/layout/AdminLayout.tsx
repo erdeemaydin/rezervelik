@@ -100,6 +100,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
   const hasPermission = (perm?: string) => {
     if (!perm) return true;
     if (user?.role === 'SUPER_ADMIN' || user?.role === 'ADMIN') return true;
+    if (user?.role === 'HOST' && (perm === 'manage_reservations' || perm === 'manage_tables')) return true;
     if (!user?.permissions) return false;
     return user.permissions.includes(perm);
   };

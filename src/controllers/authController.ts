@@ -59,7 +59,8 @@ export const register = async (req: Request, res: Response) => {
         email: result.user.email,
         firstName: result.user.firstName,
         lastName: result.user.lastName,
-        role: result.user.role
+        role: result.user.role,
+        permissions: result.user.permissions
       },
       restaurant: result.restaurant,
       token
@@ -104,7 +105,8 @@ export const login = async (req: Request, res: Response) => {
         firstName: user.firstName,
         lastName: user.lastName,
         role: user.role,
-        restaurantId: user.restaurantId
+        restaurantId: user.restaurantId,
+        permissions: user.permissions
       },
       token
     });
