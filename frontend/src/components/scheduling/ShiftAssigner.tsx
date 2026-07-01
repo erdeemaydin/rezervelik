@@ -47,7 +47,7 @@ interface ScheduleWarning {
   userId: string;
   date: string;
   shiftId: string;
-  type: 'DOUBLE_SHIFT' | 'CONSECUTIVE_REST' | 'UNAVAILABLE';
+  type: 'DOUBLE_SHIFT' | 'CONSECUTIVE_REST' | 'UNAVAILABLE' | 'UNSPECIFIED';
   message: string;
 }
 
@@ -372,13 +372,23 @@ export default function ShiftAssigner({ viewMode = 'MONTHLY' }: { viewMode?: 'WE
           av => av.userId === userId && av.date === current.date && av.shiftId === current.shiftId
         );
 
-        if (availability && !availability.isAvailable) {
+        if (availability) {
+          if (!availability.isAvailable) {
+            warnings.push({
+              userId,
+              date: current.date,
+              shiftId: current.shiftId,
+              type: 'UNAVAILABLE',
+              message: 'Staff marked this day/shift as Unavailable.'
+            });
+          }
+        } else {
           warnings.push({
             userId,
             date: current.date,
             shiftId: current.shiftId,
-            type: 'UNAVAILABLE',
-            message: 'Staff marked this day/shift as Unavailable.'
+            type: 'UNSPECIFIED',
+            message: 'Staff did not submit availability for this day.'
           });
         }
 
@@ -815,6 +825,8 @@ export default function ShiftAssigner({ viewMode = 'MONTHLY' }: { viewMode?: 'WE
                                 {cellAssignments.map(assignment => {
                                   const warnings = assignmentWarnings[assignment.id] || [];
                                   const hasCritical = warnings.some(w => ['UNAVAILABLE', 'DOUBLE_SHIFT', 'CONSECUTIVE_REST'].includes(w.type));
+                                  const hasUnspecified = warnings.some(w => w.type === 'UNSPECIFIED');
+                                  const tooltipWarnings = warnings.filter(w => w.type !== 'UNSPECIFIED');
 
                                   const isHighlighted = highlightedStaffId === assignment.userId;
                                   const isDimmed = highlightedStaffId && !isHighlighted;
@@ -831,14 +843,16 @@ export default function ShiftAssigner({ viewMode = 'MONTHLY' }: { viewMode?: 'WE
                                             ? "bg-blue-600 text-white border-blue-600 ring-2 ring-blue-300 shadow-md animate-pulse"
                                             : hasCritical 
                                               ? "bg-red-50 text-red-700 border-red-200 hover:bg-red-100" 
-                                              : "bg-slate-50 text-slate-700 border-slate-100 hover:bg-blue-50"
+                                              : hasUnspecified
+                                                ? "bg-amber-50 text-amber-800 border-amber-200 hover:bg-amber-100"
+                                                : "bg-slate-50 text-slate-700 border-slate-100 hover:bg-blue-50"
                                       )}
                                     >
                                       <span className="truncate mr-1 flex-1 font-medium flex items-center gap-1">
                                         {assignment.user?.firstName} {assignment.user?.lastName}
-                                        {warnings.length > 0 && !isDimmed && (
+                                        {tooltipWarnings.length > 0 && !isDimmed && (
                                           <span 
-                                            title={warnings.map(w => w.message).join('\n')}
+                                            title={tooltipWarnings.map(w => w.message).join('\n')}
                                             className={cn(
                                               "shrink-0 w-3 h-3 flex items-center justify-center rounded-full text-[8px] font-black cursor-help",
                                               hasCritical 
