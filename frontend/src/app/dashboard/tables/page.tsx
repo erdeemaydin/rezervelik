@@ -346,7 +346,7 @@ export default function TablesPage() {
     y = Math.max(0, Math.min(y, rect.height - itemHeight));
 
     if (info.dragType === 'table') {
-        setTables(prev => prev.map(t => t.id === info.dragId ? { ...t, positionX: x, positionY: y } : t));
+        setTables(prev => prev.map(tableItem => tableItem.id === info.dragId ? { ...tableItem, positionX: x, positionY: y } : tableItem));
     } else {
         setFloorElements(prev => prev.map(el => el.id === info.dragId ? { ...el, positionX: x, positionY: y } : el));
     }
@@ -421,7 +421,7 @@ export default function TablesPage() {
                                     </SelectTrigger>
                                     <SelectContent>
                                         <SelectItem value="none">{t("tables.noParent")}</SelectItem>
-                                        {tableTypes.map(t => <SelectItem key={t.id} value={t.id} className="text-xs">{getFullZoneName(t.id)}</SelectItem>)}
+                                        {tableTypes.map(tableItem => <SelectItem key={tableItem.id} value={tableItem.id} className="text-xs">{getFullZoneName(tableItem.id)}</SelectItem>)}
                                     </SelectContent>
                                 </Select>
                             </div>
@@ -694,7 +694,7 @@ export default function TablesPage() {
                                     </SelectValue>
                                 </SelectTrigger>
                                 <SelectContent>
-                                    {tableTypes.map(t => <SelectItem key={t.id} value={t.id} className="text-xs">{getFullZoneName(t.id)}</SelectItem>)}
+                                    {tableTypes.map(tableItem => <SelectItem key={tableItem.id} value={tableItem.id} className="text-xs">{getFullZoneName(tableItem.id)}</SelectItem>)}
                                 </SelectContent>
                             </Select>
                         </div>
@@ -770,7 +770,7 @@ export default function TablesPage() {
                                     </SelectValue>
                                 </SelectTrigger>
                                 <SelectContent>
-                                    {tableTypes.map(t => <SelectItem key={t.id} value={t.id} className="text-xs">{getFullZoneName(t.id)}</SelectItem>)}
+                                    {tableTypes.map(tableItem => <SelectItem key={tableItem.id} value={tableItem.id} className="text-xs">{getFullZoneName(tableItem.id)}</SelectItem>)}
                                 </SelectContent>
                             </Select>
                         </div>

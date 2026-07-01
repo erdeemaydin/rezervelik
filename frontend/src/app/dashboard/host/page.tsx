@@ -950,9 +950,9 @@ export default function HostConsolePage() {
                     className="h-12 w-full font-bold text-slate-800 rounded-lg border border-slate-200 bg-slate-50 focus:bg-white px-3 text-sm outline-none"
                   >
                     <option value="none">{t("host.noneHoldAtDoor")}</option>
-                    {tables.map((t) => (
-                      <option key={t.id} value={t.id}>
-                        {t.identifier} ({t.capacity} {t("host.pax")})
+                    {tables.map((tableItem) => (
+                      <option key={tableItem.id} value={tableItem.id}>
+                        {tableItem.identifier} ({tableItem.capacity} {t("host.pax")})
                       </option>
                     ))}
                   </select>

@@ -426,7 +426,7 @@ export default function ReservationsPage() {
                         </SelectTrigger>
                         <SelectContent>
                             <SelectItem value="none" className="text-xs italic">{t("reservations.autoAssign")}</SelectItem>
-                            {tables.map(t => <SelectItem key={t.id} value={t.id} className="text-xs font-bold">{t.identifier} ({t("reservations.pax")}: {t.capacity})</SelectItem>)}
+                            {tables.map(tableItem => <SelectItem key={tableItem.id} value={tableItem.id} className="text-xs font-bold">{tableItem.identifier} ({t("reservations.pax")}: {tableItem.capacity})</SelectItem>)}
                         </SelectContent>
                     </Select>
                   </div>
