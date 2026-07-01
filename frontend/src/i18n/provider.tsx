@@ -4,7 +4,15 @@ import React, { createContext, useContext, useState, useTransition } from 'react
 import { useRouter } from 'next/navigation';
 import Cookies from 'js-cookie';
 
+import tr from './locales/tr.json';
+import en from './locales/en.json';
+
 type Translations = Record<string, any>;
+
+const dictionaries: Record<string, Translations> = {
+  tr,
+  en,
+};
 
 interface I18nContextProps {
   t: (key: string) => string;
@@ -19,15 +27,18 @@ const I18nContext = createContext<I18nContextProps>({
 });
 
 export const I18nProvider = ({ 
-  children, 
-  initialLocale, 
-  dictionary 
+  children
 }: { 
   children: React.ReactNode; 
-  initialLocale: string; 
-  dictionary: Translations;
 }) => {
-  const [locale, setLocaleState] = useState(initialLocale);
+  const [locale, setLocaleState] = useState('tr');
+  const [mounted, setMounted] = useState(false);
+
+  React.useEffect(() => {
+    const savedLocale = Cookies.get('NEXT_LOCALE') || 'tr';
+    setLocaleState(savedLocale);
+    setMounted(true);
+  }, []);
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
 
@@ -41,7 +52,7 @@ export const I18nProvider = ({
 
   const t = (key: string) => {
     const keys = key.split('.');
-    let value: any = dictionary;
+    let value: any = dictionaries[locale] || dictionaries['tr'];
     
     for (const k of keys) {
       if (value === undefined || value === null) break;
