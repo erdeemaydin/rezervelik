@@ -40,6 +40,7 @@ The system supports three distinct operational modes, configurable per restauran
 - **Role-Based Access Control (RBAC):** Users belong to a specific restaurant and have roles: `ADMIN`, `MANAGER`, or `STAFF`.
 - **JWT Authentication:** Secure token-based authentication for all staff members accessing the dashboard.
 - **UUIDs:** All publicly exposed IDs are UUIDs to prevent guessing and scraping.
+- **Production Security:** Registration is controlled by `globalSettings.publicRegistrationEnabled`. Super admin bootstrapping requires a securely injected server-side environment variable (`SETUP_SECRET_TOKEN`).
 
 ## 6. AI Menu Importer (Phase 2 Placeholder)
 - A decoupled service layer is planned. It will take an uploaded image, send it to an OCR/LLM provider, and return a structured JSON representing the menu categories and items.
@@ -48,10 +49,10 @@ The system supports three distinct operational modes, configurable per restauran
 - **Dropdown/Select Menus:** Never display raw database IDs (UUIDs) to the user in any dropdown or select menu on the admin panels. Always ensure the `<SelectValue>` or equivalent component maps the selected `id` to its corresponding `name` or `identifier` (e.g., displaying the Category Name instead of Category ID, or Table Identifier instead of Table ID).
 
 ## 8. Frontend Customization CMS
-- A `FrontendCustomization` model allows tenant admins to tailor the public-facing booking and menu page (`/r/[slug]`).
-- Configurable elements include:
-  - **Theme:** Selection between predefined templates (e.g., CLASSIC, MODERN).
-  - **Primary Color:** Custom hex code for branding matching.
+- A `FrontendCustomization` model allows tailoring the public-facing booking and menu page (`/r/[slug]`).
+- The **Design Architecture** (e.g., CLASSIC_LIST vs EDITORIAL_IMAGE) is controlled exclusively by the root SysAdmin via tenant settings, not by the tenant themselves. 
+- Configurable elements available to the tenant include:
+  - **Typography & Color Palette.**
   - **Announcement Banner:** Temporary text for promotions or important notices.
   - **Static Pages:** Configurable "About Us" and "Legal" text sections.
 
@@ -59,3 +60,8 @@ The system supports three distinct operational modes, configurable per restauran
 - Tenant admins can easily update all menu prices at once using the `ScheduledPriceUpdate` model.
 - Prices can be adjusted by a percentage or a fixed amount (increase or decrease).
 - Updates can be applied immediately or scheduled for a specific date/time in the future, seamlessly executed by a background worker task.
+
+## 10. Staff Scheduling & Shift Management
+- Staff assignments are managed based on Shifts.
+- **Shift Requirements:** Managed daily via `ShiftDayRequirement`, defining how many staff members are required for a particular shift on a specific day of the week (e.g., 5 staff for Friday Night).
+- **Warnings & Constraints:** The scheduling assigner warns managers of `DOUBLE_SHIFT` conflicts, `CONSECUTIVE_REST` violations (minimum 11 hours rest required between shifts), and assigning staff on days they are `UNAVAILABLE`.

@@ -9,7 +9,7 @@
 
 ## 1. Authentication & Onboarding
 ### `POST /api/auth/register`
-*   **Description:** Provisions a new restaurant and creates the initial Admin user.
+*   **Description:** Provisions a new restaurant and creates the initial Admin user. *Note: Controlled globally by `publicRegistrationEnabled`.*
 *   **Payload:** `{ email, password, firstName, lastName, restaurantName }`
 *   **Response:** JWT token and user/restaurant objects.
 
@@ -22,15 +22,15 @@
 
 ## 2. System Administration (Requires `SUPER_ADMIN` role)
 ### `POST /api/system/setup-super-admin`
-*   **Description:** Initializes root admin (requires setup secret token).
+*   **Description:** Initializes root admin (requires secure matching `SETUP_SECRET_TOKEN` environment variable).
 ### `GET /api/system/tenants`
 *   **Description:** Lists all provisioned tenants on the platform, including their settings and users.
 ### `POST /api/system/tenants`
-*   **Description:** Provisions a new tenant manually from the SysAdmin dashboard.
+*   **Description:** Provisions a new tenant manually from the SysAdmin dashboard. Also auto-generates `FrontendCustomization` default records.
 ### `PUT /api/system/tenants/:id/subscription`
 *   **Description:** Updates a tenant's subscription plan, status, and trial end date.
 ### `PUT /api/system/tenants/:id/settings`
-*   **Description:** Toggles tenant feature flags (Waitlist, Scheduling, Payments, etc.) globally.
+*   **Description:** Toggles tenant feature flags (Waitlist, Scheduling, Payments, etc.) globally, and assigns `layoutStyle` (Design Architecture) to the tenant.
 ### `PUT /api/system/users/:userId/permissions`
 *   **Description:** Modifies a tenant user's granular module permissions.
 
@@ -38,7 +38,7 @@
 
 ## 3. Public Endpoints (No Auth Required)
 ### `GET /api/public/restaurant/:slug`
-*   **Description:** Fetches restaurant details, wait time configurations, and active menus for the public-facing booking/menu UI.
+*   **Description:** Fetches restaurant details, wait time configurations, active menus, and dynamic customization settings (e.g., Theme, About Us, Legal Text, Announcements).
 ### `POST /api/public/restaurant/:slug/waitlist`
 *   **Description:** Allows a guest to join the virtual waitlist directly via QR code.
 *   **Payload:** `{ customerName, customerPhone, partySize }`
@@ -71,7 +71,7 @@
 *   **`GET /api/settings`** - Retrieves tenant-level settings (Deposit amounts, reservation logic).
 *   **`PUT /api/settings`** - Updates tenant-level settings.
 *   **`GET /api/day-settings`** - Manages exceptional days (e.g., New Year's Eve capacity overrides).
-*   **`GET /api/customization`** - Retrieves the frontend page customization settings (theme, color, text).
+*   **`GET /api/customization`** - Retrieves the frontend page customization settings (typography, color, texts).
 *   **`PUT /api/customization`** - Updates the frontend page customization settings.
 
 ### Digital Menu Management
@@ -82,7 +82,8 @@
 *   **`POST /api/menus/prices/bulk`** - Schedules or immediately executes a bulk menu price update (percentage or fixed).
 
 ### Staff & Scheduling
-*   **`GET /api/staff`** - Lists staff members.
+*   **`GET /api/staff`** - Lists staff members and their daily availability limits.
 *   **`POST /api/staff`** - Creates a new staff member account.
-*   **`GET /api/scheduling/shifts`** - Lists defined shifts.
-*   **`POST /api/scheduling/assignments`** - Assigns staff to shifts.
+*   **`GET /api/scheduling/shifts`** - Lists defined shifts for a tenant.
+*   **`GET /api/scheduling/shift-requirements`** - Retrieves shift minimum staffing thresholds on a day-by-day basis.
+*   **`POST /api/scheduling/assignments`** - Assigns staff to shifts while honoring limits and consecutive resting constraints.
