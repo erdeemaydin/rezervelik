@@ -313,6 +313,9 @@ model Menu {
   endTime    String? // e.g. "14:00"
   daysOfWeek String? // e.g. "1,2,3,4,5" (0=Sun, 6=Sat)
 
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+
   restaurant Restaurant     @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
   categories MenuCategory[]
 
@@ -357,6 +360,9 @@ model MenuItem {
   calories         Int?
   containsAlcohol  Boolean      @default(false)
   containsPork     Boolean      @default(false)
+
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @default(now()) @updatedAt
 
   category    MenuCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
 

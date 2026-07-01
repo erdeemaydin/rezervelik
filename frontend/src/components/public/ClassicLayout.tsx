@@ -482,6 +482,11 @@ export default function ClassicLayout({ slug, initialRestaurant }: { slug: strin
                     ))}
                 </div>
             )}
+            {restaurant.menus?.[0]?.updatedAt && (
+                <div className="text-center mt-8 pb-4 text-xs font-medium text-slate-400 max-w-4xl mx-auto w-full px-6">
+                    <span className="font-bold">Son Fiyat Güncelleme Tarihi:</span> {new Date(restaurant.menus[0].updatedAt).toLocaleDateString('tr-TR')}
+                </div>
+            )}
           </main>
         </div>
       )}

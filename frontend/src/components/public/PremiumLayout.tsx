@@ -297,6 +297,11 @@ export default function PremiumLayout({ slug, initialRestaurant }: { slug: strin
               ))}
             </div>
           )}
+          {restaurant.menus?.[0]?.updatedAt && (
+            <div className="text-center mt-16 text-xs font-light text-zinc-500 uppercase tracking-widest">
+              Son Fiyat Güncelleme Tarihi: {new Date(restaurant.menus[0].updatedAt).toLocaleDateString('tr-TR')}
+            </div>
+          )}
         </div>
       </section>
 

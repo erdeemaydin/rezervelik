@@ -238,6 +238,11 @@ export default function OldenLayout({ slug, initialRestaurant }: { slug: string,
               ))}
             </div>
          )}
+         {restaurant.menus?.[0]?.updatedAt && (
+             <div className="text-center mt-12 text-sm font-serif italic text-[#888]">
+                 Son Fiyat Güncelleme Tarihi: {new Date(restaurant.menus[0].updatedAt).toLocaleDateString('tr-TR')}
+             </div>
+         )}
          
          <div className="text-center mt-20">
             <Button onClick={() => setIsBookingOpen(true)} className="bg-[#8b0000] hover:bg-[#6b0000] text-white px-12 py-6 text-lg font-bold tracking-widest uppercase rounded-sm">

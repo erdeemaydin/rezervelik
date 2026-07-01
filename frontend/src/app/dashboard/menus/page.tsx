@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Plus, Trash2, Edit2, Search, LayoutGrid, List, ChevronDown, ChevronRight, Image as ImageIcon, Flame, Leaf, AlertTriangle, Layers, QrCode } from 'lucide-react';
 import { QRCodePDFGenerator } from '@/components/menus/QRCodePDFGenerator';
+import { PrintableMenuPDFGenerator } from '@/components/menus/PrintableMenuPDFGenerator';
 import { 
   Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter 
 } from '@/components/ui/dialog';
@@ -72,7 +73,6 @@ export default function MenuManagementPage() {
   const [isBulkPriceDialogOpen, setIsBulkPriceDialogOpen] = useState(false);
   
   const [isEditMode, setIsEditMode] = useState(false);
-  const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
   const [deleteMenuId, setDeleteMenuId] = useState<string | null>(null);
   const [restaurantProfile, setRestaurantProfile] = useState<any>(null);
   const [isQRDialogOpen, setIsQRDialogOpen] = useState(false);
@@ -444,6 +444,9 @@ export default function MenuManagementPage() {
             <Button size="sm" onClick={() => window.location.href = '/dashboard/menus/wizard'} className="h-9 px-4 text-[10px] font-black uppercase border-0 text-white shadow-sm bg-blue-600 hover:bg-blue-700">
                 {t('menus.buttons.menuWizard')}
             </Button>
+            {restaurantProfile && menus.length > 0 && (
+                <PrintableMenuPDFGenerator menu={menus.find(m => m.id === (activeMenuId || menus[0].id)) || menus[0]} restaurantProfile={restaurantProfile} />
+            )}
             <Button size="sm" variant="outline" onClick={() => setIsQRDialogOpen(true)} className="h-9 px-4 text-[10px] font-black uppercase border-slate-200 text-slate-600 shadow-sm bg-white hover:bg-slate-50">
                 <QrCode className="w-3.5 h-3.5 mr-1.5" /> {t('menus.buttons.downloadQR') || "QR Etiket"}
             </Button>
