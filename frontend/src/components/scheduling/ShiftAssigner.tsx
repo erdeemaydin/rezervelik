@@ -47,7 +47,7 @@ interface ScheduleWarning {
   userId: string;
   date: string;
   shiftId: string;
-  type: 'DOUBLE_SHIFT' | 'CONSECUTIVE_REST' | 'UNAVAILABLE' | 'UNSPECIFIED';
+  type: 'DOUBLE_SHIFT' | 'CONSECUTIVE_REST' | 'UNAVAILABLE';
   message: string;
 }
 
@@ -372,23 +372,13 @@ export default function ShiftAssigner({ viewMode = 'MONTHLY' }: { viewMode?: 'WE
           av => av.userId === userId && av.date === current.date && av.shiftId === current.shiftId
         );
 
-        if (availability) {
-          if (!availability.isAvailable) {
-            warnings.push({
-              userId,
-              date: current.date,
-              shiftId: current.shiftId,
-              type: 'UNAVAILABLE',
-              message: 'Staff marked this day/shift as Unavailable.'
-            });
-          }
-        } else {
+        if (availability && !availability.isAvailable) {
           warnings.push({
             userId,
             date: current.date,
             shiftId: current.shiftId,
-            type: 'UNSPECIFIED',
-            message: 'Staff did not submit availability for this day.'
+            type: 'UNAVAILABLE',
+            message: 'Staff marked this day/shift as Unavailable.'
           });
         }
 
@@ -814,10 +804,17 @@ export default function ShiftAssigner({ viewMode = 'MONTHLY' }: { viewMode?: 'WE
                                 isHighlightedAssigned={isHighlightedStaffAssigned}
                                 availabilityStatus={availabilityStatus}
                               >
+                                {isAdminOrManager && (
+                                  <div className="flex justify-between items-center text-[10px] text-slate-500 font-semibold mb-1 w-full uppercase">
+                                    <span>Assigned: {cellAssignments.length}</span>
+                                    <span className={cn(isUnderstaffed ? "text-red-500" : "text-emerald-500")}>
+                                      Req: {requiredForDay}
+                                    </span>
+                                  </div>
+                                )}
                                 {cellAssignments.map(assignment => {
                                   const warnings = assignmentWarnings[assignment.id] || [];
                                   const hasCritical = warnings.some(w => ['UNAVAILABLE', 'DOUBLE_SHIFT', 'CONSECUTIVE_REST'].includes(w.type));
-                                  const hasUnspecified = warnings.some(w => w.type === 'UNSPECIFIED');
 
                                   const isHighlighted = highlightedStaffId === assignment.userId;
                                   const isDimmed = highlightedStaffId && !isHighlighted;
@@ -834,9 +831,7 @@ export default function ShiftAssigner({ viewMode = 'MONTHLY' }: { viewMode?: 'WE
                                             ? "bg-blue-600 text-white border-blue-600 ring-2 ring-blue-300 shadow-md animate-pulse"
                                             : hasCritical 
                                               ? "bg-red-50 text-red-700 border-red-200 hover:bg-red-100" 
-                                              : hasUnspecified 
-                                                ? "bg-amber-50 text-amber-800 border-amber-200 hover:bg-amber-100" 
-                                                : "bg-slate-50 text-slate-700 border-slate-100 hover:bg-blue-50"
+                                              : "bg-slate-50 text-slate-700 border-slate-100 hover:bg-blue-50"
                                       )}
                                     >
                                       <span className="truncate mr-1 flex-1 font-medium flex items-center gap-1">
@@ -960,10 +955,10 @@ export default function ShiftAssigner({ viewMode = 'MONTHLY' }: { viewMode?: 'WE
                                             )}
                                           </div>
 
-                                          {/* 2. UNSPECIFIED AVAILABILITY */}
+                                          {/* 2. OTHER STAFF (NO EXPLICIT AVAILABILITY) */}
                                           <div className="space-y-1 pt-2 border-t border-slate-100">
-                                            <h4 className="text-[9px] font-black uppercase text-amber-600 tracking-wider">
-                                              ⚪ Unspecified ({unspecified.length})
+                                            <h4 className="text-[9px] font-black uppercase text-slate-600 tracking-wider">
+                                              ⚪ Other Staff ({unspecified.length})
                                             </h4>
                                             {unspecified.length === 0 ? (
                                               <p className="text-[9px] text-slate-400 italic pl-1 uppercase font-bold">All staff accounted</p>
