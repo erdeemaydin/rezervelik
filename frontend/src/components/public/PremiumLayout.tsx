@@ -11,6 +11,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
+import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || (typeof window !== 'undefined' ? `${window.location.protocol}//${window.location.hostname}:3000/api` : 'http://localhost:3000/api');
 
@@ -193,6 +194,7 @@ export default function PremiumLayout({ slug, initialRestaurant }: { slug: strin
         </div>
 
         <div className="hidden md:flex items-center gap-8 text-xs font-medium tracking-[0.2em] uppercase">
+          <LanguageSwitcher />
           <button onClick={() => scrollToSection('contact')} className="hover:text-zinc-400 transition-colors">Contact</button>
           <button onClick={() => setIsBookingOpen(true)} className="border border-zinc-100 px-5 py-2 hover:bg-zinc-100 hover:text-zinc-900 transition-all">
             Reservations

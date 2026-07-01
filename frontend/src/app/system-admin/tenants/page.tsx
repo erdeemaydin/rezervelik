@@ -18,8 +18,10 @@ import { cn } from '@/lib/utils';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useRouter } from 'next/navigation';
 import api from '@/lib/api';
+import { useTranslation } from '@/i18n/provider';
 
 export default function TenantManagementPage() {
+  const { t } = useTranslation();
   const router = useRouter();
   const login = useAuthStore((s) => s.login);
   const [tenants, setTenants] = useState<any[]>([]);
@@ -159,10 +161,10 @@ export default function TenantManagementPage() {
       <div className="flex flex-col gap-4">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-xl font-bold text-slate-800">Tenant Ecosystem</h1>
-            <p className="text-[10px] text-slate-400 uppercase tracking-[0.2em] font-black">Global Infrastructure</p>
+            <h1 className="text-xl font-bold text-slate-800">{t('systemAdmin.tenantEcosystem')}</h1>
+            <p className="text-[10px] text-slate-400 uppercase tracking-[0.2em] font-black">{t('systemAdmin.globalInfrastructure')}</p>
           </div>
-          <Button size="sm" onClick={() => setIsDialogOpen(true)} className="bg-emerald-600 hover:bg-emerald-700 h-8 text-[10px] font-black uppercase">Provision New Restaurant</Button>
+          <Button size="sm" onClick={() => setIsDialogOpen(true)} className="bg-emerald-600 hover:bg-emerald-700 h-8 text-[10px] font-black uppercase">{t('systemAdmin.provisionNewRestaurant')}</Button>
         </div>
 
         <Card className="rounded-md border-slate-200 shadow-sm overflow-hidden bg-white">
@@ -170,11 +172,11 @@ export default function TenantManagementPage() {
              <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                     <Globe className="w-4 h-4 text-emerald-500" />
-                    <span className="text-xs font-bold text-slate-700">Active Instances</span>
+                    <span className="text-xs font-bold text-slate-700">{t('systemAdmin.activeInstances')}</span>
                 </div>
                 <div className="relative w-64">
                     <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
-                    <Input placeholder="Search name or slug..." className="pl-8 h-8 text-xs bg-white border-slate-200 rounded-md" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
+                    <Input placeholder={t('systemAdmin.searchPlaceholder')} className="pl-8 h-8 text-xs bg-white border-slate-200 rounded-md" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
                 </div>
              </div>
           </CardHeader>
@@ -182,11 +184,11 @@ export default function TenantManagementPage() {
             <Table>
               <TableHeader className="bg-slate-50/80">
                 <TableRow className="h-9">
-                  <TableHead className="text-[9px] font-black text-slate-400 uppercase tracking-widest px-4">Restaurant / Domain</TableHead>
-                  <TableHead className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Subscription</TableHead>
-                  <TableHead className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Feature Flags</TableHead>
-                  <TableHead className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Provisioned</TableHead>
-                  <TableHead className="text-[9px] font-black text-slate-400 uppercase tracking-widest text-right px-4">Command</TableHead>
+                  <TableHead className="text-[9px] font-black text-slate-400 uppercase tracking-widest px-4">{t('systemAdmin.restaurantDomain')}</TableHead>
+                  <TableHead className="text-[9px] font-black text-slate-400 uppercase tracking-widest">{t('systemAdmin.subscription')}</TableHead>
+                  <TableHead className="text-[9px] font-black text-slate-400 uppercase tracking-widest">{t('systemAdmin.featureFlags')}</TableHead>
+                  <TableHead className="text-[9px] font-black text-slate-400 uppercase tracking-widest">{t('systemAdmin.provisioned')}</TableHead>
+                  <TableHead className="text-[9px] font-black text-slate-400 uppercase tracking-widest text-right px-4">{t('systemAdmin.command')}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -236,7 +238,7 @@ export default function TenantManagementPage() {
                     <TableCell className="px-4 text-right">
                         <div className="flex justify-end gap-1">
                           <Button variant="ghost" size="sm" className="h-7 text-[10px] font-bold text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 px-2" onClick={() => handleImpersonate(tenant.id)}>
-                              LOGIN AS
+                              {t('systemAdmin.loginAs')}
                           </Button>
                           <Button variant="ghost" size="icon" className="h-7 w-7 text-slate-300 hover:text-emerald-600" onClick={() => openSettings(tenant)}>
                               <Settings2 className="w-3.5 h-3.5" />

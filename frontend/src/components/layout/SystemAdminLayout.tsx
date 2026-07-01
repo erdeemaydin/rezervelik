@@ -1,6 +1,6 @@
 'use client';
 
-import { ReactNode } from 'react';
+import { ReactNode, useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { 
@@ -15,8 +15,8 @@ import {
 import { useAuthStore } from '@/store/useAuthStore';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
+import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 
 interface SystemAdminLayoutProps {
   children: ReactNode;
@@ -26,6 +26,14 @@ export default function SystemAdminLayout({ children }: SystemAdminLayoutProps) 
   const pathname = usePathname();
   const router = useRouter();
   const { user, logout } = useAuthStore();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+    if (user && user.role !== 'SUPER_ADMIN') {
+      router.push('/dashboard');
+    }
+  }, [user, router]);
 
   const navigation = [
     { section: 'Global Overview', items: [
@@ -60,7 +68,9 @@ export default function SystemAdminLayout({ children }: SystemAdminLayoutProps) 
           <div className="px-6 mb-8 flex items-center space-x-3">
             <div className="h-9 w-9 rounded-md bg-slate-800 border border-slate-700 flex items-center justify-center text-emerald-500 font-black text-xs">SA</div>
             <div className="overflow-hidden">
-              <p className="text-xs font-bold text-white truncate">{user?.firstName || 'System'} {user?.lastName || 'Admin'}</p>
+              <p className="text-xs font-bold text-white truncate">
+                {mounted ? `${user?.firstName || 'System'} ${user?.lastName || 'Admin'}` : 'System Admin'}
+              </p>
               <p className="text-[9px] text-emerald-500 font-black uppercase tracking-tighter">Root Authority</p>
             </div>
           </div>
@@ -110,7 +120,10 @@ export default function SystemAdminLayout({ children }: SystemAdminLayoutProps) 
       <div className="flex-1 flex flex-col overflow-hidden">
         <header className="h-16 bg-white border-b flex items-center justify-between px-8 shadow-sm">
           <h2 className="text-xl font-bold text-slate-800">System Management</h2>
-          <Badge variant="outline" className="text-emerald-600 border-emerald-200 bg-emerald-50">Global Cluster: Active</Badge>
+          <div className="flex items-center gap-4">
+            <LanguageSwitcher />
+            <Badge variant="outline" className="text-emerald-600 border-emerald-200 bg-emerald-50">Global Cluster: Active</Badge>
+          </div>
         </header>
         <main className="flex-1 overflow-y-auto p-8">
           {children}

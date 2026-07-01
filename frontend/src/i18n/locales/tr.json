@@ -1,0 +1,17 @@
+{
+  "systemAdmin": {
+    "tenantEcosystem": "Kiracı Ekosistemi",
+    "globalInfrastructure": "Küresel Altyapı",
+    "provisionNewRestaurant": "Yeni Restoran Ekle",
+    "activeInstances": "Aktif Kurulumlar",
+    "searchPlaceholder": "İsim veya URL ara...",
+    "restaurantDomain": "Restoran / Alan Adı",
+    "subscription": "Abonelik",
+    "featureFlags": "Özellikler",
+    "provisioned": "Oluşturulma",
+    "command": "İşlem",
+    "loginAs": "GİRİŞ YAP",
+    "daysLeft": "gün kaldı",
+    "language": "Dil"
+  }
+}

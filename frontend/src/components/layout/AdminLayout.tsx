@@ -24,6 +24,7 @@ import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
+import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 
 interface AdminLayoutProps {
   children: ReactNode;
@@ -244,6 +245,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
           </div>
 
           <div className="flex items-center gap-4">
+            <LanguageSwitcher />
             <div className="flex items-center gap-3 pr-4 border-r border-slate-100">
               <div className="flex flex-col items-end hidden sm:flex">
                 <span className="text-xs font-black text-slate-800 truncate capitalize">{user?.firstName} {user?.lastName}</span>

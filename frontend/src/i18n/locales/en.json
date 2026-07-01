@@ -1,0 +1,17 @@
+{
+  "systemAdmin": {
+    "tenantEcosystem": "Tenant Ecosystem",
+    "globalInfrastructure": "Global Infrastructure",
+    "provisionNewRestaurant": "Provision New Restaurant",
+    "activeInstances": "Active Instances",
+    "searchPlaceholder": "Search name or slug...",
+    "restaurantDomain": "Restaurant / Domain",
+    "subscription": "Subscription",
+    "featureFlags": "Feature Flags",
+    "provisioned": "Provisioned",
+    "command": "Command",
+    "loginAs": "LOGIN AS",
+    "daysLeft": "days left",
+    "language": "Language"
+  }
+}
