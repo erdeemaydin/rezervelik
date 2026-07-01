@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import { useTranslation } from "@/i18n/provider";
 import AdminLayout from '@/components/layout/AdminLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -29,6 +30,7 @@ interface Customization {
 }
 
 export default function CustomizationPage() {
+    const { t } = useTranslation();
     const [loading, setLoading] = useState(false);
     const [fetching, setFetching] = useState(true);
     const [customization, setCustomization] = useState<Customization>({
@@ -66,7 +68,7 @@ export default function CustomizationPage() {
                 });
             }
         } catch (error) {
-            toast.error('Failed to load customization settings');
+            toast.error(t("customization.loadError"));
         } finally {
             setFetching(false);
         }
@@ -80,9 +82,9 @@ export default function CustomizationPage() {
         try {
             setLoading(true);
             await api.put('/customization', customization);
-            toast.success('Frontend customization updated');
+            toast.success(t("customization.updateSuccess"));
         } catch (error) {
-            toast.error('Failed to save customization');
+            toast.error(t("customization.saveError"));
         } finally {
             setLoading(false);
         }
@@ -103,11 +105,11 @@ export default function CustomizationPage() {
             <div className="flex flex-col gap-6 max-w-5xl mx-auto pb-12">
                 <div className="flex items-center justify-between">
                     <div>
-                        <h1 className="text-2xl font-black text-slate-800 tracking-tight">Public Page Customization</h1>
-                        <p className="text-[10px] text-slate-400 font-black uppercase tracking-[0.2em] mt-1">Design and manage your customer-facing portal</p>
+                        <h1 className="text-2xl font-black text-slate-800 tracking-tight">{t("customization.pageTitle")}</h1>
+                        <p className="text-[10px] text-slate-400 font-black uppercase tracking-[0.2em] mt-1">{t("customization.pageSubtitle")}</p>
                     </div>
                     <Button onClick={handleSave} disabled={loading} className="bg-slate-900 hover:bg-black text-white font-black uppercase text-[10px] px-6 h-10 rounded-sm shadow-md transition-all active:scale-95">
-                        {loading ? 'Saving...' : <><Save className="w-3.5 h-3.5 mr-2" /> Publish Changes</>}
+                        {loading ? t("customization.saving") : <><Save className="w-3.5 h-3.5 mr-2" /> {t("customization.publishChanges")}</>}
                     </Button>
                 </div>
 
@@ -115,55 +117,55 @@ export default function CustomizationPage() {
                     <div className="lg:col-span-2">
                         <Tabs defaultValue="theming" className="w-full">
                             <TabsList className="grid w-full grid-cols-4 bg-slate-100 rounded-sm p-1">
-                                <TabsTrigger value="theming" className="text-xs font-bold uppercase"><Palette className="w-3 h-3 mr-2" /> Theming</TabsTrigger>
-                                <TabsTrigger value="announcements" className="text-xs font-bold uppercase"><Megaphone className="w-3 h-3 mr-2" /> Banner</TabsTrigger>
-                                <TabsTrigger value="pages" className="text-xs font-bold uppercase"><FileText className="w-3 h-3 mr-2" /> Static Pages</TabsTrigger>
-                                <TabsTrigger value="reservation" className="text-xs font-bold uppercase"><FileText className="w-3 h-3 mr-2" /> Booking Rules</TabsTrigger>
+                                <TabsTrigger value="theming" className="text-xs font-bold uppercase"><Palette className="w-3 h-3 mr-2" /> {t("customization.tabs.theming")}</TabsTrigger>
+                                <TabsTrigger value="announcements" className="text-xs font-bold uppercase"><Megaphone className="w-3 h-3 mr-2" /> {t("customization.tabs.banner")}</TabsTrigger>
+                                <TabsTrigger value="pages" className="text-xs font-bold uppercase"><FileText className="w-3 h-3 mr-2" /> {t("customization.tabs.staticPages")}</TabsTrigger>
+                                <TabsTrigger value="reservation" className="text-xs font-bold uppercase"><FileText className="w-3 h-3 mr-2" /> {t("customization.tabs.bookingRules")}</TabsTrigger>
                             </TabsList>
                             
                             <TabsContent value="theming" className="mt-4">
                                 <Card className="rounded-sm border-slate-200 shadow-sm bg-white">
                                     <CardHeader className="p-6 border-b border-slate-100">
-                                        <CardTitle className="text-sm font-black uppercase tracking-tight">Design Templates & Colors</CardTitle>
-                                        <CardDescription className="text-xs">Choose how your menu is presented to guests.</CardDescription>
+                                        <CardTitle className="text-sm font-black uppercase tracking-tight">{t("customization.theming.title")}</CardTitle>
+                                        <CardDescription className="text-xs">{t("customization.theming.desc")}</CardDescription>
                                     </CardHeader>
                                     <CardContent className="p-6 space-y-6">
                                         <div className="space-y-3">
-                                            <Label className="text-[10px] font-black uppercase text-slate-400">Typography</Label>
+                                            <Label className="text-[10px] font-black uppercase text-slate-400">{t("customization.theming.typography")}</Label>
                                             <Select 
                                                 value={customization.typography} 
                                                 onValueChange={(v) => { if (v) setCustomization({...customization, typography: v}); }}
                                             >
                                                 <SelectTrigger className="w-full">
-                                                    <SelectValue placeholder="Select typography" />
+                                                    <SelectValue placeholder={t("customization.theming.selectTypography")} />
                                                 </SelectTrigger>
                                                 <SelectContent>
-                                                    <SelectItem value="SANS">Sans-Serif</SelectItem>
-                                                    <SelectItem value="SERIF">Serif</SelectItem>
-                                                    <SelectItem value="MONO">Monospace</SelectItem>
+                                                    <SelectItem value="SANS">{t("customization.theming.sansSerif")}</SelectItem>
+                                                    <SelectItem value="SERIF">{t("customization.theming.serif")}</SelectItem>
+                                                    <SelectItem value="MONO">{t("customization.theming.monospace")}</SelectItem>
                                                 </SelectContent>
                                             </Select>
                                         </div>
 
                                         <div className="space-y-3 pt-4 border-t border-slate-100">
-                                            <Label className="text-[10px] font-black uppercase text-slate-400">Color Palette Preset</Label>
+                                            <Label className="text-[10px] font-black uppercase text-slate-400">{t("customization.theming.colorPalette")}</Label>
                                             <Select 
                                                 value={customization.colorPalette} 
                                                 onValueChange={(v) => { if (v) setCustomization({...customization, colorPalette: v}); }}
                                             >
                                                 <SelectTrigger className="w-full">
-                                                    <SelectValue placeholder="Select color palette" />
+                                                    <SelectValue placeholder={t("customization.theming.selectPalette")} />
                                                 </SelectTrigger>
                                                 <SelectContent>
-                                                    <SelectItem value="OBSIDIAN">Obsidian (Dark / Clean)</SelectItem>
-                                                    <SelectItem value="EARTH">Earth (Warm / Rustic)</SelectItem>
-                                                    <SelectItem value="CRIMSON">Crimson (Bold / Wine)</SelectItem>
+                                                    <SelectItem value="OBSIDIAN">{t("customization.theming.obsidian")}</SelectItem>
+                                                    <SelectItem value="EARTH">{t("customization.theming.earth")}</SelectItem>
+                                                    <SelectItem value="CRIMSON">{t("customization.theming.crimson")}</SelectItem>
                                                 </SelectContent>
                                             </Select>
                                         </div>
 
                                         <div className="space-y-3 pt-4 border-t border-slate-100">
-                                            <Label className="text-[10px] font-black uppercase text-slate-400">Primary Brand Color (Hex)</Label>
+                                            <Label className="text-[10px] font-black uppercase text-slate-400">{t("customization.theming.primaryColor")}</Label>
                                             <div className="flex gap-4">
                                                 <Input 
                                                     type="color" 
@@ -186,19 +188,19 @@ export default function CustomizationPage() {
                             <TabsContent value="announcements" className="mt-4">
                                 <Card className="rounded-sm border-slate-200 shadow-sm bg-white">
                                     <CardHeader className="p-6 border-b border-slate-100">
-                                        <CardTitle className="text-sm font-black uppercase tracking-tight">Temporary Announcement</CardTitle>
-                                        <CardDescription className="text-xs">Display a banner at the top of the customer page.</CardDescription>
+                                        <CardTitle className="text-sm font-black uppercase tracking-tight">{t("customization.banner.title")}</CardTitle>
+                                        <CardDescription className="text-xs">{t("customization.banner.desc")}</CardDescription>
                                     </CardHeader>
                                     <CardContent className="p-6 space-y-4">
                                         <div className="space-y-3">
-                                            <Label className="text-[10px] font-black uppercase text-slate-400">Banner Text</Label>
+                                            <Label className="text-[10px] font-black uppercase text-slate-400">{t("customization.banner.textLabel")}</Label>
                                             <Textarea 
-                                                placeholder="e.g. We are closed for private events this weekend!" 
+                                                placeholder={t("customization.banner.placeholder")} 
                                                 value={customization.announcementText} 
                                                 onChange={(e) => setCustomization({...customization, announcementText: e.target.value})}
                                                 className="min-h-[100px] text-sm" 
                                             />
-                                            <p className="text-[10px] text-slate-400">Leave blank to hide the banner completely.</p>
+                                            <p className="text-[10px] text-slate-400">{t("customization.banner.hint")}</p>
                                         </div>
                                     </CardContent>
                                 </Card>
@@ -208,15 +210,15 @@ export default function CustomizationPage() {
                                 <Card className="rounded-sm border-slate-200 shadow-sm bg-white">
                                     <CardHeader className="p-4 border-b border-slate-100 flex flex-row items-center justify-between">
                                         <div>
-                                            <CardTitle className="text-sm font-black uppercase tracking-tight">About Us Page</CardTitle>
-                                            <CardDescription className="text-[10px]">Your story and background</CardDescription>
+                                            <CardTitle className="text-sm font-black uppercase tracking-tight">{t("customization.pages.aboutUs.title")}</CardTitle>
+                                            <CardDescription className="text-[10px]">{t("customization.pages.aboutUs.desc")}</CardDescription>
                                         </div>
                                         <Switch checked={customization.showAboutUs} onCheckedChange={(c) => setCustomization({...customization, showAboutUs: c})} />
                                     </CardHeader>
                                     {customization.showAboutUs && (
                                         <CardContent className="p-6">
                                             <Textarea 
-                                                placeholder="Write your story here..." 
+                                                placeholder={t("customization.pages.aboutUs.placeholder")} 
                                                 value={customization.aboutUsText} 
                                                 onChange={(e) => setCustomization({...customization, aboutUsText: e.target.value})}
                                                 className="min-h-[150px] text-sm" 
@@ -228,15 +230,15 @@ export default function CustomizationPage() {
                                 <Card className="rounded-sm border-slate-200 shadow-sm bg-white">
                                     <CardHeader className="p-4 border-b border-slate-100 flex flex-row items-center justify-between">
                                         <div>
-                                            <CardTitle className="text-sm font-black uppercase tracking-tight">Legal / Terms</CardTitle>
-                                            <CardDescription className="text-[10px]">Terms of service or privacy policy</CardDescription>
+                                            <CardTitle className="text-sm font-black uppercase tracking-tight">{t("customization.pages.legal.title")}</CardTitle>
+                                            <CardDescription className="text-[10px]">{t("customization.pages.legal.desc")}</CardDescription>
                                         </div>
                                         <Switch checked={customization.showLegal} onCheckedChange={(c) => setCustomization({...customization, showLegal: c})} />
                                     </CardHeader>
                                     {customization.showLegal && (
                                         <CardContent className="p-6">
                                             <Textarea 
-                                                placeholder="Write your legal terms here..." 
+                                                placeholder={t("customization.pages.legal.placeholder")} 
                                                 value={customization.legalText} 
                                                 onChange={(e) => setCustomization({...customization, legalText: e.target.value})}
                                                 className="min-h-[150px] text-sm" 
@@ -249,30 +251,30 @@ export default function CustomizationPage() {
                             <TabsContent value="reservation" className="mt-4 space-y-6">
                                 <Card className="rounded-sm border-slate-200 shadow-sm bg-white">
                                     <CardHeader className="p-6 border-b border-slate-100">
-                                        <CardTitle className="text-sm font-black uppercase tracking-tight">Reservation Guidelines</CardTitle>
-                                        <CardDescription className="text-xs">Provide general information and dress codes for reservations. You can use simple HTML for links.</CardDescription>
+                                        <CardTitle className="text-sm font-black uppercase tracking-tight">{t("customization.rules.title")}</CardTitle>
+                                        <CardDescription className="text-xs">{t("customization.rules.desc")}</CardDescription>
                                     </CardHeader>
                                     <CardContent className="p-6 space-y-6">
                                         <div className="space-y-3">
-                                            <Label className="text-[10px] font-black uppercase text-slate-400">General Information Text (HTML/Text)</Label>
+                                            <Label className="text-[10px] font-black uppercase text-slate-400">{t("customization.rules.infoLabel")}</Label>
                                             <Textarea 
-                                                placeholder="e.g. <p>Restoranımız 09:00 - 01:00 arası hizmet vermektedir.</p>" 
+                                                placeholder={t("customization.rules.infoPlaceholder")} 
                                                 value={customization.reservationInfoText} 
                                                 onChange={(e) => setCustomization({...customization, reservationInfoText: e.target.value})}
                                                 className="min-h-[120px] text-sm font-mono bg-slate-50" 
                                             />
-                                            <p className="text-[10px] text-slate-500">Supports basic HTML (e.g. &lt;a href="..."&gt;, &lt;strong&gt;, &lt;p&gt;).</p>
+                                            <p className="text-[10px] text-slate-500">{t("customization.rules.infoHint")}</p>
                                         </div>
 
                                         <div className="space-y-3 pt-4 border-t border-slate-100">
-                                            <Label className="text-[10px] font-black uppercase text-slate-400">Warning / Strict Rules (HTML/Text)</Label>
+                                            <Label className="text-[10px] font-black uppercase text-slate-400">{t("customization.rules.warningLabel")}</Label>
                                             <Textarea 
-                                                placeholder="e.g. <p>Smart Casual dress code is strictly enforced.</p>" 
+                                                placeholder={t("customization.rules.warningPlaceholder")} 
                                                 value={customization.reservationWarningText} 
                                                 onChange={(e) => setCustomization({...customization, reservationWarningText: e.target.value})}
                                                 className="min-h-[120px] text-sm font-mono bg-slate-50" 
                                             />
-                                            <p className="text-[10px] text-slate-500">This section will be highlighted to draw guest attention.</p>
+                                            <p className="text-[10px] text-slate-500">{t("customization.rules.warningHint")}</p>
                                         </div>
                                     </CardContent>
                                 </Card>
@@ -285,19 +287,19 @@ export default function CustomizationPage() {
                         <Card className="rounded-sm border-slate-200 shadow-sm bg-slate-50 sticky top-6">
                             <CardHeader className="p-6 border-b border-slate-200">
                                 <CardTitle className="text-sm font-black uppercase tracking-tight flex items-center gap-2">
-                                    <Smartphone className="w-4 h-4" /> Live Preview
+                                    <Smartphone className="w-4 h-4" /> {t("customization.preview.title")}
                                 </CardTitle>
                             </CardHeader>
                             <CardContent className="p-6">
                                 <div className="text-xs text-slate-500 mb-6 leading-relaxed">
-                                    Changes made here will immediately affect your public reservation page.
+                                    {t("customization.preview.desc")}
                                 </div>
                                 <div 
                                     className="w-full h-32 rounded-md shadow-inner flex flex-col items-center justify-center border-2 border-dashed border-slate-300"
                                     style={{ backgroundColor: `${customization.primaryColor}20`, borderColor: customization.primaryColor }}
                                 >
                                     <div className="font-black uppercase tracking-widest text-xs" style={{ color: customization.primaryColor }}>{customization.layoutStyle.replace('_', ' ')}</div>
-                                    <div className="text-[10px] font-bold mt-1 text-slate-600">{customization.colorPalette} PALETTE / {customization.typography}</div>
+                                    <div className="text-[10px] font-bold mt-1 text-slate-600">{customization.colorPalette} {t("customization.preview.palette")} / {customization.typography}</div>
                                     <div className="mt-2 w-1/2 h-1 rounded-full opacity-50" style={{ backgroundColor: customization.primaryColor }}></div>
                                 </div>
                             </CardContent>

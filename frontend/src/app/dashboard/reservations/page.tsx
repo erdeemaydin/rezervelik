@@ -22,6 +22,7 @@ import { Textarea } from '@/components/ui/textarea';
 import api from '@/lib/api';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import { useTranslation } from "@/i18n/provider";
 
 interface Reservation {
   id: string;
@@ -38,6 +39,7 @@ interface Reservation {
 }
 
 export default function ReservationsPage() {
+  const { t } = useTranslation();
   const [reservations, setReservations] = useState<Reservation[]>([]);
   const [tables, setTables] = useState<any[]>([]);
   const [categories, setCategories] = useState<any[]>([]);
@@ -74,6 +76,9 @@ export default function ReservationsPage() {
       setReservations(resRes.data.data);
       setTables(tablesRes.data.data);
       setCategories(catRes.data.data);
+    } catch (error) {
+      console.error('Failed to fetch data', error);
+      toast.error(t("reservations.failedToLoad"));
     } finally { setLoading(false); }
   };
 
@@ -127,9 +132,9 @@ export default function ReservationsPage() {
   const updateStatus = async (id: string, status: string) => {
     try {
       await api.put(`/reservations/${id}/status`, { status });
-      toast.success(`Status updated`);
+      toast.success(t("reservations.statusUpdated"));
       fetchData();
-    } catch (err) { toast.error('Update failed'); }
+    } catch (err) { toast.error(t("reservations.updateFailed")); }
   };
 
   const handleOpenEdit = (res: Reservation) => {
@@ -162,25 +167,25 @@ export default function ReservationsPage() {
       };
       if (isEditMode && selectedId) {
         await api.put(`/reservations/${selectedId}`, payload);
-        toast.success('Reservation saved');
+        toast.success(t("reservations.saved"));
       } else {
         await api.post('/reservations', payload);
-        toast.success('Reservation created');
+        toast.success(t("reservations.created"));
       }
       setIsDialogOpen(false);
       fetchData();
     } catch (err: any) {
-      toast.error(err.response?.data?.error || 'Failed to save');
+      toast.error(err.response?.data?.error || t("reservations.failedToSave"));
     }
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Delete this reservation?')) return;
+    if (!confirm(t("reservations.confirmDelete"))) return;
     try {
       await api.delete(`/reservations/${id}`);
-      toast.success('Deleted');
+      toast.success(t("reservations.deleted"));
       fetchData();
-    } catch (err) { toast.error('Delete failed'); }
+    } catch (err) { toast.error(t("reservations.deleteFailed")); }
   };
 
   const getRowColor = (status: string, isVIP: boolean) => {
@@ -212,14 +217,14 @@ export default function ReservationsPage() {
         {/* Header - Corporate Blue */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-black text-slate-800 tracking-tight">Reservations Dashboard</h1>
+            <h1 className="text-2xl font-black text-slate-800 tracking-tight">{t("reservations.dashboardTitle")}</h1>
             <div className="flex items-center gap-2 mt-1">
                 <div className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
-                <p className="text-[10px] text-slate-400 font-black uppercase tracking-[0.2em]">Service Control Unit</p>
+                <p className="text-[10px] text-slate-400 font-black uppercase tracking-[0.2em]">{t("reservations.serviceControlUnit")}</p>
             </div>
           </div>
           <Button onClick={() => { setIsEditMode(false); setIsDialogOpen(true); }} className="bg-blue-600 hover:bg-blue-700 text-white rounded-md h-10 px-6 font-black text-xs shadow-lg shadow-blue-600/20">
-            <Plus className="w-4 h-4 mr-2 stroke-[3]" /> NEW RESERVATION
+            <Plus className="w-4 h-4 mr-2 stroke-[3]" /> {t("reservations.newReservation")}
           </Button>
         </div>
 
@@ -230,21 +235,21 @@ export default function ReservationsPage() {
               {/* Tab Selector */}
               <div className="flex items-center border-b border-slate-50 p-1 bg-slate-50/50">
                 <Button variant="ghost" size="sm" onClick={() => setActiveTab('upcoming')} className={cn("flex-1 h-9 text-[10px] font-black uppercase rounded-sm transition-all", activeTab === 'upcoming' ? "bg-white text-blue-600 shadow-sm border border-slate-100" : "text-slate-400 hover:text-slate-600")}>
-                    <Timer className="w-3.5 h-3.5 mr-2" /> Live & Pending
+                    <Timer className="w-3.5 h-3.5 mr-2" /> {t("reservations.liveAndPending")}
                 </Button>
                 <Button variant="ghost" size="sm" onClick={() => setActiveTab('history')} className={cn("flex-1 h-9 text-[10px] font-black uppercase rounded-sm transition-all", activeTab === 'history' ? "bg-white text-blue-600 shadow-sm border border-slate-100" : "text-slate-400 hover:text-slate-600")}>
-                    <CheckCircle2 className="w-3.5 h-3.5 mr-2" /> Service History
+                    <CheckCircle2 className="w-3.5 h-3.5 mr-2" /> {t("reservations.serviceHistory")}
                 </Button>
               </div>
 
               <div className="flex flex-wrap items-center justify-between p-3 gap-4">
                 <div className="flex items-center gap-1 bg-slate-100/50 p-1 rounded-md border border-slate-200/60">
                   {[
-                    { label: 'All', value: 'all' },
-                    { label: 'Today', value: 'today' },
-                    { label: 'Tomorrow', value: 'tomorrow' },
-                    { label: 'This Week', value: 'this-week' },
-                    { label: 'Next Week', value: 'next-week' }
+                    { label: t("reservations.filterAll"), value: 'all' },
+                    { label: t("reservations.filterToday"), value: 'today' },
+                    { label: t("reservations.filterTomorrow"), value: 'tomorrow' },
+                    { label: t("reservations.filterThisWeek"), value: 'this-week' },
+                    { label: t("reservations.filterNextWeek"), value: 'next-week' }
                   ].map(f => (
                     <Button key={f.value} variant="ghost" size="sm" onClick={() => setTimeFilter(f.value)} className={cn("h-7 text-[9px] font-black uppercase px-3 rounded-sm transition-all", timeFilter === f.value ? "bg-white text-slate-900 shadow-sm border border-slate-200/50" : "text-slate-500 hover:text-slate-700")}>{f.label}</Button>
                   ))}
@@ -252,14 +257,14 @@ export default function ReservationsPage() {
                   <div className="relative">
                     <input type="date" ref={filterDateRef} value={customDate} onChange={(e) => {setCustomFilterDate(e.target.value); setTimeFilter('custom');}} className="sr-only" />
                     <Button variant="ghost" size="sm" onClick={() => filterDateRef.current?.showPicker()} className={cn("h-7 text-[9px] font-black uppercase px-3 rounded-sm transition-all", timeFilter === 'custom' ? "bg-blue-600 text-white" : "text-slate-500")}>
-                        <CalendarIcon className="w-3 h-3 mr-1.5" /> {timeFilter === 'custom' && customDate ? customDate : 'Picker'}
+                        <CalendarIcon className="w-3 h-3 mr-1.5" /> {timeFilter === 'custom' && customDate ? customDate : t("reservations.picker")}
                     </Button>
                   </div>
                 </div>
 
                 <div className="relative flex-1 max-w-sm">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                  <Input placeholder="Search guest name, phone, table..." className="pl-10 h-10 text-xs bg-slate-50 border-slate-200 focus:bg-white focus:ring-4 focus:ring-blue-500/5 rounded-md transition-all font-bold" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
+                  <Input placeholder={t("reservations.searchPlaceholder")} className="pl-10 h-10 text-xs bg-slate-50 border-slate-200 focus:bg-white focus:ring-4 focus:ring-blue-500/5 rounded-md transition-all font-bold" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
                 </div>
               </div>
             </div>
@@ -269,18 +274,18 @@ export default function ReservationsPage() {
             <Table>
               <TableHeader className="bg-slate-50/80">
                 <TableRow className="h-10 hover:bg-transparent border-b border-slate-200">
-                  <TableHead className="text-[10px] font-black text-slate-500 uppercase tracking-widest px-6">Schedule</TableHead>
-                  <TableHead className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Guest Context</TableHead>
-                  <TableHead className="text-[10px] font-black text-slate-500 uppercase tracking-widest text-center">Table</TableHead>
-                  <TableHead className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Service Notes</TableHead>
-                  <TableHead className="text-[10px] font-black text-slate-500 uppercase tracking-widest text-right px-6">Command</TableHead>
+                  <TableHead className="text-[10px] font-black text-slate-500 uppercase tracking-widest px-6">{t("reservations.schedule")}</TableHead>
+                  <TableHead className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{t("reservations.guestContext")}</TableHead>
+                  <TableHead className="text-[10px] font-black text-slate-500 uppercase tracking-widest text-center">{t("reservations.table")}</TableHead>
+                  <TableHead className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{t("reservations.serviceNotes")}</TableHead>
+                  <TableHead className="text-[10px] font-black text-slate-500 uppercase tracking-widest text-right px-6">{t("reservations.command")}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {loading ? (
-                    <TableRow><TableCell colSpan={5} className="h-64 text-center text-xs text-slate-300 font-black uppercase tracking-widest">Refreshing Floor Sync...</TableCell></TableRow>
+                    <TableRow><TableCell colSpan={5} className="h-64 text-center text-xs text-slate-300 font-black uppercase tracking-widest">{t("reservations.refreshing")}</TableCell></TableRow>
                 ) : filteredReservations.length === 0 ? (
-                    <TableRow><TableCell colSpan={5} className="h-64 text-center text-xs text-slate-300 font-black uppercase tracking-widest">Zero Matching Records</TableCell></TableRow>
+                    <TableRow><TableCell colSpan={5} className="h-64 text-center text-xs text-slate-300 font-black uppercase tracking-widest">{t("reservations.noRecords")}</TableCell></TableRow>
                 ) : filteredReservations.map((res) => (
                   <TableRow key={res.id} className={cn("h-16 border-b border-slate-50 transition-colors", getRowColor(res.status, res.isVIP))}>
                     <TableCell className="px-6">
@@ -299,11 +304,11 @@ export default function ReservationsPage() {
                             <span className="font-black text-slate-800 text-sm uppercase tracking-tight">{res.customerName}</span>
                             {res.isVIP && <Star className="w-3.5 h-3.5 text-amber-500 fill-amber-500 animate-pulse" />}
                             <div className="h-4 w-[1px] bg-slate-200 mx-1" />
-                            <span className="text-[10px] font-black text-slate-500">{res.guestCount} PAX</span>
+                            <span className="text-[10px] font-black text-slate-500">{res.guestCount} {t("reservations.pax")}</span>
                         </div>
                         <div className="flex items-center gap-3">
                             <span className="text-[10px] text-slate-400 font-mono font-bold">{res.customerPhone}</span>
-                            <Badge variant="outline" className="text-[8px] h-4 border-slate-200 bg-white font-black text-slate-400 rounded-sm shadow-none uppercase">{res.category?.name || 'Manual'}</Badge>
+                            <Badge variant="outline" className="text-[8px] h-4 border-slate-200 bg-white font-black text-slate-400 rounded-sm shadow-none uppercase">{res.category?.name || t("reservations.manual")}</Badge>
                         </div>
                       </div>
                     </TableCell>
@@ -311,10 +316,10 @@ export default function ReservationsPage() {
                       {res.table ? (
                         <div className="inline-flex flex-col items-center">
                             <div className="font-black text-slate-900 text-lg leading-none">{res.table.identifier}</div>
-                            <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest mt-1">ASSIGNED</span>
+                            <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest mt-1">{t("reservations.assigned")}</span>
                         </div>
                       ) : (
-                        <span className="text-[9px] font-black text-amber-600 bg-amber-50 px-2 py-1 rounded-sm border border-amber-200 uppercase tracking-tighter">Needs Assign</span>
+                        <span className="text-[9px] font-black text-amber-600 bg-amber-50 px-2 py-1 rounded-sm border border-amber-200 uppercase tracking-tighter">{t("reservations.needsAssign")}</span>
                       )}
                     </TableCell>
                     <TableCell>
@@ -325,7 +330,7 @@ export default function ReservationsPage() {
                             <Info className="w-2.5 h-2.5 text-blue-500 inline mr-1" /> {res.internalNote}
                           </div>
                         ) : (
-                            <span className="text-[9px] text-slate-300 italic font-medium uppercase tracking-widest">No Intelligence</span>
+                            <span className="text-[9px] text-slate-300 italic font-medium uppercase tracking-widest">{t("reservations.noIntelligence")}</span>
                         )}
                       </div>
                     </TableCell>
@@ -334,16 +339,16 @@ export default function ReservationsPage() {
                         <div className="flex items-center gap-1.5">
                             {res.status === 'PENDING' && (
                             <>
-                                <Button size="sm" onClick={() => updateStatus(res.id, 'CONFIRMED')} className="h-8 px-4 bg-green-600 hover:bg-green-700 text-[10px] font-black uppercase rounded shadow-lg shadow-green-600/10"><Check className="w-3.5 h-3.5 mr-1.5" /> Accept</Button>
-                                <Button size="sm" variant="outline" onClick={() => updateStatus(res.id, 'CANCELLED')} className="h-8 px-4 text-red-600 hover:bg-red-50 border-red-200 text-[10px] font-black uppercase rounded">Reject</Button>
+                                <Button size="sm" onClick={() => updateStatus(res.id, 'CONFIRMED')} className="h-8 px-4 bg-green-600 hover:bg-green-700 text-[10px] font-black uppercase rounded shadow-lg shadow-green-600/10"><Check className="w-3.5 h-3.5 mr-1.5" /> {t("reservations.accept")}</Button>
+                                <Button size="sm" variant="outline" onClick={() => updateStatus(res.id, 'CANCELLED')} className="h-8 px-4 text-red-600 hover:bg-red-50 border-red-200 text-[10px] font-black uppercase rounded">{t("reservations.reject")}</Button>
                             </>
                             )}
                             {res.status === 'CONFIRMED' && (
-                            <Button size="sm" onClick={() => updateStatus(res.id, 'COMPLETED')} className="h-8 px-6 bg-blue-600 hover:bg-blue-700 text-white text-[10px] font-black uppercase rounded shadow-lg shadow-blue-600/10">Arrived</Button>
+                            <Button size="sm" onClick={() => updateStatus(res.id, 'COMPLETED')} className="h-8 px-6 bg-blue-600 hover:bg-blue-700 text-white text-[10px] font-black uppercase rounded shadow-lg shadow-blue-600/10">{t("reservations.arrived")}</Button>
                             )}
                             {(res.status === 'CANCELLED' || res.status === 'NO_SHOW' || res.status === 'COMPLETED') && (
                             <Button size="sm" variant="ghost" onClick={() => updateStatus(res.id, 'CONFIRMED')} className="h-8 text-blue-600 hover:bg-blue-50 text-[10px] font-black uppercase rounded">
-                                <RotateCcw className="w-3 h-3 mr-1.5 stroke-[3]" /> Restore
+                                <RotateCcw className="w-3 h-3 mr-1.5 stroke-[3]" /> {t("reservations.restore")}
                             </Button>
                             )}
                         </div>
@@ -366,35 +371,35 @@ export default function ReservationsPage() {
             <form onSubmit={handleSubmit}>
               <div className="bg-slate-900 p-5 text-white flex justify-between items-center">
                 <DialogHeader>
-                  <DialogTitle className="text-xl font-black uppercase tracking-tight">{isEditMode ? 'Update Record' : 'Initialize Booking'}</DialogTitle>
+                  <DialogTitle className="text-xl font-black uppercase tracking-tight">{isEditMode ? t("reservations.updateRecord") : t("reservations.initializeBooking")}</DialogTitle>
                 </DialogHeader>
               </div>
               
               <div className="p-8 grid grid-cols-2 gap-10 bg-white">
                 <div className="space-y-6">
                   <div className="grid gap-2">
-                    <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Full Name Identity</Label>
+                    <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest">{t("reservations.fullName")}</Label>
                     <Input required value={formData.customerName} onChange={e => setFormData({...formData, customerName: e.target.value})} className="h-12 text-sm font-bold border-slate-200 focus:border-blue-500 rounded-sm" />
                   </div>
                   <div className="grid gap-2">
-                    <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Mobile Contact</Label>
+                    <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest">{t("reservations.mobileContact")}</Label>
                     <Input required value={formData.customerPhone} onChange={e => setFormData({...formData, customerPhone: e.target.value})} className="h-12 text-sm font-bold border-slate-200 focus:border-blue-500 rounded-sm" />
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div className="grid gap-2">
-                        <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Party Pax</Label>
+                        <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest">{t("reservations.partyPax")}</Label>
                         <Input type="number" min="1" required value={formData.guestCount} onChange={e => setFormData({...formData, guestCount: e.target.value})} className="h-12 text-sm font-black text-center border-slate-200 rounded-sm" />
                     </div>
                     <div className="grid gap-2">
-                        <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Entry Source</Label>
+                        <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest">{t("reservations.entrySource")}</Label>
                         <Select value={formData.categoryId} onValueChange={(v) => setFormData({...formData, categoryId: v || 'none'})}>
                             <SelectTrigger className="h-12 text-sm font-bold rounded-sm border-slate-200 focus:ring-0 shadow-none">
                                 <SelectValue>
-                                    {categories.find(c => c.id === formData.categoryId)?.name || 'Standard Service'}
+                                    {categories.find(c => c.id === formData.categoryId)?.name || t("reservations.standardService")}
                                 </SelectValue>
                             </SelectTrigger>
                             <SelectContent>
-                                <SelectItem value="none" className="text-xs">Standard Service</SelectItem>
+                                <SelectItem value="none" className="text-xs">{t("reservations.standardService")}</SelectItem>
                                 {categories.map(c => <SelectItem key={c.id} value={c.id} className="text-xs">{c.name}</SelectItem>)}
                             </SelectContent>
                         </Select>
@@ -404,24 +409,24 @@ export default function ReservationsPage() {
 
                 <div className="space-y-6">
                   <div className="grid gap-2">
-                    <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Calendar Date</Label>
+                    <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest">{t("reservations.calendarDate")}</Label>
                     <Input type="date" value={selectedDate} onChange={e => setSelectedDate(e.target.value)} className="h-12 text-sm font-bold border-slate-200 focus:border-blue-500 rounded-sm" />
                   </div>
                   <div className="grid gap-2">
-                    <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Arrival Time</Label>
+                    <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest">{t("reservations.arrivalTime")}</Label>
                     <Input type="time" value={selectedTime} onChange={e => setSelectedTime(e.target.value)} className="h-12 text-sm font-bold border-slate-200 focus:border-blue-500 rounded-sm" />
                   </div>
                   <div className="grid gap-2">
-                    <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Table Location</Label>
+                    <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest">{t("reservations.tableLocation")}</Label>
                     <Select value={formData.tableId} onValueChange={(v) => setFormData({...formData, tableId: v || 'none'})}>
                         <SelectTrigger className="h-12 text-sm font-bold rounded-sm border-slate-200 focus:ring-0 shadow-none">
                             <SelectValue>
-                                {tables.find(t => t.id === formData.tableId)?.identifier || "Auto-Selection"}
+                                {tables.find(t => t.id === formData.tableId)?.identifier || t("reservations.autoSelection")}
                             </SelectValue>
                         </SelectTrigger>
                         <SelectContent>
-                            <SelectItem value="none" className="text-xs italic">Auto-Assign Best Available</SelectItem>
-                            {tables.map(t => <SelectItem key={t.id} value={t.id} className="text-xs font-bold">{t.identifier} (PAX: {t.capacity})</SelectItem>)}
+                            <SelectItem value="none" className="text-xs italic">{t("reservations.autoAssign")}</SelectItem>
+                            {tables.map(t => <SelectItem key={t.id} value={t.id} className="text-xs font-bold">{t.identifier} ({t("reservations.pax")}: {t.capacity})</SelectItem>)}
                         </SelectContent>
                     </Select>
                   </div>
@@ -429,20 +434,20 @@ export default function ReservationsPage() {
 
                 <div className="col-span-2 space-y-6 pt-4 border-t border-slate-50">
                     <div className="grid gap-2">
-                        <Label className="text-[10px] font-black uppercase text-blue-600 tracking-[0.2em]">Service Intelligence (Staff Only)</Label>
-                        <Textarea value={formData.internalNote} onChange={e => setFormData({...formData, internalNote: e.target.value})} className="min-h-[80px] text-sm font-medium border-blue-100 bg-blue-50/20 rounded-sm p-4 focus:ring-0 focus:border-blue-300" placeholder="e.g. Allergy warning, Seating preference, VIP detail..." />
+                        <Label className="text-[10px] font-black uppercase text-blue-600 tracking-[0.2em]">{t("reservations.serviceIntelligence")}</Label>
+                        <Textarea value={formData.internalNote} onChange={e => setFormData({...formData, internalNote: e.target.value})} className="min-h-[80px] text-sm font-medium border-blue-100 bg-blue-50/20 rounded-sm p-4 focus:ring-0 focus:border-blue-300" placeholder={t("reservations.notesPlaceholder")} />
                     </div>
                     <div className="flex items-center gap-3 bg-slate-900 p-4 rounded-md shadow-lg shadow-slate-900/10">
                         <Checkbox checked={formData.isVIP} onCheckedChange={(c) => setFormData({...formData, isVIP: !!c})} className="border-white/20 data-[state=checked]:bg-blue-500" />
-                        <Label className="text-[10px] font-black uppercase text-white tracking-[0.3em]">Elevate to VIP Priority Status</Label>
+                        <Label className="text-[10px] font-black uppercase text-white tracking-[0.3em]">{t("reservations.elevateVIP")}</Label>
                         <Star className={cn("w-4 h-4 ml-auto", formData.isVIP ? "text-amber-400 fill-amber-400" : "text-slate-600")} />
                     </div>
                 </div>
               </div>
 
               <div className="p-6 bg-slate-50 border-t border-slate-100 flex justify-end gap-3">
-                <Button type="button" variant="ghost" onClick={() => setIsDialogOpen(false)} className="h-11 text-xs font-black text-slate-400 uppercase tracking-widest px-8">ABORT</Button>
-                <Button type="submit" className="h-11 bg-blue-600 hover:bg-blue-700 text-white text-xs font-black uppercase px-12 rounded-sm shadow-xl shadow-blue-600/20">COMMIT ENTRY</Button>
+                <Button type="button" variant="ghost" onClick={() => setIsDialogOpen(false)} className="h-11 text-xs font-black text-slate-400 uppercase tracking-widest px-8">{t("reservations.abort")}</Button>
+                <Button type="submit" className="h-11 bg-blue-600 hover:bg-blue-700 text-white text-xs font-black uppercase px-12 rounded-sm shadow-xl shadow-blue-600/20">{t("reservations.commitEntry")}</Button>
               </div>
             </form>
           </DialogContent>

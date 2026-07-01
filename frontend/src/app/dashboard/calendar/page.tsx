@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useTranslation } from "@/i18n/provider";
 import AdminLayout from '@/components/layout/AdminLayout';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -26,6 +27,7 @@ interface DaySetting {
 }
 
 export default function CalendarSettingsPage() {
+  const { t } = useTranslation();
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [daySettings, setDaySettings] = useState<Record<string, DaySetting>>({});
   const [loading, setLoading] = useState(true);
@@ -105,18 +107,18 @@ export default function CalendarSettingsPage() {
         dates: Array.from(selectedDays),
         ...form
       });
-      toast.success(`Applied to ${selectedDays.size} day(s)`);
+      toast.success(`${t("calendar.toast.appliedDaysPrefix")}${selectedDays.size}${t("calendar.toast.appliedDaysSuffix")}`);
       if (isBulkMode) setSelectedDays(new Set());
       fetchDaySettings();
     } catch (err) {
-      toast.error('Failed to update settings');
+      toast.error(t("calendar.toast.updateFailed"));
     }
   };
 
   const handleFutureApply = async (overwriteAll: boolean) => {
     if (!futureModeAction) return;
     setIsFutureDialogOpen(false);
-    const modeToastId = toast.loading('Applying settings to future days...');
+    const modeToastId = toast.loading(t("calendar.toast.applyingFuture"));
 
     const isReservationEnabled = futureModeAction !== 'BLACKOUT';
     const autoConfirm = futureModeAction === 'AUTO_CONFIRM';
@@ -139,7 +141,7 @@ export default function CalendarSettingsPage() {
 
     if (datesToUpdate.length === 0) {
         toast.dismiss(modeToastId);
-        toast.info('No new days to update.');
+        toast.info(t("calendar.toast.noNewDays"));
         setFutureModeAction(null);
         return;
     }
@@ -152,11 +154,11 @@ export default function CalendarSettingsPage() {
             autoConfirm
         });
         toast.dismiss(modeToastId);
-        toast.success(`Successfully applied mode to ${datesToUpdate.length} future days.`);
+        toast.success(`${t("calendar.toast.futureSuccessPrefix")}${datesToUpdate.length}${t("calendar.toast.futureSuccessSuffix")}`);
         fetchDaySettings();
     } catch (err) {
         toast.dismiss(modeToastId);
-        toast.error('Failed to apply future settings');
+        toast.error(t("calendar.toast.futureFailed"));
     }
     setFutureModeAction(null);
   };
@@ -203,7 +205,7 @@ export default function CalendarSettingsPage() {
                 isSelected ? "bg-slate-900 text-white" : isToday ? "bg-blue-600 text-white" : "text-slate-900"
             )}>{d}</span>
             {isSelected && <div className="bg-slate-900 text-white p-1 rounded-sm shadow-md"><MousePointer2 className="w-3 h-3" /></div>}
-            {!isSelected && setting?.eventTitle && <Badge className="bg-slate-900 text-white border-0 text-[8px] font-black uppercase px-1.5 py-0.5 rounded-sm shadow-sm">Event</Badge>}
+            {!isSelected && setting?.eventTitle && <Badge className="bg-slate-900 text-white border-0 text-[8px] font-black uppercase px-1.5 py-0.5 rounded-sm shadow-sm">{t("calendar.badge.event")}</Badge>}
           </div>
           
           <div className="mt-3 space-y-1.5">
@@ -211,15 +213,15 @@ export default function CalendarSettingsPage() {
             {setting && !setting.isReservationEnabled ? (
                 <div className="flex items-center gap-1 text-red-700">
                     <AlertCircle className="w-3 h-3" />
-                    <span className="text-[9px] font-black uppercase tracking-tighter">Blackout</span>
+                    <span className="text-[9px] font-black uppercase tracking-tighter">{t("calendar.status.blackout")}</span>
                 </div>
             ) : setting?.autoConfirm ? (
                 <div className="flex items-center gap-1 text-emerald-700 font-black uppercase text-[9px] tracking-tighter">
-                    <Check className="w-3 h-3 stroke-[4]" /> Auto-Ok
+                    <Check className="w-3 h-3 stroke-[4]" /> {t("calendar.status.autoOk")}
                 </div>
             ) : (
                 <div className="flex items-center gap-1 text-amber-700 font-black uppercase text-[9px] tracking-tighter opacity-40">
-                    <Timer className="w-3 h-3" /> Manual
+                    <Timer className="w-3 h-3" /> {t("calendar.status.manual")}
                 </div>
             )}
           </div>
@@ -234,8 +236,8 @@ export default function CalendarSettingsPage() {
       <div className="flex flex-col gap-6">
         <div className="flex flex-col md:flex-row justify-between md:items-start gap-4">
           <div>
-            <h1 className="text-2xl font-black text-slate-800 uppercase tracking-tight">Calendar Master</h1>
-            <p className="text-[10px] text-slate-400 font-black uppercase tracking-[0.2em] mt-1 italic">Operations Orchestrator</p>
+            <h1 className="text-2xl font-black text-slate-800 uppercase tracking-tight">{t("calendar.header.title")}</h1>
+            <p className="text-[10px] text-slate-400 font-black uppercase tracking-[0.2em] mt-1 italic">{t("calendar.header.subtitle")}</p>
           </div>
           
           <div className="flex flex-col items-end gap-2">
@@ -243,12 +245,12 @@ export default function CalendarSettingsPage() {
                 <Select value={futureModeAction || ''} onValueChange={(v) => { setFutureModeAction(v); setIsFutureDialogOpen(true); }}>
                     <SelectTrigger className="h-10 w-[240px] text-xs font-black uppercase border-slate-200 shadow-sm bg-white">
                         <CalendarClock className="w-4 h-4 mr-2 text-blue-600" />
-                        <SelectValue placeholder="Set Future Default Mode" />
+                        <SelectValue placeholder={t("calendar.futureMode.placeholder")} />
                     </SelectTrigger>
                     <SelectContent>
-                        <SelectItem value="AUTO_CONFIRM" className="text-xs font-bold"><div className="flex items-center text-emerald-700"><Check className="w-3 h-3 mr-2" /> Auto-Confirm</div></SelectItem>
-                        <SelectItem value="STANDARD" className="text-xs font-bold"><div className="flex items-center text-amber-700"><Timer className="w-3 h-3 mr-2" /> Standard (Manual)</div></SelectItem>
-                        <SelectItem value="BLACKOUT" className="text-xs font-bold"><div className="flex items-center text-red-700"><AlertCircle className="w-3 h-3 mr-2" /> Blackout</div></SelectItem>
+                        <SelectItem value="AUTO_CONFIRM" className="text-xs font-bold"><div className="flex items-center text-emerald-700"><Check className="w-3 h-3 mr-2" /> {t("calendar.futureMode.autoConfirm")}</div></SelectItem>
+                        <SelectItem value="STANDARD" className="text-xs font-bold"><div className="flex items-center text-amber-700"><Timer className="w-3 h-3 mr-2" /> {t("calendar.futureMode.standard")}</div></SelectItem>
+                        <SelectItem value="BLACKOUT" className="text-xs font-bold"><div className="flex items-center text-red-700"><AlertCircle className="w-3 h-3 mr-2" /> {t("calendar.futureMode.blackout")}</div></SelectItem>
                     </SelectContent>
                 </Select>
             </div>
@@ -260,7 +262,7 @@ export default function CalendarSettingsPage() {
                         onClick={() => { setIsBulkMode(false); setSelectedDays(new Set()); }}
                         className={cn("h-8 text-[9px] font-black uppercase px-4 rounded-sm", !isBulkMode ? "bg-white text-slate-900 shadow-sm" : "text-slate-500")}
                     >
-                        Single Edit
+                        {t("calendar.buttons.singleEdit")}
                     </Button>
                     <Button 
                         variant={isBulkMode ? "default" : "ghost"} 
@@ -268,7 +270,7 @@ export default function CalendarSettingsPage() {
                         onClick={() => { setIsBulkMode(true); setSelectedDays(new Set()); }}
                         className={cn("h-8 text-[9px] font-black uppercase px-4 rounded-sm", isBulkMode ? "bg-blue-600 text-white shadow-sm" : "text-slate-500")}
                     >
-                        <Layers className="w-3 h-3 mr-1.5" /> Bulk Mode
+                        <Layers className="w-3 h-3 mr-1.5" /> {t("calendar.buttons.bulkMode")}
                     </Button>
                 </div>
 
@@ -290,7 +292,7 @@ export default function CalendarSettingsPage() {
         <div className="grid grid-cols-1 xl:grid-cols-4 gap-6 items-start">
             <Card className="xl:col-span-3 border-slate-200 shadow-sm rounded-md overflow-hidden bg-white ring-1 ring-slate-200">
                 <div className="grid grid-cols-7 bg-slate-900 text-white font-black text-[9px] uppercase tracking-[0.4em] text-center py-4">
-                    {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map(day => <div key={day}>{day}</div>)}
+                    {[t("calendar.days.mon"), t("calendar.days.tue"), t("calendar.days.wed"), t("calendar.days.thu"), t("calendar.days.fri"), t("calendar.days.sat"), t("calendar.days.sun")].map(day => <div key={day}>{day}</div>)}
                 </div>
                 <CardContent className="p-0 grid grid-cols-7">
                     {renderCalendar()}
@@ -304,25 +306,25 @@ export default function CalendarSettingsPage() {
                             <div className="flex items-center justify-between mb-2">
                                 <CardTitle className="text-sm font-black uppercase tracking-widest flex items-center gap-2">
                                     {isBulkMode ? <Layers className="h-4 w-4" /> : <Settings2 className="h-4 w-4" />}
-                                    {isBulkMode ? 'Bulk Update' : 'Day Settings'}
+                                    {isBulkMode ? t("calendar.panel.bulkUpdate") : t("calendar.panel.daySettings")}
                                 </CardTitle>
-                                <Badge className="bg-white/20 text-white border-0 font-black text-[10px]">{selectedDays.size} {selectedDays.size === 1 ? 'Day' : 'Days'}</Badge>
+                                <Badge className="bg-white/20 text-white border-0 font-black text-[10px]">{selectedDays.size} {selectedDays.size === 1 ? t("calendar.panel.day") : t("calendar.panel.days")}</Badge>
                             </div>
                             <CardDescription className="text-white/50 text-[9px] font-bold uppercase tracking-widest leading-relaxed">
-                                {isBulkMode ? 'Applying logic across multiple dates.' : 'Adjusting operational logic for this date.'}
+                                {isBulkMode ? t("calendar.panel.bulkDescription") : t("calendar.panel.singleDescription")}
                             </CardDescription>
                         </CardHeader>
                         <CardContent className="p-6 space-y-8 bg-white">
                             <div className="space-y-2">
-                                <Label className="text-[9px] font-black uppercase tracking-widest text-slate-400">Notice/Event Title</Label>
+                                <Label className="text-[9px] font-black uppercase tracking-widest text-slate-400">{t("calendar.panel.eventTitle")}</Label>
                                 <Input placeholder="..." value={form.eventTitle} onChange={e => setForm({...form, eventTitle: e.target.value})} className="h-10 text-xs font-bold bg-slate-50 border-slate-200 rounded-sm" />
                             </div>
 
                              <div className="space-y-6 py-4 border-y border-slate-50">
                                  <div className="flex items-center justify-between">
                                      <div className="space-y-0.5">
-                                         <Label className="text-xs font-black text-slate-800 uppercase">Allow Bookings</Label>
-                                         <p className="text-[8px] text-slate-400 font-bold uppercase tracking-tighter">Customer Side Requests</p>
+                                         <Label className="text-xs font-black text-slate-800 uppercase">{t("calendar.panel.allowBookings")}</Label>
+                                         <p className="text-[8px] text-slate-400 font-bold uppercase tracking-tighter">{t("calendar.panel.allowBookingsDesc")}</p>
                                      </div>
                                      <Checkbox 
                                          checked={form.isReservationEnabled} 
@@ -337,11 +339,11 @@ export default function CalendarSettingsPage() {
                                          }} 
                                      />
                                  </div>
-
+ 
                                  <div className="flex items-center justify-between">
                                      <div className="space-y-0.5">
-                                         <Label className="text-xs font-black text-slate-800 uppercase font-bold text-blue-600">Fully Booked (Waitlist)</Label>
-                                         <p className="text-[8px] text-slate-400 font-bold uppercase tracking-tighter">Accept Date Waitlist Entries</p>
+                                         <Label className="text-xs font-black text-slate-800 uppercase font-bold text-blue-600">{t("calendar.panel.waitlist")}</Label>
+                                         <p className="text-[8px] text-slate-400 font-bold uppercase tracking-tighter">{t("calendar.panel.waitlistDesc")}</p>
                                      </div>
                                      <Checkbox 
                                          checked={form.isFullyBooked} 
@@ -356,11 +358,11 @@ export default function CalendarSettingsPage() {
                                          }} 
                                      />
                                  </div>
-
+ 
                                  <div className={cn("flex items-center justify-between transition-opacity", !form.isReservationEnabled && "opacity-30")}>
                                      <div className="space-y-0.5">
-                                         <Label className="text-xs font-black text-slate-800 uppercase">Auto-Confirm</Label>
-                                         <p className="text-[8px] text-slate-400 font-bold uppercase tracking-tighter">Skip Review Queue</p>
+                                         <Label className="text-xs font-black text-slate-800 uppercase">{t("calendar.panel.autoConfirm")}</Label>
+                                         <p className="text-[8px] text-slate-400 font-bold uppercase tracking-tighter">{t("calendar.panel.autoConfirmDesc")}</p>
                                      </div>
                                      <Checkbox 
                                          disabled={!form.isReservationEnabled}
@@ -372,10 +374,10 @@ export default function CalendarSettingsPage() {
 
                             <div className="flex gap-2">
                                 {isBulkMode && (
-                                    <Button variant="outline" onClick={() => setSelectedDays(new Set())} className="flex-1 h-12 text-[10px] font-black uppercase rounded-sm border-slate-200 text-slate-400">Clear</Button>
+                                    <Button variant="outline" onClick={() => setSelectedDays(new Set())} className="flex-1 h-12 text-[10px] font-black uppercase rounded-sm border-slate-200 text-slate-400">{t("calendar.panel.clear")}</Button>
                                 )}
                                 <Button onClick={handleSave} className="flex-[2] h-12 bg-slate-900 hover:bg-black text-white font-black text-[10px] uppercase rounded-sm shadow-xl transition-all active:scale-95">
-                                    {isBulkMode ? `Save ${selectedDays.size} Days` : 'Apply Settings'}
+                                    {isBulkMode ? `${t("calendar.panel.saveDaysPrefix")}${selectedDays.size}${t("calendar.panel.saveDaysSuffix")}` : t("calendar.panel.applySettings")}
                                 </Button>
                             </div>
                         </CardContent>
@@ -386,7 +388,7 @@ export default function CalendarSettingsPage() {
                             {isBulkMode ? <Layers className="h-8 w-8 text-slate-200" /> : <MousePointer2 className="h-8 w-8 text-slate-200" />}
                         </div>
                         <p className="text-slate-400 font-black text-[10px] uppercase tracking-[0.2em] leading-relaxed px-4">
-                            {isBulkMode ? 'Select multiple days to perform bulk operations' : 'Select a date on the calendar to adjust settings'}
+                            {isBulkMode ? t("calendar.panel.bulkEmpty") : t("calendar.panel.singleEmpty")}
                         </p>
                     </div>
                 )}

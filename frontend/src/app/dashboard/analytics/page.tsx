@@ -1,96 +1,374 @@
 'use client';
 
+import React, { useEffect, useState } from 'react';
 import AdminLayout from '@/components/layout/AdminLayout';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { BarChart3, TrendingUp, Users, CalendarDays, DollarSign } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { BarChart3, TrendingUp, Users, CalendarDays, DollarSign, Loader2, TrendingDown, Star, Clock } from 'lucide-react';
+import { 
+  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
+  PieChart, Pie, Cell, Legend, BarChart, Bar
+} from 'recharts';
+import api from '@/lib/api';
+import { toast } from 'sonner';
+import { useTranslation } from "@/i18n/provider";
+
+const STATUS_COLORS: Record<string, string> = {
+  'CONFIRMED': '#10b981', // emerald
+  'COMPLETED': '#3b82f6', // blue
+  'PENDING': '#f59e0b',   // amber
+  'CANCELLED': '#ef4444', // rose
+  'NO_SHOW': '#64748b'    // slate
+};
+
+const DEFAULT_COLORS = ['#3b82f6', '#8b5cf6', '#ec4899', '#f59e0b', '#10b981'];
+
+interface AnalyticsData {
+  period: number;
+  summary: {
+    totalReservations: number;
+    totalGuests: number;
+    avgPartySize: number;
+    cancelRate: number;
+    noShowRate: number;
+    vipCount: number;
+  };
+  comparison: {
+    totalReservations: { current: number; previous: number; changePercent: number };
+    totalGuests: { current: number; previous: number; changePercent: number };
+  };
+  dailyTrend: { date: string; reservations: number; guests: number }[];
+  peakHours: { dayOfWeek: number; hour: number; count: number }[];
+  statusBreakdown: { status: string; count: number }[];
+  categoryBreakdown: { name: string; count: number; color: string | null }[];
+  zoneUtilization: { zone: string; reservations: number; avgGuests: number }[];
+  waitlistMetrics: {
+    totalJoined: number;
+    seated: number;
+    noShow: number;
+    canceled: number;
+    avgWaitMinutes: number;
+    conversionRate: number;
+  };
+}
+
+const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
 export default function AnalyticsPage() {
+  const { t } = useTranslation();
+  const [data, setData] = useState<AnalyticsData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [period, setPeriod] = useState<string>("30");
+
+  useEffect(() => {
+    const fetchAnalytics = async () => {
+      try {
+        setLoading(true);
+        const response = await api.get(`/restaurants/analytics?period=${period}`);
+        setData(response.data.data);
+      } catch (error) {
+        console.error('Failed to fetch analytics:', error);
+        toast.error(t("analytics.fetchError"));
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchAnalytics();
+  }, [period]);
+
+  const renderTrend = (value: number) => {
+    if (value > 0) {
+      return <div className="flex items-center text-xs text-emerald-600 font-bold gap-1 mt-2"><TrendingUp className="w-3 h-3" /> +{value}% {t("analytics.vsPrev")}</div>;
+    }
+    if (value < 0) {
+      return <div className="flex items-center text-xs text-rose-600 font-bold gap-1 mt-2"><TrendingDown className="w-3 h-3" /> {value}% {t("analytics.vsPrev")}</div>;
+    }
+    return <div className="flex items-center text-xs text-slate-400 font-bold gap-1 mt-2">{t("analytics.noChange")}</div>;
+  };
+
+  const getHeatmapColor = (count: number, maxCount: number) => {
+    if (count === 0) return 'bg-slate-50';
+    const intensity = Math.max(0.1, count / maxCount);
+    // Return a solid blue with varying opacity
+    return `rgba(59, 130, 246, ${intensity})`;
+  };
+
+  if (loading && !data) {
+    return (
+      <AdminLayout>
+        <div className="flex h-[70vh] items-center justify-center">
+          <div className="flex flex-col items-center gap-4">
+            <Loader2 className="h-10 w-10 animate-spin text-blue-600" />
+            <p className="text-slate-500 font-medium">{t("analytics.loading")}</p>
+          </div>
+        </div>
+      </AdminLayout>
+    );
+  }
+
+  if (!data) return null;
+
+  // Max value for heatmap
+  const maxPeakCount = Math.max(...data.peakHours.map(p => p.count), 1);
+
   return (
     <AdminLayout>
-      <div className="flex flex-col gap-6">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-800">Analytics & Insights</h1>
-          <p className="text-xs text-slate-500 font-medium">Performance overview and operational metrics.</p>
+      <div className="flex flex-col gap-6 pb-8 animate-in fade-in duration-500">
+        
+        {/* Header & Period Selector */}
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          <div>
+            <h1 className="text-2xl font-bold text-slate-800">{t("analytics.title")}</h1>
+            <p className="text-sm text-slate-500 font-medium">{t("analytics.subtitle")}</p>
+          </div>
+          <div className="w-40">
+            <Select value={period} onValueChange={(v) => { if (v) setPeriod(v); }}>
+              <SelectTrigger className="bg-white border-slate-200 shadow-sm font-semibold text-slate-700">
+                <SelectValue placeholder={t("analytics.selectPeriod")} />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="7">{t("analytics.last7Days")}</SelectItem>
+                <SelectItem value="30">{t("analytics.last30Days")}</SelectItem>
+                <SelectItem value="60">{t("analytics.last60Days")}</SelectItem>
+                <SelectItem value="90">{t("analytics.last90Days")}</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <Card className="border-slate-100 shadow-sm">
+        {/* Top Summary Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <Card className="border-slate-100 shadow-sm hover:shadow-md transition-shadow">
             <CardHeader className="p-4 pb-2">
-              <CardDescription className="text-[10px] font-black uppercase text-slate-500 tracking-wider">Total Reservations</CardDescription>
+              <CardDescription className="text-[10px] font-black uppercase text-slate-500 tracking-wider">{t("analytics.totalReservations")}</CardDescription>
               <CardTitle className="text-2xl font-bold flex items-center justify-between">
-                1,248
+                {data.summary.totalReservations}
                 <CalendarDays className="w-5 h-5 text-blue-500" />
               </CardTitle>
             </CardHeader>
             <CardContent className="p-4 pt-0">
-              <div className="flex items-center text-xs text-emerald-600 font-bold gap-1 mt-2">
-                <TrendingUp className="w-3 h-3" /> +12.5% this month
-              </div>
+              {renderTrend(data.comparison.totalReservations.changePercent)}
             </CardContent>
           </Card>
 
-          <Card className="border-slate-100 shadow-sm">
+          <Card className="border-slate-100 shadow-sm hover:shadow-md transition-shadow">
             <CardHeader className="p-4 pb-2">
-              <CardDescription className="text-[10px] font-black uppercase text-slate-500 tracking-wider">Guests Seated</CardDescription>
+              <CardDescription className="text-[10px] font-black uppercase text-slate-500 tracking-wider">{t("analytics.guestsSeated")}</CardDescription>
               <CardTitle className="text-2xl font-bold flex items-center justify-between">
-                4,892
+                {data.summary.totalGuests}
                 <Users className="w-5 h-5 text-indigo-500" />
               </CardTitle>
             </CardHeader>
             <CardContent className="p-4 pt-0">
-              <div className="flex items-center text-xs text-emerald-600 font-bold gap-1 mt-2">
-                <TrendingUp className="w-3 h-3" /> +8.2% this month
+              {renderTrend(data.comparison.totalGuests.changePercent)}
+            </CardContent>
+          </Card>
+
+          <Card className="border-slate-100 shadow-sm hover:shadow-md transition-shadow">
+            <CardHeader className="p-4 pb-2">
+              <CardDescription className="text-[10px] font-black uppercase text-slate-500 tracking-wider">{t("analytics.avgPartySize")}</CardDescription>
+              <CardTitle className="text-2xl font-bold flex items-center justify-between">
+                {data.summary.avgPartySize}
+                <Users className="w-5 h-5 text-amber-500" />
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-4 pt-0">
+              <div className="flex items-center text-xs text-slate-500 font-bold gap-1 mt-2">
+                {t("analytics.overallAverage")}
               </div>
             </CardContent>
           </Card>
 
-          <Card className="border-slate-100 shadow-sm">
+          <Card className="border-slate-100 shadow-sm hover:shadow-md transition-shadow">
             <CardHeader className="p-4 pb-2">
-              <CardDescription className="text-[10px] font-black uppercase text-slate-500 tracking-wider">Avg. Table Turn</CardDescription>
+              <CardDescription className="text-[10px] font-black uppercase text-slate-500 tracking-wider">{t("analytics.vipVisits")}</CardDescription>
               <CardTitle className="text-2xl font-bold flex items-center justify-between">
-                72m
-                <BarChart3 className="w-5 h-5 text-amber-500" />
+                {data.summary.vipCount}
+                <Star className="w-5 h-5 text-emerald-500" />
               </CardTitle>
             </CardHeader>
             <CardContent className="p-4 pt-0">
-              <div className="flex items-center text-xs text-rose-600 font-bold gap-1 mt-2">
-                <TrendingUp className="w-3 h-3 rotate-180" /> +5m vs last month
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="border-slate-100 shadow-sm">
-            <CardHeader className="p-4 pb-2">
-              <CardDescription className="text-[10px] font-black uppercase text-slate-500 tracking-wider">Deposit Revenue</CardDescription>
-              <CardTitle className="text-2xl font-bold flex items-center justify-between">
-                ₺42.5k
-                <DollarSign className="w-5 h-5 text-emerald-500" />
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="p-4 pt-0">
-              <div className="flex items-center text-xs text-emerald-600 font-bold gap-1 mt-2">
-                <TrendingUp className="w-3 h-3" /> +24% this month
+              <div className="flex items-center text-xs text-slate-500 font-bold gap-1 mt-2">
+                {t("analytics.inSelectedPeriod")}
               </div>
             </CardContent>
           </Card>
         </div>
 
-        <Card className="border-slate-100 shadow-sm bg-white min-h-[400px]">
-          <CardHeader className="border-b border-slate-100 bg-slate-50/50">
-            <CardTitle className="text-sm font-bold uppercase tracking-widest text-slate-700">Monthly Traffic</CardTitle>
-          </CardHeader>
-          <CardContent className="flex items-center justify-center p-8 h-80">
-            <div className="text-center space-y-3">
-              <div className="w-16 h-16 bg-blue-50 rounded-full flex items-center justify-center mx-auto mb-2 text-blue-500">
-                <BarChart3 className="w-8 h-8" />
+        {/* Charts Row 1: Trend & Status */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <Card className="border-slate-100 shadow-sm bg-white lg:col-span-2">
+            <CardHeader className="border-b border-slate-100 bg-slate-50/50">
+              <CardTitle className="text-sm font-bold uppercase tracking-widest text-slate-700">{t("analytics.reservationTrend")}</CardTitle>
+            </CardHeader>
+            <CardContent className="p-6">
+              <div className="h-[300px] w-full">
+                <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
+                  <LineChart data={data.dailyTrend} margin={{ top: 5, right: 20, bottom: 5, left: -20 }}>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                    <XAxis 
+                      dataKey="date" 
+                      tickFormatter={(val) => {
+                        const d = new Date(val);
+                        return `${d.getDate()}/${d.getMonth()+1}`;
+                      }}
+                      axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 11 }} dy={10} 
+                    />
+                    <YAxis axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 11 }} />
+                    <Tooltip 
+                      contentStyle={{ borderRadius: '12px', border: '1px solid #e2e8f0', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
+                      labelStyle={{ fontWeight: 'bold', color: '#1e293b', marginBottom: '4px' }}
+                    />
+                    <Legend iconType="circle" wrapperStyle={{ fontSize: '12px', paddingTop: '10px' }} />
+                    <Line type="monotone" dataKey="reservations" name={t("analytics.reservations")} stroke="#3b82f6" strokeWidth={3} dot={false} activeDot={{ r: 6 }} />
+                    <Line type="monotone" dataKey="guests" name={t("analytics.guests")} stroke="#8b5cf6" strokeWidth={3} dot={false} />
+                  </LineChart>
+                </ResponsiveContainer>
               </div>
-              <h3 className="text-sm font-bold text-slate-800">Advanced Analytics Hub</h3>
-              <p className="text-xs text-slate-500 max-w-sm mx-auto leading-relaxed">
-                Connect your data source to visualize multi-dimensional charts, heatmaps, and peak traffic predictions.
-              </p>
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+
+          <Card className="border-slate-100 shadow-sm bg-white">
+            <CardHeader className="border-b border-slate-100 bg-slate-50/50">
+              <CardTitle className="text-sm font-bold uppercase tracking-widest text-slate-700">{t("analytics.statusBreakdown")}</CardTitle>
+            </CardHeader>
+            <CardContent className="p-6">
+              <div className="h-[200px] w-full">
+                <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
+                  <PieChart>
+                    <Pie
+                      data={data.statusBreakdown}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={60}
+                      outerRadius={80}
+                      paddingAngle={5}
+                      dataKey="count"
+                      nameKey="status"
+                      stroke="none"
+                    >
+                      {data.statusBreakdown.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={STATUS_COLORS[entry.status] || DEFAULT_COLORS[index % DEFAULT_COLORS.length]} />
+                      ))}
+                    </Pie>
+                    <Tooltip contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+              <div className="mt-4 space-y-2">
+                {data.statusBreakdown.sort((a,b) => b.count - a.count).map(item => (
+                  <div key={item.status} className="flex justify-between items-center text-xs font-semibold text-slate-600">
+                    <div className="flex items-center gap-2">
+                      <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: STATUS_COLORS[item.status] || '#ccc' }}></div>
+                      {item.status}
+                    </div>
+                    <span className="text-slate-900 font-bold">{item.count}</span>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Charts Row 2: Heatmap & Zone/Waitlist */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          
+          {/* Peak Hours Heatmap */}
+          <Card className="border-slate-100 shadow-sm bg-white">
+            <CardHeader className="border-b border-slate-100 bg-slate-50/50">
+              <CardTitle className="text-sm font-bold uppercase tracking-widest text-slate-700">{t("analytics.peakHoursHeatmap")}</CardTitle>
+            </CardHeader>
+            <CardContent className="p-6 overflow-x-auto">
+              <div className="min-w-[500px]">
+                <div className="grid grid-cols-[auto_repeat(12,1fr)] gap-1">
+                  <div className="col-start-2 col-span-12 flex justify-between text-[10px] font-bold text-slate-400 mb-2 px-1">
+                    <span>10:00</span>
+                    <span>16:00</span>
+                    <span>22:00</span>
+                  </div>
+                  {DAYS.map((day, dIdx) => (
+                    <React.Fragment key={day}>
+                      <div className="text-xs font-semibold text-slate-500 flex items-center justify-end pr-3">{day}</div>
+                      {Array.from({ length: 14 }).map((_, hIdx) => {
+                        const hour = hIdx + 10; // Start at 10 AM, go to 23 PM
+                        const cellData = data.peakHours.find(p => p.dayOfWeek === dIdx && p.hour === hour);
+                        const count = cellData ? cellData.count : 0;
+                        return (
+                          <div 
+                            key={`${dIdx}-${hour}`} 
+                            className="aspect-square rounded-sm border border-slate-100/50 transition-all hover:scale-110 hover:shadow-md cursor-pointer group relative"
+                            style={{ backgroundColor: count > 0 ? getHeatmapColor(count, maxPeakCount) : '#f8fafc' }}
+                          >
+                            <div className="absolute opacity-0 group-hover:opacity-100 z-10 bg-slate-800 text-white text-[10px] px-2 py-1 rounded bottom-full left-1/2 -translate-x-1/2 mb-1 whitespace-nowrap pointer-events-none">
+                              {day} {hour}:00 - {count} {t("analytics.bookings")}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </React.Fragment>
+                  ))}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <div className="flex flex-col gap-6">
+            {/* Zone Utilization */}
+            <Card className="border-slate-100 shadow-sm bg-white flex-1">
+              <CardHeader className="border-b border-slate-100 bg-slate-50/50 pb-4">
+                <CardTitle className="text-sm font-bold uppercase tracking-widest text-slate-700">{t("analytics.zoneUtilization")}</CardTitle>
+              </CardHeader>
+              <CardContent className="p-6 pt-4">
+                <div className="space-y-4">
+                  {data.zoneUtilization.sort((a,b) => b.reservations - a.reservations).map((zone, i) => {
+                    const maxZone = Math.max(...data.zoneUtilization.map(z => z.reservations), 1);
+                    const percent = (zone.reservations / maxZone) * 100;
+                    return (
+                      <div key={zone.zone}>
+                        <div className="flex justify-between text-xs font-semibold mb-1">
+                          <span className="text-slate-700">{zone.zone}</span>
+                          <span className="text-slate-900">{zone.reservations} <span className="text-slate-400 font-normal">{t("analytics.res")}</span></span>
+                        </div>
+                        <div className="w-full bg-slate-100 rounded-full h-2">
+                          <div className="bg-indigo-500 h-2 rounded-full" style={{ width: `${percent}%` }}></div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                  {data.zoneUtilization.length === 0 && (
+                    <div className="text-center text-sm text-slate-400 py-4">{t("analytics.noZoneData")}</div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Waitlist Metrics */}
+            <Card className="border-slate-100 shadow-sm bg-gradient-to-br from-slate-800 to-slate-900 text-white">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-bold uppercase tracking-widest text-slate-300">{t("analytics.waitlistPerformance")}</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-3 gap-4 text-center">
+                  <div>
+                    <p className="text-[10px] text-slate-400 font-bold uppercase mb-1">{t("analytics.avgWait")}</p>
+                    <p className="text-2xl font-black">{data.waitlistMetrics.avgWaitMinutes}<span className="text-sm font-normal text-slate-400 ml-1">m</span></p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] text-slate-400 font-bold uppercase mb-1">{t("analytics.conversion")}</p>
+                    <p className="text-2xl font-black text-emerald-400">{data.waitlistMetrics.conversionRate}%</p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] text-slate-400 font-bold uppercase mb-1">{t("analytics.seated")}</p>
+                    <p className="text-2xl font-black">{data.waitlistMetrics.seated}<span className="text-sm font-normal text-slate-400 ml-1">/{data.waitlistMetrics.totalJoined}</span></p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+        </div>
+
       </div>
     </AdminLayout>
   );

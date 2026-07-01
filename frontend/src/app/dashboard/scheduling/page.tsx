@@ -9,8 +9,10 @@ import AvailabilitySubmitter from '@/components/scheduling/AvailabilitySubmitter
 import ShiftAssigner from '@/components/scheduling/ShiftAssigner';
 import MySchedule from '@/components/scheduling/MySchedule';
 import api from '@/lib/api';
+import { useTranslation } from "@/i18n/provider";
 
 export default function SchedulingPage() {
+  const { t } = useTranslation();
   const { user } = useAuthStore();
   const [viewMode, setViewMode] = useState<'WEEKLY' | 'MONTHLY'>('MONTHLY');
   const [staffScheduleView, setStaffScheduleView] = useState('OWN_ONLY');
@@ -38,9 +40,9 @@ export default function SchedulingPage() {
     <AdminLayout>
       <div className="flex flex-col gap-6">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Scheduling System</h1>
+          <h1 className="text-3xl font-bold tracking-tight">{t("scheduling.title")}</h1>
           <p className="text-muted-foreground mt-2">
-            Manage shifts, submit availabilities, and assign staff.
+            {t("scheduling.description")}
           </p>
         </div>
 
@@ -48,15 +50,15 @@ export default function SchedulingPage() {
           <TabsList>
             {isAdminOrManager ? (
               <>
-                <TabsTrigger value="roster">Roster & Assignments</TabsTrigger>
-                <TabsTrigger value="shifts">Manage Shifts</TabsTrigger>
+                <TabsTrigger value="roster">{t("scheduling.tabs.rosterAndAssignments")}</TabsTrigger>
+                <TabsTrigger value="shifts">{t("scheduling.tabs.manageShifts")}</TabsTrigger>
               </>
             ) : (
               <>
-                <TabsTrigger value="my-schedule">My Schedule</TabsTrigger>
-                <TabsTrigger value="availability">My Availability</TabsTrigger>
+                <TabsTrigger value="my-schedule">{t("scheduling.tabs.mySchedule")}</TabsTrigger>
+                <TabsTrigger value="availability">{t("scheduling.tabs.myAvailability")}</TabsTrigger>
                 {staffScheduleView === 'FULL_ROSTER' && (
-                  <TabsTrigger value="roster">Full Roster</TabsTrigger>
+                  <TabsTrigger value="roster">{t("scheduling.tabs.fullRoster")}</TabsTrigger>
                 )}
               </>
             )}

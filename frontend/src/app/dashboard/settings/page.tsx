@@ -13,6 +13,8 @@ import { toast } from 'sonner';
 import { Save, Calendar, Clock, CreditCard, ArrowLeft, CalendarClock, AlertCircle, Check, Timer } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { PasswordConfirmDialog } from '@/components/auth/PasswordConfirmDialog';
+import { useTranslation } from "@/i18n/provider";
 
 interface RestaurantSettings {
     isReservationEnabled: boolean;
@@ -28,6 +30,7 @@ interface RestaurantSettings {
 
 export default function SettingsPage() {
     const router = useRouter();
+    const { t } = useTranslation();
     const [loading, setLoading] = useState(false);
     const [fetching, setFetching] = useState(true);
     const [settings, setSettings] = useState<RestaurantSettings>({
@@ -62,7 +65,7 @@ export default function SettingsPage() {
                 });
             }
         } catch (error) {
-            toast.error('Failed to load settings');
+            toast.error(t("settings.failedLoad"));
         } finally {
             setFetching(false);
         }
@@ -76,9 +79,9 @@ export default function SettingsPage() {
         try {
             setLoading(true);
             await api.put('/settings', settings);
-            toast.success('Settings updated successfully');
+            toast.success(t("settings.updatedSuccessfully"));
         } catch (error) {
-            toast.error('Failed to save settings');
+            toast.error(t("settings.failedSave"));
         } finally {
             setLoading(false);
         }
@@ -86,11 +89,17 @@ export default function SettingsPage() {
 
     const [futureModeAction, setFutureModeAction] = useState<string | null>(null);
     const [isFutureDialogOpen, setIsFutureDialogOpen] = useState(false);
+    const [pendingFutureApply, setPendingFutureApply] = useState<boolean | null>(null);
 
-    const handleFutureApply = async (overwriteAll: boolean) => {
-        if (!futureModeAction) return;
+    const handleFutureApply = (overwriteAll: boolean) => {
         setIsFutureDialogOpen(false);
-        const modeToastId = toast.loading('Applying settings to future days...');
+        setPendingFutureApply(overwriteAll);
+    };
+
+    const executeFutureApply = async () => {
+        if (!futureModeAction || pendingFutureApply === null) return;
+        const overwriteAll = pendingFutureApply;
+        const modeToastId = toast.loading(t("settings.applyingFutureDays"));
 
         const isReservationEnabled = futureModeAction !== 'BLACKOUT';
         const autoConfirm = futureModeAction === 'AUTO_CONFIRM';
@@ -123,7 +132,7 @@ export default function SettingsPage() {
 
             if (datesToUpdate.length === 0) {
                 toast.dismiss(modeToastId);
-                toast.info('No new days to update.');
+                toast.info(t("settings.noNewDaysToUpdate"));
                 setFutureModeAction(null);
                 return;
             }
@@ -135,12 +144,13 @@ export default function SettingsPage() {
                 autoConfirm
             });
             toast.dismiss(modeToastId);
-            toast.success(`Successfully applied mode to ${datesToUpdate.length} future days.`);
+            toast.success(`${t("settings.successApplyPrefix")} ${datesToUpdate.length} ${t("settings.successApplySuffix")}`);
         } catch (err) {
             toast.dismiss(modeToastId);
-            toast.error('Failed to apply future settings');
+            toast.error(t("settings.failedApplyFuture"));
         }
         setFutureModeAction(null);
+        setPendingFutureApply(null);
     };
 
     if (fetching) {
@@ -162,12 +172,12 @@ export default function SettingsPage() {
                             <ArrowLeft className="w-5 h-5" />
                         </Button>
                         <div>
-                            <h1 className="text-2xl font-black text-slate-800 tracking-tight">Restaurant Settings</h1>
-                            <p className="text-[10px] text-slate-400 font-black uppercase tracking-[0.2em] mt-1">Personalize your guest experience & operations</p>
+                            <h1 className="text-2xl font-black text-slate-800 tracking-tight">{t("settings.title")}</h1>
+                            <p className="text-[10px] text-slate-400 font-black uppercase tracking-[0.2em] mt-1">{t("settings.subtitle")}</p>
                         </div>
                     </div>
                     <Button onClick={handleSave} disabled={loading} className="bg-blue-600 hover:bg-blue-700 text-white font-black uppercase text-[10px] px-6 h-10 rounded-sm shadow-md shadow-blue-600/20 transition-all active:scale-95">
-                        {loading ? 'Saving...' : <><Save className="w-3.5 h-3.5 mr-2" /> Save Changes</>}
+                        {loading ? t("settings.saving") : <><Save className="w-3.5 h-3.5 mr-2" /> {t("settings.saveChanges")}</>}
                     </Button>
                 </div>
 
@@ -177,48 +187,48 @@ export default function SettingsPage() {
                         <CardHeader className="p-4 bg-slate-50 border-b border-slate-100 flex flex-row items-center gap-3">
                             <div className="p-2 bg-blue-100 rounded-sm text-blue-600"><Calendar className="w-4 h-4" /></div>
                             <div>
-                                <CardTitle className="text-sm font-black uppercase tracking-tight">Scheduling Operations</CardTitle>
-                                <CardDescription className="text-[10px]">Configure how you manage staff rosters</CardDescription>
+                                <CardTitle className="text-sm font-black uppercase tracking-tight">{t("settings.schedulingOperations")}</CardTitle>
+                                <CardDescription className="text-[10px]">{t("settings.configureRosters")}</CardDescription>
                             </div>
                         </CardHeader>
                         <CardContent className="p-6">
                             <div className="grid gap-6">
                                 <div className="flex flex-col gap-3">
-                                    <Label className="text-xs font-black uppercase text-slate-500">Roster System Preference</Label>
+                                    <Label className="text-xs font-black uppercase text-slate-500">{t("settings.rosterPreference")}</Label>
                                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                         <div 
                                             onClick={() => setSettings({...settings, schedulingSystem: 'WEEKLY'})}
                                             className={`p-4 border-2 rounded-md cursor-pointer transition-all ${settings.schedulingSystem === 'WEEKLY' ? 'border-blue-600 bg-blue-50/50' : 'border-slate-100 hover:border-slate-300'}`}
                                         >
-                                            <div className="font-black text-sm text-slate-800">Weekly View</div>
-                                            <p className="text-[10px] text-slate-500 mt-1 leading-relaxed">Manage staff shifts on a 7-day rolling basis. Ideal for fast-paced environments.</p>
+                                            <div className="font-black text-sm text-slate-800">{t("settings.weeklyView")}</div>
+                                            <p className="text-[10px] text-slate-500 mt-1 leading-relaxed">{t("settings.weeklyDesc")}</p>
                                         </div>
                                         <div 
                                             onClick={() => setSettings({...settings, schedulingSystem: 'MONTHLY'})}
                                             className={`p-4 border-2 rounded-md cursor-pointer transition-all ${settings.schedulingSystem === 'MONTHLY' ? 'border-blue-600 bg-blue-50/50' : 'border-slate-100 hover:border-slate-300'}`}
                                         >
-                                            <div className="font-black text-sm text-slate-800">Monthly View</div>
-                                            <p className="text-[10px] text-slate-500 mt-1 leading-relaxed">Full calendar overview for long-term planning. Best for stable teams.</p>
+                                            <div className="font-black text-sm text-slate-800">{t("settings.monthlyView")}</div>
+                                            <p className="text-[10px] text-slate-500 mt-1 leading-relaxed">{t("settings.monthlyDesc")}</p>
                                         </div>
                                     </div>
                                 </div>
                                 
                                 <div className="pt-4 border-t border-slate-100 space-y-3">
                                     <div className="space-y-0.5">
-                                        <Label className="text-xs font-bold text-slate-700">Staff Privacy & Visibility</Label>
-                                        <p className="text-[10px] text-slate-400">Determine what information staff can see on the scheduling dashboard</p>
+                                        <Label className="text-xs font-bold text-slate-700">{t("settings.staffPrivacy")}</Label>
+                                        <p className="text-[10px] text-slate-400">{t("settings.staffPrivacyDesc")}</p>
                                     </div>
                                     <Select 
                                         value={settings.staffScheduleView} 
                                         onValueChange={(v: string | null) => setSettings(prev => ({...prev, staffScheduleView: v || 'OWN_ONLY'}))}
                                     >
                                         <SelectTrigger className="h-9 text-xs font-bold rounded-sm w-full">
-                                            <SelectValue placeholder="Select view mode" />
+                                            <SelectValue placeholder={t("settings.selectViewMode")} />
                                         </SelectTrigger>
                                         <SelectContent>
-                                            <SelectItem value="OWN_ONLY" className="text-xs">Only My Shifts (Maximum Privacy)</SelectItem>
-                                            <SelectItem value="SHIFT_TEAM" className="text-xs">My Shifts & Team Members (On Same Shift)</SelectItem>
-                                            <SelectItem value="FULL_ROSTER" className="text-xs">Complete Roster Grid (Public Table)</SelectItem>
+                                            <SelectItem value="OWN_ONLY" className="text-xs">{t("settings.onlyMyShifts")}</SelectItem>
+                                            <SelectItem value="SHIFT_TEAM" className="text-xs">{t("settings.myShiftsAndTeam")}</SelectItem>
+                                            <SelectItem value="FULL_ROSTER" className="text-xs">{t("settings.completeRoster")}</SelectItem>
                                         </SelectContent>
                                     </Select>
                                 </div>
@@ -231,28 +241,28 @@ export default function SettingsPage() {
                         <CardHeader className="p-4 bg-slate-50 border-b border-slate-100 flex flex-row items-center gap-3">
                             <div className="p-2 bg-purple-100 rounded-sm text-purple-600"><Clock className="w-4 h-4" /></div>
                             <div>
-                                <CardTitle className="text-sm font-black uppercase tracking-tight">Reservation Logic</CardTitle>
-                                <CardDescription className="text-[10px]">Control timing and table availability</CardDescription>
+                                <CardTitle className="text-sm font-black uppercase tracking-tight">{t("settings.reservationLogic")}</CardTitle>
+                                <CardDescription className="text-[10px]">{t("settings.reservationLogicDesc")}</CardDescription>
                             </div>
                         </CardHeader>
                         <CardContent className="p-6 space-y-4">
                             <div className="flex items-center justify-between">
-                                <Label className="text-xs font-bold text-slate-700">Accept Online Reservations</Label>
+                                <Label className="text-xs font-bold text-slate-700">{t("settings.acceptOnlineReservations")}</Label>
                                 <Switch checked={settings.isReservationEnabled} onCheckedChange={(v: boolean) => setSettings(prev => ({...prev, isReservationEnabled: v}))} />
                             </div>
                             <div className="grid gap-1.5 pt-2">
-                                <Label className="text-[10px] font-black uppercase text-slate-400">Default Duration (Minutes)</Label>
+                                <Label className="text-[10px] font-black uppercase text-slate-400">{t("settings.defaultDuration")}</Label>
                                 <Input type="number" value={settings.defaultDurationMinutes} onChange={(e) => setSettings({...settings, defaultDurationMinutes: parseInt(e.target.value)})} className="h-9 text-sm font-bold rounded-sm" />
                             </div>
                             <div className="grid gap-1.5">
-                                <Label className="text-[10px] font-black uppercase text-slate-400">Assignment Logic</Label>
+                                <Label className="text-[10px] font-black uppercase text-slate-400">{t("settings.assignmentLogic")}</Label>
                                 <Select value={settings.logic || 'DYNAMIC_DURATION'} onValueChange={(v: string | null) => setSettings(prev => ({...prev, logic: v || 'DYNAMIC_DURATION'}))}>
                                     <SelectTrigger className="h-9 text-xs font-bold rounded-sm">
-                                        <SelectValue placeholder="Select logic" />
+                                        <SelectValue placeholder={t("settings.selectLogic")} />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="DYNAMIC_DURATION" className="text-xs">Dynamic Duration</SelectItem>
-                                        <SelectItem value="FIXED_SLOTS" className="text-xs">Fixed Time Slots</SelectItem>
+                                        <SelectItem value="DYNAMIC_DURATION" className="text-xs">{t("settings.dynamicDuration")}</SelectItem>
+                                        <SelectItem value="FIXED_SLOTS" className="text-xs">{t("settings.fixedTimeSlots")}</SelectItem>
                                         </SelectContent>
                                 </Select>
                             </div>
@@ -264,24 +274,24 @@ export default function SettingsPage() {
                         <CardHeader className="p-4 bg-slate-50 border-b border-slate-100 flex flex-row items-center gap-3">
                             <div className="p-2 bg-indigo-100 rounded-sm text-indigo-600"><CalendarClock className="w-4 h-4" /></div>
                             <div>
-                                <CardTitle className="text-sm font-black uppercase tracking-tight">Calendar Customization</CardTitle>
-                                <CardDescription className="text-[10px]">Manage global calendar behavior and bulk operations</CardDescription>
+                                <CardTitle className="text-sm font-black uppercase tracking-tight">{t("settings.calendarCustomization")}</CardTitle>
+                                <CardDescription className="text-[10px]">{t("settings.calendarCustomizationDesc")}</CardDescription>
                             </div>
                         </CardHeader>
                         <CardContent className="p-6 space-y-4">
                             <div className="grid gap-1.5">
-                                <Label className="text-[10px] font-black uppercase text-slate-400">Set Future Default Mode</Label>
+                                <Label className="text-[10px] font-black uppercase text-slate-400">{t("settings.setFutureMode")}</Label>
                                 <Select value={futureModeAction || ''} onValueChange={(v) => { setFutureModeAction(v); setIsFutureDialogOpen(true); }}>
                                     <SelectTrigger className="h-9 text-xs font-bold rounded-sm border-slate-200 w-full sm:w-1/2">
-                                        <SelectValue placeholder="Select bulk action..." />
+                                        <SelectValue placeholder={t("settings.selectBulkAction")} />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="AUTO_CONFIRM" className="text-xs font-bold"><div className="flex items-center text-emerald-700"><Check className="w-3 h-3 mr-2" /> Auto-Confirm (Skip Review)</div></SelectItem>
-                                        <SelectItem value="STANDARD" className="text-xs font-bold"><div className="flex items-center text-amber-700"><Timer className="w-3 h-3 mr-2" /> Standard (Manual Review)</div></SelectItem>
-                                        <SelectItem value="BLACKOUT" className="text-xs font-bold"><div className="flex items-center text-red-700"><AlertCircle className="w-3 h-3 mr-2" /> Blackout (Close Bookings)</div></SelectItem>
+                                        <SelectItem value="AUTO_CONFIRM" className="text-xs font-bold"><div className="flex items-center text-emerald-700"><Check className="w-3 h-3 mr-2" /> {t("settings.autoConfirmBulk")}</div></SelectItem>
+                                        <SelectItem value="STANDARD" className="text-xs font-bold"><div className="flex items-center text-amber-700"><Timer className="w-3 h-3 mr-2" /> {t("settings.standardBulk")}</div></SelectItem>
+                                        <SelectItem value="BLACKOUT" className="text-xs font-bold"><div className="flex items-center text-red-700"><AlertCircle className="w-3 h-3 mr-2" /> {t("settings.blackoutBulk")}</div></SelectItem>
                                     </SelectContent>
                                 </Select>
-                                <p className="text-[10px] text-slate-500 leading-relaxed mt-1">This action allows you to mass-apply an operational mode to the next 365 days in your Calendar Master.</p>
+                                <p className="text-[10px] text-slate-500 leading-relaxed mt-1">{t("settings.bulkActionDesc")}</p>
                             </div>
                         </CardContent>
                     </Card>
@@ -291,17 +301,17 @@ export default function SettingsPage() {
                         <CardHeader className="p-4 bg-slate-50 border-b border-slate-100 flex flex-row items-center gap-3">
                             <div className="p-2 bg-emerald-100 rounded-sm text-emerald-600"><CreditCard className="w-4 h-4" /></div>
                             <div>
-                                <CardTitle className="text-sm font-black uppercase tracking-tight">Payments & Deposits</CardTitle>
-                                <CardDescription className="text-[10px]">Secure bookings with financial commitments</CardDescription>
+                                <CardTitle className="text-sm font-black uppercase tracking-tight">{t("settings.paymentsDeposits")}</CardTitle>
+                                <CardDescription className="text-[10px]">{t("settings.secureBookings")}</CardDescription>
                             </div>
                         </CardHeader>
                         <CardContent className="p-6 space-y-4">
                             <div className="flex items-center justify-between">
-                                <Label className="text-xs font-bold text-slate-700">Enable Deposit Payment</Label>
+                                <Label className="text-xs font-bold text-slate-700">{t("settings.enableDeposit")}</Label>
                                 <Switch checked={settings.isPaidReservationEnabled} onCheckedChange={(v: boolean) => setSettings(prev => ({...prev, isPaidReservationEnabled: v}))} />
                             </div>
                             <div className="grid gap-1.5 pt-2">
-                                <Label className="text-[10px] font-black uppercase text-slate-400">Deposit Amount</Label>
+                                <Label className="text-[10px] font-black uppercase text-slate-400">{t("settings.depositAmount")}</Label>
                                 <div className="relative">
                                     <Input type="number" disabled={!settings.isPaidReservationEnabled} value={settings.depositAmount || 0} onChange={(e) => {
                                         const val = parseFloat(e.target.value);
@@ -311,16 +321,16 @@ export default function SettingsPage() {
                                 </div>
                             </div>
                             <div className="grid gap-1.5">
-                                <Label className="text-[10px] font-black uppercase text-slate-400">Currency</Label>
+                                <Label className="text-[10px] font-black uppercase text-slate-400">{t("settings.currency")}</Label>
                                 <Select value={settings.currency || 'TRY'} onValueChange={(v: string | null) => setSettings(prev => ({...prev, currency: v || 'TRY'}))}>
                                     <SelectTrigger className="h-9 text-xs font-bold rounded-sm">
-                                        <SelectValue placeholder="Select currency" />
+                                        <SelectValue placeholder={t("settings.selectCurrency")} />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="TRY" className="text-xs">TRY (₺)</SelectItem>
-                                        <SelectItem value="USD" className="text-xs">USD ($)</SelectItem>
-                                        <SelectItem value="EUR" className="text-xs">EUR (€)</SelectItem>
-                                        <SelectItem value="GBP" className="text-xs">GBP (£)</SelectItem>
+                                        <SelectItem value="TRY" className="text-xs">{t("settings.tryCurrency")}</SelectItem>
+                                        <SelectItem value="USD" className="text-xs">{t("settings.usdCurrency")}</SelectItem>
+                                        <SelectItem value="EUR" className="text-xs">{t("settings.eurCurrency")}</SelectItem>
+                                        <SelectItem value="GBP" className="text-xs">{t("settings.gbpCurrency")}</SelectItem>
                                     </SelectContent>
                                 </Select>
                             </div>
@@ -334,15 +344,15 @@ export default function SettingsPage() {
                     <div className="bg-amber-500 p-6">
                         <DialogHeader>
                             <DialogTitle className="text-white text-xl font-black uppercase tracking-tight flex items-center gap-2">
-                                <AlertCircle className="w-6 h-6" /> Future Override Warning
+                                <AlertCircle className="w-6 h-6" /> {t("settings.futureOverrideWarning")}
                             </DialogTitle>
                         </DialogHeader>
                     </div>
                     <div className="p-6 space-y-4">
                         <DialogDescription className="text-slate-700 font-medium leading-relaxed">
-                            You are about to change the default operational mode to <span className="font-black">
-                                {futureModeAction === 'AUTO_CONFIRM' ? 'Auto-Confirm' : futureModeAction === 'BLACKOUT' ? 'Blackout' : 'Standard'}
-                            </span> for the next 365 days. How would you like to apply this?
+                            {t("settings.changeDefaultMode1")} <span className="font-black">
+                                {futureModeAction === 'AUTO_CONFIRM' ? t("settings.autoConfirmText") : futureModeAction === 'BLACKOUT' ? t("settings.blackoutText") : t("settings.standardText")}
+                            </span> {t("settings.changeDefaultMode2")}
                         </DialogDescription>
                     </div>
                     <div className="p-4 bg-slate-50 flex flex-col gap-2 border-t border-slate-100">
@@ -350,25 +360,35 @@ export default function SettingsPage() {
                             onClick={() => handleFutureApply(true)} 
                             className="w-full h-12 bg-red-600 hover:bg-red-700 text-white font-black uppercase"
                         >
-                            1. Overwrite ALL Future Days
+                            {t("settings.overwriteAll")}
                         </Button>
                         <Button 
                             onClick={() => handleFutureApply(false)} 
                             variant="outline"
                             className="w-full h-12 border-blue-200 text-blue-700 hover:bg-blue-50 font-black uppercase"
                         >
-                            2. Overwrite Only Unmodified Days
+                            {t("settings.overwriteUnmodified")}
                         </Button>
                         <Button 
                             onClick={() => { setIsFutureDialogOpen(false); setFutureModeAction(null); }} 
                             variant="ghost"
                             className="w-full h-10 text-slate-400 hover:text-slate-600 font-bold uppercase"
                         >
-                            3. Cancel Action
+                            {t("settings.cancelAction")}
                         </Button>
                     </div>
                 </DialogContent>
             </Dialog>
+
+            <PasswordConfirmDialog 
+                open={pendingFutureApply !== null} 
+                onOpenChange={(open) => { if (!open) setPendingFutureApply(null); }}
+                onConfirm={executeFutureApply}
+                title={t("settings.confirmCalendarChange")}
+                description={t("settings.bulkUpdateConfirm")}
+                actionLabel={t("settings.updateCalendar")}
+                isDangerous={true}
+            />
         </AdminLayout>
     );
 }
