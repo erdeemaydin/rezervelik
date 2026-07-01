@@ -59,9 +59,9 @@ export const createTenant = async (req: Request, res: Response) => {
     const hashedPassword = await bcrypt.hash(finalPassword, 10);
 
     const result = await prisma.$transaction(async (prisma) => {
-      // Set trial end date to 14 days from now
-      const trialEndsAt = new Date();
-      trialEndsAt.setDate(trialEndsAt.getDate() + 14);
+      // Default trial to 14 days
+      const subscriptionEndsAt = new Date();
+      subscriptionEndsAt.setDate(subscriptionEndsAt.getDate() + 14);
 
       const restaurant = await prisma.restaurant.create({
         data: {
@@ -70,7 +70,7 @@ export const createTenant = async (req: Request, res: Response) => {
           contactEmail,
           subscriptionPlan: 'TRIAL',
           subscriptionStatus: 'ACTIVE',
-          trialEndsAt,
+          subscriptionEndsAt,
           settings: {
             create: {}
           },
@@ -110,14 +110,15 @@ export const createTenant = async (req: Request, res: Response) => {
 export const updateTenantSubscription = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const { subscriptionPlan, subscriptionStatus, trialEndsAt } = req.body;
+    const { subscriptionPlan, subscriptionStatus, subscriptionEndsAt, sysAdminNotes } = req.body;
 
     const updated = await prisma.restaurant.update({
       where: { id },
       data: {
         subscriptionPlan,
         subscriptionStatus,
-        trialEndsAt: trialEndsAt ? new Date(trialEndsAt) : null,
+        subscriptionEndsAt: subscriptionEndsAt ? new Date(subscriptionEndsAt) : null,
+        sysAdminNotes
       }
     });
 

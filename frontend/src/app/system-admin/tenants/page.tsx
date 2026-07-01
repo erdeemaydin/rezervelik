@@ -42,7 +42,7 @@ export default function TenantManagementPage() {
   });
   
   const [subscriptionForm, setSubscriptionForm] = useState({
-    subscriptionPlan: 'TRIAL', subscriptionStatus: 'ACTIVE', trialEndsAt: ''
+    subscriptionPlan: 'TRIAL', subscriptionStatus: 'ACTIVE', subscriptionEndsAt: '', sysAdminNotes: ''
   });
   
   const [adminPermissions, setAdminPermissions] = useState<Set<string>>(new Set());
@@ -117,7 +117,8 @@ export default function TenantManagementPage() {
     setSubscriptionForm({
       subscriptionPlan: tenant.subscriptionPlan || 'TRIAL',
       subscriptionStatus: tenant.subscriptionStatus || 'ACTIVE',
-      trialEndsAt: tenant.trialEndsAt ? new Date(tenant.trialEndsAt).toISOString().split('T')[0] : ''
+      subscriptionEndsAt: tenant.subscriptionEndsAt ? new Date(tenant.subscriptionEndsAt).toISOString().split('T')[0] : '',
+      sysAdminNotes: tenant.sysAdminNotes || ''
     });
     
     const adminUser = tenant.users?.find((u: any) => u.role === 'ADMIN');
@@ -213,9 +214,9 @@ export default function TenantManagementPage() {
                           tenant.subscriptionPlan === 'BASIC' ? 'bg-blue-50 text-blue-700 border-blue-200' :
                           'bg-amber-50 text-amber-700 border-amber-200'
                         )}>{tenant.subscriptionPlan || 'TRIAL'}</Badge>
-                        {tenant.subscriptionPlan === 'TRIAL' && tenant.trialEndsAt ? (
+                        {tenant.subscriptionPlan === 'TRIAL' && tenant.subscriptionEndsAt ? (
                           <span className="text-[8px] font-bold text-slate-400">
-                            {Math.max(0, Math.ceil((new Date(tenant.trialEndsAt).getTime() - new Date().getTime()) / (1000 * 3600 * 24)))} days left
+                            {Math.max(0, Math.ceil((new Date(tenant.subscriptionEndsAt).getTime() - new Date().getTime()) / (1000 * 3600 * 24)))} days left
                           </span>
                         ) : tenant.subscriptionStatus !== 'ACTIVE' ? (
                            <span className="text-[8px] font-bold text-red-500 uppercase">{tenant.subscriptionStatus}</span>
@@ -321,7 +322,20 @@ export default function TenantManagementPage() {
                                     <select 
                                       className="w-full h-9 px-3 text-xs font-bold border border-slate-200 rounded-sm bg-slate-50"
                                       value={subscriptionForm.subscriptionPlan}
-                                      onChange={e => setSubscriptionForm({...subscriptionForm, subscriptionPlan: e.target.value})}
+                                      onChange={e => {
+                                        const plan = e.target.value;
+                                        const newDate = new Date();
+                                        if (plan === 'TRIAL') {
+                                          newDate.setDate(newDate.getDate() + 14);
+                                        } else {
+                                          newDate.setMonth(newDate.getMonth() + 6);
+                                        }
+                                        setSubscriptionForm({
+                                          ...subscriptionForm,
+                                          subscriptionPlan: plan,
+                                          subscriptionEndsAt: newDate.toISOString().split('T')[0]
+                                        });
+                                      }}
                                     >
                                       <option value="TRIAL">Trial</option>
                                       <option value="BASIC">Basic</option>
@@ -342,14 +356,23 @@ export default function TenantManagementPage() {
                                     </select>
                                 </div>
                                 <div className="space-y-1.5">
-                                    <Label className="text-[10px] font-black uppercase text-slate-400">Trial Ends At</Label>
+                                    <Label className="text-[10px] font-black uppercase text-slate-400">Subscription Ends At</Label>
                                     <Input 
                                       type="date" 
                                       className="h-9 text-xs font-bold border-slate-200 rounded-sm bg-slate-50"
-                                      value={subscriptionForm.trialEndsAt}
-                                      onChange={e => setSubscriptionForm({...subscriptionForm, trialEndsAt: e.target.value})}
+                                      value={subscriptionForm.subscriptionEndsAt}
+                                      onChange={e => setSubscriptionForm({...subscriptionForm, subscriptionEndsAt: e.target.value})}
                                     />
                                 </div>
+                            </div>
+                            <div className="mt-4 space-y-1.5">
+                                <Label className="text-[10px] font-black uppercase text-slate-400">SysAdmin Notes</Label>
+                                <textarea 
+                                  className="w-full h-24 p-3 text-xs font-medium border border-slate-200 rounded-sm bg-slate-50 resize-none"
+                                  placeholder="Internal notes about billing, integration, or custom agreements..."
+                                  value={subscriptionForm.sysAdminNotes}
+                                  onChange={e => setSubscriptionForm({...subscriptionForm, sysAdminNotes: e.target.value})}
+                                />
                             </div>
                         </div>
 
