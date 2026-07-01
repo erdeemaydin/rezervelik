@@ -6,7 +6,8 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Plus, Trash2, Edit2, Search, LayoutGrid, List, ChevronDown, ChevronRight, Image as ImageIcon, Flame, Leaf, AlertTriangle, Layers } from 'lucide-react';
+import { Plus, Trash2, Edit2, Search, LayoutGrid, List, ChevronDown, ChevronRight, Image as ImageIcon, Flame, Leaf, AlertTriangle, Layers, QrCode } from 'lucide-react';
+import { QRCodePDFGenerator } from '@/components/menus/QRCodePDFGenerator';
 import { 
   Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter 
 } from '@/components/ui/dialog';
@@ -71,10 +72,13 @@ export default function MenuManagementPage() {
   const [isBulkPriceDialogOpen, setIsBulkPriceDialogOpen] = useState(false);
   
   const [isEditMode, setIsEditMode] = useState(false);
+  const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
+  const [deleteMenuId, setDeleteMenuId] = useState<string | null>(null);
+  const [restaurantProfile, setRestaurantProfile] = useState<any>(null);
+  const [isQRDialogOpen, setIsQRDialogOpen] = useState(false);
+  
   const [editId, setEditId] = useState<string | null>(null);
   
-  const [deleteMenuId, setDeleteMenuId] = useState<string | null>(null);
-
   // Forms
   const [menuForm, setMenuForm] = useState({ name: '', isActive: true, footnotes: '' });
   const [categoryForm, setCategoryForm] = useState({ menuId: '', name: '', description: '', imageUrl: '', parentId: 'none' });
@@ -120,7 +124,13 @@ export default function MenuManagementPage() {
   const fetchMenus = useCallback(async () => {
     try {
       setLoading(true);
-      const res = await api.get('/menus');
+      const [res, profileRes] = await Promise.all([
+          api.get('/menus'),
+          api.get('/restaurants/me').catch(() => null)
+      ]);
+      if (profileRes && profileRes.data) {
+          setRestaurantProfile(profileRes.data.data);
+      }
       const data = res.data.data;
       setMenus(data);
       
@@ -434,8 +444,32 @@ export default function MenuManagementPage() {
             <Button size="sm" onClick={() => window.location.href = '/dashboard/menus/wizard'} className="h-9 px-4 text-[10px] font-black uppercase border-0 text-white shadow-sm bg-blue-600 hover:bg-blue-700">
                 {t('menus.buttons.menuWizard')}
             </Button>
+            <Button size="sm" variant="outline" onClick={() => setIsQRDialogOpen(true)} className="h-9 px-4 text-[10px] font-black uppercase border-slate-200 text-slate-600 shadow-sm bg-white hover:bg-slate-50">
+                <QrCode className="w-3.5 h-3.5 mr-1.5" /> {t('menus.buttons.downloadQR') || "QR Etiket"}
+            </Button>
           </div>
         </div>
+
+        <Dialog open={isQRDialogOpen} onOpenChange={setIsQRDialogOpen}>
+            <DialogContent className="sm:max-w-[425px]">
+                <DialogHeader>
+                    <DialogTitle>{t('menus.downloadQR.title') || "Download QR Label"}</DialogTitle>
+                    <DialogDescription>
+                        {t('menus.downloadQR.desc') || "Download a printable QR code label for your tables to comply with regulations."}
+                    </DialogDescription>
+                </DialogHeader>
+                <div className="py-4 flex justify-center">
+                    {restaurantProfile ? (
+                        <QRCodePDFGenerator 
+                            restaurantSlug={restaurantProfile.slug} 
+                            restaurantName={restaurantProfile.name} 
+                        />
+                    ) : (
+                        <div className="text-sm text-slate-500">Loading...</div>
+                    )}
+                </div>
+            </DialogContent>
+        </Dialog>
 
         {/* Command Center & Active Menu Selection */}
         <Card className="rounded-md border-slate-200 shadow-sm overflow-hidden bg-white">
@@ -584,6 +618,10 @@ export default function MenuManagementPage() {
                                 <Textarea value={itemForm.description} onChange={e => setItemForm({...itemForm, description: e.target.value})} className="min-h-[80px] text-xs font-medium border-slate-200 rounded-sm" placeholder="..." />
                             </div>
                             <div className="grid gap-1.5">
+                                <Label className="text-[10px] font-black uppercase text-slate-400 ml-1">{t('menus.form.exactIngredients')}</Label>
+                                <Textarea value={itemForm.ingredients} onChange={e => setItemForm({...itemForm, ingredients: e.target.value})} className="min-h-[60px] text-xs font-medium border-slate-200 rounded-sm" placeholder="..." />
+                            </div>
+                            <div className="grid gap-1.5">
                                 <Label className="text-[10px] font-black uppercase text-slate-400 ml-1">{t('menus.form.priceTry')}</Label>
                                 <Input type="number" step="0.01" required value={itemForm.price} onChange={e => setItemForm({...itemForm, price: e.target.value})} className="h-10 text-sm font-bold border-slate-200 rounded-sm font-mono" />
                             </div>
@@ -629,6 +667,20 @@ export default function MenuManagementPage() {
                                         <SelectItem value="4" className="text-xs">{t('menus.form.spiceLevel4')}</SelectItem>
                                     </SelectContent>
                                 </Select>
+                            </div>
+                            <div className="grid gap-1.5">
+                                <Label className="text-[10px] font-black uppercase text-blue-600 tracking-[0.2em] flex items-center gap-1">{t('menus.form.calories')}</Label>
+                                <Input type="number" value={itemForm.calories} onChange={e => setItemForm({...itemForm, calories: e.target.value})} placeholder="0" className="h-10 text-xs font-bold border-blue-200 bg-blue-50/30 rounded-sm focus:border-blue-400" />
+                            </div>
+                            <div className="flex flex-col gap-3 mt-4">
+                                <div className="flex items-center space-x-2 bg-rose-50/50 p-2 rounded border border-rose-100">
+                                    <Checkbox id="containsAlcohol" checked={itemForm.containsAlcohol} onCheckedChange={(checked) => setItemForm({...itemForm, containsAlcohol: checked === true})} />
+                                    <Label htmlFor="containsAlcohol" className="text-xs font-bold text-rose-700 cursor-pointer">{t('menus.form.containsAlcohol')}</Label>
+                                </div>
+                                <div className="flex items-center space-x-2 bg-pink-50/50 p-2 rounded border border-pink-100">
+                                    <Checkbox id="containsPork" checked={itemForm.containsPork} onCheckedChange={(checked) => setItemForm({...itemForm, containsPork: checked === true})} />
+                                    <Label htmlFor="containsPork" className="text-xs font-bold text-pink-700 cursor-pointer">{t('menus.form.containsPork')}</Label>
+                                </div>
                             </div>
                         </div>
                     </div>

@@ -55,7 +55,11 @@
     "bookATable": "Book a Table",
     "joinWaitlist": "Join Waitlist",
     "selectDate": "Select Date",
-    "selectTime": "Select Time"
+    "selectTime": "Select Time",
+    "ingredients": "Ingredients",
+    "calories": "kcal",
+    "containsAlcohol": "Contains Alcohol",
+    "containsPork": "Contains Pork Derivatives"
   },
   "dashboard": {
     "loading": "Loading command center...",
@@ -479,6 +483,13 @@
     "commitEntry": "COMMIT ENTRY"
   },
   "menus": {
+    "downloadQR": {
+      "title": "Download QR Label",
+      "desc": "Download a printable QR code label for your tables to comply with regulations.",
+      "buttonText": "Download QR Label (PDF)",
+      "scanText": "Scan QR Code for Menu",
+      "complianceText": "Allergen, calorie, and ingredient information is available in our digital menu."
+    },
     "toast": {
       "valueRequired": "Value is required",
       "priceUpdateScheduled": "Price update scheduled",
@@ -582,6 +593,10 @@
       "spiceLevel3": "3 - Hot",
       "spiceLevel4": "4 - Extreme",
       "selectSpiceLevel": "Select Spice Level",
+      "exactIngredients": "Exact Ingredients (Legal)",
+      "calories": "Calories (kcal)",
+      "containsAlcohol": "Contains Alcohol",
+      "containsPork": "Contains Pork Derivatives",
       "type": "Type",
       "percentage": "Percentage (%)",
       "fixedAmount": "Fixed Amount",

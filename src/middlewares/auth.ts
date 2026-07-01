@@ -53,8 +53,8 @@ export const requirePermission = (requiredPermission: string) => {
       return errorResponse(res, 'errors.unauthorized', 401);
     }
 
-    // Super Admin has full access bypass
-    if (req.user.role === 'SUPER_ADMIN') {
+    // Super Admin and Tenant Admin have full access bypass
+    if (req.user.role === 'SUPER_ADMIN' || req.user.role === 'ADMIN') {
       return next();
     }
 

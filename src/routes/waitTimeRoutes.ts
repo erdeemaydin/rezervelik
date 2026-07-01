@@ -4,7 +4,8 @@ import {
   updateWaitTimeConfig,
   getWaitlist,
   joinWaitlist,
-  updateWaitlistStatus
+  updateWaitlistStatus,
+  sendOffer
 } from '../controllers/waitTimeController';
 
 const router = Router();
@@ -15,5 +16,6 @@ router.put('/config', updateWaitTimeConfig);
 router.get('/entries', getWaitlist);
 router.post('/entries', joinWaitlist);
 router.put('/entries/:entryId/status', updateWaitlistStatus);
+router.post('/entries/:entryId/offer', sendOffer);
 
 export default router;

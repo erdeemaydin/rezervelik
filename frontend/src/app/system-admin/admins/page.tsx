@@ -6,12 +6,27 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { ShieldAlert, ShieldCheck } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import api from '@/lib/api';
+import { toast } from 'sonner';
 
 export default function SystemAdminsPage() {
-  const admins = [
-    { id: '1', name: 'John Root', email: 'root@reservepro.com', role: 'SUPER_ADMIN', lastLogin: '2026-05-15 10:00:00' },
-    { id: '2', name: 'Alice Manager', email: 'alice@reservepro.com', role: 'SYSTEM_SUPPORT', lastLogin: '2026-05-14 14:30:00' }
-  ];
+  const [admins, setAdmins] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchAdmins = async () => {
+      try {
+        const res = await api.get('/system/admins');
+        setAdmins(res.data.data);
+      } catch (err) {
+        toast.error('Failed to load admins');
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchAdmins();
+  }, []);
 
   return (
     <SystemAdminLayout>
@@ -38,20 +53,24 @@ export default function SystemAdminsPage() {
                   <TableHead className="text-xs font-bold text-slate-500">Name</TableHead>
                   <TableHead className="text-xs font-bold text-slate-500">Email</TableHead>
                   <TableHead className="text-xs font-bold text-slate-500">Role Level</TableHead>
-                  <TableHead className="text-xs font-bold text-slate-500 text-right">Last Login</TableHead>
+                  <TableHead className="text-xs font-bold text-slate-500 text-right">Created At</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {admins.map((admin) => (
+                {loading ? (
+                  <TableRow>
+                    <TableCell colSpan={4} className="h-32 text-center text-xs font-bold text-slate-400">Loading administrators...</TableCell>
+                  </TableRow>
+                ) : admins.map((admin) => (
                   <TableRow key={admin.id} className="hover:bg-slate-50/80 transition-colors">
-                    <TableCell className="font-semibold text-sm text-slate-800">{admin.name}</TableCell>
+                    <TableCell className="font-semibold text-sm text-slate-800">{admin.firstName} {admin.lastName}</TableCell>
                     <TableCell className="text-xs text-slate-500">{admin.email}</TableCell>
                     <TableCell>
                       <Badge className={admin.role === 'SUPER_ADMIN' ? 'bg-red-50 text-red-700 border-red-200' : 'bg-blue-50 text-blue-700 border-blue-200'}>
                         {admin.role}
                       </Badge>
                     </TableCell>
-                    <TableCell className="text-xs text-slate-500 text-right">{admin.lastLogin}</TableCell>
+                    <TableCell className="text-xs text-slate-500 text-right">{new Date(admin.createdAt).toLocaleDateString()}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>

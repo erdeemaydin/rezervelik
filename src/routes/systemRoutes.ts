@@ -17,4 +17,12 @@ router.put('/tenants/:id/subscription', systemController.updateTenantSubscriptio
 router.put('/tenants/:id/settings', systemController.updateTenantSettings);
 router.put('/users/:userId/permissions', systemController.updateTenantUserPermissions);
 
+router.get('/settings/global', systemController.getGlobalSettings);
+router.put('/settings/global', systemController.updateGlobalSettings);
+
+router.get('/admins', systemController.getSystemAdmins);
+router.get('/metrics', systemController.getSystemMetrics);
+
+router.post('/tenants/:id/impersonate', systemController.impersonateTenant);
+
 export default router;

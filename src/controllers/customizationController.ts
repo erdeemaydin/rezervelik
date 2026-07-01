@@ -34,7 +34,9 @@ export const updateCustomization = async (req: Request, res: Response) => {
       aboutUsText, 
       showLegal, 
       legalText, 
-      socialLinks 
+      socialLinks,
+      reservationInfoText,
+      reservationWarningText
     } = req.body;
 
     const customization = await prisma.frontendCustomization.upsert({
@@ -49,7 +51,9 @@ export const updateCustomization = async (req: Request, res: Response) => {
         aboutUsText,
         showLegal,
         legalText,
-        socialLinks
+        socialLinks,
+        reservationInfoText,
+        reservationWarningText
       },
       create: {
         restaurantId,
@@ -62,7 +66,9 @@ export const updateCustomization = async (req: Request, res: Response) => {
         aboutUsText,
         showLegal,
         legalText,
-        socialLinks
+        socialLinks,
+        reservationInfoText,
+        reservationWarningText
       }
     });
 

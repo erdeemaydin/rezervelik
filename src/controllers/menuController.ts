@@ -40,9 +40,9 @@ export const getMenus = async (req: Request, res: Response) => {
 export const createMenu = async (req: Request, res: Response) => {
   try {
     const restaurantId = req.restaurantId!;
-    const { name, isActive } = req.body;
+    const { name, isActive, footnotes } = req.body;
     const menu = await prisma.menu.create({
-      data: { restaurantId, name, isActive }
+      data: { restaurantId, name, isActive, footnotes }
     });
     return successResponse(res, menu, undefined, 201);
   } catch (error) {
@@ -53,10 +53,10 @@ export const createMenu = async (req: Request, res: Response) => {
 export const updateMenu = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const { name, isActive } = req.body;
+    const { name, isActive, footnotes } = req.body;
     const menu = await prisma.menu.update({
       where: { id },
-      data: { name, isActive }
+      data: { name, isActive, footnotes }
     });
     return successResponse(res, menu);
   } catch (error) {
@@ -117,12 +117,15 @@ export const deleteCategory = async (req: Request, res: Response) => {
 export const createMenuItem = async (req: Request, res: Response) => {
   try {
     const { categoryId } = req.params;
-    const { name, description, price, imageUrl, isAvailable, order, dietaryTags, allergens, spiceLevel } = req.body;
+    const { name, description, price, imageUrl, isAvailable, order, dietaryTags, allergens, spiceLevel, ingredients, calories, containsAlcohol, containsPork } = req.body;
     const item = await prisma.menuItem.create({
       data: { 
         categoryId, name, description, price: parseFloat(price), 
         imageUrl, isAvailable, order: order || 0,
-        dietaryTags, allergens, spiceLevel: spiceLevel ? parseInt(spiceLevel) : 0
+        dietaryTags, allergens, spiceLevel: spiceLevel ? parseInt(spiceLevel) : 0,
+        ingredients, calories: calories ? parseInt(calories) : null,
+        containsAlcohol: containsAlcohol === true || containsAlcohol === 'true',
+        containsPork: containsPork === true || containsPork === 'true'
       }
     });
     return successResponse(res, item, undefined, 201);
@@ -134,13 +137,16 @@ export const createMenuItem = async (req: Request, res: Response) => {
 export const updateMenuItem = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const { categoryId, name, description, price, imageUrl, isAvailable, order, dietaryTags, allergens, spiceLevel } = req.body;
+    const { categoryId, name, description, price, imageUrl, isAvailable, order, dietaryTags, allergens, spiceLevel, ingredients, calories, containsAlcohol, containsPork } = req.body;
     const item = await prisma.menuItem.update({
       where: { id },
       data: { 
         categoryId, name, description, price: price !== undefined ? parseFloat(price) : undefined, 
         imageUrl, isAvailable, order,
-        dietaryTags, allergens, spiceLevel: spiceLevel !== undefined ? parseInt(spiceLevel) : undefined
+        dietaryTags, allergens, spiceLevel: spiceLevel !== undefined ? parseInt(spiceLevel) : undefined,
+        ingredients, calories: calories !== undefined ? (calories ? parseInt(calories) : null) : undefined,
+        containsAlcohol: containsAlcohol !== undefined ? (containsAlcohol === true || containsAlcohol === 'true') : undefined,
+        containsPork: containsPork !== undefined ? (containsPork === true || containsPork === 'true') : undefined
       }
     });
     return successResponse(res, item);

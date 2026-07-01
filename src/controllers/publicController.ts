@@ -140,3 +140,90 @@ export const joinPublicWaitlist = async (req: Request, res: Response) => {
     return errorResponse(res, 'errors.internal_error', 500);
   }
 };
+
+export const getOffer = async (req: Request, res: Response) => {
+  try {
+    const { token } = req.params;
+    const entry = await prisma.waitlistEntry.findUnique({
+      where: { offerToken: token },
+      include: { restaurant: { select: { slug: true, name: true } } }
+    });
+
+    if (!entry) return errorResponse(res, 'Offer not found or invalid', 404);
+    
+    // Check if expired
+    if (entry.offerExpiresAt && new Date() > entry.offerExpiresAt) {
+      return errorResponse(res, 'This offer has expired', 400);
+    }
+
+    if (entry.status !== 'OFFERED') {
+      return errorResponse(res, 'This offer is no longer available', 400);
+    }
+
+    return successResponse(res, entry);
+  } catch (error) {
+    return errorResponse(res, 'errors.internal_error', 500);
+  }
+};
+
+export const acceptOffer = async (req: Request, res: Response) => {
+  try {
+    const { token } = req.params;
+    
+    const entry = await prisma.waitlistEntry.findUnique({
+      where: { offerToken: token }
+    });
+
+    if (!entry) return errorResponse(res, 'Offer not found', 404);
+    if (entry.status !== 'OFFERED') return errorResponse(res, 'Offer no longer available', 400);
+    if (entry.offerExpiresAt && new Date() > entry.offerExpiresAt) return errorResponse(res, 'Offer expired', 400);
+
+    // Create a real reservation
+    const startTimeStr = entry.offeredTime ? `${entry.targetDate}T${entry.offeredTime}:00+03:00` : `${entry.targetDate}T19:00:00+03:00`;
+    
+    await prisma.$transaction([
+      prisma.reservation.create({
+        data: {
+          restaurantId: entry.restaurantId,
+          customerName: entry.customerName,
+          customerPhone: entry.customerPhone,
+          guestCount: entry.partySize,
+          startTime: new Date(startTimeStr),
+          status: 'CONFIRMED',
+          notes: 'Converted from Waitlist Offer'
+        }
+      }),
+      prisma.waitlistEntry.update({
+        where: { id: entry.id },
+        data: { status: 'ACCEPTED' }
+      })
+    ]);
+
+    return successResponse(res, { message: 'Offer accepted' });
+  } catch (error) {
+    console.error('Accept offer error:', error);
+    return errorResponse(res, 'errors.internal_error', 500);
+  }
+};
+
+export const declineOffer = async (req: Request, res: Response) => {
+  try {
+    const { token } = req.params;
+    
+    const entry = await prisma.waitlistEntry.findUnique({
+      where: { offerToken: token }
+    });
+
+    if (!entry) return errorResponse(res, 'Offer not found', 404);
+    if (entry.status !== 'OFFERED') return errorResponse(res, 'Offer no longer available', 400);
+
+    await prisma.waitlistEntry.update({
+      where: { id: entry.id },
+      data: { status: 'CANCELED', notes: (entry.notes || '') + ' - Offer declined by customer' }
+    });
+
+    return successResponse(res, { message: 'Offer declined' });
+  } catch (error) {
+    return errorResponse(res, 'errors.internal_error', 500);
+  }
+};

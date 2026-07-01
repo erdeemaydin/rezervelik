@@ -55,7 +55,11 @@
     "bookATable": "Masa Ayirt",
     "joinWaitlist": "Siraya Katil",
     "selectDate": "Tarih Sec",
-    "selectTime": "Saat Sec"
+    "selectTime": "Saat Secin",
+    "ingredients": "Ana Bilesenler",
+    "calories": "kcal",
+    "containsAlcohol": "Alkol Icerir",
+    "containsPork": "Domuz Turevi Icerir"
   },
   "dashboard": {
     "loading": "Kontrol merkezi yukleniyor...",
@@ -479,6 +483,13 @@
     "commitEntry": "KAYDI ONAYLA"
   },
   "menus": {
+    "downloadQR": {
+      "title": "Masa QR Etiketi Idir",
+      "desc": "Masalariniz icin yonetmelige uygun QR menu etiketini PDF olarak indirin.",
+      "buttonText": "QR Etiket Idir (PDF)",
+      "scanText": "Menu Icin QR Kodu Okutun",
+      "complianceText": "Alerjen, kalori ve bilesen bilgileri dijital menumuzde yer almaktadir."
+    },
     "toast": {
       "valueRequired": "Deger gereklidir",
       "priceUpdateScheduled": "Fiyat guncellemesi planlandi",
@@ -582,6 +593,10 @@
       "spiceLevel3": "3 - Aci",
       "spiceLevel4": "4 - Asiri Aci",
       "selectSpiceLevel": "Baharat Seviyesi Secin",
+      "exactIngredients": "Ana Bilesenler (Yasal)",
+      "calories": "Kalori (kcal)",
+      "containsAlcohol": "Alkol Icerir",
+      "containsPork": "Domuz Turevi Icerir",
       "type": "Tur",
       "percentage": "Yuzde (%)",
       "fixedAmount": "Sabit Tutar",

@@ -5,8 +5,43 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
+import { useState, useEffect } from 'react';
+import api from '@/lib/api';
+import { toast } from 'sonner';
 
 export default function SystemSettingsPage() {
+  const [settings, setSettings] = useState({
+    maintenanceMode: false,
+    publicRegistrationEnabled: true,
+    enforce2FAForAdmins: true
+  });
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    const fetchSettings = async () => {
+      try {
+        const res = await api.get('/system/settings/global');
+        if (res.data.data) {
+          setSettings(res.data.data);
+        }
+      } catch (err) {
+        toast.error('Failed to load global settings');
+      }
+    };
+    fetchSettings();
+  }, []);
+
+  const handleSave = async () => {
+    try {
+      setLoading(true);
+      await api.put('/system/settings/global', settings);
+      toast.success('Global settings updated successfully');
+    } catch (err) {
+      toast.error('Failed to update global settings');
+    } finally {
+      setLoading(false);
+    }
+  };
   return (
     <SystemAdminLayout>
       <div className="flex flex-col gap-6 max-w-4xl">
@@ -26,7 +61,7 @@ export default function SystemSettingsPage() {
                 <Label className="text-base font-bold text-slate-800">Maintenance Mode</Label>
                 <p className="text-xs text-slate-500 font-medium">Disable access to all tenant dashboards. API will return 503.</p>
               </div>
-              <Switch />
+              <Switch checked={settings.maintenanceMode} onCheckedChange={(v) => setSettings({ ...settings, maintenanceMode: v })} />
             </div>
 
             <div className="flex items-center justify-between p-4 border border-slate-200 rounded-lg">
@@ -34,7 +69,7 @@ export default function SystemSettingsPage() {
                 <Label className="text-base font-bold text-slate-800">Public Registration</Label>
                 <p className="text-xs text-slate-500 font-medium">Allow new restaurants to self-register via the main landing page.</p>
               </div>
-              <Switch defaultChecked />
+              <Switch checked={settings.publicRegistrationEnabled} onCheckedChange={(v) => setSettings({ ...settings, publicRegistrationEnabled: v })} />
             </div>
 
             <div className="flex items-center justify-between p-4 border border-slate-200 rounded-lg">
@@ -42,11 +77,13 @@ export default function SystemSettingsPage() {
                 <Label className="text-base font-bold text-slate-800">Enforce 2FA for System Admins</Label>
                 <p className="text-xs text-slate-500 font-medium">Require two-factor authentication for root access.</p>
               </div>
-              <Switch defaultChecked />
+              <Switch checked={settings.enforce2FAForAdmins} onCheckedChange={(v) => setSettings({ ...settings, enforce2FAForAdmins: v })} />
             </div>
             
             <div className="pt-4 flex justify-end">
-              <Button className="bg-emerald-600 hover:bg-emerald-700 text-xs font-bold px-8">Save Configuration</Button>
+              <Button onClick={handleSave} disabled={loading} className="bg-emerald-600 hover:bg-emerald-700 text-xs font-bold px-8">
+                {loading ? 'Saving...' : 'Save Configuration'}
+              </Button>
             </div>
           </CardContent>
         </Card>

@@ -20,13 +20,18 @@ import schedulingRoutes from './routes/schedulingRoutes';
 import waitTimeRoutes from './routes/waitTimeRoutes';
 import floorElementRoutes from './routes/floorElementRoutes';
 import customizationRoutes from './routes/customizationRoutes';
+import uploadRoutes from './routes/uploadRoutes';
+import path from 'path';
 
 const app = express();
 
 // Middlewares
-app.use(helmet());
+app.use(helmet({ crossOriginResourcePolicy: false })); // Allow cross origin for images
 app.use(cors());
 app.use(express.json());
+
+// Serve static uploads
+app.use(express.static(path.join(__dirname, '../public')));
 
 // Localization middleware to set language based on header or query
 app.use((req, res, next) => {
@@ -57,5 +62,6 @@ app.use('/api/staff', tenantMiddleware, staffRoutes);
 app.use('/api/scheduling', tenantMiddleware, schedulingRoutes);
 app.use('/api/wait-time', tenantMiddleware, waitTimeRoutes);
 app.use('/api/customization', tenantMiddleware, customizationRoutes);
+app.use('/api/uploads', tenantMiddleware, uploadRoutes);
 
 export default app;

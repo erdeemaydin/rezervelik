@@ -1,7 +1,8 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
+import { useTranslation } from "@/i18n/provider";
 import { Utensils, Calendar as CalendarIcon, ChevronDown, CheckCircle2, X, Clock } from 'lucide-react';
 import axios from 'axios';
 import { toast } from 'sonner';
@@ -278,6 +279,17 @@ export default function PremiumLayout({ slug, initialRestaurant }: { slug: strin
                         {item.description && (
                           <p className="text-sm text-zinc-500 mt-2 font-light max-w-xl">{item.description}</p>
                         )}
+                        {item.ingredients && (
+                          <p className="text-xs text-zinc-400 mt-1 font-light max-w-xl"><span className="font-medium">{t('public.ingredients')}:</span> {item.ingredients}</p>
+                        )}
+                        <div className="flex flex-wrap items-center gap-2 mt-2">
+                          {item.calories && <span className="text-[10px] uppercase tracking-wider text-orange-500 bg-orange-500/10 px-2 py-0.5 rounded-full">{item.calories} {t('public.calories')}</span>}
+                          {item.containsAlcohol && <span className="text-[10px] uppercase tracking-wider text-rose-500 bg-rose-500/10 px-2 py-0.5 rounded-full">{t('public.containsAlcohol')}</span>}
+                          {item.containsPork && <span className="text-[10px] uppercase tracking-wider text-pink-500 bg-pink-500/10 px-2 py-0.5 rounded-full">{t('public.containsPork')}</span>}
+                          {item.dietaryTags && item.dietaryTags.split(',').map((tag: string, i: number) => (
+                              <span key={i} className="text-[10px] uppercase tracking-wider text-green-500 bg-green-500/10 px-2 py-0.5 rounded-full">{tag.trim()}</span>
+                          ))}
+                        </div>
                       </div>
                     ))}
                   </div>

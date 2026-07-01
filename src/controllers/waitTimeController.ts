@@ -73,8 +73,8 @@ export const getWaitlist = async (req: Request, res: Response) => {
     const { history } = req.query;
 
     const statuses = history === 'true' 
-      ? ['SEATED', 'CANCELED', 'NO_SHOW'] 
-      : ['WAITING', 'NOTIFIED'];
+      ? ['SEATED', 'CANCELED', 'NO_SHOW', 'ACCEPTED'] 
+      : ['WAITING', 'NOTIFIED', 'OFFERED'];
 
     const waitlist = await prisma.waitlistEntry.findMany({
       where: { 
@@ -141,6 +141,40 @@ export const updateWaitlistStatus = async (req: Request, res: Response) => {
     return successResponse(res, entry);
   } catch (error) {
     console.error('Update waitlist status error:', error);
+    return errorResponse(res, 'errors.internal_error', 500);
+  }
+};
+
+export const sendOffer = async (req: Request, res: Response) => {
+  try {
+    const restaurantId = req.restaurantId!;
+    const { entryId } = req.params;
+    const { offeredTime, expiresInHours = 2 } = req.body;
+
+    const existingEntry = await prisma.waitlistEntry.findUnique({ where: { id: entryId } });
+    if (!existingEntry || existingEntry.restaurantId !== restaurantId) {
+      return errorResponse(res, 'errors.not_found', 404);
+    }
+
+    const offerToken = require('crypto').randomBytes(24).toString('hex');
+    const offerExpiresAt = new Date(Date.now() + expiresInHours * 60 * 60 * 1000);
+
+    const entry = await prisma.waitlistEntry.update({
+      where: { id: entryId },
+      data: {
+        status: 'OFFERED',
+        offerToken,
+        offerExpiresAt,
+        offeredTime
+      }
+    });
+
+    const offerUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/r/${existingEntry.restaurantId}/offer/${offerToken}`;
+    console.log(`[SMS/Email Integration] -> Sending offer link to ${existingEntry.customerPhone}: "We have an opening at ${offeredTime}! Please accept or decline: ${offerUrl}"`);
+
+    return successResponse(res, entry);
+  } catch (error) {
+    console.error('Send offer error:', error);
     return errorResponse(res, 'errors.internal_error', 500);
   }
 };
