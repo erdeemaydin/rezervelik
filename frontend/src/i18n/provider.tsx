@@ -1,6 +1,7 @@
 'use client';
 
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useState, useTransition } from 'react';
+import { useRouter } from 'next/navigation';
 import Cookies from 'js-cookie';
 
 type Translations = Record<string, any>;
@@ -27,11 +28,15 @@ export const I18nProvider = ({
   dictionary: Translations;
 }) => {
   const [locale, setLocaleState] = useState(initialLocale);
+  const router = useRouter();
+  const [isPending, startTransition] = useTransition();
 
   const setLocale = (newLocale: string) => {
     Cookies.set('NEXT_LOCALE', newLocale, { path: '/', expires: 365 });
     setLocaleState(newLocale);
-    window.location.reload(); // Reload to fetch new dictionary on the server
+    startTransition(() => {
+      router.refresh();
+    });
   };
 
   const t = (key: string) => {

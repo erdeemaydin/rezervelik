@@ -12,10 +12,12 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
+import { useTranslation } from '@/i18n/provider';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || (typeof window !== 'undefined' ? `${window.location.protocol}//${window.location.hostname}:3000/api` : 'http://localhost:3000/api');
 
 export default function PremiumLayout({ slug, initialRestaurant }: { slug: string, initialRestaurant: any }) {
+  const { t } = useTranslation();
   const [restaurant, setRestaurant] = useState<any>(initialRestaurant);
   const [loading, setLoading] = useState(false);
   const [scrolled, setScrolled] = useState(false);
@@ -185,8 +187,8 @@ export default function PremiumLayout({ slug, initialRestaurant }: { slug: strin
         scrolled ? cn(navBg, "backdrop-blur-md py-4 shadow-lg") : "bg-transparent"
       )}>
         <div className="hidden md:flex items-center gap-8 text-xs font-medium tracking-[0.2em] uppercase">
-          <button onClick={() => scrollToSection('about')} className="hover:text-zinc-400 transition-colors">Our Story</button>
-          <button onClick={() => scrollToSection('menu')} className="hover:text-zinc-400 transition-colors">Menu</button>
+          <button onClick={() => scrollToSection('about')} className="hover:text-zinc-400 transition-colors">{t('public.ourStory')}</button>
+          <button onClick={() => scrollToSection('menu')} className="hover:text-zinc-400 transition-colors">{t('public.menu')}</button>
         </div>
         
         <div className={cn("text-xl md:text-2xl tracking-widest text-center flex-1 md:flex-none", customization.typography !== 'MONO' && 'uppercase')}>
@@ -195,9 +197,9 @@ export default function PremiumLayout({ slug, initialRestaurant }: { slug: strin
 
         <div className="hidden md:flex items-center gap-8 text-xs font-medium tracking-[0.2em] uppercase">
           <LanguageSwitcher />
-          <button onClick={() => scrollToSection('contact')} className="hover:text-zinc-400 transition-colors">Contact</button>
+          <button onClick={() => scrollToSection('contact')} className="hover:text-zinc-400 transition-colors">{t('public.contact')}</button>
           <button onClick={() => setIsBookingOpen(true)} className="border border-zinc-100 px-5 py-2 hover:bg-zinc-100 hover:text-zinc-900 transition-all">
-            Reservations
+            {t('public.reservations')}
           </button>
         </div>
       </nav>
@@ -220,12 +222,12 @@ export default function PremiumLayout({ slug, initialRestaurant }: { slug: strin
         </div>
         
         <div className="relative z-20 text-center px-4 flex flex-col items-center animate-in fade-in slide-in-from-bottom-8 duration-1000 delay-300">
-          <span className="text-xs tracking-[0.4em] uppercase text-zinc-300 mb-6">A Culinary Journey</span>
+          <span className="text-xs tracking-[0.4em] uppercase text-zinc-300 mb-6">{t('public.aCulinaryJourney')}</span>
           <h1 className={cn("text-5xl md:text-7xl lg:text-9xl tracking-tight mb-8", isAnimated && "animate-pulse")}>
             {restaurant.name}
           </h1>
           <button onClick={() => setIsBookingOpen(true)} className="text-xs font-medium tracking-[0.2em] uppercase border-b border-zinc-100 pb-1 hover:text-zinc-400 hover:border-zinc-400 transition-all">
-            Book a Table
+            {t('public.bookATable')}
           </button>
         </div>
 

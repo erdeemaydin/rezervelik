@@ -25,6 +25,7 @@ import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
+import { useTranslation } from '@/i18n/provider';
 
 interface AdminLayoutProps {
   children: ReactNode;
@@ -47,10 +48,11 @@ interface NavSection {
 export default function AdminLayout({ children }: AdminLayoutProps) {
   const pathname = usePathname();
   const router = useRouter();
-  const { user, isAuthenticated, logout } = useAuthStore();
+  const { user, logout, isAuthenticated } = useAuthStore();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
   const [tenantSettings, setTenantSettings] = useState<any>(null);
+  const { t } = useTranslation();
 
   useEffect(() => {
     setIsMounted(true);
@@ -76,25 +78,25 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
   }, [isMounted, isAuthenticated, router]);
 
   const navigation: NavSection[] = [
-    { section: 'Overview', items: [
-      { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
+    { section: t('systemAdmin.globalOverview') || 'Overview', items: [
+      { name: t('admin.dashboard'), href: '/dashboard', icon: LayoutDashboard },
       { name: 'Analytics', href: '/dashboard/analytics', icon: BarChart3, badge: 'New' },
     ]},
     { section: 'Operations', items: [
-      { name: 'Reservations', href: '/dashboard/reservations', icon: Calendar, badge: '12', perm: 'manage_reservations' },
-      { name: 'Host Console', href: '/dashboard/host', icon: Tablet, badge: 'iPad', perm: 'manage_reservations' },
-      { name: 'Calendar Master', href: '/dashboard/calendar', icon: Calendar, badge: 'New', perm: 'manage_calendar' },
-      { name: 'Tables & Floor', href: '/dashboard/tables', icon: Grid, perm: 'manage_tables' },
-      { name: 'Menu', href: '/dashboard/menus', icon: UtensilsCrossed, perm: 'manage_menu', feature: 'hasMenuFeature' },
-      { name: 'Wait Time / Queue', href: '/dashboard/wait-time', icon: Clock, badge: 'Live', perm: 'manage_settings', feature: 'hasWaitTimeFeature' },
-      { name: 'Scheduling', href: '/dashboard/scheduling', icon: Calendar, badge: 'New', feature: 'hasShiftFeature' },
+      { name: t('admin.reservations'), href: '/dashboard/reservations', icon: Calendar, badge: '12', perm: 'manage_reservations' },
+      { name: t('admin.hostStand'), href: '/dashboard/host', icon: Tablet, badge: 'iPad', perm: 'manage_reservations' },
+      { name: t('admin.calendar'), href: '/dashboard/calendar', icon: Calendar, badge: 'New', perm: 'manage_calendar' },
+      { name: t('admin.tablesAndFloor'), href: '/dashboard/tables', icon: Grid, perm: 'manage_tables' },
+      { name: t('admin.menuManagement'), href: '/dashboard/menus', icon: UtensilsCrossed, perm: 'manage_menu', feature: 'hasMenuFeature' },
+      { name: t('admin.waitlist'), href: '/dashboard/wait-time', icon: Clock, badge: 'Live', perm: 'manage_settings', feature: 'hasWaitTimeFeature' },
+      { name: t('admin.staffSchedule'), href: '/dashboard/scheduling', icon: Calendar, badge: 'New', feature: 'hasShiftFeature' },
     ]},
     { section: 'Administration', items: [
-      { name: 'Transactions', href: '/dashboard/payments', icon: CreditCard, feature: 'hasPaymentFeature' },
+      { name: t('admin.payments'), href: '/dashboard/payments', icon: CreditCard, feature: 'hasPaymentFeature' },
       { name: 'Staff Members', href: '/dashboard/staff', icon: Users, perm: 'manage_staff' },
-      { name: 'Reviews', href: '/dashboard/reviews', icon: MessageSquare },
-      { name: 'Customization', href: '/dashboard/customization', icon: Settings, perm: 'manage_settings' },
-      { name: 'Settings', href: '/dashboard/settings', icon: Settings, perm: 'manage_settings' },
+      { name: t('admin.reviews'), href: '/dashboard/reviews', icon: MessageSquare },
+      { name: t('admin.customization'), href: '/dashboard/customization', icon: Settings, perm: 'manage_settings' },
+      { name: t('admin.settings'), href: '/dashboard/settings', icon: Settings, perm: 'manage_settings' },
     ]}
   ];
 
@@ -237,9 +239,9 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
             </Button>
             <div className="h-4 w-px bg-slate-200" />
             <div className="flex items-center gap-2">
-              <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Zone:</span>
+              <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">{t('admin.zone')}:</span>
               <Badge variant="outline" className="text-[10px] font-black uppercase border-blue-200 text-blue-600 bg-blue-50">
-                Main Dining Room
+                {t('admin.mainDiningRoom')}
               </Badge>
             </div>
           </div>
@@ -264,7 +266,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
               className="text-slate-500 hover:text-red-600 hover:bg-red-50 font-bold text-xs gap-2 px-3 h-9"
             >
               <LogOut className="w-4 h-4" />
-              <span className="hidden md:inline">Logout</span>
+              <span className="hidden md:inline">{t('admin.logout')}</span>
             </Button>
           </div>
         </header>

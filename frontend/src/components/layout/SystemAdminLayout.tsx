@@ -17,6 +17,7 @@ import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
+import { useTranslation } from '@/i18n/provider';
 
 interface SystemAdminLayoutProps {
   children: ReactNode;
@@ -27,6 +28,7 @@ export default function SystemAdminLayout({ children }: SystemAdminLayoutProps) 
   const router = useRouter();
   const { user, logout } = useAuthStore();
   const [mounted, setMounted] = useState(false);
+  const { t } = useTranslation();
 
   useEffect(() => {
     setMounted(true);
@@ -36,16 +38,16 @@ export default function SystemAdminLayout({ children }: SystemAdminLayoutProps) 
   }, [user, router]);
 
   const navigation = [
-    { section: 'Global Overview', items: [
-      { name: 'System Metrics', href: '/system-admin/dashboard', icon: BarChart3 },
-      { name: 'Tenant Management', href: '/system-admin/tenants', icon: Building2, badge: 'Active' },
+    { section: t('systemAdmin.globalOverview'), items: [
+      { name: t('systemAdmin.systemMetrics'), href: '/system-admin/dashboard', icon: BarChart3 },
+      { name: t('systemAdmin.tenantManagement'), href: '/system-admin/tenants', icon: Building2, badge: t('systemAdmin.active') },
     ]},
-    { section: 'User Control', items: [
-      { name: 'Super Admins', href: '/system-admin/admins', icon: ShieldCheck },
-      { name: 'Activity Audit', href: '/system-admin/audit', icon: Server },
+    { section: t('systemAdmin.userControl'), items: [
+      { name: t('systemAdmin.superAdmins'), href: '/system-admin/admins', icon: ShieldCheck },
+      { name: t('systemAdmin.activityAudit'), href: '/system-admin/audit', icon: Server },
     ]},
-    { section: 'Configuration', items: [
-      { name: 'Global Settings', href: '/system-admin/settings', icon: Settings },
+    { section: t('systemAdmin.configuration'), items: [
+      { name: t('systemAdmin.globalSettings'), href: '/system-admin/settings', icon: Settings },
     ]}
   ];
 
@@ -71,7 +73,7 @@ export default function SystemAdminLayout({ children }: SystemAdminLayoutProps) 
               <p className="text-xs font-bold text-white truncate">
                 {mounted ? `${user?.firstName || 'System'} ${user?.lastName || 'Admin'}` : 'System Admin'}
               </p>
-              <p className="text-[9px] text-emerald-500 font-black uppercase tracking-tighter">Root Authority</p>
+              <p className="text-[9px] text-emerald-500 font-black uppercase tracking-tighter">{t('systemAdmin.rootAuthority')}</p>
             </div>
           </div>
 
@@ -112,17 +114,17 @@ export default function SystemAdminLayout({ children }: SystemAdminLayoutProps) 
 
         <div className="p-4 bg-[#020617] border-t border-slate-800">
           <Button variant="ghost" className="w-full justify-start text-slate-500 hover:text-white hover:bg-red-500/10" onClick={handleLogout}>
-            <LogOut className="mr-3 h-5 w-5" /> Logout System
+            <LogOut className="mr-3 h-5 w-5" /> {t('systemAdmin.logoutSystem')}
           </Button>
         </div>
       </aside>
 
       <div className="flex-1 flex flex-col overflow-hidden">
         <header className="h-16 bg-white border-b flex items-center justify-between px-8 shadow-sm">
-          <h2 className="text-xl font-bold text-slate-800">System Management</h2>
+          <h2 className="text-xl font-bold text-slate-800">{t('systemAdmin.systemManagement')}</h2>
           <div className="flex items-center gap-4">
             <LanguageSwitcher />
-            <Badge variant="outline" className="text-emerald-600 border-emerald-200 bg-emerald-50">Global Cluster: Active</Badge>
+            <Badge variant="outline" className="text-emerald-600 border-emerald-200 bg-emerald-50">{t('systemAdmin.globalClusterActive')}</Badge>
           </div>
         </header>
         <main className="flex-1 overflow-y-auto p-8">
