@@ -13,11 +13,15 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
-import api from '@/lib/api';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import { useAuthStore } from '@/store/useAuthStore';
+import { useRouter } from 'next/navigation';
+import api from '@/lib/api';
 
 export default function TenantManagementPage() {
+  const router = useRouter();
+  const login = useAuthStore((s) => s.login);
   const [tenants, setTenants] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -28,10 +32,13 @@ export default function TenantManagementPage() {
   const [formData, setFormData] = useState({
     name: '', contactEmail: '', adminFirstName: '', adminLastName: '', adminPassword: ''
   });
+  
+  const [inviteLink, setInviteLink] = useState<string | null>(null);
 
   const [settingsForm, setSettingsForm] = useState({
     isVipEnabled: true, isInternalNotesEnabled: true, isCategoriesEnabled: true,
-    hasWaitTimeFeature: true, hasShiftFeature: true, hasMenuFeature: true, hasPaymentFeature: true
+    hasWaitTimeFeature: true, hasShiftFeature: true, hasMenuFeature: true, hasPaymentFeature: true,
+    layoutStyle: 'CLASSIC_LIST'
   });
   
   const [subscriptionForm, setSubscriptionForm] = useState({
@@ -57,17 +64,41 @@ export default function TenantManagementPage() {
       setLoading(true);
       const res = await api.get('/system/tenants');
       setTenants(res.data.data);
+    } catch (error) {
+      console.error('Failed to fetch tenants:', error);
     } finally { setLoading(false); }
   };
 
   const handleCreateTenant = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await api.post('/system/tenants', formData);
+      const payload: any = { ...formData };
+      if (!payload.adminPassword) delete payload.adminPassword;
+      
+      const res = await api.post('/system/tenants', payload);
       toast.success('Tenant provisioned');
-      setIsDialogOpen(false);
+      
+      if (res.data.data.setupLink) {
+        setInviteLink(`${window.location.origin}${res.data.data.setupLink}`);
+      } else {
+        setIsDialogOpen(false);
+      }
+      
       fetchTenants();
+      setFormData({ name: '', contactEmail: '', adminFirstName: '', adminLastName: '', adminPassword: '' });
     } catch (err: any) { toast.error('Provisioning failed'); }
+  };
+
+  const handleImpersonate = async (tenantId: string) => {
+    try {
+      const res = await api.post(`/system/tenants/${tenantId}/impersonate`);
+      const { user, token } = res.data.data;
+      login(token, user);
+      toast.success('Impersonation successful');
+      router.push('/dashboard');
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || 'Impersonation failed');
+    }
   };
 
   const openSettings = (tenant: any) => {
@@ -80,6 +111,7 @@ export default function TenantManagementPage() {
       hasShiftFeature: tenant.settings?.hasShiftFeature ?? true,
       hasMenuFeature: tenant.settings?.hasMenuFeature ?? true,
       hasPaymentFeature: tenant.settings?.hasPaymentFeature ?? true,
+      layoutStyle: tenant.customization?.layoutStyle || 'CLASSIC_LIST',
     });
     
     setSubscriptionForm({
@@ -201,9 +233,14 @@ export default function TenantManagementPage() {
                         <div className="text-[10px] font-bold text-slate-500">{new Date(tenant.createdAt).toLocaleDateString()}</div>
                     </TableCell>
                     <TableCell className="px-4 text-right">
-                        <Button variant="ghost" size="icon" className="h-7 w-7 text-slate-300 hover:text-emerald-600" onClick={() => openSettings(tenant)}>
-                            <Settings2 className="w-3.5 h-3.5" />
-                        </Button>
+                        <div className="flex justify-end gap-1">
+                          <Button variant="ghost" size="sm" className="h-7 text-[10px] font-bold text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 px-2" onClick={() => handleImpersonate(tenant.id)}>
+                              LOGIN AS
+                          </Button>
+                          <Button variant="ghost" size="icon" className="h-7 w-7 text-slate-300 hover:text-emerald-600" onClick={() => openSettings(tenant)}>
+                              <Settings2 className="w-3.5 h-3.5" />
+                          </Button>
+                        </div>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -241,13 +278,24 @@ export default function TenantManagementPage() {
                         </div>
                     </div>
                     <div className="grid gap-1.5">
-                        <Label className="text-[10px] font-black uppercase text-slate-400 ml-1">Initial Password</Label>
-                        <Input required type="password" value={formData.adminPassword} onChange={e => setFormData({...formData, adminPassword: e.target.value})} className="h-10 text-sm font-bold border-slate-200 rounded-sm" />
+                        <Label className="text-[10px] font-black uppercase text-slate-400 ml-1">Initial Password (Optional)</Label>
+                        <Input type="password" value={formData.adminPassword} onChange={e => setFormData({...formData, adminPassword: e.target.value})} placeholder="Leave blank to generate invite link" className="h-10 text-sm font-bold border-slate-200 rounded-sm" />
                     </div>
                 </div>
+                {inviteLink && (
+                  <div className="px-6 pb-4">
+                    <div className="bg-emerald-50 border border-emerald-200 p-4 rounded-sm">
+                      <Label className="text-[10px] font-black uppercase text-emerald-700">Setup Invite Link Generated</Label>
+                      <div className="flex mt-1 gap-2">
+                        <Input readOnly value={inviteLink} className="h-8 text-xs bg-white" />
+                        <Button type="button" size="sm" onClick={() => { navigator.clipboard.writeText(inviteLink); toast.success('Copied to clipboard!'); }} className="h-8 bg-emerald-600 hover:bg-emerald-700">Copy</Button>
+                      </div>
+                    </div>
+                  </div>
+                )}
                 <div className="p-4 bg-slate-50 border-t border-slate-100 flex justify-end gap-2">
-                    <Button type="button" variant="ghost" onClick={() => setIsDialogOpen(false)} className="h-9 text-xs font-bold text-slate-400">CANCEL</Button>
-                    <Button type="submit" className="h-9 bg-emerald-600 hover:bg-emerald-700 text-xs font-black uppercase px-6 rounded-sm">INITIALIZE PROVISIONING</Button>
+                    <Button type="button" variant="ghost" onClick={() => { setIsDialogOpen(false); setInviteLink(null); }} className="h-9 text-xs font-bold text-slate-400">CLOSE</Button>
+                    {!inviteLink && <Button type="submit" className="h-9 bg-emerald-600 hover:bg-emerald-700 text-xs font-black uppercase px-6 rounded-sm">INITIALIZE PROVISIONING</Button>}
                 </div>
             </form>
           </DialogContent>
@@ -262,8 +310,8 @@ export default function TenantManagementPage() {
                             <DialogTitle className="text-sm font-bold uppercase tracking-widest">Entitlements: {selectedTenant?.name}</DialogTitle>
                         </DialogHeader>
                     </div>
-                    <div className="p-6 grid grid-cols-2 gap-8 bg-white">
-                        <div className="col-span-2 border-b border-slate-100 pb-6 mb-2">
+                    <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-8 bg-white max-h-[80vh] overflow-y-auto">
+                        <div className="col-span-1 md:col-span-2 border-b border-slate-100 pb-6 mb-2">
                             <div className="flex items-center gap-2 mb-4">
                                 <Label className="text-xs font-black uppercase text-slate-800 tracking-tight">Subscription Management</Label>
                             </div>
@@ -302,6 +350,26 @@ export default function TenantManagementPage() {
                                       onChange={e => setSubscriptionForm({...subscriptionForm, trialEndsAt: e.target.value})}
                                     />
                                 </div>
+                            </div>
+                        </div>
+
+                        <div className="space-y-4">
+                            <div className="flex items-center gap-2 mb-2">
+                                <Label className="text-xs font-black uppercase text-slate-800 tracking-tight">Design Architecture</Label>
+                            </div>
+                            <div className="flex items-center justify-between p-3 border border-slate-100 rounded-sm">
+                                <div className="space-y-0.5">
+                                    <Label className="text-xs font-black uppercase">Layout Style</Label>
+                                    <p className="text-[9px] text-slate-400 font-bold uppercase">Customer Portal Theme</p>
+                                </div>
+                                <select 
+                                  className="h-8 px-2 text-xs font-bold border border-slate-200 rounded-sm bg-slate-50"
+                                  value={settingsForm.layoutStyle}
+                                  onChange={e => setSettingsForm({...settingsForm, layoutStyle: e.target.value})}
+                                >
+                                  <option value="CLASSIC_LIST">Classic List</option>
+                                  <option value="EDITORIAL_IMAGE">Premium Editorial</option>
+                                </select>
                             </div>
                         </div>
 

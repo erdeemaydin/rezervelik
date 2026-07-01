@@ -24,6 +24,8 @@ interface Customization {
     aboutUsText: string;
     showLegal: boolean;
     legalText: string;
+    reservationInfoText: string;
+    reservationWarningText: string;
 }
 
 export default function CustomizationPage() {
@@ -39,6 +41,8 @@ export default function CustomizationPage() {
         aboutUsText: '',
         showLegal: false,
         legalText: '',
+        reservationInfoText: '',
+        reservationWarningText: '',
     });
 
     const fetchCustomization = useCallback(async () => {
@@ -57,6 +61,8 @@ export default function CustomizationPage() {
                     aboutUsText: data.aboutUsText || '',
                     showLegal: data.showLegal || false,
                     legalText: data.legalText || '',
+                    reservationInfoText: data.reservationInfoText || '',
+                    reservationWarningText: data.reservationWarningText || '',
                 });
             }
         } catch (error) {
@@ -108,10 +114,11 @@ export default function CustomizationPage() {
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
                     <div className="lg:col-span-2">
                         <Tabs defaultValue="theming" className="w-full">
-                            <TabsList className="grid w-full grid-cols-3 bg-slate-100 rounded-sm p-1">
+                            <TabsList className="grid w-full grid-cols-4 bg-slate-100 rounded-sm p-1">
                                 <TabsTrigger value="theming" className="text-xs font-bold uppercase"><Palette className="w-3 h-3 mr-2" /> Theming</TabsTrigger>
                                 <TabsTrigger value="announcements" className="text-xs font-bold uppercase"><Megaphone className="w-3 h-3 mr-2" /> Banner</TabsTrigger>
                                 <TabsTrigger value="pages" className="text-xs font-bold uppercase"><FileText className="w-3 h-3 mr-2" /> Static Pages</TabsTrigger>
+                                <TabsTrigger value="reservation" className="text-xs font-bold uppercase"><FileText className="w-3 h-3 mr-2" /> Booking Rules</TabsTrigger>
                             </TabsList>
                             
                             <TabsContent value="theming" className="mt-4">
@@ -122,26 +129,6 @@ export default function CustomizationPage() {
                                     </CardHeader>
                                     <CardContent className="p-6 space-y-6">
                                         <div className="space-y-3">
-                                            <Label className="text-[10px] font-black uppercase text-slate-400">Menu Template</Label>
-                                            <div className="grid grid-cols-2 gap-4">
-                                                <div 
-                                                    onClick={() => setCustomization({...customization, layoutStyle: 'CLASSIC_LIST'})}
-                                                    className={`p-4 border-2 rounded-md cursor-pointer transition-all ${customization.layoutStyle === 'CLASSIC_LIST' ? 'border-blue-600 bg-blue-50/50' : 'border-slate-100 hover:border-slate-300'}`}
-                                                >
-                                                    <div className="font-black text-sm text-slate-800 uppercase">Classic</div>
-                                                    <p className="text-[10px] text-slate-500 mt-1 leading-relaxed">Elegant, text-focused list style perfect for fine dining.</p>
-                                                </div>
-                                                <div 
-                                                    onClick={() => setCustomization({...customization, layoutStyle: 'EDITORIAL_IMAGE'})}
-                                                    className={`p-4 border-2 rounded-md cursor-pointer transition-all ${customization.layoutStyle === 'EDITORIAL_IMAGE' ? 'border-blue-600 bg-blue-50/50' : 'border-slate-100 hover:border-slate-300'}`}
-                                                >
-                                                    <div className="font-black text-sm text-slate-800 uppercase">Modern Grid</div>
-                                                    <p className="text-[10px] text-slate-500 mt-1 leading-relaxed">Image-heavy card layout for casual or visual menus.</p>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        
-                                        <div className="space-y-3 pt-4 border-t border-slate-100">
                                             <Label className="text-[10px] font-black uppercase text-slate-400">Typography</Label>
                                             <Select 
                                                 value={customization.typography} 
@@ -256,6 +243,38 @@ export default function CustomizationPage() {
                                             />
                                         </CardContent>
                                     )}
+                                </Card>
+                            </TabsContent>
+
+                            <TabsContent value="reservation" className="mt-4 space-y-6">
+                                <Card className="rounded-sm border-slate-200 shadow-sm bg-white">
+                                    <CardHeader className="p-6 border-b border-slate-100">
+                                        <CardTitle className="text-sm font-black uppercase tracking-tight">Reservation Guidelines</CardTitle>
+                                        <CardDescription className="text-xs">Provide general information and dress codes for reservations. You can use simple HTML for links.</CardDescription>
+                                    </CardHeader>
+                                    <CardContent className="p-6 space-y-6">
+                                        <div className="space-y-3">
+                                            <Label className="text-[10px] font-black uppercase text-slate-400">General Information Text (HTML/Text)</Label>
+                                            <Textarea 
+                                                placeholder="e.g. <p>Restoranımız 09:00 - 01:00 arası hizmet vermektedir.</p>" 
+                                                value={customization.reservationInfoText} 
+                                                onChange={(e) => setCustomization({...customization, reservationInfoText: e.target.value})}
+                                                className="min-h-[120px] text-sm font-mono bg-slate-50" 
+                                            />
+                                            <p className="text-[10px] text-slate-500">Supports basic HTML (e.g. &lt;a href="..."&gt;, &lt;strong&gt;, &lt;p&gt;).</p>
+                                        </div>
+
+                                        <div className="space-y-3 pt-4 border-t border-slate-100">
+                                            <Label className="text-[10px] font-black uppercase text-slate-400">Warning / Strict Rules (HTML/Text)</Label>
+                                            <Textarea 
+                                                placeholder="e.g. <p>Smart Casual dress code is strictly enforced.</p>" 
+                                                value={customization.reservationWarningText} 
+                                                onChange={(e) => setCustomization({...customization, reservationWarningText: e.target.value})}
+                                                className="min-h-[120px] text-sm font-mono bg-slate-50" 
+                                            />
+                                            <p className="text-[10px] text-slate-500">This section will be highlighted to draw guest attention.</p>
+                                        </div>
+                                    </CardContent>
                                 </Card>
                             </TabsContent>
                         </Tabs>

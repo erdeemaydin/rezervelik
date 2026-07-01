@@ -8,13 +8,15 @@ export const getAllTenants = async (req: Request, res: Response) => {
     const tenants = await prisma.restaurant.findMany({
       include: {
         settings: true,
+        customization: true,
         users: {
           select: {
             id: true,
             email: true,
             firstName: true,
             lastName: true,
-            role: true
+            role: true,
+            permissions: true
           }
         }
       }
@@ -30,8 +32,8 @@ export const createTenant = async (req: Request, res: Response) => {
   try {
     const { name, contactEmail, adminFirstName, adminLastName, adminPassword } = req.body;
 
-    if (!name || !contactEmail || !adminFirstName || !adminLastName || !adminPassword) {
-      return errorResponse(res, 'errors.validation_error', 400, { message: 'All fields are required' });
+    if (!name || !contactEmail || !adminFirstName || !adminLastName) {
+      return errorResponse(res, 'errors.validation_error', 400, { message: 'Required fields missing' });
     }
 
     const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-');
@@ -41,7 +43,20 @@ export const createTenant = async (req: Request, res: Response) => {
       return errorResponse(res, 'errors.validation_error', 400, { message: 'Admin email already exists' });
     }
 
-    const hashedPassword = await bcrypt.hash(adminPassword, 10);
+    let isInvite = false;
+    let setupToken = null;
+    let setupTokenExpiresAt = null;
+    let finalPassword = adminPassword;
+
+    if (!finalPassword) {
+      isInvite = true;
+      finalPassword = Math.random().toString(36).slice(-10) + 'A1!'; // random secure dummy password
+      setupToken = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+      setupTokenExpiresAt = new Date();
+      setupTokenExpiresAt.setDate(setupTokenExpiresAt.getDate() + 7); // 7 days expiry
+    }
+
+    const hashedPassword = await bcrypt.hash(finalPassword, 10);
 
     const result = await prisma.$transaction(async (prisma) => {
       // Set trial end date to 14 days from now
@@ -58,6 +73,9 @@ export const createTenant = async (req: Request, res: Response) => {
           trialEndsAt,
           settings: {
             create: {}
+          },
+          customization: {
+            create: {}
           }
         }
       });
@@ -70,13 +88,18 @@ export const createTenant = async (req: Request, res: Response) => {
           lastName: adminLastName,
           role: 'ADMIN',
           permissions: 'manage_reservations,manage_tables,manage_menu,manage_calendar,manage_staff,manage_settings',
-          restaurantId: restaurant.id
+          restaurantId: restaurant.id,
+          setupToken,
+          setupTokenExpiresAt
         }
       });
 
       return { restaurant, adminUser: user };
     });
 
+    if (isInvite) {
+      return successResponse(res, { ...result, setupLink: `/auth/setup/${setupToken}` }, undefined, 201);
+    }
     return successResponse(res, result, undefined, 201);
   } catch (error) {
     console.error('Create tenant error:', error);
@@ -130,6 +153,14 @@ export const updateTenantSettings = async (req: Request, res: Response) => {
         hasPaymentFeature
       }
     });
+
+    if (req.body.layoutStyle) {
+      await prisma.frontendCustomization.upsert({
+        where: { restaurantId: id },
+        update: { layoutStyle: req.body.layoutStyle },
+        create: { restaurantId: id, layoutStyle: req.body.layoutStyle }
+      });
+    }
 
     return successResponse(res, updated);
   } catch (error) {
@@ -187,6 +218,112 @@ export const createSuperAdmin = async (req: Request, res: Response) => {
     return successResponse(res, user, undefined, 201);
   } catch (error) {
     console.error('Create super admin error:', error);
+    return errorResponse(res, 'errors.internal_error', 500);
+  }
+};
+
+export const getGlobalSettings = async (req: Request, res: Response) => {
+  try {
+    let settings = await prisma.globalSettings.findUnique({ where: { id: 'global_1' } });
+    if (!settings) {
+      settings = await prisma.globalSettings.create({ data: { id: 'global_1' } });
+    }
+    return successResponse(res, settings);
+  } catch (error) {
+    console.error('Get global settings error:', error);
+    return errorResponse(res, 'errors.internal_error', 500);
+  }
+};
+
+export const updateGlobalSettings = async (req: Request, res: Response) => {
+  try {
+    const { maintenanceMode, publicRegistrationEnabled, enforce2FAForAdmins } = req.body;
+    
+    const settings = await prisma.globalSettings.upsert({
+      where: { id: 'global_1' },
+      update: { maintenanceMode, publicRegistrationEnabled, enforce2FAForAdmins },
+      create: { id: 'global_1', maintenanceMode, publicRegistrationEnabled, enforce2FAForAdmins }
+    });
+    
+    return successResponse(res, settings);
+  } catch (error) {
+    console.error('Update global settings error:', error);
+    return errorResponse(res, 'errors.internal_error', 500);
+  }
+};
+
+export const getSystemAdmins = async (req: Request, res: Response) => {
+  try {
+    const admins = await prisma.user.findMany({
+      where: { role: 'SUPER_ADMIN' },
+      select: {
+        id: true,
+        email: true,
+        firstName: true,
+        lastName: true,
+        role: true,
+        createdAt: true
+      }
+    });
+    return successResponse(res, admins);
+  } catch (error) {
+    console.error('Get system admins error:', error);
+    return errorResponse(res, 'errors.internal_error', 500);
+  }
+};
+
+export const getSystemMetrics = async (req: Request, res: Response) => {
+  try {
+    const totalTenants = await prisma.restaurant.count();
+    const totalUsers = await prisma.user.count();
+    const totalReservations = await prisma.reservation.count();
+    
+    return successResponse(res, {
+      totalTenants,
+      totalUsers,
+      totalReservations,
+    });
+  } catch (error) {
+    console.error('Get system metrics error:', error);
+    return errorResponse(res, 'errors.internal_error', 500);
+  }
+};
+
+import { generateToken } from '../utils/jwt';
+
+export const impersonateTenant = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+
+    // Find the primary admin of this restaurant
+    const adminUser = await prisma.user.findFirst({
+      where: { 
+        restaurantId: id,
+        role: 'ADMIN'
+      }
+    });
+
+    if (!adminUser) {
+      return errorResponse(res, 'errors.not_found', 404, { message: 'No admin user found for this tenant.' });
+    }
+
+    // Generate a token for this user
+    const token = generateToken(adminUser.id, adminUser.restaurantId, adminUser.role);
+
+    return successResponse(res, {
+      user: {
+        id: adminUser.id,
+        email: adminUser.email,
+        firstName: adminUser.firstName,
+        lastName: adminUser.lastName,
+        role: adminUser.role,
+        restaurantId: adminUser.restaurantId,
+        permissions: adminUser.permissions
+      },
+      token
+    });
+  } catch (error) {
+    console.error('Impersonate tenant error:', error);
     return errorResponse(res, 'errors.internal_error', 500);
   }
 };
