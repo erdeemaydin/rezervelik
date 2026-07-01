@@ -60,6 +60,10 @@ model FrontendCustomization {
   legalText        String?
   socialLinks      String?    // JSON string
   
+  // Reservation Warnings & Information
+  reservationInfoText String?
+  reservationWarningText String?
+  
   updatedAt        DateTime   @updatedAt
   restaurant       Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
 }
@@ -143,6 +147,11 @@ model WaitlistEntry {
   notes          String?
   targetDate     String?    // YYYY-MM-DD for date-based reservations waitlist
   
+  // Future Reservation Offer Fields
+  offerToken     String?    @unique
+  offerExpiresAt DateTime?
+  offeredTime    String?    // e.g. "19:30"
+  
   joinedAt       DateTime   @default(now())
   notifiedAt     DateTime?
   seatedAt       DateTime?
@@ -162,6 +171,10 @@ model User {
   lastName     String
   role         String      @default("STAFF") // SUPER_ADMIN, ADMIN, MANAGER, STAFF
   permissions  String?     // Comma-separated permission keys e.g. "manage_reservations,manage_menu"
+  
+  setupToken          String?   @unique
+  setupTokenExpiresAt DateTime?
+  
   createdAt    DateTime    @default(now())
   updatedAt    DateTime    @updatedAt
   restaurant   Restaurant? @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
@@ -293,6 +306,13 @@ model Menu {
   restaurantId String
   name         String
   isActive     Boolean        @default(true)
+  footnotes    String?
+  
+  // Scheduling
+  startTime    String?        // e.g. "10:00"
+  endTime      String?        // e.g. "14:00"
+  daysOfWeek   String?        // e.g. "1,2,3,4,5" (0=Sun, 6=Sat)
+
   restaurant   Restaurant     @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
   categories   MenuCategory[]
 
@@ -326,13 +346,57 @@ model MenuItem {
   price       Float
   imageUrl    String?
   isAvailable Boolean      @default(true)
+  isHighlight Boolean      @default(false) // Chef's Special / Popular
   order       Int          @default(0)
   dietaryTags String?      // e.g., "Vegan,Gluten-Free"
   allergens   String?      // e.g., "Nuts,Dairy"
   spiceLevel  Int          @default(0) // 0: none, 1: mild, 2: medium, 3: spicy
   category    MenuCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
 
+  modifiers   MenuItemModifier[]
+  pairings    MenuItemPairing[] @relation("ItemPairings")
+  pairedWith  MenuItemPairing[] @relation("PairedItems")
+
   @@index([categoryId])
+}
+
+model MenuItemModifier {
+  id          String       @id @default(uuid())
+  menuItemId  String
+  name        String       // e.g., "Meat Temperature", "Add-ons"
+  isRequired  Boolean      @default(false)
+  minChoices  Int          @default(0)
+  maxChoices  Int?         // null means unlimited
+  
+  menuItem    MenuItem     @relation(fields: [menuItemId], references: [id], onDelete: Cascade)
+  options     ModifierOption[]
+
+  @@index([menuItemId])
+}
+
+model ModifierOption {
+  id          String       @id @default(uuid())
+  modifierId  String
+  name        String       // e.g., "Rare", "Add Bacon"
+  priceAdjust Float        @default(0) // e.g., 2.00
+  isAvailable Boolean      @default(true)
+  
+  modifier    MenuItemModifier @relation(fields: [modifierId], references: [id], onDelete: Cascade)
+
+  @@index([modifierId])
+}
+
+model MenuItemPairing {
+  id            String     @id @default(uuid())
+  menuItemId    String
+  pairedItemId  String
+  
+  menuItem      MenuItem   @relation("ItemPairings", fields: [menuItemId], references: [id], onDelete: Cascade)
+  pairedItem    MenuItem   @relation("PairedItems", fields: [pairedItemId], references: [id], onDelete: Cascade)
+
+  @@unique([menuItemId, pairedItemId])
+  @@index([menuItemId])
+  @@index([pairedItemId])
 }
 
 model Shift {
@@ -341,15 +405,27 @@ model Shift {
   name         String     // e.g., "Morning Shift", "Evening Shift"
   startTime    String     // e.g., "08:00"
   endTime      String     // e.g., "16:00"
-  requiredStaff Int       @default(1)
   createdAt    DateTime   @default(now())
   updatedAt    DateTime   @updatedAt
 
   restaurant   Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
   assignments  ShiftAssignment[]
   availabilities EmployeeAvailability[]
+  dayRequirements ShiftDayRequirement[]
 
   @@index([restaurantId])
+}
+
+model ShiftDayRequirement {
+  id            String @id @default(uuid())
+  shiftId       String
+  dayOfWeek     Int    // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
+  requiredStaff Int    @default(1)
+
+  shift         Shift  @relation(fields: [shiftId], references: [id], onDelete: Cascade)
+
+  @@unique([shiftId, dayOfWeek])
+  @@index([shiftId])
 }
 
 model ShiftAssignment {
@@ -385,4 +461,12 @@ model EmployeeAvailability {
   @@unique([userId, shiftId, date])
   @@index([userId])
   @@index([shiftId])
+}
+
+model GlobalSettings {
+  id                        String   @id @default("global_1")
+  maintenanceMode           Boolean  @default(false)
+  publicRegistrationEnabled Boolean  @default(true)
+  enforce2FAForAdmins       Boolean  @default(true)
+  updatedAt                 DateTime @updatedAt
 }

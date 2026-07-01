@@ -9,6 +9,7 @@ export const getShifts = async (req: Request, res: Response) => {
     const restaurantId = req.restaurantId!;
     const shifts = await prisma.shift.findMany({
       where: { restaurantId },
+      include: { dayRequirements: true },
       orderBy: { startTime: 'asc' }
     });
     return successResponse(res, shifts);
@@ -21,11 +22,18 @@ export const getShifts = async (req: Request, res: Response) => {
 export const createShift = async (req: Request, res: Response) => {
   try {
     const restaurantId = req.restaurantId!;
-    const { name, startTime, endTime, requiredStaff } = req.body;
+    const { name, startTime, endTime, dayRequirements } = req.body;
 
     if (!name || !startTime || !endTime) {
       return errorResponse(res, 'errors.validation_error', 400, { message: 'Missing required fields' });
     }
+
+    const defaultDayRequirements = Array.from({ length: 7 }, (_, i) => ({
+      dayOfWeek: i,
+      requiredStaff: 1
+    }));
+
+    const shiftRequirements = dayRequirements || defaultDayRequirements;
 
     const shift = await prisma.shift.create({
       data: {
@@ -33,8 +41,14 @@ export const createShift = async (req: Request, res: Response) => {
         name,
         startTime,
         endTime,
-        requiredStaff: requiredStaff || 1
-      }
+        dayRequirements: {
+          create: shiftRequirements.map((req: any) => ({
+            dayOfWeek: req.dayOfWeek,
+            requiredStaff: req.requiredStaff || 1
+          }))
+        }
+      },
+      include: { dayRequirements: true }
     });
 
     return successResponse(res, shift, 'Shift created successfully', 201);
@@ -48,21 +62,38 @@ export const updateShift = async (req: Request, res: Response) => {
   try {
     const restaurantId = req.restaurantId!;
     const { id } = req.params;
-    const { name, startTime, endTime, requiredStaff } = req.body;
+    const { name, startTime, endTime, dayRequirements } = req.body;
 
     const shift = await prisma.shift.findFirst({ where: { id, restaurantId } });
     if (!shift) {
       return errorResponse(res, 'errors.not_found', 404, { message: 'Shift not found' });
     }
 
-    const updatedShift = await prisma.shift.update({
-      where: { id },
-      data: {
-        name,
-        startTime,
-        endTime,
-        requiredStaff
+    const updatedShift = await prisma.$transaction(async (tx) => {
+      // If dayRequirements are provided, update them. Otherwise leave them as is.
+      if (dayRequirements) {
+        await tx.shiftDayRequirement.deleteMany({
+          where: { shiftId: id }
+        });
+        
+        await tx.shiftDayRequirement.createMany({
+          data: dayRequirements.map((req: any) => ({
+            shiftId: id,
+            dayOfWeek: req.dayOfWeek,
+            requiredStaff: req.requiredStaff || 1
+          }))
+        });
       }
+
+      return await tx.shift.update({
+        where: { id },
+        data: {
+          name,
+          startTime,
+          endTime
+        },
+        include: { dayRequirements: true }
+      });
     });
 
     return successResponse(res, updatedShift, 'Shift updated successfully');

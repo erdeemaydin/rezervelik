@@ -6,13 +6,17 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Plus, Pencil, Trash2 } from 'lucide-react';
-import { Shift, getShifts, createShift, updateShift, deleteShift } from '@/lib/api/scheduling';
+import { Shift, ShiftDayRequirement, getShifts, createShift, updateShift, deleteShift } from '@/lib/api/scheduling';
 import { toast } from 'sonner';
+
+const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
 export default function ShiftManager() {
   const [shifts, setShifts] = useState<Shift[]>([]);
   const [loading, setLoading] = useState(true);
-  const [editingShift, setEditingShift] = useState<Partial<Shift>>({});
+  const [editingShift, setEditingShift] = useState<Partial<Shift>>({
+    dayRequirements: DAYS.map((_, i) => ({ dayOfWeek: i, requiredStaff: 1 } as ShiftDayRequirement))
+  });
 
   const loadShifts = async () => {
     try {
@@ -44,7 +48,9 @@ export default function ShiftManager() {
         await createShift(editingShift);
         toast.success('Shift created');
       }
-      setEditingShift({});
+      setEditingShift({
+        dayRequirements: DAYS.map((_, i) => ({ dayOfWeek: i, requiredStaff: 1 } as ShiftDayRequirement))
+      });
       loadShifts();
     } catch (error) {
       toast.error('Failed to save shift');
@@ -97,21 +103,44 @@ export default function ShiftManager() {
               />
             </div>
           </div>
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Required Staff (Optional)</label>
-            <Input 
-              type="number" 
-              min={1}
-              value={editingShift.requiredStaff || ''} 
-              onChange={(e) => setEditingShift({ ...editingShift, requiredStaff: parseInt(e.target.value) })}
-            />
+          <div className="space-y-3">
+            <label className="text-sm font-medium">Required Staff per Day</label>
+            <div className="grid grid-cols-7 gap-2">
+              {DAYS.map((day, idx) => {
+                const req = editingShift.dayRequirements?.find((r) => r.dayOfWeek === idx) || { dayOfWeek: idx, requiredStaff: 1 };
+                return (
+                  <div key={day} className="flex flex-col items-center gap-1">
+                    <span className="text-xs text-muted-foreground">{day}</span>
+                    <Input 
+                      type="number" 
+                      min={0}
+                      className="text-center px-1 h-8"
+                      value={req.requiredStaff}
+                      onChange={(e) => {
+                        const val = parseInt(e.target.value) || 0;
+                        const newReqs = [...(editingShift.dayRequirements || DAYS.map((_, i) => ({ dayOfWeek: i, requiredStaff: 1 } as ShiftDayRequirement)))];
+                        const existingIdx = newReqs.findIndex(r => r.dayOfWeek === idx);
+                        if (existingIdx >= 0) {
+                          newReqs[existingIdx] = { ...newReqs[existingIdx], requiredStaff: val };
+                        } else {
+                          newReqs.push({ dayOfWeek: idx, requiredStaff: val } as ShiftDayRequirement);
+                        }
+                        setEditingShift({ ...editingShift, dayRequirements: newReqs });
+                      }}
+                    />
+                  </div>
+                );
+              })}
+            </div>
           </div>
           <div className="flex gap-2 pt-2">
             <Button onClick={handleSave} className="flex-1">
               {editingShift.id ? 'Update' : 'Create'}
             </Button>
             {editingShift.id && (
-              <Button variant="outline" onClick={() => setEditingShift({})}>Cancel</Button>
+              <Button variant="outline" onClick={() => setEditingShift({
+                dayRequirements: DAYS.map((_, i) => ({ dayOfWeek: i, requiredStaff: 1 } as ShiftDayRequirement))
+              })}>Cancel</Button>
             )}
           </div>
         </CardContent>
@@ -130,7 +159,7 @@ export default function ShiftManager() {
                 <TableRow>
                   <TableHead>Name</TableHead>
                   <TableHead>Hours</TableHead>
-                  <TableHead>Required Staff</TableHead>
+                  <TableHead>Required Staff (Total/Week)</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
@@ -146,9 +175,17 @@ export default function ShiftManager() {
                     <TableRow key={shift.id}>
                       <TableCell className="font-medium">{shift.name}</TableCell>
                       <TableCell>{shift.startTime} - {shift.endTime}</TableCell>
-                      <TableCell>{shift.requiredStaff}</TableCell>
+                      <TableCell>
+                        {shift.dayRequirements?.reduce((acc, curr) => acc + curr.requiredStaff, 0) || 0}
+                      </TableCell>
                       <TableCell className="text-right">
-                        <Button variant="ghost" size="icon" onClick={() => setEditingShift(shift)}>
+                        <Button variant="ghost" size="icon" onClick={() => {
+                          // Ensure all days exist
+                          const fullReqs = DAYS.map((_, i) => {
+                            return shift.dayRequirements?.find(r => r.dayOfWeek === i) || { dayOfWeek: i, requiredStaff: 1 } as ShiftDayRequirement;
+                          });
+                          setEditingShift({ ...shift, dayRequirements: fullReqs });
+                        }}>
                           <Pencil className="h-4 w-4" />
                         </Button>
                         <Button variant="ghost" size="icon" className="text-red-500 hover:text-red-600" onClick={() => handleDelete(shift.id)}>

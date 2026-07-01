@@ -752,11 +752,7 @@ export default function ShiftAssigner({ viewMode = 'MONTHLY' }: { viewMode?: 'WE
                           <div className="text-[9px] text-slate-500 font-normal text-center mt-1 bg-white/50 rounded-sm py-0.5 border border-slate-100">
                             {shift.startTime} - {shift.endTime}
                           </div>
-                          {isAdminOrManager && (
-                            <div className="text-[8px] text-blue-600 font-semibold text-center mt-1 uppercase">
-                                Required: {shift.requiredStaff}
-                            </div>
-                          )}
+
                         </th>
                       ))}
                     </tr>
@@ -789,7 +785,8 @@ export default function ShiftAssigner({ viewMode = 'MONTHLY' }: { viewMode?: 'WE
                           {/* Shift Columns (Droppable Areas) */}
                           {shifts.map(shift => {
                             const cellAssignments = getCellAssignments(day.dateString, shift.id);
-                            const isUnderstaffed = cellAssignments.length < shift.requiredStaff;
+                            const requiredForDay = shift.dayRequirements?.find(r => r.dayOfWeek === day.dateObj.getDay())?.requiredStaff || 0;
+                            const isUnderstaffed = cellAssignments.length < requiredForDay;
                             const cellId = `cell-${day.dateString}-${shift.id}`;
                             
                             const isHighlightedStaffAssigned = highlightedStaffId 

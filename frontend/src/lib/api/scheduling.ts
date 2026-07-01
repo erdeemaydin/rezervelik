@@ -1,11 +1,18 @@
 import api from '../api';
 
+export interface ShiftDayRequirement {
+  id: string;
+  shiftId: string;
+  dayOfWeek: number;
+  requiredStaff: number;
+}
+
 export interface Shift {
   id: string;
   name: string;
   startTime: string;
   endTime: string;
-  requiredStaff: number;
+  dayRequirements: ShiftDayRequirement[];
 }
 
 export interface EmployeeAvailability {
