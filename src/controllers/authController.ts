@@ -18,6 +18,11 @@ export const register = async (req: Request, res: Response) => {
       return errorResponse(res, 'errors.validation_error', 400, { message: 'Email already in use' });
     }
 
+    const globalSettings = await prisma.globalSettings.findUnique({ where: { id: 'global_1' } });
+    if (globalSettings && globalSettings.publicRegistrationEnabled === false) {
+      return errorResponse(res, 'errors.unauthorized', 403, { message: 'Public registration is currently disabled' });
+    }
+
     // Generate a slug from restaurant name
     const slug = restaurantName.toLowerCase().replace(/[^a-z0-9]+/g, '-');
 
@@ -114,5 +119,76 @@ export const login = async (req: Request, res: Response) => {
   } catch (error: any) {
     console.error('[Auth] Critical Login Error:', error.message, error.stack);
     return errorResponse(res, 'errors.internal_error', 500, { detail: error.message });
+  }
+};
+
+export const verifyPassword = async (req: Request, res: Response) => {
+  try {
+    const userId = (req as any).userId;
+    const { password } = req.body;
+
+    if (!password) {
+      return errorResponse(res, 'errors.validation_error', 400, { message: 'Password is required' });
+    }
+
+    const user = await prisma.user.findUnique({ where: { id: userId } });
+    if (!user) {
+      return errorResponse(res, 'errors.unauthorized', 401, { message: 'User not found' });
+    }
+
+    const isValidPassword = await bcrypt.compare(password, user.passwordHash);
+    if (!isValidPassword) {
+      return errorResponse(res, 'errors.unauthorized', 401, { message: 'Invalid password' });
+    }
+
+    return successResponse(res, { verified: true });
+  } catch (error) {
+    console.error('[Auth] Verify password error:', error);
+    return errorResponse(res, 'errors.internal_error', 500);
+  }
+};
+
+export const completeSetup = async (req: Request, res: Response) => {
+  try {
+    const { token, password } = req.body;
+    if (!token || !password) {
+      return errorResponse(res, 'errors.validation_error', 400, { message: 'Token and password required' });
+    }
+
+    const user = await prisma.user.findUnique({ where: { setupToken: token } });
+    
+    if (!user || !user.setupTokenExpiresAt || new Date() > user.setupTokenExpiresAt) {
+      return errorResponse(res, 'errors.validation_error', 400, { message: 'Invalid or expired setup token' });
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+    
+    await prisma.user.update({
+      where: { id: user.id },
+      data: {
+        passwordHash: hashedPassword,
+        setupToken: null,
+        setupTokenExpiresAt: null
+      }
+    });
+
+    const authToken = generateToken(user.id, user.restaurantId, user.role);
+
+    return successResponse(res, {
+      user: {
+        id: user.id,
+        email: user.email,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        role: user.role,
+        restaurantId: user.restaurantId,
+        permissions: user.permissions
+      },
+      token: authToken
+    }, 'messages.welcome', 200);
+
+  } catch (error) {
+    console.error('[Auth] Complete setup error:', error);
+    return errorResponse(res, 'errors.internal_error', 500);
   }
 };

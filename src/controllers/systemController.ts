@@ -194,8 +194,9 @@ export const createSuperAdmin = async (req: Request, res: Response) => {
   try {
     const { email, password, firstName, lastName, secretToken } = req.body;
 
-    if (secretToken !== 'SETUP_SECRET_TOKEN_123') {
-      return errorResponse(res, 'errors.unauthorized', 403, { message: 'Invalid setup token' });
+    const envSecretToken = process.env.SETUP_SECRET_TOKEN;
+    if (!envSecretToken || secretToken !== envSecretToken) {
+      return errorResponse(res, 'errors.unauthorized', 403, { message: 'Invalid or unconfigured setup token' });
     }
 
     const existingUser = await prisma.user.findUnique({ where: { email } });
