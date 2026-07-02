@@ -1,35 +1,47 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useParams } from 'next/navigation';
+import { useState, useEffect, useRef } from 'react';
+import Link from 'next/link';
 import { useTranslation } from "@/i18n/provider";
-import { Utensils, Calendar as CalendarIcon, Clock, CheckCircle2, X } from 'lucide-react';
+import { Calendar as CalendarIcon, Clock, CheckCircle2, X, Menu, ChevronDown, ArrowLeft } from 'lucide-react';
 import axios from 'axios';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Dialog, DialogContent } from '@/components/ui/dialog';
+import { LanguageSwitcher } from '@/components/LanguageSwitcher';
+import { getDaySuggestions, getTimeSuggestions } from '@/lib/reservationSuggestions';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || (typeof window !== 'undefined' ? `${window.location.protocol}//${window.location.hostname}:3000/api` : 'http://localhost:3000/api');
 
-export default function OldenLayout({ slug, initialRestaurant }: { slug: string, initialRestaurant: any }) {
+const HERO_IMAGE_FALLBACK = 'https://images.unsplash.com/photo-1414235077428-338989a2e8c0?auto=format&fit=crop&q=80&w=2000';
+const ABOUT_IMAGE = 'https://images.unsplash.com/photo-1466978913421-dad2ebd01d17?auto=format&fit=crop&q=80&w=1200';
+const GALLERY_IMAGES = [
+  'https://images.unsplash.com/photo-1559339352-11d035aa65de?auto=format&fit=crop&q=80&w=800',
+  'https://images.unsplash.com/photo-1567620905732-2d1ec7ab7445?auto=format&fit=crop&q=80&w=800',
+  'https://images.unsplash.com/photo-1543007631-283050bb3e8c?auto=format&fit=crop&q=80&w=800',
+];
+
+export default function OldenLayout({ slug, initialRestaurant, initialView, menuOnly = false }: { slug: string, initialRestaurant: any, initialView?: string, menuOnly?: boolean }) {
   const { t } = useTranslation();
-  const [restaurant, setRestaurant] = useState<any>(initialRestaurant);
+  const restaurant = initialRestaurant;
   const [scrolled, setScrolled] = useState(false);
-  
-  // Booking State
-  const [isBookingOpen, setIsBookingOpen] = useState(false);
+
   const [dayStatus, setDayStatus] = useState<any>(null);
   const [checkingDay, setCheckingDay] = useState(false);
   const [isWaitlistSuccess, setIsWaitlistSuccess] = useState(false);
   const [isBookingSuccess, setIsBookingSuccess] = useState(false);
+  const [isPossiblyFullyBooked, setIsPossiblyFullyBooked] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+  const customization = restaurant?.customization || {};
 
   const getLocalYYYYMMDD = (d: Date) => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
 
   const [selectedDate, setSelectedDate] = useState(getLocalYYYYMMDD(new Date()));
   const [selectedTime, setSelectedTime] = useState('19:30');
+  const dateInputRef = useRef<HTMLInputElement>(null);
   const [resForm, setResForm] = useState({
     customerName: '',
     customerPhone: '',
@@ -39,18 +51,10 @@ export default function OldenLayout({ slug, initialRestaurant }: { slug: string,
   });
 
   useEffect(() => {
-    setRestaurant(initialRestaurant);
-  }, [initialRestaurant]);
-
-  useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 50);
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
-  }, [slug]);
-
-  useEffect(() => {
-    if (isBookingOpen) checkDayStatus(selectedDate);
-  }, [selectedDate, isBookingOpen]);
+  }, []);
 
   const checkDayStatus = async (date: string) => {
       try {
@@ -64,10 +68,14 @@ export default function OldenLayout({ slug, initialRestaurant }: { slug: string,
       }
   };
 
+  useEffect(() => {
+    checkDayStatus(selectedDate);
+  }, [selectedDate]);
+
   const handleBooking = async (e: React.FormEvent) => {
     e.preventDefault();
     const combinedDateTime = new Date(`${selectedDate}T${selectedTime}:00+03:00`);
-    
+
     if (combinedDateTime < new Date()) {
       toast.error('Cannot create reservations for the past');
       return;
@@ -95,14 +103,15 @@ export default function OldenLayout({ slug, initialRestaurant }: { slug: string,
     }
 
     try {
-      await axios.post(`${API_URL}/reservations`, 
-        { 
-          ...resForm, 
+      const res = await axios.post(`${API_URL}/reservations`,
+        {
+          ...resForm,
           guestCount: parseInt(resForm.guestCount),
           startTime: combinedDateTime.toISOString()
         },
         { headers: { 'X-Restaurant-ID': restaurant.id } }
       );
+      setIsPossiblyFullyBooked(!!res.data?.data?.possiblyFullyBooked);
       setIsBookingSuccess(true);
     } catch (err: any) {
       toast.error(err.response?.data?.error || 'Failed to book');
@@ -114,304 +123,490 @@ export default function OldenLayout({ slug, initialRestaurant }: { slug: string,
     if (el) el.scrollIntoView({ behavior: 'smooth' });
   };
 
+  useEffect(() => {
+    if (menuOnly) return;
+    if (initialView === 'menu') {
+      setTimeout(() => scrollToSection('menu'), 500);
+    } else if (initialView === 'booking') {
+      setTimeout(() => scrollToSection('reservations'), 500);
+    }
+  }, [initialView, menuOnly]);
+
   if (!restaurant) return <div className="min-h-screen flex items-center justify-center bg-white text-black font-serif">Experience not found.</div>;
 
-  const bgImage = restaurant.logoUrl || "https://images.unsplash.com/photo-1414235077428-338989a2e8c0?auto=format&fit=crop&q=80&w=2000";
+  const bgImage = restaurant.logoUrl || HERO_IMAGE_FALLBACK;
+  const { week, weekend } = getDaySuggestions();
+  const times = getTimeSuggestions();
+  const selectedDateLabel = new Date(`${selectedDate}T00:00:00`).toLocaleDateString([], { weekday: 'long', month: 'long', day: 'numeric' });
+
+  const getFontClass = (type: string) => {
+      switch(type) {
+          case 'MONO': return 'font-mono tracking-wide';
+          case 'SANS': return 'font-sans';
+          case 'SERIF':
+          default: return 'font-outfit';
+      }
+  };
+  const fontClass = getFontClass(customization.typography);
+
+  const getPalette = (preset: string) => {
+      switch(preset) {
+          case 'EARTH': return { bg: '#fdfbf7', text: '#292524', accent: '#5c4033' };
+          case 'CRIMSON': return { bg: '#fffbfb', text: '#450a0a', accent: '#7f1d1d' };
+          case 'PEARL': return { bg: '#f8fafc', text: '#0f172a', accent: '#1e3a8a' };
+          case 'OBSIDIAN':
+          default: return { bg: '#fcfcfc', text: '#2c2c2c', accent: '#8b0000' };
+      }
+  };
+  const palette = getPalette(customization.colorPalette);
+  const accentColor = customization.primaryColor && customization.primaryColor !== '#0f172a' ? customization.primaryColor : palette.accent;
+  const hasContactInfo = Boolean(restaurant.contactPhone || restaurant.contactEmail);
 
   return (
-    <div className="min-h-screen bg-[#fcfcfc] text-[#2c2c2c] font-sans selection:bg-[#8b0000] selection:text-white">
+    <div
+      className={cn("min-h-screen selection:text-white", fontClass)}
+      style={{
+        '--accent': accentColor,
+        '--accent-hover': accentColor + 'cc',
+        backgroundColor: palette.bg,
+        color: palette.text,
+      } as React.CSSProperties}
+    >
+      {/* Announcement Banner */}
+      {customization.announcementText && (
+        <div className="w-full bg-[var(--accent)] text-white text-sm font-medium text-center py-2 px-4 sticky top-0 z-50 flex items-center justify-center gap-2">
+          {customization.announcementText}
+        </div>
+      )}
+
       {/* Header */}
+      {menuOnly ? (
+        <header className={cn(
+          "fixed w-full z-40 bg-white/95 backdrop-blur-md shadow-sm py-3",
+          customization.announcementText ? "top-10" : "top-0"
+        )}>
+          <div className="container mx-auto flex items-center justify-between px-6 lg:px-12">
+            <Button variant="ghost" nativeButton={false} className="px-0 text-sm font-semibold uppercase tracking-wider text-[#555] hover:bg-transparent hover:text-[var(--accent)]" render={<Link href={`/r/${slug}`} />}>
+              <ArrowLeft className="mr-2 h-4 w-4" /> {restaurant.name}
+            </Button>
+            <div className="flex items-center gap-4">
+              <LanguageSwitcher />
+              <Button nativeButton={false} className="rounded-sm bg-[var(--accent)] px-5 py-2 text-xs font-bold uppercase tracking-widest text-white hover:bg-[var(--accent-hover)]" render={<Link href={`/r/${slug}?view=booking`} />}>
+                {t('public.bookATable')}
+              </Button>
+            </div>
+          </div>
+        </header>
+      ) : (
       <header className={cn(
-        "fixed top-0 w-full z-50 transition-all duration-500",
-        scrolled ? "bg-white shadow-sm py-3" : "bg-transparent py-6"
+        "fixed w-full z-40 transition-all duration-500",
+        scrolled ? "bg-white/95 backdrop-blur-md shadow-sm py-3" : "bg-transparent py-6",
+        customization.announcementText ? "top-10" : "top-0"
       )}>
         <div className="container mx-auto px-6 lg:px-12 flex justify-between items-center">
           <div className={cn("text-2xl lg:text-3xl font-serif tracking-widest uppercase transition-colors", scrolled ? "text-[#2c2c2c]" : "text-white")}>
             {restaurant.name}
           </div>
-          <nav className="hidden lg:block">
-            <ul className={cn("flex space-x-12 text-sm font-semibold tracking-wider uppercase transition-colors", scrolled ? "text-[#555]" : "text-white/90")}>
-              <li><button onClick={() => scrollToSection('about')} className="hover:text-[#8b0000] transition-colors">Hakkımızda</button></li>
-              <li><button onClick={() => scrollToSection('menu')} className="hover:text-[#8b0000] transition-colors">Menü</button></li>
-              <li><button onClick={() => setIsBookingOpen(true)} className="hover:text-[#8b0000] transition-colors">Rezervasyon</button></li>
+          <nav className="hidden lg:flex items-center gap-10">
+            <ul className={cn("flex space-x-10 text-sm font-semibold tracking-wider uppercase transition-colors", scrolled ? "text-[#555]" : "text-white/90")}>
+              <li><button onClick={() => scrollToSection('about')} className="hover:text-[var(--accent)] transition-colors">{t('public.ourStory')}</button></li>
+              <li><button onClick={() => scrollToSection('menu')} className="hover:text-[var(--accent)] transition-colors">{t('public.menu')}</button></li>
+              <li><button onClick={() => scrollToSection('reservations')} className="hover:text-[var(--accent)] transition-colors">{t('public.reservations')}</button></li>
             </ul>
+            <LanguageSwitcher />
           </nav>
-          <div className="lg:hidden">
-            <button className={cn("font-bold uppercase tracking-widest", scrolled ? "text-black" : "text-white")} onClick={() => setIsBookingOpen(true)}>Book</button>
+
+          <div className="lg:hidden flex items-center gap-4">
+            <LanguageSwitcher />
+            <button onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} className={cn("p-2 transition-colors", scrolled ? "text-[#2c2c2c]" : "text-white")}>
+              {isMobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+            </button>
           </div>
         </div>
       </header>
+      )}
 
-      {/* Hero Section */}
-      <section className="relative h-screen w-full flex items-center justify-center">
-        <div className="absolute inset-0 z-0">
-           {/* Gradient overlay similar to Olden 1772 */}
-          <div className="absolute inset-0 bg-gradient-to-b from-[#561214AD] via-transparent to-transparent opacity-80 z-10" />
-          <img src={bgImage} className="w-full h-full object-cover" alt="Restaurant Interior" />
+      {/* Mobile Menu Overlay */}
+      {!menuOnly && isMobileMenuOpen && (
+        <div className="fixed inset-0 z-30 bg-[#fcfcfc]/95 backdrop-blur-md flex flex-col items-center justify-center space-y-8 animate-in fade-in duration-300 lg:hidden">
+          <button onClick={() => { setIsMobileMenuOpen(false); scrollToSection('about'); }} className="text-3xl font-serif tracking-widest text-[#2c2c2c]">{t('public.ourStory')}</button>
+          <button onClick={() => { setIsMobileMenuOpen(false); scrollToSection('menu'); }} className="text-3xl font-serif tracking-widest text-[#2c2c2c]">{t('public.menu')}</button>
+          <button onClick={() => { setIsMobileMenuOpen(false); scrollToSection('reservations'); }} className="mt-8 text-3xl font-serif tracking-widest text-[var(--accent)]">{t('public.reservations')}</button>
         </div>
+      )}
+
+      {!menuOnly && (
+      <>
+      {/* Hero Section */}
+      <section className="relative h-screen w-full flex items-center justify-center overflow-hidden">
+        <div className="absolute inset-0 z-0">
+          <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-black/10 z-10" />
+          <img src={bgImage} className="w-full h-full object-cover" alt={restaurant.name} />
+        </div>
+
+        <div className="relative z-20 flex flex-col items-center px-6 text-center animate-in fade-in slide-in-from-bottom-4 duration-700">
+          <span className="mb-4 text-xs font-sans font-bold uppercase tracking-[0.3em] text-white/70">{t('public.aCulinaryJourney')}</span>
+          <h1 className="mb-8 text-5xl font-serif leading-none tracking-tight text-white md:text-7xl lg:text-8xl">
+            {restaurant.name}
+          </h1>
+          <button onClick={() => scrollToSection('reservations')} className="rounded-sm border border-white/40 px-8 py-3 text-xs font-bold uppercase tracking-[0.2em] text-white transition-all hover:bg-white hover:text-[#1a1a1a]">
+            {t('public.bookATable')}
+          </button>
+        </div>
+
+        <button onClick={() => scrollToSection('about')} className="absolute bottom-10 z-20 animate-bounce text-white/70 hover:text-white" aria-label="Scroll down">
+          <ChevronDown className="h-6 w-6" />
+        </button>
       </section>
 
-      {/* About / Secret Room equivalent */}
+      {/* Our Story */}
       <section id="about" className="py-24 lg:py-32 px-6 lg:px-12 container mx-auto">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
           <div>
-            <h3 className="text-xl text-[#8b0000] font-sans font-bold tracking-widest uppercase mb-4">A New World of Old Stories</h3>
-            <h2 className="text-5xl lg:text-7xl font-serif text-[#1a1a1a] leading-none mb-8">The Experience</h2>
-            <p className="text-lg text-[#555] leading-relaxed mb-8">
-              Welcome to our special space full of mysteries and culinary innovation. This is where {restaurant.name} opens its doors for immense friendships, celebrations, special agreements, and invitations. To build new long tables in an old story, you just need to make a reservation.
+            <h3 className="mb-4 text-xl font-sans font-bold uppercase tracking-widest text-[var(--accent)]">{t('public.ourStory')}</h3>
+            <h2 className="mb-8 font-serif text-5xl leading-none text-[#1a1a1a] lg:text-6xl">The Experience</h2>
+            <p className="mb-10 whitespace-pre-wrap text-lg leading-relaxed text-[#555]">
+              {customization.aboutUsText || `Welcome to ${restaurant.name} — a space built for long conversations, warm hospitality, and food worth remembering. Make a reservation and come find your table.`}
             </p>
-            <div className="grid grid-cols-2 gap-4">
-               <img src="https://images.unsplash.com/photo-1559339352-11d035aa65de?auto=format&fit=crop&q=80&w=600" className="w-full h-48 object-cover rounded-sm shadow-sm" alt="Detail 1" />
-               <img src="https://images.unsplash.com/photo-1600565193348-f74bd3c7ccdf?auto=format&fit=crop&q=80&w=600" className="w-full h-48 object-cover rounded-sm shadow-sm" alt="Detail 2" />
+            <div className="grid grid-cols-3 gap-4">
+              {GALLERY_IMAGES.map((src, i) => (
+                <div key={i} className="aspect-square w-full overflow-hidden rounded-sm shadow-sm">
+                  <img src={src} className="h-full w-full object-cover transition-transform duration-500 hover:scale-105" alt="Restaurant detail" loading="lazy" />
+                </div>
+              ))}
             </div>
           </div>
-          <div>
-             <img src="https://images.unsplash.com/photo-1550966871-3ed3cdb5ed0c?auto=format&fit=crop&q=80&w=1000" className="w-full h-[800px] object-cover rounded-sm shadow-lg" alt="Main Experience" />
+          <div className="aspect-[4/5] w-full overflow-hidden rounded-sm shadow-lg">
+            <img src={ABOUT_IMAGE} className="h-full w-full object-cover" alt={`Inside ${restaurant.name}`} />
           </div>
         </div>
       </section>
-
-      {/* Magic Room equivalent */}
-      <section className="py-24 lg:py-32 px-6 lg:px-12 bg-[#f4f4f4]">
-        <div className="container mx-auto">
-           <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center flex-col-reverse lg:flex-row-reverse">
-              <div>
-                <h3 className="text-xl text-[#8b0000] font-sans font-bold tracking-widest uppercase mb-4">For Your Special Moments</h3>
-                <h2 className="text-5xl lg:text-7xl font-serif text-[#1a1a1a] leading-none mb-8">Magic Room</h2>
-                <p className="text-lg text-[#555] leading-relaxed mb-8">
-                  There is always magic in the new world of an old story. We proudly present the "Magic Room" to our enthusiasts. Luck is not far away; it's right in the beautiful conversation set in this room.
-                </p>
-                <div className="grid grid-cols-3 gap-4 mb-4">
-                  <img src="https://images.unsplash.com/photo-1414235077428-338989a2e8c0?auto=format&fit=crop&q=80&w=400" className="w-full h-32 object-cover rounded-sm" alt="Magic 1" />
-                  <img src="https://images.unsplash.com/photo-1514362545857-3bc16c4c7d1b?auto=format&fit=crop&q=80&w=400" className="w-full h-32 object-cover rounded-sm" alt="Magic 2" />
-                  <img src="https://images.unsplash.com/photo-1559339352-11d035aa65de?auto=format&fit=crop&q=80&w=400" className="w-full h-32 object-cover rounded-sm" alt="Magic 3" />
-                </div>
-              </div>
-              <div>
-                 <img src="https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&q=80&w=1000" className="w-full h-[600px] object-cover rounded-sm shadow-lg" alt="Magic Room Main" />
-              </div>
-           </div>
-        </div>
-      </section>
+      </>
+      )}
 
       {/* Menu Section */}
-      <section id="menu" className="py-32 px-6 lg:px-12 container mx-auto">
-         <div className="text-center mb-24">
-            <h3 className="text-xl text-[#8b0000] font-sans font-bold tracking-widest uppercase mb-4">Our Flavors</h3>
-            <h2 className="text-5xl lg:text-7xl font-serif text-[#1a1a1a] leading-none">Menü</h2>
+      <section id="menu" className={cn("px-6 lg:px-12 container mx-auto bg-[#f4f4f4]/60", menuOnly ? "pt-28 pb-24" : "py-24 lg:py-32")}>
+         <div className="text-center mb-20">
+            <h3 className="mb-4 text-xl font-sans font-bold uppercase tracking-widest text-[var(--accent)]">Our Flavors</h3>
+            <h2 className="font-serif text-5xl leading-none text-[#1a1a1a] lg:text-7xl">{t('public.menu')}</h2>
          </div>
 
          {!restaurant.menus?.[0] ? (
-            <p className="text-center text-[#555] font-serif text-xl">The menu is currently being updated.</p>
+            <p className="text-center font-serif text-xl text-[#555]">The menu is currently being updated.</p>
          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-24 gap-y-16 max-w-6xl mx-auto">
+            <div className="mx-auto grid max-w-6xl grid-cols-1 gap-x-24 gap-y-16 md:grid-cols-2">
               {restaurant.menus[0].categories.map((cat: any) => (
                 <div key={cat.id} className="mb-8">
-                  <h3 className="text-3xl font-serif text-[#1a1a1a] mb-8 pb-4 border-b border-[#e0e0e0] uppercase tracking-wide">{cat.name}</h3>
+                  <h3 className="mb-8 border-b border-[#e0e0e0] pb-4 font-serif text-3xl uppercase tracking-wide text-[#1a1a1a]">{cat.name}</h3>
                   <div className="space-y-8">
-                    {cat.items.map((item: any) => (
+                    {cat.items?.map((item: any) => (
                       <div key={item.id} className="group">
-                        <div className="flex justify-between items-baseline mb-2">
-                          <h4 className="text-lg font-bold font-sans tracking-wide text-[#2c2c2c] uppercase">{item.name}</h4>
-                          <span className="text-xl font-serif text-[#8b0000]">
+                        <div className="mb-2 flex items-baseline justify-between">
+                          <h4 className="text-lg font-bold font-sans uppercase tracking-wide text-[#2c2c2c]">{item.name}</h4>
+                          <span className="font-serif text-xl text-[var(--accent)]">
                             {item.price.toLocaleString('tr-TR')} ₺
                           </span>
                         </div>
                         {item.description && (
-                          <p className="text-[#666] font-serif italic">{item.description}</p>
+                          <p className="font-serif italic text-[#666]">{item.description}</p>
                         )}
                         {item.ingredients && (
-                          <p className="text-[#888] font-serif italic text-sm mt-1"><span className="font-semibold not-italic">{t('public.ingredients')}:</span> {item.ingredients}</p>
+                          <p className="mt-1 font-serif text-sm italic text-[#888]"><span className="font-semibold not-italic">{t('public.ingredients')}:</span> {item.ingredients}</p>
                         )}
-                        <div className="flex flex-wrap items-center gap-2 mt-2">
-                          {item.calories && <span className="text-[10px] font-serif uppercase tracking-widest text-[#a855f7] border border-[#a855f7]/30 px-2 py-0.5 rounded-sm">{item.calories} {t('public.calories')}</span>}
-                          {item.containsAlcohol && <span className="text-[10px] font-serif uppercase tracking-widest text-[#e11d48] border border-[#e11d48]/30 px-2 py-0.5 rounded-sm">{t('public.containsAlcohol')}</span>}
-                          {item.containsPork && <span className="text-[10px] font-serif uppercase tracking-widest text-[#db2777] border border-[#db2777]/30 px-2 py-0.5 rounded-sm">{t('public.containsPork')}</span>}
+                        <div className="mt-2 flex flex-wrap items-center gap-2">
+                          {item.calories && <span className="rounded-sm border border-[#a855f7]/30 px-2 py-0.5 text-[10px] font-serif uppercase tracking-widest text-[#a855f7]">{item.calories} {t('public.calories')}</span>}
+                          {item.containsAlcohol && <span className="rounded-sm border border-[#e11d48]/30 px-2 py-0.5 text-[10px] font-serif uppercase tracking-widest text-[#e11d48]">{t('public.containsAlcohol')}</span>}
+                          {item.containsPork && <span className="rounded-sm border border-[#db2777]/30 px-2 py-0.5 text-[10px] font-serif uppercase tracking-widest text-[#db2777]">{t('public.containsPork')}</span>}
                           {item.dietaryTags && item.dietaryTags.split(',').map((tag: string, i: number) => (
-                              <span key={i} className="text-[10px] font-serif uppercase tracking-widest text-[#16a34a] border border-[#16a34a]/30 px-2 py-0.5 rounded-sm">{tag.trim()}</span>
+                              <span key={i} className="rounded-sm border border-[#16a34a]/30 px-2 py-0.5 text-[10px] font-serif uppercase tracking-widest text-[#16a34a]">{tag.trim()}</span>
                           ))}
                         </div>
+                        {item.allergens && (
+                          <p className="mt-1 font-serif text-xs italic text-[#a16207]">{t('public.allergens')}: {item.allergens}</p>
+                        )}
                       </div>
                     ))}
                   </div>
+
+                  {cat.children && cat.children.length > 0 && (
+                    <div className="mt-12 space-y-16">
+                      {cat.children.map((sub: any) => (
+                        <div key={sub.id}>
+                          <h4 className="mb-6 border-b border-[#e0e0e0] pb-2 font-serif text-2xl uppercase tracking-wide text-[#1a1a1a] opacity-80">{sub.name}</h4>
+                          <div className="space-y-8">
+                            {sub.items?.map((item: any) => (
+                              <div key={item.id} className="group">
+                                <div className="mb-2 flex items-baseline justify-between">
+                                  <h5 className="text-base font-bold font-sans uppercase tracking-wide text-[#2c2c2c]">{item.name}</h5>
+                                  <span className="font-serif text-lg text-[var(--accent)]">
+                                    {item.price.toLocaleString('tr-TR')} ₺
+                                  </span>
+                                </div>
+                                {item.description && (
+                                  <p className="font-serif text-sm italic text-[#666]">{item.description}</p>
+                                )}
+                                {item.ingredients && (
+                                  <p className="mt-1 font-serif text-xs italic text-[#888]"><span className="font-semibold not-italic">{t('public.ingredients')}:</span> {item.ingredients}</p>
+                                )}
+                                <div className="mt-2 flex flex-wrap items-center gap-2">
+                                  {item.calories && <span className="rounded-sm border border-[#a855f7]/30 px-2 py-0.5 text-[10px] font-serif uppercase tracking-widest text-[#a855f7]">{item.calories} {t('public.calories')}</span>}
+                                  {item.containsAlcohol && <span className="rounded-sm border border-[#e11d48]/30 px-2 py-0.5 text-[10px] font-serif uppercase tracking-widest text-[#e11d48]">{t('public.containsAlcohol')}</span>}
+                                  {item.containsPork && <span className="rounded-sm border border-[#db2777]/30 px-2 py-0.5 text-[10px] font-serif uppercase tracking-widest text-[#db2777]">{t('public.containsPork')}</span>}
+                                  {item.dietaryTags && item.dietaryTags.split(',').map((tag: string, i: number) => (
+                                      <span key={i} className="rounded-sm border border-[#16a34a]/30 px-2 py-0.5 text-[10px] font-serif uppercase tracking-widest text-[#16a34a]">{tag.trim()}</span>
+                                  ))}
+                                </div>
+                                {item.allergens && (
+                                  <p className="mt-1 font-serif text-xs italic text-[#a16207]">{t('public.allergens')}: {item.allergens}</p>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
          )}
          {restaurant.menus?.[0]?.updatedAt && (
-             <div className="text-center mt-12 text-sm font-serif italic text-[#888]">
+             <div className="mt-12 text-center font-serif text-sm italic text-[#888]">
                  Son Fiyat Güncelleme Tarihi: {new Date(restaurant.menus[0].updatedAt).toLocaleDateString('tr-TR')}
              </div>
          )}
-         
-         <div className="text-center mt-20">
-            <Button onClick={() => setIsBookingOpen(true)} className="bg-[#8b0000] hover:bg-[#6b0000] text-white px-12 py-6 text-lg font-bold tracking-widest uppercase rounded-sm">
-                Rezervasyon Yap
-            </Button>
+
+         <div className="mt-20 text-center">
+            {menuOnly ? (
+              <Button nativeButton={false} className="rounded-sm bg-[var(--accent)] px-12 py-6 text-lg font-bold uppercase tracking-widest text-white hover:bg-[var(--accent-hover)]" render={<Link href={`/r/${slug}?view=booking`} />}>
+                  {t('public.bookATable')}
+              </Button>
+            ) : (
+              <Button onClick={() => scrollToSection('reservations')} className="rounded-sm bg-[var(--accent)] px-12 py-6 text-lg font-bold uppercase tracking-widest text-white hover:bg-[var(--accent-hover)]">
+                  {t('public.bookATable')}
+              </Button>
+            )}
          </div>
       </section>
 
-      {/* Footer */}
-      <footer className="bg-[#1a1a1a] text-[#f4f4f4] py-24 text-center">
-         <div className="container mx-auto px-6">
-            <h2 className="text-4xl font-serif mb-12">{restaurant.name}</h2>
-            <div className="flex flex-col md:flex-row justify-center items-center gap-12 font-sans text-sm tracking-widest uppercase opacity-80">
-                <a href={`tel:${restaurant.contactPhone}`} className="hover:text-white transition-colors">T: {restaurant.contactPhone || "+90 850 000 00 00"}</a>
-                <a href={`mailto:${restaurant.contactEmail}`} className="hover:text-white transition-colors">E: {restaurant.contactEmail}</a>
-                <p>Istanbul, Turkey</p>
+      {menuOnly && (
+        <footer className="bg-[#1a1a1a] py-16 text-center text-[#f4f4f4]">
+          <div className="container mx-auto px-6">
+            <h2 className="mb-6 font-serif text-2xl">{restaurant.name}</h2>
+            {hasContactInfo && (
+              <div className="flex flex-col items-center justify-center gap-4 font-sans text-sm uppercase tracking-widest opacity-80 md:flex-row md:gap-8">
+                {restaurant.contactPhone && <a href={`tel:${restaurant.contactPhone}`} className="hover:text-white">{restaurant.contactPhone}</a>}
+                {restaurant.contactEmail && <a href={`mailto:${restaurant.contactEmail}`} className="hover:text-white">{restaurant.contactEmail}</a>}
+              </div>
+            )}
+            <div className="mt-10 border-t border-white/10 pt-6 text-xs opacity-50">
+              © {new Date().getFullYear()} {restaurant.name}
             </div>
-            <div className="mt-16 pt-8 border-t border-white/10 opacity-50 text-xs">
-                © 2026 {restaurant.name}. Tüm hakları saklıdır.
+          </div>
+        </footer>
+      )}
+
+      {!menuOnly && (
+      <>
+      {/* Footer */}
+      <footer className="bg-[#1a1a1a] py-24 text-center text-[#f4f4f4]">
+         <div className="container mx-auto px-6">
+            <h2 className="mb-12 font-serif text-4xl">{restaurant.name}</h2>
+            {hasContactInfo && (
+              <div className="flex flex-col items-center justify-center gap-6 font-sans text-sm uppercase tracking-widest opacity-80 md:flex-row md:gap-12">
+                  {restaurant.contactPhone && <a href={`tel:${restaurant.contactPhone}`} className="transition-colors hover:text-white">{restaurant.contactPhone}</a>}
+                  {restaurant.contactEmail && <a href={`mailto:${restaurant.contactEmail}`} className="transition-colors hover:text-white">{restaurant.contactEmail}</a>}
+              </div>
+            )}
+            <div className="mt-16 border-t border-white/10 pt-8 text-xs opacity-50">
+                © {new Date().getFullYear()} {restaurant.name}
             </div>
          </div>
       </footer>
 
-      {/* Reservation Dialog */}
-      <Dialog open={isBookingOpen} onOpenChange={setIsBookingOpen}>
-        <DialogContent className="sm:max-w-[550px] bg-white border border-[#e0e0e0] text-[#2c2c2c] p-0 overflow-hidden rounded-sm shadow-2xl">
-          <div className="p-8 md:p-12">
-            <div className="flex justify-between items-center mb-8">
-              <h2 className="text-3xl font-serif text-[#1a1a1a]">Rezervasyon</h2>
-              <button onClick={() => setIsBookingOpen(false)} className="text-[#888] hover:text-[#1a1a1a]"><X className="w-6 h-6" /></button>
-            </div>
-
-            {isBookingSuccess ? (
-              <div className="text-center py-16 animate-in zoom-in">
-                <CheckCircle2 className="w-20 h-20 text-[#8b0000] mx-auto mb-6" />
-                <h3 className="text-2xl font-serif mb-2 text-[#1a1a1a]">Rezervasyon Onaylandı</h3>
-                <p className="text-[#666] font-sans">Sizi ağırlamaktan mutluluk duyacağız.</p>
-              </div>
-            ) : isWaitlistSuccess ? (
-              <div className="text-center py-16 animate-in zoom-in">
-                <CheckCircle2 className="w-20 h-20 text-[#8b0000] mx-auto mb-6" />
-                <h3 className="text-2xl font-serif mb-2 text-[#1a1a1a]">Bekleme Listesine Alındınız</h3>
-                <p className="text-[#666] font-sans">Masa uygun olduğunda size haber vereceğiz.</p>
-              </div>
-            ) : (
-              <form onSubmit={handleBooking} className="space-y-6">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label className="text-xs uppercase font-bold tracking-widest text-[#555]">Tarih</Label>
-                    <Input 
-                      type="date" 
-                      required 
-                      value={selectedDate} 
-                      onChange={e => setSelectedDate(e.target.value)}
-                      className="bg-[#f9f9f9] border-[#e0e0e0] text-[#2c2c2c] rounded-sm h-12 focus-visible:ring-1 focus-visible:ring-[#8b0000]" 
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label className="text-xs uppercase font-bold tracking-widest text-[#555]">Saat</Label>
-                    <Input 
-                      type="time" 
-                      required 
-                      value={selectedTime} 
-                      onChange={e => setSelectedTime(e.target.value)}
-                      className="bg-[#f9f9f9] border-[#e0e0e0] text-[#2c2c2c] rounded-sm h-12 focus-visible:ring-1 focus-visible:ring-[#8b0000]" 
-                    />
-                  </div>
-                </div>
-
-                <div className="space-y-6 pt-6 border-t border-[#e0e0e0]">
-                  {restaurant.customization?.reservationInfoText && (
-                      <div className="p-4 bg-[#f4f4f4] text-sm text-[#555] font-sans rounded-sm space-y-2 [&>p]:mb-2 [&>a]:text-[#8b0000] [&>a]:underline" 
-                           dangerouslySetInnerHTML={{ __html: restaurant.customization.reservationInfoText }} />
-                  )}
-                  {restaurant.customization?.reservationWarningText && (
-                      <div className="p-4 bg-[#fff0f0] border-l-2 border-[#8b0000] text-sm text-[#8b0000] font-sans font-medium rounded-r-sm space-y-2 [&>p]:mb-2 [&>a]:underline" 
-                           dangerouslySetInnerHTML={{ __html: restaurant.customization.reservationWarningText }} />
-                  )}
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label className="text-xs uppercase font-bold tracking-widest text-[#555]">Kişi Sayısı</Label>
-                      <Input 
-                        type="number" min="1" required 
-                        value={resForm.guestCount} onChange={e => setResForm({...resForm, guestCount: e.target.value})}
-                        className="bg-[#f9f9f9] border-[#e0e0e0] text-[#2c2c2c] rounded-sm h-12 focus-visible:ring-1 focus-visible:ring-[#8b0000]" 
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label className="text-xs uppercase font-bold tracking-widest text-[#555]">Ad Soyad</Label>
-                      <Input 
-                        required 
-                        value={resForm.customerName} onChange={e => setResForm({...resForm, customerName: e.target.value})}
-                        className="bg-[#f9f9f9] border-[#e0e0e0] text-[#2c2c2c] rounded-sm h-12 focus-visible:ring-1 focus-visible:ring-[#8b0000]" 
-                      />
-                    </div>
-                  </div>
-                  
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label className="text-xs uppercase font-bold tracking-widest text-[#555]">Telefon</Label>
-                      <Input 
-                        required 
-                        type="tel"
-                        value={resForm.customerPhone} onChange={e => setResForm({...resForm, customerPhone: e.target.value})}
-                        className="bg-[#f9f9f9] border-[#e0e0e0] text-[#2c2c2c] rounded-sm h-12 focus-visible:ring-1 focus-visible:ring-[#8b0000]" 
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label className="text-xs uppercase font-bold tracking-widest text-[#555]">E-posta</Label>
-                      <Input 
-                        type="email" 
-                        value={resForm.customerEmail} onChange={e => setResForm({...resForm, customerEmail: e.target.value})}
-                        className="bg-[#f9f9f9] border-[#e0e0e0] text-[#2c2c2c] rounded-sm h-12 focus-visible:ring-1 focus-visible:ring-[#8b0000]" 
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                {checkingDay ? (
-                  <div className="p-4 bg-[#f4f4f4] border-l-2 border-[#888] animate-pulse text-sm font-serif text-[#555]">
-                    Müsaitlik kontrol ediliyor...
-                  </div>
-                ) : dayStatus?.daySetting?.isFullyBooked ? (
-                  <div className="p-4 bg-[#fff3e0] border-l-2 border-[#ff9800] text-sm font-sans flex items-start gap-3">
-                    <Clock className="w-5 h-5 shrink-0 text-[#ff9800]" />
-                    <div>
-                      <strong className="block mb-1 text-[#e65100]">Tamamen Dolu (Bekleme Listesi Açık)</strong>
-                      Bu tarih için rezervasyonlarımız dolmuştur ancak bekleme listesine katılabilirsiniz.
-                    </div>
-                  </div>
-                ) : dayStatus?.daySetting?.isReservationEnabled === false ? (
-                  <div className="p-4 bg-[#ffebee] border-l-2 border-[#f44336] text-sm font-sans flex items-start gap-3">
-                    <X className="w-5 h-5 shrink-0 text-[#f44336]" />
-                    <div>
-                      <strong className="block mb-1 text-[#b71c1c]">Rezervasyonlar Kapalı</strong>
-                      Maalesef bu tarih için rezervasyon kabul edemiyoruz.
-                    </div>
-                  </div>
-                ) : dayStatus?.daySetting?.autoConfirm ? (
-                  <div className="p-4 bg-[#e8f5e9] border-l-2 border-[#4caf50] text-sm font-sans flex items-start gap-3">
-                    <CheckCircle2 className="w-5 h-5 shrink-0 text-[#4caf50]" />
-                    <div>
-                      <strong className="block mb-1 text-[#1b5e20]">Anında Rezervasyon</strong>
-                      Rezervasyonunuz otomatik olarak onaylanacaktır.
-                    </div>
-                  </div>
-                ) : dayStatus ? (
-                  <div className="p-4 bg-[#e3f2fd] border-l-2 border-[#2196f3] text-sm font-sans flex items-start gap-3">
-                    <CalendarIcon className="w-5 h-5 shrink-0 text-[#2196f3]" />
-                    <div>
-                      <strong className="block mb-1 text-[#0d47a1]">Onay Sırası</strong>
-                      Bu tarih için ekibimiz manuel onay vermektedir. Size dönüş yapacağız.
-                    </div>
-                  </div>
-                ) : null}
-
-                <Button 
-                  type="submit" 
-                  disabled={checkingDay || dayStatus?.daySetting?.isReservationEnabled === false} 
-                  className="w-full h-14 bg-[#8b0000] hover:bg-[#6b0000] text-white font-bold tracking-widest uppercase rounded-sm mt-8 disabled:opacity-50"
-                >
-                  {dayStatus?.daySetting?.isFullyBooked ? 'Bekleme Listesine Katıl' : 'Rezervasyon Talebi Gönder'}
-                </Button>
-              </form>
-            )}
+      {/* Reservation Section */}
+      <section id="reservations" className="py-32 px-6 lg:px-12 bg-[#f4f4f4] border-t border-[#e0e0e0]">
+        <div className="container mx-auto max-w-3xl">
+          <div className="text-center mb-16">
+            <h3 className="mb-4 text-xl font-sans font-bold uppercase tracking-widest text-[var(--accent)]">{t('public.bookATable')}</h3>
+            <h2 className="font-serif text-4xl text-[#1a1a1a] md:text-5xl">{t('public.reservations')}</h2>
           </div>
-        </DialogContent>
-      </Dialog>
+
+          {isBookingSuccess ? (
+            <div className="text-center py-16 animate-in zoom-in bg-white shadow-xl rounded-2xl border border-[#e0e0e0]">
+              <CheckCircle2 className="w-20 h-20 text-[#4caf50] mx-auto mb-6" />
+              <h3 className="text-3xl font-serif mb-4 text-[#1a1a1a]">{isPossiblyFullyBooked ? 'Request Received' : 'Reservation Confirmed'}</h3>
+              <p className="text-[#555] font-sans text-lg">We look forward to welcoming you.</p>
+              {isPossiblyFullyBooked && (
+                <div className="mx-auto mt-8 max-w-md rounded-xl border-l-4 border-[#ff9800] bg-[#fff3e0] p-4 text-left text-sm font-sans text-[#8a5a00]">
+                  Heads up — we may be fully booked around this time, so your table hasn&apos;t been assigned yet. Our team will confirm by phone shortly.
+                </div>
+              )}
+            </div>
+          ) : isWaitlistSuccess ? (
+            <div className="text-center py-16 animate-in zoom-in bg-white shadow-xl rounded-2xl border border-[#e0e0e0]">
+              <CheckCircle2 className="w-20 h-20 text-[#4caf50] mx-auto mb-6" />
+              <h3 className="text-3xl font-serif mb-4 text-[#1a1a1a]">Waitlist Joined</h3>
+              <p className="text-[#555] font-sans text-lg">We will notify you if a table becomes available.</p>
+            </div>
+          ) : (
+            <form onSubmit={handleBooking} className="space-y-10 bg-white p-10 md:p-14 shadow-2xl rounded-3xl border border-[#e0e0e0]">
+              {restaurant.customization?.reservationInfoText && (
+                  <div className="p-6 bg-[#fcfcfc] border border-[#e0e0e0] rounded-xl text-base text-[#555] font-sans space-y-2 [&>p]:mb-2 [&>a]:text-[var(--accent)] [&>a]:underline mb-8"
+                       dangerouslySetInnerHTML={{ __html: restaurant.customization.reservationInfoText }} />
+              )}
+              {restaurant.customization?.reservationWarningText && (
+                  <div className="p-6 bg-[#fff0f0] border-l-4 border-[var(--accent)] rounded-r-xl text-base text-[var(--accent)] font-sans font-medium space-y-2 [&>p]:mb-2 [&>a]:underline mb-8"
+                       dangerouslySetInnerHTML={{ __html: restaurant.customization.reservationWarningText }} />
+              )}
+
+              <div className="space-y-5">
+                <Label className="text-sm uppercase font-bold tracking-widest text-[#555]">Date</Label>
+                <div className="grid grid-cols-3 gap-3">
+                  {week.map(d => (
+                    <button key={d.value} type="button" onClick={() => setSelectedDate(d.value)} className={cn("flex h-16 flex-col items-center justify-center rounded-xl border-2 transition-all", selectedDate === d.value ? "border-[var(--accent)] bg-[var(--accent)] text-white" : "border-[#e0e0e0] bg-[#f9f9f9] hover:border-[var(--accent)]/40")}>
+                      <span className="text-[9px] font-bold uppercase opacity-70">{d.label}</span>
+                      <span className="text-sm font-bold">{d.full}</span>
+                    </button>
+                  ))}
+                </div>
+                <div className="space-y-2">
+                  <span className="text-[10px] font-bold uppercase tracking-widest text-[#999]">Also available</span>
+                  <div className="grid grid-cols-4 gap-3">
+                    {weekend.map(d => (
+                      <button key={d.value} type="button" onClick={() => setSelectedDate(d.value)} className={cn("flex h-16 flex-col items-center justify-center rounded-xl border-2 transition-all", selectedDate === d.value ? "border-[var(--accent)] bg-[var(--accent)] text-white" : "border-[#e0e0e0] bg-[#f9f9f9] hover:border-[var(--accent)]/40")}>
+                        <span className="text-[9px] font-bold uppercase opacity-70">{d.label}</span>
+                        <span className="text-sm font-bold">{d.full}</span>
+                      </button>
+                    ))}
+                    <div className="relative">
+                      <input type="date" ref={dateInputRef} value={selectedDate} onChange={(e) => setSelectedDate(e.target.value)} className="sr-only" />
+                      {(() => {
+                        const isCustom = !week.find(d => d.value === selectedDate) && !weekend.find(d => d.value === selectedDate);
+                        return (
+                          <button type="button" onClick={() => dateInputRef.current?.showPicker()} className={cn("flex h-16 w-full flex-col items-center justify-center rounded-xl border-2 transition-all", isCustom ? "border-[var(--accent)] bg-[var(--accent)] text-white" : "border-[#e0e0e0] bg-[#f9f9f9] hover:border-[var(--accent)]/40")}>
+                            <CalendarIcon className="mb-1 h-4 w-4" />
+                            <span className="text-[9px] font-bold uppercase">{isCustom ? new Date(`${selectedDate}T00:00:00`).toLocaleDateString([], { month: 'short', day: 'numeric' }) : 'Custom'}</span>
+                          </button>
+                        );
+                      })()}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                <Label className="text-sm uppercase font-bold tracking-widest text-[#555]">Time</Label>
+                <div className="grid grid-cols-4 gap-2">
+                  {[...times.lunch, ...times.dinner].map(tm => (
+                    <button key={tm} type="button" onClick={() => setSelectedTime(tm)} className={cn("h-11 rounded-lg border-2 text-sm font-bold transition-all", selectedTime === tm ? "border-[var(--accent)] bg-[var(--accent)] text-white" : "border-[#e0e0e0] bg-[#f9f9f9] hover:border-[var(--accent)]/40")}>{tm}</button>
+                  ))}
+                </div>
+                <Input
+                  type="time"
+                  required
+                  value={selectedTime}
+                  onChange={e => setSelectedTime(e.target.value)}
+                  className="bg-[#f9f9f9] border-[#e0e0e0] text-[#2c2c2c] rounded-xl h-14 px-4 text-base focus-visible:ring-2 focus-visible:ring-[var(--accent)] transition-all"
+                />
+              </div>
+
+              {checkingDay ? (
+                <div className="flex items-center gap-3 rounded-r-xl border-l-4 border-[#888] bg-[#f4f4f4] p-6 font-serif text-base text-[#555]">
+                  <span className="h-4 w-4 animate-spin rounded-full border-2 border-[#bbb] border-t-[#555]" /> Checking availability for <strong>{selectedDateLabel}</strong>...
+                </div>
+              ) : dayStatus?.daySetting?.isFullyBooked ? (
+                <div className="rounded-r-xl border-l-4 border-[#ff9800] bg-[#fff3e0] p-6 text-base font-sans flex items-start gap-4">
+                  <Clock className="w-6 h-6 shrink-0 text-[#ff9800]" />
+                  <div>
+                    <span className="mb-1 block text-xs font-bold uppercase tracking-widest text-[#ff9800]">{selectedDateLabel}</span>
+                    <strong className="block mb-2 text-[#e65100] text-lg">Fully Booked (Waitlist Open)</strong>
+                    We are fully booked for reservations on this day, but you can join our waitlist.
+                  </div>
+                </div>
+              ) : dayStatus?.daySetting?.isReservationEnabled === false ? (
+                <div className="rounded-r-xl border-l-4 border-[#f44336] bg-[#ffebee] p-6 text-base font-sans flex items-start gap-4">
+                  <X className="w-6 h-6 shrink-0 text-[#f44336]" />
+                  <div>
+                    <span className="mb-1 block text-xs font-bold uppercase tracking-widest text-[#f44336]">{selectedDateLabel}</span>
+                    <strong className="block mb-2 text-[#b71c1c] text-lg">Reservations Closed</strong>
+                    Unfortunately, we&apos;re not accepting reservations for this day.
+                  </div>
+                </div>
+              ) : dayStatus?.daySetting?.autoConfirm ? (
+                <div className="rounded-r-xl border-l-4 border-[#4caf50] bg-[#e8f5e9] p-6 text-base font-sans flex items-start gap-4">
+                  <CheckCircle2 className="w-6 h-6 shrink-0 text-[#4caf50]" />
+                  <div>
+                    <span className="mb-1 block text-xs font-bold uppercase tracking-widest text-[#4caf50]">{selectedDateLabel}</span>
+                    <strong className="block mb-2 text-[#1b5e20] text-lg">Immediate Booking</strong>
+                    Your reservation will be confirmed automatically.
+                  </div>
+                </div>
+              ) : dayStatus ? (
+                <div className="rounded-r-xl border-l-4 border-[#2196f3] bg-[#e3f2fd] p-6 text-base font-sans flex items-start gap-4">
+                  <CalendarIcon className="w-6 h-6 shrink-0 text-[#2196f3]" />
+                  <div>
+                    <span className="mb-1 block text-xs font-bold uppercase tracking-widest text-[#2196f3]">{selectedDateLabel}</span>
+                    <strong className="block mb-2 text-[#0d47a1] text-lg">Confirmation Queue</strong>
+                    This date requires manual staff review. You&apos;ll receive a notification.
+                  </div>
+                </div>
+              ) : null}
+
+              <div className="space-y-8 pt-8 border-t border-[#e0e0e0]">
+                <div className="grid grid-cols-1 gap-8 sm:grid-cols-2">
+                  <div className="space-y-3">
+                    <Label className="text-sm uppercase font-bold tracking-widest text-[#555]">Guest Count</Label>
+                    <Input
+                      type="number" min="1" required
+                      value={resForm.guestCount} onChange={e => setResForm({...resForm, guestCount: e.target.value})}
+                      className="bg-[#f9f9f9] border-[#e0e0e0] text-[#2c2c2c] rounded-xl h-14 px-4 text-base focus-visible:ring-2 focus-visible:ring-[var(--accent)] transition-all"
+                    />
+                  </div>
+                  <div className="space-y-3">
+                    <Label className="text-sm uppercase font-bold tracking-widest text-[#555]">Full Name</Label>
+                    <Input
+                      required
+                      value={resForm.customerName} onChange={e => setResForm({...resForm, customerName: e.target.value})}
+                      className="bg-[#f9f9f9] border-[#e0e0e0] text-[#2c2c2c] rounded-xl h-14 px-4 text-base focus-visible:ring-2 focus-visible:ring-[var(--accent)] transition-all"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 gap-8 sm:grid-cols-2">
+                  <div className="space-y-3">
+                    <Label className="text-sm uppercase font-bold tracking-widest text-[#555]">Phone Number</Label>
+                    <Input
+                      required
+                      type="tel"
+                      value={resForm.customerPhone} onChange={e => setResForm({...resForm, customerPhone: e.target.value})}
+                      className="bg-[#f9f9f9] border-[#e0e0e0] text-[#2c2c2c] rounded-xl h-14 px-4 text-base focus-visible:ring-2 focus-visible:ring-[var(--accent)] transition-all"
+                    />
+                  </div>
+                  <div className="space-y-3">
+                    <Label className="text-sm uppercase font-bold tracking-widest text-[#555]">Email Address</Label>
+                    <Input
+                      type="email"
+                      value={resForm.customerEmail} onChange={e => setResForm({...resForm, customerEmail: e.target.value})}
+                      className="bg-[#f9f9f9] border-[#e0e0e0] text-[#2c2c2c] rounded-xl h-14 px-4 text-base focus-visible:ring-2 focus-visible:ring-[var(--accent)] transition-all"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <Button
+                type="submit"
+                disabled={checkingDay || dayStatus?.daySetting?.isReservationEnabled === false}
+                className="w-full h-16 bg-[var(--accent)] hover:bg-[var(--accent-hover)] text-white font-bold tracking-widest uppercase rounded-xl mt-8 disabled:opacity-50 text-lg transition-all hover:scale-[1.02]"
+              >
+                {dayStatus?.daySetting?.isFullyBooked ? 'Join Waitlist' : 'Request Table'}
+              </Button>
+            </form>
+          )}
+        </div>
+      </section>
+      </>
+      )}
     </div>
   );
 }

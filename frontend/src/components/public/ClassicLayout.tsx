@@ -1,34 +1,40 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { useParams } from 'next/navigation';
+import Link from 'next/link';
 import { useTranslation } from "@/i18n/provider";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { Utensils, Calendar as CalendarIcon, Clock, Users, ChevronRight, Star, ArrowLeft, MapPin, Phone, Info, MessageSquare, Sparkles, CheckCircle2, Ticket, XCircle, Flame, Leaf, Hourglass } from 'lucide-react';
+import { Utensils, Calendar as CalendarIcon, Clock, ChevronRight, ChevronDown, ArrowLeft, MapPin, Phone, Info, Sparkles, CheckCircle2, XCircle, Flame, Leaf, Hourglass, AlertTriangle } from 'lucide-react';
 import axios from 'axios';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from '@/components/ui/dialog';
+import { LanguageSwitcher } from '@/components/LanguageSwitcher';
+import { getDaySuggestions, getTimeSuggestions } from '@/lib/reservationSuggestions';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || (typeof window !== 'undefined' ? `${window.location.protocol}//${window.location.hostname}:3000/api` : 'http://localhost:3000/api');
 
+const HERO_IMAGE_FALLBACK = 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&q=80&w=1600';
+const ABOUT_IMAGE = 'https://images.unsplash.com/photo-1550966871-3ed3cdb5ed0c?auto=format&fit=crop&q=80&w=1200';
+const GALLERY_IMAGES = [
+  'https://images.unsplash.com/photo-1424847651672-bf20a4b0982b?auto=format&fit=crop&q=80&w=800',
+  'https://images.unsplash.com/photo-1571997478779-2adcbbe9ab2f?auto=format&fit=crop&q=80&w=800',
+  'https://images.unsplash.com/photo-1590846406792-0adc7f938f1d?auto=format&fit=crop&q=80&w=800',
+];
+
 type ViewState = 'welcome' | 'menu' | 'booking' | 'success';
 
-export default function ClassicLayout({ slug, initialRestaurant }: { slug: string, initialRestaurant: any }) {
+export default function ClassicLayout({ slug, initialRestaurant, initialView = 'welcome', menuOnly = false }: { slug: string, initialRestaurant: any, initialView?: string, menuOnly?: boolean }) {
   const { t } = useTranslation();
-  const [restaurant, setRestaurant] = useState<any>(initialRestaurant);
-  const [loading, setLoading] = useState(false);
-  const [view, setView] = useState<ViewState>('welcome');
-  
-  // Day Status Cache
+  const restaurant = initialRestaurant;
+  const [view, setView] = useState<ViewState>(menuOnly ? 'menu' : (initialView as ViewState));
+
   const [dayStatus, setDayStatus] = useState<any>(null);
   const [checkingDay, setCheckingDay] = useState(false);
   const [isWaitlistSuccess, setIsWaitlistSuccess] = useState(false);
+  const [isPossiblyFullyBooked, setIsPossiblyFullyBooked] = useState(false);
 
   const [resForm, setResForm] = useState({
     customerName: '',
@@ -44,24 +50,6 @@ export default function ClassicLayout({ slug, initialRestaurant }: { slug: strin
   const [selectedTime, setSelectedTime] = useState('19:30');
   const dateInputRef = useRef<HTMLInputElement>(null);
 
-  useEffect(() => {
-    setRestaurant(initialRestaurant);
-  }, [initialRestaurant]);
-
-  useEffect(() => {
-    if (view === 'booking') checkDayStatus(selectedDate);
-  }, [selectedDate, view]);
-
-  const fetchRestaurant = async () => {
-    // Kept for refresh purposes if needed, but not initially used.
-    try {
-      const res = await axios.get(`${API_URL}/public/restaurant/${slug}`);
-      setRestaurant(res.data.data);
-    } catch (err) {
-      console.error(err);
-    }
-  };
-
   const checkDayStatus = async (date: string) => {
       try {
           setCheckingDay(true);
@@ -76,10 +64,14 @@ export default function ClassicLayout({ slug, initialRestaurant }: { slug: strin
       }
   };
 
+  useEffect(() => {
+    if (view === 'booking') checkDayStatus(selectedDate);
+  }, [selectedDate, view]);
+
   const handleBooking = async (e: React.FormEvent) => {
     e.preventDefault();
     const combinedDateTime = new Date(`${selectedDate}T${selectedTime}:00+03:00`);
-    
+
     if (combinedDateTime < new Date()) {
       toast.error('Cannot create reservations for the past');
       return;
@@ -109,14 +101,15 @@ export default function ClassicLayout({ slug, initialRestaurant }: { slug: strin
     }
 
     try {
-      await axios.post(`${API_URL}/reservations`, 
-        { 
-          ...resForm, 
+      const res = await axios.post(`${API_URL}/reservations`,
+        {
+          ...resForm,
           guestCount: parseInt(resForm.guestCount),
           startTime: combinedDateTime.toISOString()
         },
         { headers: { 'X-Restaurant-ID': restaurant.id } }
       );
+      setIsPossiblyFullyBooked(!!res.data?.data?.possiblyFullyBooked);
       setView('success');
       setResForm({ customerName: '', customerPhone: '', customerEmail: '', guestCount: '2', notes: '' });
     } catch (err: any) {
@@ -124,61 +117,7 @@ export default function ClassicLayout({ slug, initialRestaurant }: { slug: strin
     }
   };
 
-  const getDaySuggestions = () => {
-    const today = new Date();
-    today.setHours(0,0,0,0);
-    
-    // Top 3 days
-    const week = [];
-    for (let i = 0; i < 3; i++) {
-        const d = new Date(today);
-        d.setDate(today.getDate() + i);
-        week.push({
-            label: i === 0 ? 'Today' : i === 1 ? 'Tomorrow' : d.toLocaleDateString([], { weekday: 'short' }),
-            value: d.toISOString().split('T')[0],
-            full: d.toLocaleDateString([], { month: 'short', day: 'numeric' })
-        });
-    }
-
-    // Weekend days (Fri, Sat, Sun)
-    const getWeekendSet = (offsetDays = 0) => {
-        const set = [];
-        for (let targetDay of [5, 6, 0]) { // Fri, Sat, Sun
-            let d = new Date(today);
-            let diff = targetDay - d.getDay();
-            if (diff < 0) diff += 7; // Target is next week
-            d.setDate(d.getDate() + diff + offsetDays);
-            set.push({
-                label: d.toLocaleDateString([], { weekday: 'short' }),
-                value: d.toISOString().split('T')[0],
-                full: d.toLocaleDateString([], { month: 'short', day: 'numeric' })
-            });
-        }
-        return set;
-    };
-
-    let weekend = getWeekendSet(0);
-    const weekValues = week.map(w => w.value);
-    const hasOverlap = weekend.some(we => weekValues.includes(we.value));
-
-    // If any of Top 3 overlap with the upcoming weekend, show the weekend AFTER that
-    if (hasOverlap) {
-        weekend = getWeekendSet(7);
-    }
-
-    return { week, weekend };
-  };
-
-  const getTimeSuggestions = () => {
-      return {
-          lunch: ['12:30', '13:30', '14:00'],
-          dinner: ['19:00', '20:00', '21:00', '22:00']
-      };
-  };
-
-  if (loading) return <div className="min-h-screen flex items-center justify-center bg-white"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-slate-900"></div></div>;
-  if (!restaurant) return <div className="min-h-screen flex items-center justify-center bg-slate-50 text-slate-500 font-medium">Restaurant not found.</div>;
-
+  if (!restaurant) return <div className="min-h-screen flex items-center justify-center bg-neutral-50 text-neutral-500 font-medium">Restaurant not found.</div>;
 
   const getWaitTimeText = () => {
       const s = restaurant?.waitTimeConfig;
@@ -199,11 +138,10 @@ export default function ClassicLayout({ slug, initialRestaurant }: { slug: strin
   };
 
   const { week, weekend } = getDaySuggestions();
-
   const times = getTimeSuggestions();
+  const selectedDateLabel = new Date(`${selectedDate}T00:00:00`).toLocaleDateString([], { weekday: 'long', month: 'long', day: 'numeric' });
 
   const customization = restaurant?.customization || {
-      layoutStyle: 'CLASSIC_LIST',
       typography: 'SANS',
       colorPalette: 'OBSIDIAN',
       primaryColor: '#0f172a',
@@ -212,18 +150,16 @@ export default function ClassicLayout({ slug, initialRestaurant }: { slug: strin
       showLegal: false,
   };
 
-  // Map Typography
   const getFontClass = (type: string) => {
       switch(type) {
           case 'SERIF': return 'font-serif tracking-tight';
-          case 'MONO': return 'font-mono uppercase tracking-widest';
+          case 'MONO': return 'font-mono tracking-tight';
           case 'SANS':
           default: return 'font-sans';
       }
   };
   const fontClass = getFontClass(customization.typography);
 
-  // Map Palette
   const getPalette = (preset: string) => {
       switch(preset) {
           case 'EARTH': return { bg: '#fdfbf7', text: '#292524', primary: '#5c4033', accent: '#d6d3d1' };
@@ -233,103 +169,220 @@ export default function ClassicLayout({ slug, initialRestaurant }: { slug: strin
       }
   };
   const palette = getPalette(customization.colorPalette);
-  
-  // Override with custom hex if provided
-  const primaryColor = customization.primaryColor !== '#0f172a' ? customization.primaryColor : palette.primary;
-  const isModern = customization.layoutStyle === 'EDITORIAL_IMAGE';
+
+  const primaryColor = customization.primaryColor && customization.primaryColor !== '#0f172a' ? customization.primaryColor : palette.primary;
+
+  const hasContactInfo = Boolean(restaurant.contactPhone || restaurant.contactEmail);
+
+  const renderMenuItem = (item: any) => (
+    <div key={item.id} className="group flex flex-col overflow-hidden rounded-2xl border border-black/[0.06] bg-white transition-all hover:shadow-lg hover:shadow-black/5">
+      {item.imageUrl && (
+        <div className="aspect-[4/3] w-full overflow-hidden bg-neutral-100">
+          <img src={item.imageUrl} alt={item.name} loading="lazy" className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" />
+        </div>
+      )}
+      <div className="flex flex-1 flex-col gap-2 p-5">
+        <div className="flex items-start justify-between gap-4">
+          <h3 className="text-base font-semibold tracking-tight text-neutral-900">{item.name}</h3>
+          <span className="shrink-0 text-sm font-semibold text-[var(--primary)]">
+            {item.price.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}
+          </span>
+        </div>
+        {item.description && <p className="text-sm leading-relaxed text-neutral-500">{item.description}</p>}
+        {item.ingredients && <p className="text-xs leading-relaxed text-neutral-400"><span className="font-medium text-neutral-500">{t('public.ingredients')}:</span> {item.ingredients}</p>}
+        {(item.spiceLevel > 0 || item.calories || item.containsAlcohol || item.containsPork || item.dietaryTags) && (
+          <div className="mt-1 flex flex-wrap items-center gap-1.5">
+            {item.spiceLevel > 0 && <span title={`Spice Level ${item.spiceLevel}`} className="rounded-full bg-red-50 p-1 text-red-600"><Flame className="h-3 w-3" /></span>}
+            {item.calories && <span className="rounded-full bg-orange-50 px-2 py-0.5 text-[10px] font-medium text-orange-700">{item.calories} {t('public.calories')}</span>}
+            {item.containsAlcohol && <span className="rounded-full bg-rose-50 px-2 py-0.5 text-[10px] font-medium text-rose-700">{t('public.containsAlcohol')}</span>}
+            {item.containsPork && <span className="rounded-full bg-pink-50 px-2 py-0.5 text-[10px] font-medium text-pink-700">{t('public.containsPork')}</span>}
+            {item.dietaryTags && item.dietaryTags.split(',').map((tag: string, i: number) => (
+              <span key={i} title={tag.trim()} className="flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-medium text-emerald-700"><Leaf className="h-2.5 w-2.5" /> {tag.trim()}</span>
+            ))}
+          </div>
+        )}
+        {item.allergens && (
+          <p className="mt-1 flex items-start gap-1 text-[10px] font-medium leading-relaxed text-amber-700">
+            <AlertTriangle className="mt-0.5 h-3 w-3 shrink-0" /> {t('public.allergens')}: {item.allergens}
+          </p>
+        )}
+      </div>
+    </div>
+  );
 
   return (
-    <div 
+    <div
         className={cn("min-h-screen selection:bg-[var(--primary)] selection:text-white transition-colors duration-500", fontClass)}
-        style={{ 
-            '--primary': primaryColor, 
-            '--primary-hover': primaryColor + 'cc',
+        style={{
+            '--primary': primaryColor,
+            '--primary-hover': primaryColor + 'e6',
             backgroundColor: palette.bg,
             color: palette.text
         } as React.CSSProperties}
     >
       {customization.announcementText && (
-          <div className="w-full bg-[var(--primary)] text-white text-xs font-bold text-center py-2 px-4 shadow-md sticky top-0 z-50">
+          <div className="w-full bg-[var(--primary)] text-white text-xs font-medium text-center py-2 px-4 sticky top-0 z-50">
               {customization.announcementText}
           </div>
       )}
 
       {/* Welcome View */}
       {view === 'welcome' && (
-        <div className="relative h-screen w-full flex flex-col items-center justify-center overflow-hidden">
-          <div className="absolute inset-0 z-0">
-            <img 
-              src={restaurant.logoUrl || "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&q=80&w=1600"} 
-              className="w-full h-full object-cover"
-              alt={restaurant.name}
-            />
-            <div className="absolute inset-0 bg-black/60 backdrop-blur-[2px]"></div>
-          </div>
+        <div className="animate-in fade-in duration-500">
+          <section className="relative h-screen w-full flex flex-col items-center justify-center overflow-hidden">
+            <div className="absolute inset-0 z-0">
+              <img
+                src={restaurant.logoUrl || HERO_IMAGE_FALLBACK}
+                className="w-full h-full object-cover"
+                alt={restaurant.name}
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-black/10"></div>
+            </div>
 
-          <div className="relative z-10 text-center px-6 max-w-4xl animate-in fade-in zoom-in duration-700">
-            
-            <div className="flex flex-wrap justify-center gap-2 mb-6">
-                <Badge className="bg-white/20 hover:bg-white/30 text-white border-0 backdrop-blur-md px-4 py-1 text-sm tracking-widest uppercase font-black">
-                    <Sparkles className="w-3 h-3 mr-2" /> Welcome to Excellence
+            <div className="relative z-10 flex flex-col items-center px-6 text-center animate-in fade-in slide-in-from-bottom-4 duration-700">
+              <div className="mb-6 flex flex-wrap justify-center gap-2">
+                <Badge className="bg-white/15 text-white border-0 backdrop-blur-md px-3 py-1 text-[11px] font-medium tracking-wide">
+                  <Sparkles className="mr-1.5 h-3 w-3" /> {restaurant.name}
                 </Badge>
                 {getWaitTimeText() && (
-                    <Badge className="bg-amber-500/80 hover:bg-amber-500 text-white border-0 backdrop-blur-md px-4 py-1 text-sm tracking-widest uppercase font-black">
-                        <Hourglass className="w-3 h-3 mr-2" /> Walk-in: {getWaitTimeText()}
-                    </Badge>
+                  <Badge className="bg-amber-500/90 text-white border-0 backdrop-blur-md px-3 py-1 text-[11px] font-medium tracking-wide">
+                    <Hourglass className="mr-1.5 h-3 w-3" /> {getWaitTimeText()}
+                  </Badge>
                 )}
-            </div>
-            <h1 className="text-6xl md:text-8xl font-black text-white tracking-tighter mb-8 leading-none">
+              </div>
+              <h1 className="text-5xl md:text-7xl font-semibold text-white tracking-tight mb-6 leading-[1.05]">
                 {restaurant.name}
-            </h1>
-            <p className="text-xl md:text-2xl text-white/80 font-medium mb-12 max-w-2xl mx-auto leading-relaxed italic">
-                "Where culinary art meets soul-stirring hospitality."
-            </p>
+              </h1>
+              <p className="max-w-xl text-lg text-white/70 font-light mb-10">
+                A refined table, a thoughtful menu, and a warm welcome.
+              </p>
 
-            <div className="flex flex-col sm:flex-row gap-6 justify-center items-center">
-              <Button onClick={() => setView('menu')} size="lg" className="w-full sm:w-64 h-20 text-xl font-black rounded-2xl bg-white text-slate-900 hover:bg-slate-100 transition-all shadow-2xl hover:scale-105">
-                <Utensils className="mr-3 h-6 w-6" /> Explore Menu
-              </Button>
-              <Button onClick={() => setView('booking')} size="lg" className="w-full sm:w-64 h-20 text-xl font-black rounded-2xl bg-slate-900 text-white hover:bg-[var(--primary-hover)] transition-all shadow-2xl border border-white/20 hover:scale-105">
-                <CalendarIcon className="mr-3 h-6 w-6 text-amber-400" /> Book a Table
-              </Button>
+              <div className="flex flex-col sm:flex-row gap-3">
+                <Button onClick={() => setView('menu')} size="lg" className="h-14 w-full rounded-full bg-white text-neutral-900 px-8 text-base font-medium hover:bg-neutral-100 sm:w-auto">
+                  <Utensils className="mr-2 h-4 w-4" /> {t('public.menu')}
+                </Button>
+                <Button onClick={() => setView('booking')} size="lg" className="h-14 w-full rounded-full bg-[var(--primary)] px-8 text-base font-medium text-white hover:bg-[var(--primary-hover)] sm:w-auto">
+                  <CalendarIcon className="mr-2 h-4 w-4" /> {t('public.bookATable')}
+                </Button>
+              </div>
             </div>
+
+            <button
+              onClick={() => document.getElementById('cl-below-fold')?.scrollIntoView({ behavior: 'smooth' })}
+              className="absolute bottom-8 z-10 text-white/70 hover:text-white transition-colors animate-bounce"
+              aria-label="Scroll down"
+            >
+              <ChevronDown className="h-6 w-6" />
+            </button>
+          </section>
+
+          <div id="cl-below-fold">
+            {customization.showAboutUs && (
+              <section className="mx-auto grid max-w-6xl grid-cols-1 items-center gap-12 px-6 py-24 md:grid-cols-2 md:px-12">
+                <div className="order-2 md:order-1">
+                  <span className="mb-3 block text-xs font-medium uppercase tracking-[0.2em] text-neutral-400">{t('public.ourStory')}</span>
+                  <h2 className="mb-6 text-3xl font-semibold tracking-tight text-neutral-900 md:text-4xl">About {restaurant.name}</h2>
+                  <p className="whitespace-pre-wrap text-base leading-relaxed text-neutral-500">
+                    {customization.aboutUsText || 'Welcome to our restaurant. We are passionate about delivering exceptional culinary experiences.'}
+                  </p>
+                </div>
+                <div className="order-1 aspect-[4/3] w-full overflow-hidden rounded-3xl bg-neutral-100 md:order-2">
+                  <img src={ABOUT_IMAGE} alt={`Inside ${restaurant.name}`} className="h-full w-full object-cover" />
+                </div>
+              </section>
+            )}
+
+            <section className="mx-auto max-w-6xl px-6 py-16 md:px-12">
+              <div className="mb-10 flex items-end justify-between">
+                <h2 className="text-2xl font-semibold tracking-tight text-neutral-900">Signature Dishes</h2>
+                <button onClick={() => setView('menu')} className="hidden items-center gap-1 text-sm font-medium text-[var(--primary)] hover:underline sm:flex">
+                  {t('public.menu')} <ChevronRight className="h-4 w-4" />
+                </button>
+              </div>
+              <div className="grid grid-cols-1 gap-6 sm:grid-cols-3">
+                {GALLERY_IMAGES.map((src, i) => (
+                  <div key={i} className="aspect-square w-full overflow-hidden rounded-2xl bg-neutral-100">
+                    <img src={src} alt="Signature dish" loading="lazy" className="h-full w-full object-cover transition-transform duration-500 hover:scale-105" />
+                  </div>
+                ))}
+              </div>
+            </section>
+
+            <footer className="border-t border-black/5 px-6 py-16 md:px-12">
+              <div className="mx-auto flex max-w-6xl flex-col items-center gap-6 text-center">
+                <h3 className="text-xl font-semibold tracking-tight text-neutral-900">{restaurant.name}</h3>
+                {hasContactInfo && (
+                  <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-sm text-neutral-500">
+                    {restaurant.contactPhone && (
+                      <a href={`tel:${restaurant.contactPhone}`} className="flex items-center gap-2 hover:text-neutral-900">
+                        <Phone className="h-3.5 w-3.5" /> {restaurant.contactPhone}
+                      </a>
+                    )}
+                    {restaurant.contactEmail && (
+                      <a href={`mailto:${restaurant.contactEmail}`} className="flex items-center gap-2 hover:text-neutral-900">
+                        <MapPin className="h-3.5 w-3.5" /> {restaurant.contactEmail}
+                      </a>
+                    )}
+                  </div>
+                )}
+                {customization.showLegal && customization.legalText && (
+                  <div className="mt-6 max-w-2xl whitespace-pre-wrap border-t border-black/5 pt-6 text-xs leading-relaxed text-neutral-400">
+                    {customization.legalText}
+                  </div>
+                )}
+                <p className="text-xs text-neutral-400">© {new Date().getFullYear()} {restaurant.name}</p>
+              </div>
+            </footer>
           </div>
         </div>
       )}
 
       {/* Menu View */}
       {view === 'menu' && (
-        <div className="animate-in slide-in-from-right duration-500 min-h-screen bg-slate-50 flex flex-col">
-          <header className="sticky top-0 z-50 bg-white/90 backdrop-blur-xl border-b border-slate-200 shrink-0">
-            <div className="px-6 h-16 flex items-center justify-between">
-                <Button variant="ghost" onClick={() => setView('welcome')} className="font-bold text-slate-600 hover:text-slate-900">
-                    <ArrowLeft className="mr-2 h-5 w-5" /> Back
-                </Button>
-                
+        <div className="animate-in fade-in duration-300 min-h-screen flex flex-col" style={{ backgroundColor: palette.bg }}>
+          <header className="sticky top-0 z-50 bg-white/85 backdrop-blur-xl border-b border-black/5 shrink-0">
+            <div className="px-4 h-16 flex items-center justify-between sm:px-6">
+                {menuOnly ? (
+                    <Button
+                        variant="ghost"
+                        nativeButton={false}
+                        className="font-medium text-neutral-500 hover:text-neutral-900"
+                        render={<Link href={`/r/${slug}`} />}
+                    >
+                        <ArrowLeft className="mr-2 h-4 w-4" /> {restaurant.name}
+                    </Button>
+                ) : (
+                    <Button variant="ghost" onClick={() => setView('welcome')} className="font-medium text-neutral-500 hover:text-neutral-900">
+                        <ArrowLeft className="mr-2 h-4 w-4" /> Back
+                    </Button>
+                )}
+
                 <div className="flex flex-col items-center">
-                    <div className="font-black text-xl tracking-tighter">{restaurant.name}</div>
+                    <div className="text-lg font-semibold tracking-tight text-neutral-900">{restaurant.name}</div>
                     {getWaitTimeText() && (
-                        <div className="text-[10px] font-black uppercase text-amber-600 tracking-widest flex items-center mt-0.5">
-                            <Hourglass className="w-3 h-3 mr-1" /> Walk-in: {getWaitTimeText()}
+                        <div className="flex items-center mt-0.5 text-[10px] font-medium uppercase tracking-wide text-amber-600">
+                            <Hourglass className="w-3 h-3 mr-1" /> {getWaitTimeText()}
                         </div>
                     )}
                 </div>
 
-                <Button onClick={() => setView('booking')} className="bg-slate-900 text-white font-black rounded-xl px-6 h-10 shadow-xl shadow-slate-900/20">Book Table</Button>
+                <div className="flex items-center gap-2">
+                  <LanguageSwitcher />
+                  <Button onClick={() => setView('booking')} className="rounded-full bg-[var(--primary)] px-5 text-white hover:bg-[var(--primary-hover)]">{t('public.bookATable')}</Button>
+                </div>
             </div>
-            
-            {/* Sticky Top Tabs Navigation */}
+
             {restaurant.menus?.[0]?.categories && (
-                <div className="flex overflow-x-auto hide-scrollbar px-4 py-3 gap-2 border-t border-slate-100 bg-white">
+                <div className="flex overflow-x-auto hide-scrollbar gap-2 border-t border-black/5 px-4 py-3 sm:px-6">
                     {restaurant.menus[0].categories.map((cat: any) => (
-                        <Button 
-                            key={`nav-${cat.id}`} 
-                            variant="outline" 
-                            className="shrink-0 rounded-full font-bold text-xs uppercase tracking-widest border-slate-200 text-slate-600 hover:bg-slate-900 hover:text-white transition-colors"
+                        <Button
+                            key={`nav-${cat.id}`}
+                            variant="outline"
+                            className="shrink-0 rounded-full border-black/10 text-xs font-medium text-neutral-600 hover:bg-[var(--primary)] hover:text-white hover:border-[var(--primary)]"
                             onClick={() => {
                                 const el = document.getElementById(`cat-${cat.id}`);
                                 if (el) {
-                                    const y = el.getBoundingClientRect().top + window.scrollY - 130; // Offset for sticky header
+                                    const y = el.getBoundingClientRect().top + window.scrollY - 130;
                                     window.scrollTo({ top: y, behavior: 'smooth' });
                                 }
                             }}
@@ -341,138 +394,30 @@ export default function ClassicLayout({ slug, initialRestaurant }: { slug: strin
             )}
           </header>
 
-          <main className="flex-1 max-w-4xl mx-auto w-full py-8 px-4 sm:px-6 pb-32">
+          <main className="flex-1 max-w-5xl mx-auto w-full py-10 px-4 sm:px-6 pb-24">
             {!restaurant.menus?.[0] ? (
-                <div className="text-center text-slate-500 font-bold mt-20">Menu is currently being updated.</div>
+                <div className="text-center text-neutral-400 font-medium mt-20">Menu is currently being updated.</div>
             ) : (
-                <div className="space-y-12 bg-[#f4f6f5] p-6 sm:p-10 rounded-sm">
+                <div className="space-y-16">
                     {restaurant.menus[0].categories.map((cat: any) => (
                         <div key={cat.id} id={`cat-${cat.id}`} className="scroll-mt-32">
-                            <div className="mb-6 border-b-2 border-red-800 pb-2 flex items-center justify-between">
-                                <h2 className="text-3xl font-black tracking-tighter text-red-800 uppercase">{cat.name}</h2>
+                            <div className="mb-6 flex items-center justify-between border-b border-black/5 pb-3">
+                                <h2 className="text-xl font-semibold tracking-tight" style={{ color: primaryColor }}>{cat.name}</h2>
                             </div>
 
-                            {/* Handle Items directly under this category */}
                             {cat.items && cat.items.length > 0 && (
-                                <div className={cn("grid gap-x-12 gap-y-6 mb-8", isModern ? "grid-cols-1 md:grid-cols-3" : "grid-cols-1 md:grid-cols-2")}>
-                                    {cat.items.map((item: any) => (
-                                        isModern ? (
-                                            <div key={item.id} className="flex flex-col bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-all border border-slate-100 group">
-                                                {item.imageUrl && (
-                                                    <div className="w-full h-48 overflow-hidden bg-slate-100">
-                                                        <img src={item.imageUrl} alt={item.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
-                                                    </div>
-                                                )}
-                                                <div className="p-4 flex flex-col flex-1">
-                                                    <div className="flex justify-between items-start gap-4 mb-2">
-                                                        <span className="font-black text-sm text-[var(--primary)] uppercase tracking-tight">{item.name}</span>
-                                                        <div className="font-black text-[var(--primary)] text-sm whitespace-nowrap bg-slate-50 px-2 py-0.5 rounded-sm">
-                                                            {item.price.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}
-                                                        </div>
-                                                    </div>
-                                                    {item.description && <p className="text-slate-500 text-xs leading-relaxed font-medium mb-1">{item.description}</p>}
-                                                    {item.ingredients && <p className="text-slate-400 text-[10px] leading-tight font-medium mb-4 flex-1"><span className="font-bold">{t('public.ingredients')}:</span> {item.ingredients}</p>}
-                                                    <div className="flex flex-wrap items-center gap-1 mt-auto">
-                                                        {item.spiceLevel > 0 && <span title={`Spice Level ${item.spiceLevel}`} className="text-red-600 bg-red-50 p-1 rounded-sm"><Flame className="w-3 h-3" /></span>}
-                                                        {item.calories && <span className="text-[9px] font-black uppercase text-orange-700 bg-orange-50 px-1.5 py-0.5 rounded-sm flex items-center gap-0.5"><Flame className="w-2.5 h-2.5" /> {item.calories} {t('public.calories')}</span>}
-                                                        {item.containsAlcohol && <span className="text-[9px] font-black uppercase text-rose-700 bg-rose-50 px-1.5 py-0.5 rounded-sm">{t('public.containsAlcohol')}</span>}
-                                                        {item.containsPork && <span className="text-[9px] font-black uppercase text-pink-700 bg-pink-50 px-1.5 py-0.5 rounded-sm">{t('public.containsPork')}</span>}
-                                                        {item.dietaryTags && item.dietaryTags.split(',').map((tag: string, i: number) => (
-                                                            <span key={i} title={tag.trim()} className="text-[9px] font-black uppercase text-green-700 bg-green-50 px-1.5 py-0.5 rounded-sm">{tag.trim()}</span>
-                                                        ))}
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        ) : (
-                                            <div key={item.id} className="flex gap-4">
-                                                {item.imageUrl && (
-                                                    <img src={item.imageUrl} alt={item.name} className="w-16 h-16 rounded-md object-cover shrink-0 bg-slate-100" />
-                                                )}
-                                                <div className="flex-1">
-                                                    <div className="flex justify-between items-baseline gap-4">
-                                                        <div className="flex items-center gap-1.5 flex-wrap">
-                                                            <span className="font-black text-sm text-[var(--primary)] uppercase tracking-tight">{item.name}</span>
-                                                            <div className="flex items-center gap-1">
-                                                                {item.spiceLevel > 0 && <span title={`Spice Level ${item.spiceLevel}`} className="text-red-600"><Flame className="w-3 h-3" /></span>}
-                                                                {item.calories && <span className="text-[9px] font-black uppercase text-orange-700 bg-orange-50 px-1 rounded-sm">{item.calories} {t('public.calories')}</span>}
-                                                                {item.containsAlcohol && <span className="text-[9px] font-black uppercase text-rose-700 bg-rose-50 px-1 rounded-sm">{t('public.containsAlcohol')}</span>}
-                                                                {item.containsPork && <span className="text-[9px] font-black uppercase text-pink-700 bg-pink-50 px-1 rounded-sm">{t('public.containsPork')}</span>}
-                                                                {item.dietaryTags && item.dietaryTags.split(',').map((tag: string, i: number) => (
-                                                                    <span key={i} title={tag.trim()} className="text-green-700"><Leaf className="w-3 h-3" /></span>
-                                                                ))}
-                                                            </div>
-                                                        </div>
-                                                        <div className="font-bold text-[var(--primary)] text-sm whitespace-nowrap">
-                                                            {item.price.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}
-                                                        </div>
-                                                    </div>
-                                                    {item.description && <p className="text-slate-500 mt-1 text-[11px] leading-tight font-medium">{item.description}</p>}
-                                                    {item.ingredients && <p className="text-slate-400 mt-0.5 text-[9px] leading-tight font-medium"><span className="font-bold">{t('public.ingredients')}:</span> {item.ingredients}</p>}
-                                                </div>
-                                            </div>
-                                        )
-                                    ))}
+                                <div className="mb-10 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+                                    {cat.items.map((item: any) => renderMenuItem(item))}
                                 </div>
                             )}
 
-                            {/* Handle Sub-categories */}
                             {cat.children && cat.children.length > 0 && (
                                 <div className="space-y-10">
                                     {cat.children.map((sub: any) => (
                                         <div key={sub.id}>
-                                            <div className="mb-4">
-                                                <h3 className="text-xl font-bold text-red-800 tracking-tight">{sub.name}</h3>
-                                            </div>
-                                            <div className={cn("grid gap-x-12 gap-y-6", isModern ? "grid-cols-1 md:grid-cols-3" : "grid-cols-1 md:grid-cols-2")}>
-                                                {sub.items?.map((item: any) => (
-                                                    isModern ? (
-                                                        <div key={item.id} className="flex flex-col bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-all border border-slate-100 group">
-                                                            {item.imageUrl && (
-                                                                <div className="w-full h-48 overflow-hidden bg-slate-100">
-                                                                    <img src={item.imageUrl} alt={item.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
-                                                                </div>
-                                                            )}
-                                                            <div className="p-4 flex flex-col flex-1">
-                                                                <div className="flex justify-between items-start gap-4 mb-2">
-                                                                    <span className="font-black text-sm text-[var(--primary)] uppercase tracking-tight">{item.name}</span>
-                                                                    <div className="font-black text-[var(--primary)] text-sm whitespace-nowrap bg-slate-50 px-2 py-0.5 rounded-sm">
-                                                                        {item.price.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}
-                                                                    </div>
-                                                                </div>
-                                                                {item.description && <p className="text-slate-500 text-xs leading-relaxed font-medium mb-4 flex-1">{item.description}</p>}
-                                                                <div className="flex flex-wrap items-center gap-1 mt-auto">
-                                                                    {item.spiceLevel > 0 && <span title={`Spice Level ${item.spiceLevel}`} className="text-red-600 bg-red-50 p-1 rounded-sm"><Flame className="w-3 h-3" /></span>}
-                                                                    {item.dietaryTags && item.dietaryTags.split(',').map((tag: string, i: number) => (
-                                                                        <span key={i} title={tag.trim()} className="text-[9px] font-black uppercase text-green-700 bg-green-50 px-1.5 py-0.5 rounded-sm">{tag.trim()}</span>
-                                                                    ))}
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                    ) : (
-                                                        <div key={item.id} className="flex gap-4">
-                                                            {item.imageUrl && (
-                                                                <img src={item.imageUrl} alt={item.name} className="w-16 h-16 rounded-md object-cover shrink-0 bg-slate-100" />
-                                                            )}
-                                                            <div className="flex-1">
-                                                                <div className="flex justify-between items-baseline gap-4">
-                                                                    <div className="flex items-center gap-1.5 flex-wrap">
-                                                                        <span className="font-black text-sm text-[var(--primary)] uppercase tracking-tight">{item.name}</span>
-                                                                        <div className="flex items-center gap-1">
-                                                                            {item.spiceLevel > 0 && <span title={`Spice Level ${item.spiceLevel}`} className="text-red-600"><Flame className="w-3 h-3" /></span>}
-                                                                            {item.dietaryTags && item.dietaryTags.split(',').map((tag: string, i: number) => (
-                                                                                <span key={i} title={tag.trim()} className="text-green-700"><Leaf className="w-3 h-3" /></span>
-                                                                            ))}
-                                                                        </div>
-                                                                    </div>
-                                                                    <div className="font-bold text-[var(--primary)] text-sm whitespace-nowrap">
-                                                                        {item.price.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}
-                                                                    </div>
-                                                                </div>
-                                                                {item.description && <p className="text-slate-500 mt-1 text-[11px] leading-tight font-medium">{item.description}</p>}
-                                                            </div>
-                                                        </div>
-                                                    )
-                                                ))}
+                                            <h3 className="mb-4 text-base font-semibold tracking-tight text-neutral-700">{sub.name}</h3>
+                                            <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+                                                {sub.items?.map((item: any) => renderMenuItem(item))}
                                             </div>
                                         </div>
                                     ))}
@@ -483,8 +428,8 @@ export default function ClassicLayout({ slug, initialRestaurant }: { slug: strin
                 </div>
             )}
             {restaurant.menus?.[0]?.updatedAt && (
-                <div className="text-center mt-8 pb-4 text-xs font-medium text-slate-400 max-w-4xl mx-auto w-full px-6">
-                    <span className="font-bold">Son Fiyat Güncelleme Tarihi:</span> {new Date(restaurant.menus[0].updatedAt).toLocaleDateString('tr-TR')}
+                <div className="text-center mt-12 pb-4 text-xs font-medium text-neutral-400">
+                    <span className="font-semibold">Son Fiyat Güncelleme Tarihi:</span> {new Date(restaurant.menus[0].updatedAt).toLocaleDateString('tr-TR')}
                 </div>
             )}
           </main>
@@ -493,139 +438,142 @@ export default function ClassicLayout({ slug, initialRestaurant }: { slug: strin
 
       {/* Booking View */}
       {view === 'booking' && (
-        <div className="animate-in slide-in-from-bottom duration-500 min-h-screen bg-slate-50 flex flex-col">
-          <header className="bg-white border-b border-slate-200 px-6 h-16 flex items-center justify-between shrink-0">
-            <Button variant="ghost" onClick={() => setView('welcome')} className="font-bold text-slate-600 hover:text-slate-900">
-                <ArrowLeft className="mr-2 h-5 w-5" /> Back
+        <div className="animate-in fade-in duration-300 min-h-screen flex flex-col" style={{ backgroundColor: palette.bg }}>
+          <header className="bg-white/85 backdrop-blur-xl border-b border-black/5 px-4 h-16 flex items-center justify-between shrink-0 sm:px-6">
+            <Button variant="ghost" onClick={() => setView(menuOnly ? 'menu' : 'welcome')} className="font-medium text-neutral-500 hover:text-neutral-900">
+                <ArrowLeft className="mr-2 h-4 w-4" /> Back
             </Button>
-            
+
             <div className="flex flex-col items-center">
-                <div className="font-black text-lg tracking-tighter">Secure Your Table</div>
+                <div className="text-base font-semibold tracking-tight text-neutral-900">Secure Your Table</div>
                 {getWaitTimeText() && (
-                    <div className="text-[10px] font-black uppercase text-amber-600 tracking-widest flex items-center mt-0.5">
-                        <Hourglass className="w-3 h-3 mr-1" /> Walk-in: {getWaitTimeText()}
+                    <div className="flex items-center mt-0.5 text-[10px] font-medium uppercase tracking-wide text-amber-600">
+                        <Hourglass className="w-3 h-3 mr-1" /> {getWaitTimeText()}
                     </div>
                 )}
             </div>
 
-            <div className="w-10"></div>
+            <LanguageSwitcher />
           </header>
 
           <main className="flex-1 overflow-y-auto">
-            <div className="max-w-5xl mx-auto py-8 px-6 grid grid-cols-1 lg:grid-cols-5 gap-8">
-                {/* Left Side: Info & Context */}
+            <div className="max-w-5xl mx-auto py-10 px-4 sm:px-6 grid grid-cols-1 lg:grid-cols-5 gap-8">
                 <div className="lg:col-span-2 space-y-6">
-                    <div className="bg-white p-8 rounded-[2rem] shadow-xl shadow-slate-200/50 space-y-6">
+                    <div className="rounded-3xl border border-black/5 bg-white p-8 space-y-6">
                         <div className="flex items-center gap-4">
-                            <div className="w-14 h-14 rounded-2xl bg-amber-50 flex items-center justify-center text-amber-600">
-                                <Utensils className="h-7 w-7" />
+                            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[var(--primary)]/10 text-[var(--primary)]">
+                                <Utensils className="h-6 w-6" />
                             </div>
                             <div>
-                                <h2 className="text-2xl font-black tracking-tighter">{restaurant.name}</h2>
-                                <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Premium Dining</p>
+                                <h2 className="text-xl font-semibold tracking-tight text-neutral-900">{restaurant.name}</h2>
+                                <p className="text-xs font-medium uppercase tracking-wide text-neutral-400">Reservation</p>
                             </div>
                         </div>
 
-                        <div className="space-y-4 pt-4 border-t border-slate-50">
-                            <div className="flex items-center gap-3 text-slate-600 font-bold text-sm">
-                                <MapPin className="h-4 w-4 text-blue-500" /> Istanbul, Turkey
-                            </div>
-                            <div className="flex items-center gap-3 text-slate-600 font-bold text-sm">
-                                <Phone className="h-4 w-4 text-blue-500" /> {restaurant.contactPhone || "+90 ..."}
-                            </div>
-                        </div>
+                        {hasContactInfo && (
+                          <div className="space-y-3 border-t border-black/5 pt-4">
+                              {restaurant.contactPhone && (
+                                <div className="flex items-center gap-3 text-sm font-medium text-neutral-600">
+                                    <Phone className="h-4 w-4 text-neutral-400" /> {restaurant.contactPhone}
+                                </div>
+                              )}
+                              {restaurant.contactEmail && (
+                                <div className="flex items-center gap-3 text-sm font-medium text-neutral-600">
+                                    <MapPin className="h-4 w-4 text-neutral-400" /> {restaurant.contactEmail}
+                                </div>
+                              )}
+                          </div>
+                        )}
                     </div>
 
-                    {/* Operational Status Boxes */}
                     {checkingDay ? (
-                        <div className="bg-slate-200 animate-pulse h-24 rounded-[2rem]"></div>
+                        <div className="h-24 animate-pulse rounded-3xl bg-neutral-100"></div>
                     ) : dayStatus?.daySetting?.isFullyBooked === true ? (
-                        <div className="bg-amber-600 text-white p-6 rounded-[2rem] shadow-xl shadow-amber-600/30 flex gap-4 items-start animate-in fade-in duration-300">
-                            <Clock className="h-6 w-6 shrink-0 mt-1" />
+                        <div className="flex items-start gap-4 rounded-3xl bg-amber-500 p-6 text-white animate-in fade-in duration-300">
+                            <Clock className="h-5 w-5 shrink-0 mt-1" />
                             <div>
-                                <p className="font-black tracking-tight text-lg leading-none mb-2">Fully Booked (Waitlist Open)</p>
-                                <p className="text-sm font-medium opacity-80">We are fully booked for reservations on this day, but you can join our online waitlist to be notified if a table opens up.</p>
+                                <p className="mb-1 text-xs font-medium uppercase tracking-wide opacity-80">{selectedDateLabel}</p>
+                                <p className="mb-1.5 font-semibold leading-none">Fully Booked (Waitlist Open)</p>
+                                <p className="text-sm font-medium opacity-90">We are fully booked for reservations on this day, but you can join our online waitlist to be notified if a table opens up.</p>
                             </div>
                         </div>
                     ) : dayStatus?.daySetting?.isReservationEnabled === false ? (
-                        <div className="bg-red-600 text-white p-6 rounded-[2rem] shadow-xl shadow-red-600/30 flex gap-4 items-start animate-in fade-in duration-300">
-                            <XCircle className="h-6 w-6 shrink-0 mt-1" />
+                        <div className="flex items-start gap-4 rounded-3xl bg-red-500 p-6 text-white animate-in fade-in duration-300">
+                            <XCircle className="h-5 w-5 shrink-0 mt-1" />
                             <div>
-                                <p className="font-black tracking-tight text-lg leading-none mb-2">Sold Out / Closed</p>
-                                <p className="text-sm font-medium opacity-80">Unfortunately we're closed to the reservations for that day.</p>
+                                <p className="mb-1 text-xs font-medium uppercase tracking-wide opacity-80">{selectedDateLabel}</p>
+                                <p className="mb-1.5 font-semibold leading-none">Sold Out / Closed</p>
+                                <p className="text-sm font-medium opacity-90">Unfortunately we&apos;re closed to the reservations for that day.</p>
                             </div>
                         </div>
                     ) : dayStatus?.daySetting?.autoConfirm === true ? (
-                        <div className="bg-emerald-600 text-white p-6 rounded-[2rem] shadow-xl shadow-emerald-600/30 flex gap-4 items-start animate-in fade-in duration-300">
-                            <CheckCircle2 className="h-6 w-6 shrink-0 mt-1" />
+                        <div className="flex items-start gap-4 rounded-3xl bg-emerald-500 p-6 text-white animate-in fade-in duration-300">
+                            <CheckCircle2 className="h-5 w-5 shrink-0 mt-1" />
                             <div>
-                                <p className="font-black tracking-tight text-lg leading-none mb-2">Immediate Booking</p>
-                                <p className="text-sm font-medium opacity-80">Good news! We have a table for you. Your reservation will be confirmed automatically.</p>
+                                <p className="mb-1 text-xs font-medium uppercase tracking-wide opacity-80">{selectedDateLabel}</p>
+                                <p className="mb-1.5 font-semibold leading-none">Immediate Booking</p>
+                                <p className="text-sm font-medium opacity-90">Good news! We have a table for you. Your reservation will be confirmed automatically.</p>
                             </div>
                         </div>
                     ) : (
-                         <div className="bg-blue-600 text-white p-6 rounded-[2rem] shadow-xl shadow-blue-600/30 flex gap-4 items-start animate-in fade-in duration-300">
-                            <Info className="h-6 w-6 shrink-0 mt-1" />
+                         <div className="flex items-start gap-4 rounded-3xl bg-blue-500 p-6 text-white animate-in fade-in duration-300">
+                            <Info className="h-5 w-5 shrink-0 mt-1" />
                             <div>
-                                <p className="font-black tracking-tight text-lg leading-none mb-2">Confirmation Queue</p>
-                                <p className="text-sm font-medium opacity-80">This date requires manual staff review. You'll receive a notification once confirmed.</p>
+                                <p className="mb-1 text-xs font-medium uppercase tracking-wide opacity-80">{selectedDateLabel}</p>
+                                <p className="mb-1.5 font-semibold leading-none">Confirmation Queue</p>
+                                <p className="text-sm font-medium opacity-90">This date requires manual staff review. You&apos;ll receive a notification once confirmed.</p>
                             </div>
                          </div>
                     )}
                 </div>
 
-                {/* Right Side: Form */}
                 <div className="lg:col-span-3">
-                    <form onSubmit={handleBooking} className="bg-white p-10 rounded-[2.5rem] shadow-2xl shadow-slate-200/50 space-y-10">
+                    <form onSubmit={handleBooking} className="space-y-8 rounded-3xl border border-black/5 bg-white p-6 sm:p-10">
                         {restaurant.customization?.reservationInfoText && (
-                            <div className="text-sm font-medium text-slate-500 space-y-2 [&>p]:mb-2 [&>a]:text-blue-600 [&>a]:underline" 
+                            <div className="text-sm text-neutral-500 space-y-2 [&>p]:mb-2 [&>a]:text-[var(--primary)] [&>a]:underline"
                                  dangerouslySetInnerHTML={{ __html: restaurant.customization.reservationInfoText }} />
                         )}
                         {restaurant.customization?.reservationWarningText && (
-                            <div className="p-4 bg-amber-50 border-l-2 border-amber-500 text-sm font-bold text-amber-700 space-y-2 [&>p]:mb-2 [&>a]:underline rounded-r-xl" 
+                            <div className="rounded-2xl border-l-2 border-amber-500 bg-amber-50 p-4 text-sm font-medium text-amber-700 space-y-2 [&>p]:mb-2 [&>a]:underline"
                                  dangerouslySetInnerHTML={{ __html: restaurant.customization.reservationWarningText }} />
                         )}
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
-                            <div className="space-y-3">
-                                <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 ml-1">Full Name</Label>
-                                <Input required className="h-14 rounded-2xl bg-slate-50 border-transparent focus:bg-white focus:ring-4 focus:ring-slate-900/5 transition-all text-lg font-bold px-6" value={resForm.customerName} onChange={e => setResForm({...resForm, customerName: e.target.value})} placeholder="Ex: John Doe" />
+                        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+                            <div className="space-y-2">
+                                <Label className="text-xs font-medium uppercase tracking-wide text-neutral-500">Full Name</Label>
+                                <Input required className="h-14 rounded-2xl border-black/10 bg-neutral-50 px-5 text-base font-medium focus:bg-white focus:ring-4 focus:ring-black/5" value={resForm.customerName} onChange={e => setResForm({...resForm, customerName: e.target.value})} placeholder="Ex: John Doe" />
                             </div>
-                            <div className="space-y-3">
-                                <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 ml-1">Phone Number</Label>
-                                <Input required type="tel" className="h-14 rounded-2xl bg-slate-50 border-transparent focus:bg-white focus:ring-4 focus:ring-slate-900/5 transition-all text-lg font-bold px-6" value={resForm.customerPhone} onChange={e => setResForm({...resForm, customerPhone: e.target.value})} placeholder="+90 ..." />
+                            <div className="space-y-2">
+                                <Label className="text-xs font-medium uppercase tracking-wide text-neutral-500">Phone Number</Label>
+                                <Input required type="tel" className="h-14 rounded-2xl border-black/10 bg-neutral-50 px-5 text-base font-medium focus:bg-white focus:ring-4 focus:ring-black/5" value={resForm.customerPhone} onChange={e => setResForm({...resForm, customerPhone: e.target.value})} placeholder="+90 ..." />
                             </div>
                         </div>
 
-                        <div className="space-y-3">
-                             <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 ml-1">Date Selection</Label>
-                             <div className="space-y-6">
-                                <div className="space-y-2">
-                                    <div className="grid grid-cols-3 gap-3">
-                                        {week.map(d => (
-                                            <Button key={d.value} type="button" variant={selectedDate === d.value ? 'default' : 'outline'} className={cn("h-16 flex flex-col items-center justify-center rounded-2xl border-2 transition-all", selectedDate === d.value ? "bg-slate-900 border-slate-900 text-white" : "hover:border-slate-300")} onClick={() => setSelectedDate(d.value)}>
-                                                <span className="text-[9px] uppercase font-black opacity-60">{d.label}</span>
-                                                <span className="text-sm font-black">{d.full}</span>
-                                            </Button>
-                                        ))}
-                                    </div>
+                        <div className="space-y-4">
+                             <Label className="text-xs font-medium uppercase tracking-wide text-neutral-500">Date Selection</Label>
+                             <div className="space-y-5">
+                                <div className="grid grid-cols-3 gap-3">
+                                    {week.map(d => (
+                                        <Button key={d.value} type="button" variant={selectedDate === d.value ? 'default' : 'outline'} className={cn("h-16 flex flex-col items-center justify-center rounded-2xl border transition-all", selectedDate === d.value ? "bg-[var(--primary)] border-[var(--primary)] text-white" : "border-black/10 hover:border-black/20")} onClick={() => setSelectedDate(d.value)}>
+                                            <span className="text-[9px] uppercase font-medium opacity-70">{d.label}</span>
+                                            <span className="text-sm font-semibold">{d.full}</span>
+                                        </Button>
+                                    ))}
                                 </div>
-                                
+
                                 <div className="space-y-2">
-                                    <div className="flex items-center gap-2 mb-2">
-                                        <Badge variant="outline" className="text-[8px] font-black uppercase px-2 py-0 border-blue-200 text-blue-600 bg-blue-50">Next Week</Badge>
-                                    </div>
+                                    <Badge variant="outline" className="border-neutral-200 bg-neutral-50 px-2 py-0 text-[9px] font-medium uppercase text-neutral-500">Also available</Badge>
                                     <div className="grid grid-cols-4 gap-3">
                                         {weekend.map(d => (
-                                            <Button key={d.value} type="button" variant={selectedDate === d.value ? 'default' : 'outline'} className={cn("h-16 flex flex-col items-center justify-center rounded-2xl border-2 transition-all", selectedDate === d.value ? "bg-blue-600 border-blue-600 text-white" : "hover:border-blue-200")} onClick={() => setSelectedDate(d.value)}>
-                                                <span className="text-[9px] uppercase font-black opacity-60">{d.label}</span>
-                                                <span className="text-sm font-black">{d.full}</span>
+                                            <Button key={d.value} type="button" variant={selectedDate === d.value ? 'default' : 'outline'} className={cn("h-16 flex flex-col items-center justify-center rounded-2xl border transition-all", selectedDate === d.value ? "bg-[var(--primary)] border-[var(--primary)] text-white" : "border-black/10 hover:border-black/20")} onClick={() => setSelectedDate(d.value)}>
+                                                <span className="text-[9px] uppercase font-medium opacity-70">{d.label}</span>
+                                                <span className="text-sm font-semibold">{d.full}</span>
                                             </Button>
                                         ))}
                                         <div className="relative">
                                             <input type="date" ref={dateInputRef} value={selectedDate} onChange={(e) => setSelectedDate(e.target.value)} className="sr-only" />
-                                            <Button type="button" variant={(!week.find(d=>d.value===selectedDate) && !weekend.find(d=>d.value===selectedDate)) ? 'default' : 'outline'} className={cn("w-full h-16 rounded-2xl border-2 flex flex-col items-center justify-center transition-colors", (!week.find(d=>d.value===selectedDate) && !weekend.find(d=>d.value===selectedDate)) ? "bg-slate-900 border-slate-900 text-white" : "hover:bg-slate-50")} onClick={() => dateInputRef.current?.showPicker()}>
-                                                <CalendarIcon className={cn("h-5 w-5 mb-1", (!week.find(d=>d.value===selectedDate) && !weekend.find(d=>d.value===selectedDate)) ? "text-white" : "text-slate-400")} />
-                                                <span className={cn("text-[9px] font-black uppercase", (!week.find(d=>d.value===selectedDate) && !weekend.find(d=>d.value===selectedDate)) ? "text-white" : "text-slate-400")}>
+                                            <Button type="button" variant={(!week.find(d=>d.value===selectedDate) && !weekend.find(d=>d.value===selectedDate)) ? 'default' : 'outline'} className={cn("w-full h-16 rounded-2xl border flex flex-col items-center justify-center transition-colors", (!week.find(d=>d.value===selectedDate) && !weekend.find(d=>d.value===selectedDate)) ? "bg-[var(--primary)] border-[var(--primary)] text-white" : "border-black/10 hover:bg-neutral-50")} onClick={() => dateInputRef.current?.showPicker()}>
+                                                <CalendarIcon className="mb-1 h-4 w-4" />
+                                                <span className="text-[9px] font-medium uppercase">
                                                     {(!week.find(d=>d.value===selectedDate) && !weekend.find(d=>d.value===selectedDate)) ? new Date(selectedDate).toLocaleDateString([], { month: 'short', day: 'numeric' }) : 'Custom'}
                                                 </span>
                                             </Button>
@@ -635,30 +583,30 @@ export default function ClassicLayout({ slug, initialRestaurant }: { slug: strin
                              </div>
                         </div>
 
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-8 items-end border-t border-slate-50 pt-10">
+                        <div className="grid grid-cols-1 gap-8 border-t border-black/5 pt-8 sm:grid-cols-2">
                             <div className="space-y-4">
-                                <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 ml-1">Preferred Time</Label>
-                                <div className="space-y-4">
+                                <Label className="text-xs font-medium uppercase tracking-wide text-neutral-500">Preferred Time</Label>
+                                <div className="space-y-3">
                                     <div className="grid grid-cols-4 gap-2">
                                         {[...times.lunch, ...times.dinner].map(t => (
-                                            <Button key={t} type="button" variant={selectedTime === t ? 'default' : 'ghost'} className={cn("h-10 text-xs font-bold rounded-xl border border-slate-100 shadow-sm", selectedTime === t ? "bg-slate-900 text-white" : "bg-white hover:bg-slate-50")} onClick={() => setSelectedTime(t)}>{t}</Button>
+                                            <Button key={t} type="button" variant={selectedTime === t ? 'default' : 'outline'} className={cn("h-11 rounded-xl text-sm font-medium border-black/10", selectedTime === t ? "bg-[var(--primary)] border-[var(--primary)] text-white" : "bg-white hover:bg-neutral-50")} onClick={() => setSelectedTime(t)}>{t}</Button>
                                         ))}
                                     </div>
-                                    <Input type="time" value={selectedTime} onChange={(e) => setSelectedTime(e.target.value)} className="h-12 rounded-xl bg-slate-50 border-transparent focus:bg-white font-bold" />
+                                    <Input type="time" value={selectedTime} onChange={(e) => setSelectedTime(e.target.value)} className="h-14 rounded-2xl border-black/10 bg-neutral-50 px-5 text-base font-medium focus:bg-white focus:ring-4 focus:ring-black/5" />
                                 </div>
                             </div>
                             <div className="space-y-4">
-                                <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 ml-1">Guest Count</Label>
-                                <div className="flex items-center gap-4 bg-slate-50 p-3 rounded-2xl">
-                                    <Button type="button" variant="ghost" size="icon" className="h-10 w-10 bg-white rounded-xl shadow-sm hover:scale-110" onClick={() => setResForm(f => ({...f, guestCount: Math.max(1, parseInt(f.guestCount)-1).toString()}))}>-</Button>
-                                    <div className="flex-1 text-center font-black text-2xl">{resForm.guestCount}</div>
-                                    <Button type="button" variant="ghost" size="icon" className="h-10 w-10 bg-white rounded-xl shadow-sm hover:scale-110" onClick={() => setResForm(f => ({...f, guestCount: (parseInt(f.guestCount)+1).toString()}))}>+</Button>
+                                <Label className="text-xs font-medium uppercase tracking-wide text-neutral-500">Guest Count</Label>
+                                <div className="flex items-center gap-4 rounded-2xl bg-neutral-50 p-3">
+                                    <Button type="button" variant="ghost" size="icon" className="h-12 w-12 rounded-xl bg-white text-lg shadow-sm" onClick={() => setResForm(f => ({...f, guestCount: Math.max(1, parseInt(f.guestCount)-1).toString()}))}>-</Button>
+                                    <div className="flex-1 text-center text-2xl font-semibold">{resForm.guestCount}</div>
+                                    <Button type="button" variant="ghost" size="icon" className="h-12 w-12 rounded-xl bg-white text-lg shadow-sm" onClick={() => setResForm(f => ({...f, guestCount: (parseInt(f.guestCount)+1).toString()}))}>+</Button>
                                 </div>
                             </div>
                         </div>
 
-                        <Button type="submit" disabled={checkingDay || (dayStatus && !dayStatus.daySetting?.isReservationEnabled && dayStatus.daySetting && !dayStatus.daySetting?.isFullyBooked)} className="w-full h-20 rounded-[1.5rem] bg-slate-900 text-white hover:bg-[var(--primary-hover)] text-xl font-black shadow-2xl transition-all hover:scale-[1.02] active:scale-95">
-                            {checkingDay ? "Checking Availability..." : 
+                        <Button type="submit" disabled={checkingDay || (dayStatus && !dayStatus.daySetting?.isReservationEnabled && dayStatus.daySetting && !dayStatus.daySetting?.isFullyBooked)} className="h-16 w-full rounded-2xl bg-[var(--primary)] text-base font-semibold text-white hover:bg-[var(--primary-hover)] disabled:opacity-50">
+                            {checkingDay ? "Checking Availability..." :
                              (dayStatus && dayStatus.daySetting?.isFullyBooked) ? "Join Waitlist for this Day" :
                              (dayStatus && !dayStatus.daySetting?.isReservationEnabled && dayStatus.daySetting) ? "Sold Out" : "Send Booking Request"}
                         </Button>
@@ -671,32 +619,43 @@ export default function ClassicLayout({ slug, initialRestaurant }: { slug: strin
 
       {/* Success View */}
       {view === 'success' && (
-          <div className="min-h-screen flex flex-col items-center justify-center bg-white p-6 animate-in fade-in duration-700">
-              <div className="w-24 h-24 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mb-8 shadow-xl shadow-emerald-500/20">
-                  <CheckCircle2 className="h-12 w-12" />
+          <div className="flex min-h-screen flex-col items-center justify-center bg-white p-6 animate-in fade-in duration-700">
+              <div className="mb-8 flex h-20 w-20 items-center justify-center rounded-full bg-emerald-50 text-emerald-600">
+                  <CheckCircle2 className="h-10 w-10" />
               </div>
-              <h1 className="text-4xl font-black tracking-tighter mb-4 text-center">
+              <h1 className="mb-4 text-center text-3xl font-semibold tracking-tight text-neutral-900 md:text-4xl">
                   {isWaitlistSuccess ? "Added to Waitlist!" : "Reservation Request Sent!"}
               </h1>
-              <div className="text-xl text-slate-500 font-medium text-center max-w-lg mb-12 leading-relaxed">
+              <div className="mb-12 max-w-lg text-center text-lg font-light leading-relaxed text-neutral-500">
                   {isWaitlistSuccess ? (
                       <>
-                          You've successfully joined the waitlist for <span className="font-bold text-slate-900">{new Date(selectedDate).toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' })}</span>. You will receive an SMS if a table becomes available.
+                          You&apos;ve successfully joined the waitlist for <span className="font-medium text-neutral-900">{new Date(selectedDate).toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' })}</span>. You will receive an SMS if a table becomes available.
                       </>
                   ) : (
                       <>
-                          You are going to receive an SMS confirmation soon. We are excited that you chose <span className="font-bold text-slate-900">{restaurant.name}</span>.
+                          You are going to receive an SMS confirmation soon. We are excited that you chose <span className="font-medium text-neutral-900">{restaurant.name}</span>.
                       </>
                   )}
-                  <p className="mt-4 text-sm font-bold uppercase tracking-widest text-emerald-600">See you soon!</p>
+                  <p className="mt-4 text-sm font-medium uppercase tracking-wide text-emerald-600">See you soon!</p>
               </div>
-              <div className="flex flex-col sm:flex-row gap-4">
-                  <Button onClick={() => { setView('menu'); setIsWaitlistSuccess(false); }} variant="outline" className="h-16 px-10 text-lg font-bold rounded-2xl border-2">
-                      <Utensils className="mr-2 h-5 w-5" /> Explore Our Menu
+              {!isWaitlistSuccess && isPossiblyFullyBooked && (
+                  <div className="mb-8 max-w-md rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm font-medium text-amber-800">
+                      Heads up — we may be fully booked around this time, so your table hasn&apos;t been assigned yet. Our team will confirm by phone shortly.
+                  </div>
+              )}
+              <div className="flex flex-col gap-3 sm:flex-row">
+                  <Button onClick={() => { setView('menu'); setIsWaitlistSuccess(false); }} variant="outline" className="h-14 rounded-full border-black/10 px-8 text-base font-medium">
+                      <Utensils className="mr-2 h-4 w-4" /> Explore Our Menu
                   </Button>
-                  <Button onClick={() => { setView('welcome'); setIsWaitlistSuccess(false); }} className="h-16 px-10 text-lg font-bold rounded-2xl bg-slate-900 text-white">
-                      Return to Home
-                  </Button>
+                  {menuOnly ? (
+                      <Button nativeButton={false} className="h-14 rounded-full bg-[var(--primary)] px-8 text-base font-medium text-white hover:bg-[var(--primary-hover)]" render={<Link href={`/r/${slug}`} />}>
+                          Return to Home
+                      </Button>
+                  ) : (
+                      <Button onClick={() => { setView('welcome'); setIsWaitlistSuccess(false); }} className="h-14 rounded-full bg-[var(--primary)] px-8 text-base font-medium text-white hover:bg-[var(--primary-hover)]">
+                          Return to Home
+                      </Button>
+                  )}
               </div>
           </div>
       )}

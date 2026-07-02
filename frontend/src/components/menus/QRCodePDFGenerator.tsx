@@ -14,9 +14,9 @@ export function QRCodePDFGenerator({ restaurantSlug, restaurantName }: QRCodePDF
   const { t } = useTranslation();
   const qrRef = useRef<HTMLDivElement>(null);
 
-  const publicUrl = typeof window !== 'undefined' 
-    ? `${window.location.protocol}//${window.location.host}/r/${restaurantSlug}`
-    : `https://dining-reservation.com/r/${restaurantSlug}`;
+  const publicUrl = typeof window !== 'undefined'
+    ? `${window.location.protocol}//${window.location.host}/r/${restaurantSlug}/menu`
+    : `https://dining-reservation.com/r/${restaurantSlug}/menu`;
 
   const downloadPDF = () => {
     const canvas = qrRef.current?.querySelector('canvas');

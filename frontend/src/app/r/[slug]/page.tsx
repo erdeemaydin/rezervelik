@@ -1,16 +1,19 @@
 'use client';
 
-import { useParams } from 'next/navigation';
+import { useParams, useSearchParams } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 import ClassicLayout from '@/components/public/ClassicLayout';
 import PremiumLayout from '@/components/public/PremiumLayout';
 import OldenLayout from '@/components/public/OldenLayout';
+import GardenLayout from '@/components/public/GardenLayout';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || (typeof window !== 'undefined' ? `${window.location.protocol}//${window.location.hostname}:3000/api` : 'http://localhost:3000/api');
 
 export default function RestaurantRouterPage() {
   const { slug } = useParams();
+  const searchParams = useSearchParams();
+  const initialView = searchParams.get('view') || undefined;
   const [restaurant, setRestaurant] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
@@ -34,12 +37,16 @@ export default function RestaurantRouterPage() {
   const layoutStyle = restaurant.customization?.layoutStyle || 'CLASSIC_LIST';
 
   if (layoutStyle === 'ANIMATED') {
-    return <OldenLayout slug={slug as string} initialRestaurant={restaurant} />;
+    return <OldenLayout slug={slug as string} initialRestaurant={restaurant} initialView={initialView} />;
   }
 
   if (layoutStyle === 'EDITORIAL_IMAGE') {
-    return <PremiumLayout slug={slug as string} initialRestaurant={restaurant} />;
+    return <PremiumLayout slug={slug as string} initialRestaurant={restaurant} initialView={initialView} />;
   }
 
-  return <ClassicLayout slug={slug as string} initialRestaurant={restaurant} />;
+  if (layoutStyle === 'GARDEN_FRESH') {
+    return <GardenLayout slug={slug as string} initialRestaurant={restaurant} initialView={initialView} />;
+  }
+
+  return <ClassicLayout slug={slug as string} initialRestaurant={restaurant} initialView={initialView} />;
 }

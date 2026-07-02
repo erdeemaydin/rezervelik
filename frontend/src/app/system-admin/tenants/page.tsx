@@ -394,6 +394,8 @@ export default function TenantManagementPage() {
                                 >
                                   <option value="CLASSIC_LIST">Classic List</option>
                                   <option value="EDITORIAL_IMAGE">Premium Editorial</option>
+                                  <option value="ANIMATED">Olden (Vintage)</option>
+                                  <option value="GARDEN_FRESH">Garden (Light & Creative)</option>
                                 </select>
                             </div>
                         </div>
