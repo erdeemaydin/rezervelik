@@ -102,22 +102,26 @@ export const joinPublicWaitlist = async (req: Request, res: Response) => {
     });
 
     if (!restaurant) return errorResponse(res, 'Restaurant not found', 404);
-    
+
     const config = restaurant.waitTimeConfig;
-    if (!config || !config.isWaitlistOpen) {
+    const isDateWaitlist = Boolean(targetDate);
+
+    // The date-based "notify me if a table opens up" waitlist (for fully-booked days)
+    // is a separate feature from the real-time walk-in queue, and isn't gated by it.
+    if (!isDateWaitlist && (!config || !config.isWaitlistOpen)) {
       return errorResponse(res, 'Waitlist is not currently open', 403);
     }
 
     let quotedWaitTime = null;
-    if (config.isWaitTimeCalculated) {
+    if (!isDateWaitlist && config?.isWaitTimeCalculated) {
       quotedWaitTime = config.peopleWaiting * config.waitTimePerPersonUpper; // Conservative estimate
-      
+
       // Auto increment the people waiting so the next person gets a higher quote
       await prisma.waitTimeConfig.update({
         where: { id: config.id },
         data: { peopleWaiting: { increment: parseInt(partySize) } }
       });
-    } else if (config.manualWaitTimeUpper) {
+    } else if (!isDateWaitlist && config?.manualWaitTimeUpper) {
       quotedWaitTime = config.manualWaitTimeUpper;
     }
 

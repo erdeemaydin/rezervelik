@@ -18,7 +18,7 @@ export const getTables = async (req: Request, res: Response) => {
 export const createTable = async (req: Request, res: Response) => {
   try {
     const restaurantId = req.restaurantId!;
-    const { tableTypeId, identifier, capacity, isAvailable, positionX, positionY, shape, width, height } = req.body;
+    const { tableTypeId, identifier, capacity, isAvailable, positionX, positionY, shape, width, height, color } = req.body;
 
     if (!tableTypeId || !identifier || !capacity) {
       return errorResponse(res, 'errors.validation_error', 400, { message: 'Required fields missing' });
@@ -43,7 +43,8 @@ export const createTable = async (req: Request, res: Response) => {
         positionY: positionY ?? 0,
         shape: shape ?? 'rectangle',
         width: width ?? 80,
-        height: height ?? 80
+        height: height ?? 80,
+        color: color ?? '#ffffff'
       }
     });
 
@@ -57,7 +58,7 @@ export const updateTable = async (req: Request, res: Response) => {
   try {
     const restaurantId = req.restaurantId!;
     const { id } = req.params;
-    const { tableTypeId, identifier, capacity, isAvailable, positionX, positionY, shape, width, height } = req.body;
+    const { tableTypeId, identifier, capacity, isAvailable, positionX, positionY, shape, width, height, color } = req.body;
 
     const existingTable = await prisma.table.findFirst({
       where: { id, restaurantId }
@@ -82,6 +83,7 @@ export const updateTable = async (req: Request, res: Response) => {
     if (shape !== undefined) dataToUpdate.shape = shape;
     if (width !== undefined) dataToUpdate.width = width;
     if (height !== undefined) dataToUpdate.height = height;
+    if (color !== undefined) dataToUpdate.color = color;
 
     const table = await prisma.table.update({
       where: { id },

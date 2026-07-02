@@ -4,7 +4,8 @@
     "unauthorized": "Unauthorized access",
     "validation_error": "Validation error",
     "internal_error": "Internal server error",
-    "tenant_required": "X-Restaurant-ID header is required"
+    "tenant_required": "X-Restaurant-ID header is required",
+    "table_conflict": "This table is already reserved for an overlapping time"
   },
   "messages": {
     "reservation_created": "Reservation created successfully",

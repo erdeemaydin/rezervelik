@@ -1,13 +1,25 @@
 import { Request, Response } from 'express';
 import prisma from '../config/prisma';
 import { successResponse, errorResponse } from '../utils/response';
+import { verifyToken } from '../utils/jwt';
+
+const isStaffRequest = (req: Request): boolean => {
+  const authHeader = req.headers.authorization;
+  if (!authHeader || !authHeader.startsWith('Bearer ')) return false;
+  try {
+    verifyToken(authHeader.split(' ')[1]);
+    return true;
+  } catch {
+    return false;
+  }
+};
 
 export const getReservations = async (req: Request, res: Response) => {
   try {
     const restaurantId = req.restaurantId!;
     const reservations = await prisma.reservation.findMany({
       where: { restaurantId },
-      include: { 
+      include: {
         table: true,
         category: true
       },
@@ -16,7 +28,30 @@ export const getReservations = async (req: Request, res: Response) => {
         { startTime: 'asc' }
       ]
     });
-    return successResponse(res, reservations);
+
+    // Per-phone-number history: how many times this guest has visited/no-showed,
+    // so repeat no-show patterns are visible directly on the reservation list.
+    const phones = [...new Set(reservations.map(r => r.customerPhone))];
+    const historyCounts = phones.length ? await prisma.reservation.groupBy({
+      by: ['customerPhone', 'status'],
+      where: { restaurantId, customerPhone: { in: phones } },
+      _count: { _all: true }
+    }) : [];
+
+    const historyByPhone = new Map<string, { totalVisits: number; noShowCount: number }>();
+    for (const row of historyCounts) {
+      const entry = historyByPhone.get(row.customerPhone) || { totalVisits: 0, noShowCount: 0 };
+      entry.totalVisits += row._count._all;
+      if (row.status === 'NO_SHOW') entry.noShowCount += row._count._all;
+      historyByPhone.set(row.customerPhone, entry);
+    }
+
+    const withHistory = reservations.map(r => ({
+      ...r,
+      phoneHistory: historyByPhone.get(r.customerPhone) || { totalVisits: 1, noShowCount: 0 }
+    }));
+
+    return successResponse(res, withHistory);
   } catch (error) {
     return errorResponse(res, 'errors.internal_error', 500);
   }
@@ -25,9 +60,9 @@ export const getReservations = async (req: Request, res: Response) => {
 export const createReservation = async (req: Request, res: Response) => {
   try {
     const restaurantId = req.restaurantId!;
-    const { 
-      tableId, categoryId, customerName, customerEmail, customerPhone, 
-      guestCount, startTime, notes, internalNote, isVIP 
+    const {
+      tableId, categoryId, customerName, customerEmail, customerPhone,
+      guestCount, startTime, notes, internalNote, isVIP, overrideConflict
     } = req.body;
 
     if (!customerName || !customerPhone || !guestCount || !startTime) {
@@ -36,6 +71,7 @@ export const createReservation = async (req: Request, res: Response) => {
 
     const start = new Date(startTime);
     const dateStr = start.toISOString().split('T')[0];
+    const partySize = parseInt(guestCount);
 
     // Check DaySetting
     const daySetting = await prisma.daySetting.findUnique({
@@ -54,44 +90,72 @@ export const createReservation = async (req: Request, res: Response) => {
       return errorResponse(res, 'errors.validation_error', 400, { message: 'Reservations are currently disabled for this restaurant' });
     }
 
-    // Table Availability Check
+    // Reservation window: how long a table is considered occupied by this booking.
+    // Admin-configurable via Settings > Reservation Logic (defaultDurationMinutes), defaults to 90 minutes.
+    const durationMinutes = settings.defaultDurationMinutes || 90;
+    const windowEnd = new Date(start.getTime() + durationMinutes * 60000);
+
     let finalTableId = tableId === 'none' ? null : tableId;
+    let possiblyFullyBooked = false;
+    const staffInitiated = isStaffRequest(req);
 
     if (finalTableId) {
        const isTableOccupied = await prisma.reservation.findFirst({
          where: {
            tableId: finalTableId,
            status: { in: ['CONFIRMED', 'PENDING'] },
-           startTime: { lt: new Date(start.getTime() + 90 * 60000) }, // Assuming 90 min window
+           startTime: { lt: windowEnd },
            endTime: { gt: start }
          }
        });
-       if (isTableOccupied) return errorResponse(res, 'errors.validation_error', 400, { message: 'Selected table is not available at this time.' });
+       if (isTableOccupied) {
+         // Only an authenticated staff member may knowingly override a conflict;
+         // public/customer requests are always hard-blocked here.
+         if (!staffInitiated || !overrideConflict) {
+           return errorResponse(res, 'errors.table_conflict', 409, { code: 'TABLE_CONFLICT' });
+         }
+       }
     } else {
        // Auto-assign first available table that fits guestCount
        const availableTable = await prisma.table.findFirst({
          where: {
            restaurantId,
-           capacity: { gte: parseInt(guestCount) },
+           capacity: { gte: partySize },
            reservations: {
              none: {
                status: { in: ['CONFIRMED', 'PENDING'] },
-               startTime: { lt: new Date(start.getTime() + 90 * 60000) },
+               startTime: { lt: windowEnd },
                endTime: { gt: start }
              }
            }
          }
        });
-       if (!availableTable) return errorResponse(res, 'errors.validation_error', 400, { message: 'No tables available for this party size at the selected time.' });
-       finalTableId = availableTable.id;
+
+       if (availableTable) {
+         finalTableId = availableTable.id;
+       } else {
+         // No table is free right now. If no table could ever seat this party,
+         // reject outright; otherwise accept as a pending, unassigned request
+         // so staff can resolve it manually (matches the fully-booked hint shown to guests).
+         const anyTableFitsCapacity = await prisma.table.findFirst({
+           where: { restaurantId, capacity: { gte: partySize } }
+         });
+         if (!anyTableFitsCapacity) {
+           return errorResponse(res, 'errors.validation_error', 400, { message: 'No table can accommodate this party size.' });
+         }
+         possiblyFullyBooked = true;
+       }
     }
 
     let endTime: Date | null = null;
     if (settings.logic === 'DYNAMIC_DURATION') {
-      endTime = new Date(start.getTime() + settings.defaultDurationMinutes * 60000);
+      endTime = windowEnd;
     } else {
-      endTime = new Date(start.getTime() + 120 * 60000); 
+      endTime = new Date(start.getTime() + 120 * 60000);
     }
+
+    // Auto-confirm requires an actually-assigned, conflict-free table for this slot.
+    const isConfirmed = !!daySetting?.autoConfirm && !!finalTableId && !possiblyFullyBooked;
 
     const reservation = await prisma.reservation.create({
       data: {
@@ -101,17 +165,17 @@ export const createReservation = async (req: Request, res: Response) => {
         customerName,
         customerEmail,
         customerPhone,
-        guestCount: parseInt(guestCount),
+        guestCount: partySize,
         startTime: start,
         endTime,
         notes,
         internalNote,
         isVIP: !!isVIP,
-        status: daySetting?.autoConfirm ? 'CONFIRMED' : 'PENDING'
+        status: isConfirmed ? 'CONFIRMED' : 'PENDING'
       }
     });
 
-    return successResponse(res, reservation, 'messages.reservation_created', 201);
+    return successResponse(res, { ...reservation, possiblyFullyBooked }, 'messages.reservation_created', 201);
   } catch (error) {
     console.error('Create reservation error', error);
     return errorResponse(res, 'errors.internal_error', 500);
@@ -122,9 +186,9 @@ export const updateReservation = async (req: Request, res: Response) => {
   try {
     const restaurantId = req.restaurantId!;
     const { id } = req.params;
-    const { 
-      tableId, categoryId, customerName, customerEmail, customerPhone, 
-      guestCount, startTime, notes, internalNote, isVIP, status 
+    const {
+      tableId, categoryId, customerName, customerEmail, customerPhone,
+      guestCount, startTime, notes, internalNote, isVIP, status, overrideConflict
     } = req.body;
 
     const existingRes = await prisma.reservation.findFirst({
@@ -133,16 +197,40 @@ export const updateReservation = async (req: Request, res: Response) => {
 
     if (!existingRes) return errorResponse(res, 'errors.validation_error', 404, { message: 'Reservation not found' });
 
+    const finalTableId = tableId === 'none' ? null : tableId;
+    const start = new Date(startTime);
+
+    if (finalTableId) {
+      const settings = await prisma.restaurantSettings.findUnique({ where: { restaurantId } });
+      const durationMinutes = settings?.defaultDurationMinutes || 90;
+      const windowEnd = new Date(start.getTime() + durationMinutes * 60000);
+
+      const isTableOccupied = await prisma.reservation.findFirst({
+        where: {
+          id: { not: id },
+          tableId: finalTableId,
+          status: { in: ['CONFIRMED', 'PENDING'] },
+          startTime: { lt: windowEnd },
+          endTime: { gt: start }
+        }
+      });
+      // This route is staff-only (authMiddleware + manage_reservations), so an explicit
+      // overrideConflict from the confirmed warning dialog is enough to proceed.
+      if (isTableOccupied && !overrideConflict) {
+        return errorResponse(res, 'errors.table_conflict', 409, { code: 'TABLE_CONFLICT' });
+      }
+    }
+
     const updated = await prisma.reservation.update({
       where: { id },
       data: {
-        tableId: tableId === 'none' ? null : tableId,
+        tableId: finalTableId,
         categoryId: categoryId === 'none' ? null : categoryId,
         customerName,
         customerEmail,
         customerPhone,
         guestCount: parseInt(guestCount),
-        startTime: new Date(startTime),
+        startTime: start,
         notes,
         internalNote,
         isVIP: !!isVIP,

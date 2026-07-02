@@ -4,7 +4,8 @@
     "unauthorized": "Yetkisiz erişim",
     "validation_error": "Doğrulama hatası",
     "internal_error": "Sunucu hatası",
-    "tenant_required": "X-Restaurant-ID başlığı gereklidir"
+    "tenant_required": "X-Restaurant-ID başlığı gereklidir",
+    "table_conflict": "Bu masa, çakışan bir zaman dilimi için zaten rezerve edilmiş"
   },
   "messages": {
     "reservation_created": "Rezervasyon başarıyla oluşturuldu",

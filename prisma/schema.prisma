@@ -46,7 +46,7 @@ model FrontendCustomization {
   restaurantId String @unique
 
   // New Theming Architecture
-  layoutStyle  String @default("CLASSIC_LIST") // CLASSIC_LIST, EDITORIAL_IMAGE
+  layoutStyle  String @default("CLASSIC_LIST") // CLASSIC_LIST, EDITORIAL_IMAGE, ANIMATED, GARDEN_FRESH
   typography   String @default("SANS") // SANS, SERIF, MONO
   colorPalette String @default("OBSIDIAN") // OBSIDIAN, PEARL, EARTH
 
@@ -211,11 +211,12 @@ model Table {
   isAvailable  Boolean @default(true)
 
   // Floor Plan Visuals
-  positionX Float  @default(0)
-  positionY Float  @default(0)
-  shape     String @default("rectangle") // rectangle, circle
-  width     Float  @default(60)
-  height    Float  @default(60)
+  positionX Float   @default(0)
+  positionY Float   @default(0)
+  shape     String  @default("rectangle") // rectangle, circle
+  width     Float   @default(60)
+  height    Float   @default(60)
+  color     String? @default("#ffffff")
 
   reservations Reservation[]
   tableType    TableType     @relation(fields: [tableTypeId], references: [id])

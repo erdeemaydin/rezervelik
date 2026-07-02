@@ -6,10 +6,11 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { 
-  Plus, Check, X, Clock, Search, Edit2, Trash2, 
-  Star, MessageSquare, RotateCcw, Calendar as CalendarIcon, 
-  Timer, CheckCircle2, ListFilter, CalendarDays, ChevronLeft, ChevronRight, Info 
+import {
+  Plus, Check, X, Clock, Search, Edit2, Trash2,
+  Star, MessageSquare, RotateCcw, Calendar as CalendarIcon,
+  Timer, CheckCircle2, ListFilter, CalendarDays, ChevronLeft, ChevronRight, Info,
+  AlertTriangle
 } from 'lucide-react';
 import { 
   Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter 
@@ -36,6 +37,7 @@ interface Reservation {
   notes: string | null;
   internalNote: string | null;
   isVIP: boolean;
+  phoneHistory?: { totalVisits: number; noShowCount: number };
 }
 
 export default function ReservationsPage() {
@@ -62,8 +64,37 @@ export default function ReservationsPage() {
 
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
   const [selectedTime, setSelectedTime] = useState('19:00');
-  
+
   const filterDateRef = useRef<HTMLInputElement>(null);
+
+  // Timeline tab
+  const todayLocalDate = () => {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  };
+  const [timelineDate, setTimelineDate] = useState(todayLocalDate());
+  const timelineDateRef = useRef<HTMLInputElement>(null);
+  const timelineScrollRef = useRef<HTMLDivElement>(null);
+  const shiftTimelineDate = (days: number) => {
+    const d = new Date(`${timelineDate}T00:00:00`);
+    d.setDate(d.getDate() + days);
+    setTimelineDate(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`);
+  };
+  const scrollTimelineToNow = (smooth = false) => {
+    const el = timelineScrollRef.current;
+    if (!el) return;
+    const nowCol = el.querySelector('[data-now-marker="true"]') as HTMLElement | null;
+    if (nowCol) {
+      el.scrollTo({ left: Math.max(0, nowCol.offsetLeft - 160), behavior: smooth ? 'smooth' : 'auto' });
+    }
+  };
+
+  useEffect(() => {
+    if (activeTab === 'timeline') {
+      // Always land on the current time period when the tab is opened.
+      requestAnimationFrame(() => scrollTimelineToNow(false));
+    }
+  }, [activeTab, timelineDate]);
 
   useEffect(() => { fetchData(); }, []);
 
@@ -156,27 +187,43 @@ export default function ReservationsPage() {
     setIsDialogOpen(true);
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const [showConflictWarning, setShowConflictWarning] = useState(false);
+
+  const submitReservation = async (overrideConflict = false) => {
     const combinedDateTime = new Date(`${selectedDate}T${selectedTime}`);
     try {
       const payload = {
         ...formData,
         guestCount: parseInt(formData.guestCount),
-        startTime: combinedDateTime.toISOString()
+        startTime: combinedDateTime.toISOString(),
+        ...(overrideConflict ? { overrideConflict: true } : {})
       };
       if (isEditMode && selectedId) {
         await api.put(`/reservations/${selectedId}`, payload);
         toast.success(t("reservations.saved"));
       } else {
-        await api.post('/reservations', payload);
-        toast.success(t("reservations.created"));
+        const res = await api.post('/reservations', payload);
+        if (res.data?.data?.possiblyFullyBooked) {
+          toast.warning(t("reservations.possiblyFullyBooked"));
+        } else {
+          toast.success(t("reservations.created"));
+        }
       }
+      setShowConflictWarning(false);
       setIsDialogOpen(false);
       fetchData();
     } catch (err: any) {
+      if (err.response?.data?.details?.code === 'TABLE_CONFLICT') {
+        setShowConflictWarning(true);
+        return;
+      }
       toast.error(err.response?.data?.error || t("reservations.failedToSave"));
     }
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    submitReservation(false);
   };
 
   const handleDelete = async (id: string) => {
@@ -237,11 +284,32 @@ export default function ReservationsPage() {
                 <Button variant="ghost" size="sm" onClick={() => setActiveTab('upcoming')} className={cn("flex-1 h-9 text-[10px] font-black uppercase rounded-sm transition-all", activeTab === 'upcoming' ? "bg-white text-blue-600 shadow-sm border border-slate-100" : "text-slate-400 hover:text-slate-600")}>
                     <Timer className="w-3.5 h-3.5 mr-2" /> {t("reservations.liveAndPending")}
                 </Button>
+                <Button variant="ghost" size="sm" onClick={() => setActiveTab('timeline')} className={cn("flex-1 h-9 text-[10px] font-black uppercase rounded-sm transition-all", activeTab === 'timeline' ? "bg-white text-blue-600 shadow-sm border border-slate-100" : "text-slate-400 hover:text-slate-600")}>
+                    <CalendarDays className="w-3.5 h-3.5 mr-2" /> {t("reservations.timeline")}
+                </Button>
                 <Button variant="ghost" size="sm" onClick={() => setActiveTab('history')} className={cn("flex-1 h-9 text-[10px] font-black uppercase rounded-sm transition-all", activeTab === 'history' ? "bg-white text-blue-600 shadow-sm border border-slate-100" : "text-slate-400 hover:text-slate-600")}>
                     <CheckCircle2 className="w-3.5 h-3.5 mr-2" /> {t("reservations.serviceHistory")}
                 </Button>
               </div>
 
+              {activeTab === 'timeline' ? (
+                <div className="flex flex-wrap items-center justify-between p-3 gap-4">
+                  <div className="flex items-center gap-1 bg-slate-100/50 p-1 rounded-md border border-slate-200/60">
+                    <Button variant="ghost" size="icon" onClick={() => shiftTimelineDate(-1)} className="h-8 w-8 text-slate-500"><ChevronLeft className="w-4 h-4" /></Button>
+                    <Button variant="ghost" size="sm" onClick={() => setTimelineDate(todayLocalDate())} className={cn("h-7 text-[9px] font-black uppercase px-3 rounded-sm", timelineDate === todayLocalDate() ? "bg-blue-600 text-white" : "text-slate-500")}>{t("reservations.filterToday")}</Button>
+                    <div className="relative">
+                      <input type="date" ref={timelineDateRef} value={timelineDate} onChange={(e) => setTimelineDate(e.target.value)} className="sr-only" />
+                      <Button variant="ghost" size="sm" onClick={() => timelineDateRef.current?.showPicker()} className="h-7 text-[9px] font-black uppercase px-3 rounded-sm text-slate-700">
+                        <CalendarIcon className="w-3 h-3 mr-1.5" /> {new Date(`${timelineDate}T00:00:00`).toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' })}
+                      </Button>
+                    </div>
+                    <Button variant="ghost" size="icon" onClick={() => shiftTimelineDate(1)} className="h-8 w-8 text-slate-500"><ChevronRight className="w-4 h-4" /></Button>
+                  </div>
+                  <Button variant="outline" size="sm" onClick={() => scrollTimelineToNow(true)} className="h-8 text-[10px] font-black uppercase border-slate-200 text-slate-600">
+                    <Timer className="w-3.5 h-3.5 mr-1.5" /> {t("reservations.jumpToNow")}
+                  </Button>
+                </div>
+              ) : (
               <div className="flex flex-wrap items-center justify-between p-3 gap-4">
                 <div className="flex items-center gap-1 bg-slate-100/50 p-1 rounded-md border border-slate-200/60">
                   {[
@@ -267,10 +335,20 @@ export default function ReservationsPage() {
                   <Input placeholder={t("reservations.searchPlaceholder")} className="pl-10 h-10 text-xs bg-slate-50 border-slate-200 focus:bg-white focus:ring-4 focus:ring-blue-500/5 rounded-md transition-all font-bold" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
                 </div>
               </div>
+              )}
             </div>
           </CardHeader>
 
           <CardContent className="p-0">
+            {activeTab === 'timeline' ? (
+              <ReservationTimeline
+                tables={tables}
+                reservations={reservations}
+                timelineDate={timelineDate}
+                scrollRef={timelineScrollRef}
+                t={t}
+              />
+            ) : (
             <Table>
               <TableHeader className="bg-slate-50/80">
                 <TableRow className="h-10 hover:bg-transparent border-b border-slate-200">
@@ -310,6 +388,11 @@ export default function ReservationsPage() {
                             <span className="text-[10px] text-slate-400 font-mono font-bold">{res.customerPhone}</span>
                             <Badge variant="outline" className="text-[8px] h-4 border-slate-200 bg-white font-black text-slate-400 rounded-sm shadow-none uppercase">{res.category?.name || t("reservations.manual")}</Badge>
                         </div>
+                        {res.phoneHistory && res.phoneHistory.noShowCount > 0 && (
+                            <div title={t("reservations.noShowHistoryHint")} className="flex items-center gap-1 w-fit text-[9px] font-black uppercase text-red-700 bg-red-50 border border-red-200 px-1.5 py-0.5 rounded-sm">
+                                <AlertTriangle className="w-2.5 h-2.5" /> {res.phoneHistory.noShowCount}/{res.phoneHistory.totalVisits} {t("reservations.noShowHistoryLabel")}
+                            </div>
+                        )}
                       </div>
                     </TableCell>
                     <TableCell className="text-center">
@@ -362,11 +445,12 @@ export default function ReservationsPage() {
                 ))}
               </TableBody>
             </Table>
+            )}
           </CardContent>
         </Card>
 
         {/* Dialog - Flat ngx-admin Style */}
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <Dialog open={isDialogOpen} onOpenChange={(open) => { setIsDialogOpen(open); if (!open) setShowConflictWarning(false); }}>
           <DialogContent maxWidth="sm:max-w-2xl" className="p-0 rounded-md overflow-hidden border-0 shadow-2xl">
             <form onSubmit={handleSubmit}>
               <div className="bg-slate-900 p-5 text-white flex justify-between items-center">
@@ -452,7 +536,144 @@ export default function ReservationsPage() {
             </form>
           </DialogContent>
         </Dialog>
+
+        {/* Conflict override warning */}
+        <Dialog open={showConflictWarning} onOpenChange={setShowConflictWarning}>
+          <DialogContent maxWidth="sm:max-w-md" className="p-0 rounded-md overflow-hidden border-0 shadow-2xl">
+            <div className="bg-amber-500 p-6">
+              <DialogHeader>
+                <DialogTitle className="text-white text-lg font-black uppercase tracking-tight flex items-center gap-2">
+                  <AlertTriangle className="w-6 h-6" /> {t("reservations.conflictWarningTitle")}
+                </DialogTitle>
+              </DialogHeader>
+            </div>
+            <div className="p-6">
+              <DialogDescription className="text-slate-700 font-medium leading-relaxed">
+                {t("reservations.conflictWarningDesc")}
+              </DialogDescription>
+            </div>
+            <div className="p-4 bg-slate-50 border-t border-slate-100 flex justify-end gap-2">
+              <Button type="button" variant="ghost" onClick={() => setShowConflictWarning(false)} className="h-10 text-xs font-black text-slate-400 uppercase tracking-widest">{t("reservations.conflictCancel")}</Button>
+              <Button type="button" onClick={() => submitReservation(true)} className="h-10 bg-amber-600 hover:bg-amber-700 text-white text-xs font-black uppercase px-6 rounded-sm">{t("reservations.conflictConfirm")}</Button>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
     </AdminLayout>
+  );
+}
+
+// --- Reservation Timeline (tables x time-of-day) ---
+const TIMELINE_START_HOUR = 9;
+const TIMELINE_END_HOUR = 24; // exclusive, i.e. renders up to 24:00
+const TIMELINE_SLOT_MINUTES = 30;
+const TIMELINE_PX_PER_SLOT = 72;
+const TIMELINE_LABEL_WIDTH = 176;
+
+function ReservationTimeline({ tables, reservations, timelineDate, scrollRef, t }: {
+  tables: any[];
+  reservations: Reservation[];
+  timelineDate: string;
+  scrollRef: React.RefObject<HTMLDivElement | null>;
+  t: (key: string) => string;
+}) {
+  const slots = useMemo(() => {
+    const list: { hour: number; minute: number }[] = [];
+    for (let h = TIMELINE_START_HOUR; h < TIMELINE_END_HOUR; h++) {
+      for (let m = 0; m < 60; m += TIMELINE_SLOT_MINUTES) {
+        list.push({ hour: h, minute: m });
+      }
+    }
+    return list;
+  }, []);
+
+  const totalWidth = slots.length * TIMELINE_PX_PER_SLOT;
+  const minutesFromStart = (d: Date) => (d.getHours() - TIMELINE_START_HOUR) * 60 + d.getMinutes();
+  const minutesToPx = (mins: number) => (mins / TIMELINE_SLOT_MINUTES) * TIMELINE_PX_PER_SLOT;
+
+  const dayReservations = reservations.filter(r =>
+    r.startTime.startsWith(timelineDate) &&
+    r.table &&
+    !['CANCELLED', 'NO_SHOW'].includes(r.status)
+  );
+
+  const isToday = timelineDate === (() => {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  })();
+  const now = new Date();
+  const nowLeft = isToday ? minutesToPx(minutesFromStart(now)) : null;
+
+  const statusBarColor: Record<string, string> = {
+    PENDING: 'bg-amber-400 border-amber-500',
+    CONFIRMED: 'bg-blue-500 border-blue-600',
+    COMPLETED: 'bg-slate-400 border-slate-500'
+  };
+
+  if (tables.length === 0) {
+    return <div className="p-16 text-center text-xs text-slate-300 font-black uppercase tracking-widest">{t("reservations.noTablesForTimeline")}</div>;
+  }
+
+  return (
+    <div ref={scrollRef} className="overflow-x-auto">
+      <div className="relative" style={{ width: TIMELINE_LABEL_WIDTH + totalWidth }}>
+        {/* Header: time labels */}
+        <div className="flex sticky top-0 z-20 bg-white border-b border-slate-200">
+          <div className="sticky left-0 z-30 bg-white shrink-0 border-r border-slate-200 p-2 text-[9px] font-black uppercase tracking-widest text-slate-400 flex items-end" style={{ width: TIMELINE_LABEL_WIDTH }}>
+            {t("reservations.table")}
+          </div>
+          {slots.map((s, i) => (
+            <div key={i} className="shrink-0 border-r border-slate-100 py-2 text-center text-[9px] font-bold text-slate-400" style={{ width: TIMELINE_PX_PER_SLOT }}>
+              {s.minute === 0 ? `${String(s.hour).padStart(2, '0')}:00` : ''}
+            </div>
+          ))}
+        </div>
+
+        {/* Rows: one per table */}
+        {tables.map(table => {
+          const tableReservations = dayReservations.filter(r => r.table?.id === table.id);
+          return (
+            <div key={table.id} className="flex border-b border-slate-100" style={{ height: 60 }}>
+              <div className="sticky left-0 z-10 bg-white shrink-0 border-r border-slate-200 p-2 flex flex-col justify-center" style={{ width: TIMELINE_LABEL_WIDTH }}>
+                <div className="text-xs font-black text-slate-800">{table.identifier}</div>
+                <div className="text-[9px] text-slate-400 font-bold">{table.capacity} {t("reservations.pax")} · {table.tableType?.name || ''}</div>
+              </div>
+              <div className="relative" style={{ width: totalWidth }}>
+                {slots.map((s, i) => (
+                  <div key={i} className="absolute top-0 bottom-0 border-r border-slate-50" style={{ left: i * TIMELINE_PX_PER_SLOT, width: TIMELINE_PX_PER_SLOT }} />
+                ))}
+                {tableReservations.map(r => {
+                  const start = new Date(r.startTime);
+                  const end = (r as any).endTime ? new Date((r as any).endTime) : new Date(start.getTime() + 90 * 60000);
+                  const left = Math.max(0, minutesToPx(minutesFromStart(start)));
+                  const width = Math.max(24, minutesToPx((end.getTime() - start.getTime()) / 60000));
+                  return (
+                    <div
+                      key={r.id}
+                      title={`${r.customerName} · ${r.guestCount} ${t("reservations.pax")} · ${start.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`}
+                      className={cn("absolute top-1.5 bottom-1.5 rounded-md border px-2 py-1 text-[10px] font-bold text-white overflow-hidden shadow-sm", statusBarColor[r.status] || 'bg-slate-400 border-slate-500')}
+                      style={{ left, width }}
+                    >
+                      <div className="truncate">{r.customerName}</div>
+                      <div className="truncate opacity-80 text-[9px] font-medium">{r.guestCount} {t("reservations.pax")}</div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          );
+        })}
+
+        {nowLeft !== null && nowLeft >= 0 && nowLeft <= totalWidth && (
+          <div
+            data-now-marker="true"
+            className="absolute top-0 bottom-0 w-0.5 bg-red-500 z-20 pointer-events-none"
+            style={{ left: TIMELINE_LABEL_WIDTH + nowLeft }}
+          >
+            <div className="absolute -top-1 -left-[5px] w-2.5 h-2.5 rounded-full bg-red-500" />
+          </div>
+        )}
+      </div>
+    </div>
   );
 }

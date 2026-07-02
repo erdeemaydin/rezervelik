@@ -39,7 +39,14 @@ interface DiningTable {
   shape: string;
   width: number;
   height: number;
+  color: string | null;
 }
+
+// Fixed logical canvas size the floor plan is designed in. The canvas is scaled
+// via CSS transform to fit whatever container width is available (any resolution),
+// so stored positions/sizes stay in this logical coordinate space regardless of viewport.
+const CANVAS_WIDTH = 1400;
+const CANVAS_HEIGHT = 800;
 
 interface FloorElement {
   id: string;
@@ -73,9 +80,9 @@ export default function TablesPage() {
   const [isFloorPlanEditMode, setIsFloorPlanEditMode] = useState(false);
   const [selectedZoneId, setSelectedZoneId] = useState<string>('all');
 
-  const [tableForm, setTableForm] = useState({ 
-    identifier: '', capacity: '4', tableTypeId: '', 
-    shape: 'rectangle', width: '60', height: '60' 
+  const [tableForm, setTableForm] = useState({
+    identifier: '', capacity: '4', tableTypeId: '',
+    shape: 'rectangle', width: '60', height: '60', color: '#ffffff'
   });
   const [elementForm, setElementForm] = useState({
     tableTypeId: '', type: 'box', label: '', width: '200', height: '100', color: '#f8fafc'
@@ -83,8 +90,28 @@ export default function TablesPage() {
   const [zoneForm, setZoneForm] = useState({ name: '', description: '', parentId: '' });
 
   // Drag and drop state
+  const outerRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const dragInfo = useRef({ isDragging: false, isResizing: false, startX: 0, startY: 0, startWidth: 0, startHeight: 0, dragId: null as string | null, dragType: null as 'table' | 'element' | null });
+
+  // Scale factor so the fixed-size logical canvas fits any container width (any resolution/device).
+  const [scale, setScale] = useState(1);
+  const scaleRef = useRef(1);
+  useEffect(() => {
+    const outer = outerRef.current;
+    if (!outer) return;
+    const updateScale = () => {
+      const width = outer.clientWidth;
+      if (!width) return;
+      const next = Math.min(1, width / CANVAS_WIDTH);
+      scaleRef.current = next;
+      setScale(next);
+    };
+    updateScale();
+    const observer = new ResizeObserver(updateScale);
+    observer.observe(outer);
+    return () => observer.disconnect();
+  }, []);
 
   const fetchData = async () => {
     try {
@@ -117,7 +144,7 @@ export default function TablesPage() {
   const handleOpenCreateTable = () => {
     setIsEditMode(false);
     setSelectedId(null);
-    setTableForm({ identifier: '', capacity: '4', tableTypeId: selectedZoneId === 'all' ? (tableTypes[0]?.id || '') : selectedZoneId, shape: 'rectangle', width: '60', height: '60' });
+    setTableForm({ identifier: '', capacity: '4', tableTypeId: selectedZoneId === 'all' ? (tableTypes[0]?.id || '') : selectedZoneId, shape: 'rectangle', width: '60', height: '60', color: '#ffffff' });
     setIsTableDialogOpen(true);
   };
 
@@ -130,7 +157,8 @@ export default function TablesPage() {
       tableTypeId: table.tableType?.id || '',
       shape: table.shape || 'rectangle',
       width: (table.width || 60).toString(),
-      height: (table.height || 60).toString()
+      height: (table.height || 60).toString(),
+      color: table.color || '#ffffff'
     });
     setIsTableDialogOpen(true);
   };
@@ -248,6 +276,16 @@ export default function TablesPage() {
     }
   };
 
+  const syncTableSize = async (id: string, w: number, h: number) => {
+    try {
+        await api.put(`/tables/${id}`, { width: w, height: h });
+        toast.success(t("tables.tableSizeSaved"));
+    } catch (error) {
+        toast.error(t("tables.posSaveFailed"));
+        fetchData();
+    }
+  };
+
   const syncElementPosition = async (id: string, x: number, y: number) => {
     try {
         await api.put(`/floor-elements/${id}`, { positionX: x, positionY: y });
@@ -284,38 +322,59 @@ export default function TablesPage() {
     };
   };
 
-  const handleResizeDown = (e: React.PointerEvent, id: string) => {
+  const handleResizeDown = (e: React.PointerEvent, id: string, type: 'table' | 'element') => {
     if (!isFloorPlanEditMode) return;
     e.stopPropagation();
     e.currentTarget.setPointerCapture(e.pointerId);
-    const element = floorElements.find(el => el.id === id);
-    if (!element) return;
-    dragInfo.current = {
-        isDragging: false,
-        isResizing: true,
-        startX: e.clientX,
-        startY: e.clientY,
-        startWidth: element.width || 200,
-        startHeight: element.height || 100,
-        dragId: id,
-        dragType: 'element'
-    };
+    if (type === 'table') {
+        const table = tables.find(tableItem => tableItem.id === id);
+        if (!table) return;
+        dragInfo.current = {
+            isDragging: false,
+            isResizing: true,
+            startX: e.clientX,
+            startY: e.clientY,
+            startWidth: table.width || 60,
+            startHeight: table.height || 60,
+            dragId: id,
+            dragType: 'table'
+        };
+    } else {
+        const element = floorElements.find(el => el.id === id);
+        if (!element) return;
+        dragInfo.current = {
+            isDragging: false,
+            isResizing: true,
+            startX: e.clientX,
+            startY: e.clientY,
+            startWidth: element.width || 200,
+            startHeight: element.height || 100,
+            dragId: id,
+            dragType: 'element'
+        };
+    }
   };
 
   const handlePointerMove = (e: React.PointerEvent) => {
     if (!isFloorPlanEditMode) return;
     const info = dragInfo.current;
     if (!info.dragId || !containerRef.current) return;
-    
+    const currentScale = scaleRef.current || 1;
+
     if (info.isResizing) {
-        let newWidth = info.startWidth + (e.clientX - info.startX);
-        let newHeight = info.startHeight + (e.clientY - info.startY);
-        newWidth = Math.max(50, newWidth);
-        newHeight = Math.max(50, newHeight);
-        setFloorElements(prev => prev.map(el => el.id === info.dragId ? { ...el, width: newWidth, height: newHeight } : el));
+        const minSize = info.dragType === 'table' ? 40 : 50;
+        let newWidth = info.startWidth + (e.clientX - info.startX) / currentScale;
+        let newHeight = info.startHeight + (e.clientY - info.startY) / currentScale;
+        newWidth = Math.max(minSize, newWidth);
+        newHeight = Math.max(minSize, newHeight);
+        if (info.dragType === 'table') {
+            setTables(prev => prev.map(tableItem => tableItem.id === info.dragId ? { ...tableItem, width: newWidth, height: newHeight } : tableItem));
+        } else {
+            setFloorElements(prev => prev.map(el => el.id === info.dragId ? { ...el, width: newWidth, height: newHeight } : el));
+        }
         return;
     }
-    
+
     if (!info.isDragging && (Math.abs(e.clientX - info.startX) > 5 || Math.abs(e.clientY - info.startY) > 5)) {
         info.isDragging = true;
     }
@@ -323,7 +382,7 @@ export default function TablesPage() {
     if (!info.isDragging) return;
 
     const rect = containerRef.current.getBoundingClientRect();
-    
+
     let itemWidth = 60;
     let itemHeight = 60;
 
@@ -338,12 +397,13 @@ export default function TablesPage() {
         itemWidth = element.width || 200;
         itemHeight = element.height || 100;
     }
-    
-    let x = e.clientX - rect.left - (itemWidth / 2);
-    let y = e.clientY - rect.top - (itemHeight / 2);
 
-    x = Math.max(0, Math.min(x, rect.width - itemWidth));
-    y = Math.max(0, Math.min(y, rect.height - itemHeight));
+    // rect is in on-screen (scaled) pixels; convert back to the logical canvas space.
+    let x = (e.clientX - rect.left) / currentScale - (itemWidth / 2);
+    let y = (e.clientY - rect.top) / currentScale - (itemHeight / 2);
+
+    x = Math.max(0, Math.min(x, CANVAS_WIDTH - itemWidth));
+    y = Math.max(0, Math.min(y, CANVAS_HEIGHT - itemHeight));
 
     if (info.dragType === 'table') {
         setTables(prev => prev.map(tableItem => tableItem.id === info.dragId ? { ...tableItem, positionX: x, positionY: y } : tableItem));
@@ -358,8 +418,13 @@ export default function TablesPage() {
     const info = dragInfo.current;
     
     if (info.isResizing && info.dragId) {
-        const element = floorElements.find(el => el.id === info.dragId);
-        if (element) syncElementSize(element.id, element.width, element.height);
+        if (info.dragType === 'table') {
+            const table = tables.find(t => t.id === info.dragId);
+            if (table) syncTableSize(table.id, table.width, table.height);
+        } else {
+            const element = floorElements.find(el => el.id === info.dragId);
+            if (element) syncElementSize(element.id, element.width, element.height);
+        }
     } else if (info.isDragging && info.dragId) {
         if (info.dragType === 'table') {
             const table = tables.find(t => t.id === info.dragId);
@@ -496,10 +561,16 @@ export default function TablesPage() {
                   </div>
                 )}
 
-                <div className="flex-1 h-full min-h-[500px] border border-slate-200 rounded-lg bg-slate-50 relative overflow-hidden">
-                    <div 
+                <div ref={outerRef} className="flex-1 min-h-[500px] border border-slate-200 rounded-lg bg-slate-50 relative overflow-auto">
+                    <div
                         ref={containerRef}
-                        className="absolute inset-0 w-full h-full bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] [background-size:16px_16px]"
+                        className="relative bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] [background-size:16px_16px]"
+                        style={{
+                            width: CANVAS_WIDTH,
+                            height: CANVAS_HEIGHT,
+                            transform: `scale(${scale})`,
+                            transformOrigin: 'top left'
+                        }}
                     >
                         {floorElements.filter(el => selectedZoneId === 'all' || el.tableTypeId === selectedZoneId).map(el => (
                             <div
@@ -535,7 +606,7 @@ export default function TablesPage() {
                                         </div>
                                         <div 
                                         className="absolute bottom-0 right-0 w-4 h-4 bg-slate-400/50 cursor-nwse-resize opacity-0 group-hover:opacity-100 transition-opacity z-50 rounded-tl-sm rounded-br-sm"
-                                        onPointerDown={(e) => handleResizeDown(e, el.id)}
+                                        onPointerDown={(e) => handleResizeDown(e, el.id, 'element')}
                                         />
                                     </>
                                 )}
@@ -561,6 +632,7 @@ export default function TablesPage() {
                                         width: `${table.width || 60}px`,
                                         height: `${table.height || 60}px`,
                                         transform: `translate3d(${table.positionX || 0}px, ${table.positionY || 0}px, 0)`,
+                                        backgroundColor: table.color || '#ffffff',
                                         touchAction: isFloorPlanEditMode ? 'none' : 'auto'
                                     }}
                                     onPointerDown={(e) => handlePointerDown(e, table.id, 'table')}
@@ -570,7 +642,7 @@ export default function TablesPage() {
                                 >
                                     <span className="font-black text-slate-800 pointer-events-none">{table.identifier}</span>
                                     <span className="text-[9px] text-slate-500 font-bold pointer-events-none">{table.capacity} {t("tables.pax")}</span>
-                                    
+
                                     {/* Status Indicator */}
                                     <div className={cn(
                                         "absolute -bottom-1 w-3 h-3 rounded-full border-2 border-white",
@@ -579,13 +651,19 @@ export default function TablesPage() {
 
                                     {/* Edit Button overlay */}
                                     {isFloorPlanEditMode && (
-                                      <div 
-                                        className="absolute -top-2 -right-2 bg-blue-600 text-white p-1 rounded-full shadow-md cursor-pointer opacity-0 group-hover:opacity-100 transition-opacity z-50 hover:bg-blue-700"
-                                        onClick={(e) => { e.stopPropagation(); handleOpenEditTable(table); }}
-                                        onPointerDown={(e) => e.stopPropagation()} // Prevent drag start
-                                      >
-                                        <Edit2 className="w-3 h-3" />
-                                      </div>
+                                      <>
+                                        <div
+                                          className="absolute -top-2 -right-2 bg-blue-600 text-white p-1 rounded-full shadow-md cursor-pointer opacity-0 group-hover:opacity-100 transition-opacity z-50 hover:bg-blue-700"
+                                          onClick={(e) => { e.stopPropagation(); handleOpenEditTable(table); }}
+                                          onPointerDown={(e) => e.stopPropagation()} // Prevent drag start
+                                        >
+                                          <Edit2 className="w-3 h-3" />
+                                        </div>
+                                        <div
+                                          className="absolute bottom-0 right-0 w-4 h-4 bg-slate-400/60 cursor-nwse-resize opacity-0 group-hover:opacity-100 transition-opacity z-50 rounded-tl-sm"
+                                          onPointerDown={(e) => handleResizeDown(e, table.id, 'table')}
+                                        />
+                                      </>
                                     )}
                                 </div>
                             ))
@@ -702,7 +780,7 @@ export default function TablesPage() {
 
                     <div className="border-t border-slate-100 pt-5">
                         <Label className="text-xs font-black uppercase tracking-tight text-slate-800 mb-3 block">{t("tables.visualSettings")}</Label>
-                        <div className="grid grid-cols-3 gap-4">
+                        <div className="grid grid-cols-2 gap-4 mb-4">
                             <div className="grid gap-1.5">
                                 <Label className="text-[10px] font-black uppercase text-slate-400">{t("tables.shape")}</Label>
                                 <Select value={tableForm.shape} onValueChange={(v) => setTableForm({...tableForm, shape: v || 'rectangle'})}>
@@ -716,6 +794,12 @@ export default function TablesPage() {
                                 </Select>
                             </div>
                             <div className="grid gap-1.5">
+                                <Label className="text-[10px] font-black uppercase text-slate-400">{t("tables.backgroundColor")}</Label>
+                                <Input type="color" value={tableForm.color} onChange={e => setTableForm({...tableForm, color: e.target.value})} className="h-10 w-full p-1 rounded-sm border-slate-200" />
+                            </div>
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="grid gap-1.5">
                                 <Label className="text-[10px] font-black uppercase text-slate-400">{t("tables.widthPx")}</Label>
                                 <Input type="number" min="40" max="300" required value={tableForm.width} onChange={e => setTableForm({...tableForm, width: e.target.value})} className="h-10 text-sm font-bold rounded-sm border-slate-200" />
                             </div>
@@ -724,6 +808,7 @@ export default function TablesPage() {
                                 <Input type="number" min="40" max="300" required value={tableForm.height} onChange={e => setTableForm({...tableForm, height: e.target.value})} className="h-10 text-sm font-bold rounded-sm border-slate-200" />
                             </div>
                         </div>
+                        <p className="text-[10px] text-slate-400 font-medium mt-3">{t("tables.dragResizeHint")}</p>
                     </div>
 
                     {isEditMode && (
