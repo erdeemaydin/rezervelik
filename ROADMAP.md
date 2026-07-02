@@ -15,11 +15,13 @@
 - [ ] **Payment Gateway Integration:** Implement stripe/iyzico adapters to actually charge the `depositAmount` during public booking.
 - [ ] **SMS Integration (Twilio/AWS SNS):** Send actual SMS notifications when the Waitlist status changes to `NOTIFIED`.
 - [ ] **AI Menu Importer:** Service layer to parse photos of physical menus via LLM/OCR and bulk insert items.
-- [ ] **Interactive Floor Plan:** Visual drag-and-drop floor plan builder rather than list-based table management.
+- [x] **Interactive Floor Plan:** Visual drag-and-drop floor plan builder with per-table color and resize, scaling to any screen resolution via a fixed logical canvas.
+- [x] **Reservation Conflict Handling:** Table-conflict checks now respect the configurable reservation window, staff can knowingly override with a warning, and auto-confirm only fires when a table is actually free (soft "possibly fully booked" pending state otherwise).
+- [x] **Reservation Timeline:** Tables × time-of-day Gantt-style view added to the admin Reservations page.
 - [ ] **Advanced Analytics:** Charting daily revenue (from deposits), reservation drop-off rates, and table turnover times.
 
 ## Phase 3: Scaling & Guest Experience
-- [ ] **CRM & Loyalty:** Guest profiles, visit history, total spend, and automated VIP tagging based on booking frequency.
+- [ ] **CRM & Loyalty:** Guest profiles, visit history, total spend, and automated VIP tagging based on booking frequency. *(First step done: reservation list now shows a per-phone visit/no-show tally.)*
 - [ ] **Marketing Automation:** Mailchimp/Sendgrid integrations to email guests based on their reservation tags (e.g., "Birthday").
 - [ ] **Custom Domains:** Allow tenants to point their own domains (e.g., `bookings.myrestaurant.com`) instead of just `tenant.saas.com`.
 - [ ] **POS Integration Layer:** Webhooks to sync orders from the table to legacy Point of Sale systems (e.g., Micros, NCR).

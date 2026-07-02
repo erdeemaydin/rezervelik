@@ -50,7 +50,7 @@ The system supports three distinct operational modes, configurable per restauran
 
 ## 8. Frontend Customization CMS
 - A `FrontendCustomization` model allows tailoring the public-facing booking and menu page (`/r/[slug]`).
-- The **Design Architecture** (e.g., CLASSIC_LIST vs EDITORIAL_IMAGE) is controlled exclusively by the root SysAdmin via tenant settings, not by the tenant themselves. 
+- The **Design Architecture** (`CLASSIC_LIST`, `EDITORIAL_IMAGE`, `ANIMATED`, or `GARDEN_FRESH` — mapped to the `ClassicLayout`, `PremiumLayout`, `OldenLayout`, and `GardenLayout` components respectively) is controlled exclusively by the root SysAdmin via tenant settings, not by the tenant themselves.
 - Configurable elements available to the tenant include:
   - **Typography & Color Palette.**
   - **Announcement Banner:** Temporary text for promotions or important notices.
@@ -65,3 +65,15 @@ The system supports three distinct operational modes, configurable per restauran
 - Staff assignments are managed based on Shifts.
 - **Shift Requirements:** Managed daily via `ShiftDayRequirement`, defining how many staff members are required for a particular shift on a specific day of the week (e.g., 5 staff for Friday Night).
 - **Warnings & Constraints:** The scheduling assigner warns managers of `DOUBLE_SHIFT` conflicts, `CONSECUTIVE_REST` violations (minimum 11 hours rest required between shifts), and assigning staff on days they are `UNAVAILABLE`.
+
+## 11. Reservation Table-Conflict, Duration & Auto-Confirm Logic
+- **Reservation window:** Each reservation blocks its assigned table for `RestaurantSettings.defaultDurationMinutes` (admin-adjustable in Settings > Reservation Logic; defaults to 90 minutes / 1.5 hours). Table-conflict checks in `createReservation`/`updateReservation` use this value consistently (no hardcoded window).
+- **Conflict blocking vs. override:** Public/customer bookings are always hard-blocked from double-booking a table. An authenticated staff member (valid JWT) may explicitly override a conflict by resubmitting with `overrideConflict: true` after the API returns a `409` with `details.code === 'TABLE_CONFLICT'`. The admin Reservations dialog shows a warning confirmation before doing this.
+- **Availability-gated auto-confirm:** A reservation is only auto-confirmed (`status: CONFIRMED`) when `DaySetting.autoConfirm` is true *and* a table was actually assigned without conflict. If no table is free at that moment (but the party size could physically fit somewhere in the restaurant), the reservation is still accepted as `PENDING` with `possiblyFullyBooked: true` in the response, and the public booking flow shows a "may be fully booked" hint instead of a hard rejection. If literally no table in the restaurant could ever seat the party size, the request is rejected outright.
+- **Reservation Timeline tab:** The admin Reservations page has a Timeline tab (tables as rows, time-of-day as columns) showing reservation bars for a selected day, defaulting to the current time period with day navigation and a "jump to now" control.
+- **No-show / repeat-guest tracking:** `getReservations` returns a `phoneHistory: { totalVisits, noShowCount }` per reservation (grouped by `customerPhone` within the tenant), and the admin list shows a warning badge when a phone number has prior no-shows.
+- **Reservation date-waitlist:** Guests can join a waitlist for a specific fully-booked date (`WaitlistEntry.targetDate`) from the public booking flow — this is independent of the real-time walk-in wait-time queue and is not gated by `WaitTimeConfig.isWaitlistOpen`. Staff manage these under Wait Time > Future Dates and can send an accept/decline offer link; SMS delivery is currently a logged placeholder (no provider wired in).
+
+## 12. Floor Plan Rendering
+- Tables and floor elements are positioned in a fixed logical canvas (1400×800 units); the admin floor plan view scales this canvas via CSS `transform: scale()` to fit any container width, so it adapts to any screen resolution without distorting stored positions/sizes.
+- Tables support a `color` field (like floor elements already did) and can be resized by dragging their bottom-right corner directly on the canvas (in addition to typing width/height in the edit dialog), not just floor elements.

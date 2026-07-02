@@ -56,16 +56,18 @@
 *   **`PUT /api/wait-time/entries/:entryId/status`** - Updates an entry (e.g., NOTIFIED or SEATED). *Triggers SMS hook.*
 
 ### Reservations & Calendar
-*   **`GET /api/reservations`** - Lists reservations (optionally filtered by date/status).
-*   **`POST /api/reservations`** - Creates a new reservation.
-*   **`PUT /api/reservations/:id`** - Updates a reservation (e.g., status changes to CONFIRMED or CANCELLED).
+*   **`GET /api/reservations`** - Lists reservations. Each entry includes `phoneHistory: { totalVisits, noShowCount }`, a per-phone-number tally within the tenant, used to flag repeat no-shows in the dashboard.
+*   **`POST /api/reservations`** - Creates a new reservation. Public (no auth). Blocks table double-booking within `defaultDurationMinutes` of an existing CONFIRMED/PENDING reservation on that table; returns `409` with `details.code: 'TABLE_CONFLICT'` on conflict. An authenticated staff caller may pass `overrideConflict: true` to book anyway. Auto-confirms only if `DaySetting.autoConfirm` is true *and* a table was actually assigned; otherwise saves as `PENDING` and returns `possiblyFullyBooked: true` when no table was free (unless the party size can never fit anywhere, which is a hard `400`).
+*   **`PUT /api/reservations/:id`** - Updates a reservation (e.g., status changes to CONFIRMED or CANCELLED, table/time changes). Staff-only; same table-conflict check as creation, overridable with `overrideConflict: true`.
 *   **`GET /api/categories`** - Manages reservation source categories (Phone, Online, Walk-in).
+
+Reservation Timeline (tables × time-of-day) is a frontend-only view built from `GET /api/reservations` + `GET /api/tables` — no dedicated endpoint.
 
 ### Tables & Floor Plan
 *   **`GET /api/table-types`** - Lists table areas (e.g., Indoor, Terrace).
 *   **`POST /api/table-types`** - Creates a new area.
 *   **`GET /api/tables`** - Lists all individual tables and their capacities.
-*   **`POST /api/tables`** - Creates a new table.
+*   **`POST /api/tables`** / **`PUT /api/tables/:id`** - Create/update a table, including floor-plan visuals (`positionX/Y`, `width`, `height`, `shape`, `color`).
 
 ### Settings & Configuration
 *   **`GET /api/settings`** - Retrieves tenant-level settings (Deposit amounts, reservation logic).
