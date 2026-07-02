@@ -176,19 +176,19 @@ export default function SettingsPage() {
                             <p className="text-[10px] text-slate-400 font-black uppercase tracking-[0.2em] mt-1">{t("settings.subtitle")}</p>
                         </div>
                     </div>
-                    <Button onClick={handleSave} disabled={loading} className="bg-blue-600 hover:bg-blue-700 text-white font-black uppercase text-[10px] px-6 h-10 rounded-sm shadow-md shadow-blue-600/20 transition-all active:scale-95">
-                        {loading ? t("settings.saving") : <><Save className="w-3.5 h-3.5 mr-2" /> {t("settings.saveChanges")}</>}
+                    <Button onClick={handleSave} disabled={loading} className="bg-blue-600 hover:bg-blue-700 text-white font-black uppercase text-xs px-8 h-12 rounded-md shadow-md shadow-blue-600/20 transition-all active:scale-95">
+                        {loading ? t("settings.saving") : <><Save className="w-5 h-5 mr-3" /> {t("settings.saveChanges")}</>}
                     </Button>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                     {/* Scheduling System */}
-                    <Card className="rounded-md border-slate-300 shadow-sm overflow-hidden bg-white md:col-span-2">
-                        <CardHeader className="p-4 bg-slate-50 border-b border-slate-100 flex flex-row items-center gap-3">
-                            <div className="p-2 bg-blue-100 rounded-sm text-blue-600"><Calendar className="w-4 h-4" /></div>
+                    <Card className="rounded-xl border-slate-200 shadow-sm overflow-hidden bg-white md:col-span-2">
+                        <CardHeader className="p-6 bg-slate-50/50 border-b border-slate-100 flex flex-row items-center gap-4">
+                            <div className="p-3 bg-blue-100 rounded-lg text-blue-600"><Calendar className="w-6 h-6" /></div>
                             <div>
-                                <CardTitle className="text-sm font-black uppercase tracking-tight">{t("settings.schedulingOperations")}</CardTitle>
-                                <CardDescription className="text-[10px]">{t("settings.configureRosters")}</CardDescription>
+                                <CardTitle className="text-lg font-black uppercase tracking-tight">{t("settings.schedulingOperations")}</CardTitle>
+                                <CardDescription className="text-sm">{t("settings.configureRosters")}</CardDescription>
                             </div>
                         </CardHeader>
                         <CardContent className="p-6">
@@ -237,102 +237,102 @@ export default function SettingsPage() {
                     </Card>
 
                     {/* Reservation Logic */}
-                    <Card className="rounded-md border-slate-300 shadow-sm overflow-hidden bg-white">
-                        <CardHeader className="p-4 bg-slate-50 border-b border-slate-100 flex flex-row items-center gap-3">
-                            <div className="p-2 bg-purple-100 rounded-sm text-purple-600"><Clock className="w-4 h-4" /></div>
+                    <Card className="rounded-xl border-slate-200 shadow-sm overflow-hidden bg-white">
+                        <CardHeader className="p-6 bg-slate-50/50 border-b border-slate-100 flex flex-row items-center gap-4">
+                            <div className="p-3 bg-purple-100 rounded-lg text-purple-600"><Clock className="w-6 h-6" /></div>
                             <div>
-                                <CardTitle className="text-sm font-black uppercase tracking-tight">{t("settings.reservationLogic")}</CardTitle>
-                                <CardDescription className="text-[10px]">{t("settings.reservationLogicDesc")}</CardDescription>
+                                <CardTitle className="text-lg font-black uppercase tracking-tight">{t("settings.reservationLogic")}</CardTitle>
+                                <CardDescription className="text-sm">{t("settings.reservationLogicDesc")}</CardDescription>
                             </div>
                         </CardHeader>
                         <CardContent className="p-6 space-y-4">
                             <div className="flex items-center justify-between">
-                                <Label className="text-xs font-bold text-slate-700">{t("settings.acceptOnlineReservations")}</Label>
-                                <Switch checked={settings.isReservationEnabled} onCheckedChange={(v: boolean) => setSettings(prev => ({...prev, isReservationEnabled: v}))} />
+                                <Label className="text-sm font-bold text-slate-700">{t("settings.acceptOnlineReservations")}</Label>
+                                <Switch checked={settings.isReservationEnabled} onCheckedChange={(v: boolean) => setSettings(prev => ({...prev, isReservationEnabled: v}))} className="scale-125" />
                             </div>
-                            <div className="grid gap-1.5 pt-2">
-                                <Label className="text-[10px] font-black uppercase text-slate-400">{t("settings.defaultDuration")}</Label>
-                                <Input type="number" value={settings.defaultDurationMinutes} onChange={(e) => setSettings({...settings, defaultDurationMinutes: parseInt(e.target.value)})} className="h-9 text-sm font-bold rounded-sm" />
+                            <div className="grid gap-3 pt-4">
+                                <Label className="text-xs font-black uppercase tracking-wider text-slate-500">{t("settings.defaultDuration")}</Label>
+                                <Input type="number" value={settings.defaultDurationMinutes} onChange={(e) => setSettings({...settings, defaultDurationMinutes: parseInt(e.target.value)})} className="h-12 text-base font-bold rounded-lg px-4" />
                             </div>
-                            <div className="grid gap-1.5">
-                                <Label className="text-[10px] font-black uppercase text-slate-400">{t("settings.assignmentLogic")}</Label>
+                            <div className="grid gap-3 pt-2">
+                                <Label className="text-xs font-black uppercase tracking-wider text-slate-500">{t("settings.assignmentLogic")}</Label>
                                 <Select value={settings.logic || 'DYNAMIC_DURATION'} onValueChange={(v: string | null) => setSettings(prev => ({...prev, logic: v || 'DYNAMIC_DURATION'}))}>
-                                    <SelectTrigger className="h-9 text-xs font-bold rounded-sm">
+                                    <SelectTrigger className="h-12 text-sm font-bold rounded-lg px-4">
                                         <SelectValue placeholder={t("settings.selectLogic")} />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="DYNAMIC_DURATION" className="text-xs">{t("settings.dynamicDuration")}</SelectItem>
-                                        <SelectItem value="FIXED_SLOTS" className="text-xs">{t("settings.fixedTimeSlots")}</SelectItem>
+                                        <SelectItem value="DYNAMIC_DURATION" className="text-sm py-2">{t("settings.dynamicDuration")}</SelectItem>
+                                        <SelectItem value="FIXED_SLOTS" className="text-sm py-2">{t("settings.fixedTimeSlots")}</SelectItem>
                                         </SelectContent>
                                 </Select>
                             </div>
                         </CardContent>
                     </Card>
 
-                    {/* Calendar Master Customization */}
-                    <Card className="rounded-md border-slate-300 shadow-sm overflow-hidden bg-white md:col-span-2">
-                        <CardHeader className="p-4 bg-slate-50 border-b border-slate-100 flex flex-row items-center gap-3">
-                            <div className="p-2 bg-indigo-100 rounded-sm text-indigo-600"><CalendarClock className="w-4 h-4" /></div>
-                            <div>
-                                <CardTitle className="text-sm font-black uppercase tracking-tight">{t("settings.calendarCustomization")}</CardTitle>
-                                <CardDescription className="text-[10px]">{t("settings.calendarCustomizationDesc")}</CardDescription>
-                            </div>
-                        </CardHeader>
-                        <CardContent className="p-6 space-y-4">
-                            <div className="grid gap-1.5">
-                                <Label className="text-[10px] font-black uppercase text-slate-400">{t("settings.setFutureMode")}</Label>
-                                <Select value={futureModeAction || ''} onValueChange={(v) => { setFutureModeAction(v); setIsFutureDialogOpen(true); }}>
-                                    <SelectTrigger className="h-9 text-xs font-bold rounded-sm border-slate-200 w-full sm:w-1/2">
-                                        <SelectValue placeholder={t("settings.selectBulkAction")} />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="AUTO_CONFIRM" className="text-xs font-bold"><div className="flex items-center text-emerald-700"><Check className="w-3 h-3 mr-2" /> {t("settings.autoConfirmBulk")}</div></SelectItem>
-                                        <SelectItem value="STANDARD" className="text-xs font-bold"><div className="flex items-center text-amber-700"><Timer className="w-3 h-3 mr-2" /> {t("settings.standardBulk")}</div></SelectItem>
-                                        <SelectItem value="BLACKOUT" className="text-xs font-bold"><div className="flex items-center text-red-700"><AlertCircle className="w-3 h-3 mr-2" /> {t("settings.blackoutBulk")}</div></SelectItem>
-                                    </SelectContent>
-                                </Select>
-                                <p className="text-[10px] text-slate-500 leading-relaxed mt-1">{t("settings.bulkActionDesc")}</p>
-                            </div>
-                        </CardContent>
-                    </Card>
-
                     {/* Payment Settings */}
-                    <Card className="rounded-md border-slate-300 shadow-sm overflow-hidden bg-white">
-                        <CardHeader className="p-4 bg-slate-50 border-b border-slate-100 flex flex-row items-center gap-3">
-                            <div className="p-2 bg-emerald-100 rounded-sm text-emerald-600"><CreditCard className="w-4 h-4" /></div>
+                    <Card className="rounded-xl border-slate-200 shadow-sm overflow-hidden bg-white">
+                        <CardHeader className="p-6 bg-slate-50/50 border-b border-slate-100 flex flex-row items-center gap-4">
+                            <div className="p-3 bg-emerald-100 rounded-lg text-emerald-600"><CreditCard className="w-6 h-6" /></div>
                             <div>
-                                <CardTitle className="text-sm font-black uppercase tracking-tight">{t("settings.paymentsDeposits")}</CardTitle>
-                                <CardDescription className="text-[10px]">{t("settings.secureBookings")}</CardDescription>
+                                <CardTitle className="text-lg font-black uppercase tracking-tight">{t("settings.paymentsDeposits")}</CardTitle>
+                                <CardDescription className="text-sm">{t("settings.secureBookings")}</CardDescription>
                             </div>
                         </CardHeader>
-                        <CardContent className="p-6 space-y-4">
+                        <CardContent className="p-6 space-y-6">
                             <div className="flex items-center justify-between">
-                                <Label className="text-xs font-bold text-slate-700">{t("settings.enableDeposit")}</Label>
-                                <Switch checked={settings.isPaidReservationEnabled} onCheckedChange={(v: boolean) => setSettings(prev => ({...prev, isPaidReservationEnabled: v}))} />
+                                <Label className="text-sm font-bold text-slate-700">{t("settings.enableDeposit")}</Label>
+                                <Switch checked={settings.isPaidReservationEnabled} onCheckedChange={(v: boolean) => setSettings(prev => ({...prev, isPaidReservationEnabled: v}))} className="scale-125" />
                             </div>
-                            <div className="grid gap-1.5 pt-2">
-                                <Label className="text-[10px] font-black uppercase text-slate-400">{t("settings.depositAmount")}</Label>
+                            <div className="grid gap-3 pt-4">
+                                <Label className="text-xs font-black uppercase tracking-wider text-slate-500">{t("settings.depositAmount")}</Label>
                                 <div className="relative">
                                     <Input type="number" disabled={!settings.isPaidReservationEnabled} value={settings.depositAmount || 0} onChange={(e) => {
                                         const val = parseFloat(e.target.value);
                                         setSettings(prev => ({...prev, depositAmount: isNaN(val) ? 0 : val}));
-                                    }} className="h-9 text-sm font-bold rounded-sm pr-12" />
-                                    <div className="absolute right-3 top-2 text-[10px] font-black text-slate-400">{settings.currency}</div>
+                                    }} className="h-12 text-base font-bold rounded-lg px-4 pr-16" />
+                                    <div className="absolute right-4 top-3.5 text-sm font-black text-slate-400">{settings.currency}</div>
                                 </div>
                             </div>
-                            <div className="grid gap-1.5">
-                                <Label className="text-[10px] font-black uppercase text-slate-400">{t("settings.currency")}</Label>
+                            <div className="grid gap-3 pt-2">
+                                <Label className="text-xs font-black uppercase tracking-wider text-slate-500">{t("settings.currency")}</Label>
                                 <Select value={settings.currency || 'TRY'} onValueChange={(v: string | null) => setSettings(prev => ({...prev, currency: v || 'TRY'}))}>
-                                    <SelectTrigger className="h-9 text-xs font-bold rounded-sm">
+                                    <SelectTrigger className="h-12 text-sm font-bold rounded-lg px-4">
                                         <SelectValue placeholder={t("settings.selectCurrency")} />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="TRY" className="text-xs">{t("settings.tryCurrency")}</SelectItem>
-                                        <SelectItem value="USD" className="text-xs">{t("settings.usdCurrency")}</SelectItem>
-                                        <SelectItem value="EUR" className="text-xs">{t("settings.eurCurrency")}</SelectItem>
-                                        <SelectItem value="GBP" className="text-xs">{t("settings.gbpCurrency")}</SelectItem>
+                                        <SelectItem value="TRY" className="text-sm py-2">{t("settings.tryCurrency")}</SelectItem>
+                                        <SelectItem value="USD" className="text-sm py-2">{t("settings.usdCurrency")}</SelectItem>
+                                        <SelectItem value="EUR" className="text-sm py-2">{t("settings.eurCurrency")}</SelectItem>
+                                        <SelectItem value="GBP" className="text-sm py-2">{t("settings.gbpCurrency")}</SelectItem>
                                     </SelectContent>
                                 </Select>
+                            </div>
+                        </CardContent>
+                    </Card>
+
+                    {/* Calendar Master Customization */}
+                    <Card className="rounded-xl border-slate-200 shadow-sm overflow-hidden bg-white md:col-span-2">
+                        <CardHeader className="p-6 bg-slate-50/50 border-b border-slate-100 flex flex-row items-center gap-4">
+                            <div className="p-3 bg-indigo-100 rounded-lg text-indigo-600"><CalendarClock className="w-6 h-6" /></div>
+                            <div>
+                                <CardTitle className="text-lg font-black uppercase tracking-tight">{t("settings.calendarCustomization")}</CardTitle>
+                                <CardDescription className="text-sm">{t("settings.calendarCustomizationDesc")}</CardDescription>
+                            </div>
+                        </CardHeader>
+                        <CardContent className="p-8 space-y-6">
+                            <div className="grid gap-4 max-w-2xl">
+                                <Label className="text-sm font-black uppercase tracking-wider text-slate-500">{t("settings.setFutureMode")}</Label>
+                                <Select value={futureModeAction || ''} onValueChange={(v) => { setFutureModeAction(v); setIsFutureDialogOpen(true); }}>
+                                    <SelectTrigger className="h-14 text-base font-bold rounded-lg border-slate-200 px-4">
+                                        <SelectValue placeholder={t("settings.selectBulkAction")} />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="AUTO_CONFIRM" className="text-sm font-bold py-3"><div className="flex items-center text-emerald-700"><Check className="w-5 h-5 mr-3" /> {t("settings.autoConfirmBulk")}</div></SelectItem>
+                                        <SelectItem value="STANDARD" className="text-sm font-bold py-3"><div className="flex items-center text-amber-700"><Timer className="w-5 h-5 mr-3" /> {t("settings.standardBulk")}</div></SelectItem>
+                                        <SelectItem value="BLACKOUT" className="text-sm font-bold py-3"><div className="flex items-center text-red-700"><AlertCircle className="w-5 h-5 mr-3" /> {t("settings.blackoutBulk")}</div></SelectItem>
+                                    </SelectContent>
+                                </Select>
+                                <p className="text-sm text-slate-500 leading-relaxed mt-2">{t("settings.bulkActionDesc")}</p>
                             </div>
                         </CardContent>
                     </Card>

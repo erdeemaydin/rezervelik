@@ -35,6 +35,10 @@ interface MenuItem {
   dietaryTags: string | null;
   allergens: string | null;
   spiceLevel: number;
+  ingredients?: string | null;
+  calories?: number | null;
+  containsAlcohol?: boolean;
+  containsPork?: boolean;
   categoryId: string;
 }
 
@@ -84,7 +88,8 @@ export default function MenuManagementPage() {
   const [categoryForm, setCategoryForm] = useState({ menuId: '', name: '', description: '', imageUrl: '', parentId: 'none' });
   const [itemForm, setItemForm] = useState({ 
       categoryId: '', name: '', description: '', price: '', 
-      imageUrl: '', dietaryTags: '', allergens: '', spiceLevel: '0' 
+      imageUrl: '', dietaryTags: '', allergens: '', spiceLevel: '0',
+      ingredients: '', calories: '', containsAlcohol: false, containsPork: false
   });
   
   // Bulk Pricing Form
@@ -247,18 +252,21 @@ export default function MenuManagementPage() {
       if (editItem) {
           setIsEditMode(true);
           setEditId(editItem.id);
-          setItemForm({
+          setItemForm({ 
               categoryId: editItem.categoryId, name: editItem.name, 
               description: editItem.description || '', price: editItem.price.toString(), 
               imageUrl: editItem.imageUrl || '', dietaryTags: editItem.dietaryTags || '', 
-              allergens: editItem.allergens || '', spiceLevel: editItem.spiceLevel.toString()
+              allergens: editItem.allergens || '', spiceLevel: editItem.spiceLevel?.toString() || '0',
+              ingredients: editItem.ingredients || '', calories: editItem.calories?.toString() || '',
+              containsAlcohol: editItem.containsAlcohol || false, containsPork: editItem.containsPork || false
           });
       } else {
           setIsEditMode(false);
           setEditId(null);
           setItemForm({ 
               categoryId, name: '', description: '', price: '', 
-              imageUrl: '', dietaryTags: '', allergens: '', spiceLevel: '0' 
+              imageUrl: '', dietaryTags: '', allergens: '', spiceLevel: '0',
+              ingredients: '', calories: '', containsAlcohol: false, containsPork: false
           });
       }
       setIsItemDialogOpen(true);

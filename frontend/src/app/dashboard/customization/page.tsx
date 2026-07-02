@@ -105,11 +105,11 @@ export default function CustomizationPage() {
             <div className="flex flex-col gap-6 max-w-5xl mx-auto pb-12">
                 <div className="flex items-center justify-between">
                     <div>
-                        <h1 className="text-2xl font-black text-slate-800 tracking-tight">{t("customization.pageTitle")}</h1>
-                        <p className="text-[10px] text-slate-400 font-black uppercase tracking-[0.2em] mt-1">{t("customization.pageSubtitle")}</p>
+                        <h1 className="text-3xl font-black text-slate-800 tracking-tight">{t("customization.pageTitle")}</h1>
+                        <p className="text-xs text-slate-500 font-black uppercase tracking-[0.2em] mt-2">{t("customization.pageSubtitle")}</p>
                     </div>
-                    <Button onClick={handleSave} disabled={loading} className="bg-slate-900 hover:bg-black text-white font-black uppercase text-[10px] px-6 h-10 rounded-sm shadow-md transition-all active:scale-95">
-                        {loading ? t("customization.saving") : <><Save className="w-3.5 h-3.5 mr-2" /> {t("customization.publishChanges")}</>}
+                    <Button onClick={handleSave} disabled={loading} className="bg-slate-900 hover:bg-black text-white font-black uppercase text-xs px-8 h-12 rounded-lg shadow-md transition-all active:scale-95">
+                        {loading ? t("customization.saving") : <><Save className="w-5 h-5 mr-3" /> {t("customization.publishChanges")}</>}
                     </Button>
                 </div>
 
@@ -123,15 +123,15 @@ export default function CustomizationPage() {
                                 <TabsTrigger value="reservation" className="text-xs font-bold uppercase"><FileText className="w-3 h-3 mr-2" /> {t("customization.tabs.bookingRules")}</TabsTrigger>
                             </TabsList>
                             
-                            <TabsContent value="theming" className="mt-4">
-                                <Card className="rounded-sm border-slate-200 shadow-sm bg-white">
-                                    <CardHeader className="p-6 border-b border-slate-100">
-                                        <CardTitle className="text-sm font-black uppercase tracking-tight">{t("customization.theming.title")}</CardTitle>
-                                        <CardDescription className="text-xs">{t("customization.theming.desc")}</CardDescription>
+                            <TabsContent value="theming" className="mt-6">
+                                <Card className="rounded-xl border-slate-200 shadow-sm bg-white">
+                                    <CardHeader className="p-8 border-b border-slate-100">
+                                        <CardTitle className="text-lg font-black uppercase tracking-tight">{t("customization.theming.title")}</CardTitle>
+                                        <CardDescription className="text-sm mt-1">{t("customization.theming.desc")}</CardDescription>
                                     </CardHeader>
-                                    <CardContent className="p-6 space-y-6">
-                                        <div className="space-y-3">
-                                            <Label className="text-[10px] font-black uppercase text-slate-400">{t("customization.theming.typography")}</Label>
+                                    <CardContent className="p-8 space-y-8">
+                                        <div className="space-y-4">
+                                            <Label className="text-xs font-black uppercase tracking-wider text-slate-500">{t("customization.theming.typography")}</Label>
                                             <Select 
                                                 value={customization.typography} 
                                                 onValueChange={(v) => { if (v) setCustomization({...customization, typography: v}); }}

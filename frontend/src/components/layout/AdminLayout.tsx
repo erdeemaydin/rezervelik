@@ -123,7 +123,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
   if (!isAuthenticated) return null; // Wait for redirect
 
   return (
-    <div className="flex h-screen bg-[#f8fafc] overflow-hidden">
+    <div className="flex min-h-screen bg-[#f8fafc]">
       {/* Mobile overlay */}
       {isSidebarOpen && (
         <div 
@@ -135,7 +135,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
       {/* Sidebar */}
       <aside 
         className={cn(
-          "bg-[#0f172a] text-slate-300 transition-all duration-300 ease-in-out flex flex-col z-50 shadow-xl absolute md:relative inset-y-0 left-0 h-full",
+          "bg-[#0f172a] text-slate-300 transition-all duration-300 ease-in-out flex flex-col z-50 shadow-xl fixed md:sticky top-0 h-screen",
           isSidebarOpen ? "w-64 translate-x-0" : "w-64 -translate-x-full md:w-16 md:translate-x-0"
         )}
       >
@@ -227,7 +227,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col min-w-0 relative">
         {/* Header */}
-        <header className="h-16 bg-white border-b border-slate-100 flex items-center justify-between px-4 md:px-8 shrink-0 z-40 shadow-sm shadow-slate-200/20">
+        <header className="h-20 bg-white border-b border-slate-100 flex items-center justify-between px-6 md:px-10 shrink-0 z-40 shadow-sm shadow-slate-200/20 sticky top-0">
           <div className="flex items-center gap-4">
             <Button
               variant="ghost"
@@ -272,7 +272,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
         </header>
 
         {/* Scrollable Content */}
-        <main className="flex-1 overflow-y-auto p-4 md:p-8">
+        <main className="flex-1 p-6 md:p-12">
           <div className="mx-auto max-w-full">
             {children}
           </div>

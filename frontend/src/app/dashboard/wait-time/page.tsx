@@ -188,86 +188,86 @@ export default function WaitlistPage() {
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                     {/* Left Column: Config */}
                     <div className="lg:col-span-1 space-y-6">
-                        <Card className="rounded-md border-slate-300 shadow-sm overflow-hidden bg-white">
-                            <CardHeader className="p-4 bg-slate-50 border-b border-slate-100 flex flex-row items-center justify-between gap-3">
-                                <div className="flex items-center gap-2">
-                                    <div className="p-2 bg-amber-100 rounded-sm text-amber-600"><Hourglass className="w-4 h-4" /></div>
-                                    <CardTitle className="text-sm font-black uppercase tracking-tight">{t("waitTime.config.title")}</CardTitle>
+                        <Card className="rounded-xl border-slate-200 shadow-sm overflow-hidden bg-white">
+                            <CardHeader className="p-6 bg-slate-50/50 border-b border-slate-100 flex flex-row items-center justify-between gap-4">
+                                <div className="flex items-center gap-3">
+                                    <div className="p-3 bg-amber-100 rounded-lg text-amber-600"><Hourglass className="w-6 h-6" /></div>
+                                    <CardTitle className="text-lg font-black uppercase tracking-tight">{t("waitTime.config.title")}</CardTitle>
                                 </div>
                             </CardHeader>
-                            <CardContent className="p-4 space-y-4">
-                                <div className="flex items-center justify-between bg-slate-50 p-3 rounded-md border border-slate-100">
-                                    <div className="space-y-0.5">
-                                        <Label className="text-xs font-bold text-slate-800">{t("waitTime.config.acceptPublic")}</Label>
-                                        <p className="text-[10px] text-slate-500">{t("waitTime.config.acceptPublicDesc")}</p>
+                            <CardContent className="p-6 space-y-6">
+                                <div className="flex items-center justify-between bg-slate-50 p-4 rounded-xl border border-slate-100">
+                                    <div className="space-y-1">
+                                        <Label className="text-sm font-bold text-slate-800">{t("waitTime.config.acceptPublic")}</Label>
+                                        <p className="text-xs text-slate-500">{t("waitTime.config.acceptPublicDesc")}</p>
                                     </div>
-                                    <Switch checked={config.isWaitlistOpen} onCheckedChange={(v: boolean) => setConfig(prev => ({...prev, isWaitlistOpen: v}))} />
+                                    <Switch checked={config.isWaitlistOpen} onCheckedChange={(v: boolean) => setConfig(prev => ({...prev, isWaitlistOpen: v}))} className="scale-125" />
                                 </div>
-                                <div className="flex items-center justify-between bg-slate-50 p-3 rounded-md border border-slate-100">
-                                    <div className="space-y-0.5">
-                                        <Label className="text-xs font-bold text-slate-800">{t("waitTime.config.displayEstimatedTime")}</Label>
-                                        <p className="text-[10px] text-slate-500">{t("waitTime.config.displayEstimatedTimeDesc")}</p>
+                                <div className="flex items-center justify-between bg-slate-50 p-4 rounded-xl border border-slate-100">
+                                    <div className="space-y-1">
+                                        <Label className="text-sm font-bold text-slate-800">{t("waitTime.config.displayEstimatedTime")}</Label>
+                                        <p className="text-xs text-slate-500">{t("waitTime.config.displayEstimatedTimeDesc")}</p>
                                     </div>
-                                    <Switch checked={config.isWaitTimeEnabled} onCheckedChange={(v: boolean) => setConfig(prev => ({...prev, isWaitTimeEnabled: v}))} />
+                                    <Switch checked={config.isWaitTimeEnabled} onCheckedChange={(v: boolean) => setConfig(prev => ({...prev, isWaitTimeEnabled: v}))} className="scale-125" />
                                 </div>
                                 {config.isWaitTimeEnabled && (
                                     <>
-                                        <div className="bg-blue-50 border border-blue-100 p-3 rounded-md mb-4 flex items-center justify-between">
-                                            <div className="space-y-1">
-                                                <div className="text-[9px] font-black uppercase text-blue-600">{t("waitTime.config.publicUrl")}</div>
-                                                <div className="text-xs font-mono text-slate-700 select-all truncate max-w-[200px]">
+                                        <div className="bg-blue-50 border border-blue-100 p-4 rounded-xl mb-4 flex items-center justify-between">
+                                            <div className="space-y-2">
+                                                <div className="text-xs font-black uppercase text-blue-600">{t("waitTime.config.publicUrl")}</div>
+                                                <div className="text-sm font-mono text-slate-700 select-all truncate max-w-[200px]">
                                                     {typeof window !== 'undefined' ? `${window.location.origin}/r/your-slug/waitlist` : t("waitTime.loading")}
                                                 </div>
                                             </div>
-                                            <Button variant="outline" size="sm" className="h-7 text-[10px] bg-white text-blue-700" onClick={() => {
+                                            <Button variant="outline" size="sm" className="h-9 text-xs bg-white text-blue-700" onClick={() => {
                                                 toast.info(t("waitTime.info.qrGeneration"));
                                             }}>
                                                 {t("waitTime.config.getQr")}
                                             </Button>
                                         </div>
-                                        <div className="grid gap-1.5">
-                                            <Label className="text-[10px] font-black uppercase text-slate-400">{t("waitTime.config.mode")}</Label>
+                                        <div className="grid gap-2 pt-2">
+                                            <Label className="text-xs font-black uppercase tracking-wider text-slate-500">{t("waitTime.config.mode")}</Label>
                                             <Select value={config.isWaitTimeCalculated ? 'CALCULATED' : 'MANUAL'} onValueChange={(v: string | null) => setConfig(prev => ({...prev, isWaitTimeCalculated: v === 'CALCULATED'}))}>
-                                                <SelectTrigger className="h-9 text-xs font-bold rounded-sm">
+                                                <SelectTrigger className="h-12 text-sm font-bold rounded-lg px-4">
                                                     <SelectValue placeholder={t("waitTime.config.selectMode")} />
                                                 </SelectTrigger>
                                                 <SelectContent>
-                                                    <SelectItem value="MANUAL" className="text-xs">{t("waitTime.config.modeManual")}</SelectItem>
-                                                    <SelectItem value="CALCULATED" className="text-xs">{t("waitTime.config.modeCalculated")}</SelectItem>
+                                                    <SelectItem value="MANUAL" className="text-sm py-2">{t("waitTime.config.modeManual")}</SelectItem>
+                                                    <SelectItem value="CALCULATED" className="text-sm py-2">{t("waitTime.config.modeCalculated")}</SelectItem>
                                                 </SelectContent>
                                             </Select>
                                         </div>
                                         
                                         {!config.isWaitTimeCalculated ? (
-                                            <div className="grid grid-cols-2 gap-4">
-                                                <div className="grid gap-1.5">
-                                                    <Label className="text-[10px] font-black uppercase text-slate-400">{t("waitTime.config.minMins")}</Label>
-                                                    <Input type="number" value={config.manualWaitTimeLower || ''} onChange={(e) => setConfig({...config, manualWaitTimeLower: e.target.value ? parseInt(e.target.value) : null})} className="h-9 text-sm font-bold rounded-sm" placeholder="30" />
+                                            <div className="grid grid-cols-2 gap-4 pt-2">
+                                                <div className="grid gap-2">
+                                                    <Label className="text-xs font-black uppercase tracking-wider text-slate-500">{t("waitTime.config.minMins")}</Label>
+                                                    <Input type="number" value={config.manualWaitTimeLower || ''} onChange={(e) => setConfig({...config, manualWaitTimeLower: e.target.value ? parseInt(e.target.value) : null})} className="h-12 text-base font-bold rounded-lg px-4" placeholder="30" />
                                                 </div>
-                                                <div className="grid gap-1.5">
-                                                    <Label className="text-[10px] font-black uppercase text-slate-400">{t("waitTime.config.maxMins")}</Label>
-                                                    <Input type="number" value={config.manualWaitTimeUpper || ''} onChange={(e) => setConfig({...config, manualWaitTimeUpper: e.target.value ? parseInt(e.target.value) : null})} className="h-9 text-sm font-bold rounded-sm" placeholder="40" />
+                                                <div className="grid gap-2">
+                                                    <Label className="text-xs font-black uppercase tracking-wider text-slate-500">{t("waitTime.config.maxMins")}</Label>
+                                                    <Input type="number" value={config.manualWaitTimeUpper || ''} onChange={(e) => setConfig({...config, manualWaitTimeUpper: e.target.value ? parseInt(e.target.value) : null})} className="h-12 text-base font-bold rounded-lg px-4" placeholder="40" />
                                                 </div>
                                             </div>
                                         ) : (
-                                            <div className="grid grid-cols-2 gap-4">
-                                                <div className="grid gap-1.5 col-span-2">
-                                                    <Label className="text-[10px] font-black uppercase text-slate-400">{t("waitTime.config.peopleWaiting")}</Label>
-                                                    <Input type="number" value={config.peopleWaiting} onChange={(e) => setConfig({...config, peopleWaiting: parseInt(e.target.value) || 0})} className="h-9 text-sm font-bold rounded-sm" />
+                                            <div className="grid grid-cols-2 gap-4 pt-2">
+                                                <div className="grid gap-2 col-span-2">
+                                                    <Label className="text-xs font-black uppercase tracking-wider text-slate-500">{t("waitTime.config.peopleWaiting")}</Label>
+                                                    <Input type="number" value={config.peopleWaiting} onChange={(e) => setConfig({...config, peopleWaiting: parseInt(e.target.value) || 0})} className="h-12 text-base font-bold rounded-lg px-4" />
                                                 </div>
-                                                <div className="grid gap-1.5">
-                                                    <Label className="text-[10px] font-black uppercase text-slate-400">{t("waitTime.config.minPerPerson")}</Label>
-                                                    <Input type="number" value={config.waitTimePerPersonLower} onChange={(e) => setConfig({...config, waitTimePerPersonLower: parseInt(e.target.value) || 0})} className="h-9 text-sm font-bold rounded-sm" />
+                                                <div className="grid gap-2">
+                                                    <Label className="text-xs font-black uppercase tracking-wider text-slate-500">{t("waitTime.config.minPerPerson")}</Label>
+                                                    <Input type="number" value={config.waitTimePerPersonLower} onChange={(e) => setConfig({...config, waitTimePerPersonLower: parseInt(e.target.value) || 0})} className="h-12 text-base font-bold rounded-lg px-4" />
                                                 </div>
-                                                <div className="grid gap-1.5">
-                                                    <Label className="text-[10px] font-black uppercase text-slate-400">{t("waitTime.config.maxPerPerson")}</Label>
-                                                    <Input type="number" value={config.waitTimePerPersonUpper} onChange={(e) => setConfig({...config, waitTimePerPersonUpper: parseInt(e.target.value) || 0})} className="h-9 text-sm font-bold rounded-sm" />
+                                                <div className="grid gap-2">
+                                                    <Label className="text-xs font-black uppercase tracking-wider text-slate-500">{t("waitTime.config.maxPerPerson")}</Label>
+                                                    <Input type="number" value={config.waitTimePerPersonUpper} onChange={(e) => setConfig({...config, waitTimePerPersonUpper: parseInt(e.target.value) || 0})} className="h-12 text-base font-bold rounded-lg px-4" />
                                                 </div>
                                             </div>
                                         )}
                                     </>
                                 )}
-                                <Button onClick={handleSaveConfig} disabled={loading} className="w-full bg-slate-900 text-white font-black uppercase text-[10px] h-9 rounded-sm">
+                                <Button onClick={handleSaveConfig} disabled={loading} className="w-full bg-slate-900 text-white font-black uppercase text-xs h-12 rounded-lg mt-4">
                                     {loading ? t("waitTime.saving") : t("waitTime.config.save")}
                                 </Button>
                             </CardContent>
@@ -276,15 +276,15 @@ export default function WaitlistPage() {
 
                     {/* Right Column: Virtual Queue */}
                     <div className="lg:col-span-2">
-                        <Card className="rounded-md border-slate-300 shadow-sm overflow-hidden bg-white h-full">
-                            <CardHeader className="p-4 bg-slate-50/50 border-b border-slate-200 flex flex-row items-center justify-between">
-                                <div className="flex items-center gap-2">
-                                    <Button variant="ghost" size="sm" onClick={() => setActiveTab('walkin')} className={cn("h-8 text-xs font-black uppercase rounded-sm transition-all", activeTab === 'walkin' ? "bg-white text-blue-600 shadow-sm border border-slate-200" : "text-slate-500 hover:text-slate-800")}>{t("waitTime.tabs.walkins")}</Button>
-                                    <Button variant="ghost" size="sm" onClick={() => setActiveTab('future')} className={cn("h-8 text-xs font-black uppercase rounded-sm transition-all", activeTab === 'future' ? "bg-white text-blue-600 shadow-sm border border-slate-200" : "text-slate-500 hover:text-slate-800")}>{t("waitTime.tabs.futureDates")}</Button>
+                        <Card className="rounded-xl border-slate-200 shadow-sm overflow-hidden bg-white h-full">
+                            <CardHeader className="p-6 bg-slate-50/50 border-b border-slate-200 flex flex-row items-center justify-between">
+                                <div className="flex items-center gap-3">
+                                    <Button variant="ghost" size="sm" onClick={() => setActiveTab('walkin')} className={cn("h-10 px-4 text-xs font-black uppercase rounded-lg transition-all", activeTab === 'walkin' ? "bg-white text-blue-600 shadow-sm border border-slate-200" : "text-slate-500 hover:text-slate-800")}>{t("waitTime.tabs.walkins")}</Button>
+                                    <Button variant="ghost" size="sm" onClick={() => setActiveTab('future')} className={cn("h-10 px-4 text-xs font-black uppercase rounded-lg transition-all", activeTab === 'future' ? "bg-white text-blue-600 shadow-sm border border-slate-200" : "text-slate-500 hover:text-slate-800")}>{t("waitTime.tabs.futureDates")}</Button>
                                 </div>
                                 {activeTab === 'walkin' && (
-                                    <Button onClick={() => setIsAddModalOpen(true)} className="bg-blue-600 hover:bg-blue-700 h-8 text-xs font-bold px-3">
-                                        <Plus className="w-4 h-4 mr-1" /> {t("waitTime.tabs.addWalkIn")}
+                                    <Button onClick={() => setIsAddModalOpen(true)} className="bg-blue-600 hover:bg-blue-700 h-10 text-sm font-bold px-4 rounded-lg">
+                                        <Plus className="w-5 h-5 mr-2" /> {t("waitTime.tabs.addWalkIn")}
                                     </Button>
                                 )}
                             </CardHeader>
