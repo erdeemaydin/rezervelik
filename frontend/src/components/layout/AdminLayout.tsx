@@ -26,7 +26,6 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import { useTranslation } from '@/i18n/provider';
-import { ConfirmProvider } from '@/components/ui/confirm-dialog';
 
 interface AdminLayoutProps {
   children: ReactNode;
@@ -276,9 +275,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
         {/* Scrollable Content */}
         <main className="flex-1 p-6 md:p-12">
           <div className="mx-auto max-w-full">
-            <ConfirmProvider>
-              {children}
-            </ConfirmProvider>
+            {children}
           </div>
         </main>
       </div>
