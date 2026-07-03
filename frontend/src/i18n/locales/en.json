@@ -29,6 +29,7 @@
   },
   "admin": {
     "dashboard": "Dashboard",
+    "analytics": "Analytics",
     "reservations": "Reservations",
     "calendar": "Calendar",
     "tablesAndFloor": "Tables & Floor",
@@ -38,9 +39,12 @@
     "menuWizard": "Menu Wizard",
     "reviews": "Reviews",
     "staffSchedule": "Staff Schedule",
+    "staffMembers": "Staff Members",
     "payments": "Payments",
     "settings": "Settings",
     "customization": "Customization",
+    "sectionOperations": "Operations",
+    "sectionAdministration": "Administration",
     "systemOnline": "System Online",
     "zone": "Zone",
     "mainDiningRoom": "Main Dining Room",
@@ -60,7 +64,8 @@
     "calories": "kcal",
     "containsAlcohol": "Contains Alcohol",
     "containsPork": "Contains Pork Derivatives",
-    "allergens": "Allergens"
+    "allergens": "Allergens",
+    "redirectingToPayment": "Reservation created — redirecting you to the secure payment page…"
   },
   "dashboard": {
     "loading": "Loading command center...",
@@ -176,7 +181,11 @@
     "status": {
       "completed": "Completed",
       "pending": "Pending",
-      "failed": "Failed"
+      "failed": "Failed",
+      "label": "Status",
+      "paid": "Paid",
+      "expired": "Expired",
+      "refunded": "Refunded"
     },
     "title": "Transactions",
     "description": "Manage deposits, refunds, and payment history.",
@@ -195,7 +204,21 @@
       "date": "Date",
       "amount": "Amount",
       "status": "Status"
-    }
+    },
+    "loadFailed": "Failed to load payments",
+    "depositsSubtitle": "Reservation deposit transactions",
+    "totalCollected": "Total Collected",
+    "paidDeposits": "paid deposits",
+    "awaiting": "Awaiting Payment",
+    "awaitingHint": "deposits not yet paid",
+    "totalTransactions": "Transactions",
+    "transactions": "Transactions",
+    "guest": "Guest",
+    "amount": "Amount",
+    "reference": "Reference",
+    "date": "Date",
+    "loading": "Loading transactions…",
+    "empty": "No payments yet"
   },
   "reviews": {
     "title": "Reviews & Feedback",
@@ -491,7 +514,44 @@
     "notesPlaceholder": "e.g. Allergy warning, Seating preference, VIP detail...",
     "elevateVIP": "Elevate to VIP Priority Status",
     "abort": "ABORT",
-    "commitEntry": "COMMIT ENTRY"
+    "commitEntry": "COMMIT ENTRY",
+    "rescheduled": "Reservation rescheduled",
+    "conflictBlocked": "That table is already booked for this time — move blocked.",
+    "overCapacity": "Over cap.",
+    "overCapacityHint": "Party is larger than this table's capacity",
+    "overCapacityDialog": "Party exceeds table capacity",
+    "displayHours": "Hours",
+    "paymentRequested": "Deposit payment requested",
+    "paymentRequestedTitle": "Deposit Payment Requested",
+    "paymentRequestedDesc": "An SMS/e-mail with a secure payment link was sent to the guest. You can also share the link or code below.",
+    "paymentAmount": "Deposit amount",
+    "paymentLink": "Payment link",
+    "paymentCode": "Payment code",
+    "paymentRequestedHint": "The reservation is held as awaiting payment and confirms automatically once the deposit is paid.",
+    "copied": "Copied!",
+    "copy": "Copy",
+    "close": "Close",
+    "skipPayment": "Skip payment",
+    "skipPaymentConfirmTitle": "Skip deposit and confirm?",
+    "skipPaymentConfirmDesc": "The reservation will be confirmed without collecting the deposit.",
+    "acceptConfirmTitle": "Accept this reservation?",
+    "rejectConfirmTitle": "Reject this reservation?",
+    "cancelConfirmTitle": "Cancel this reservation?",
+    "deleteConfirmTitle": "Delete this reservation?",
+    "confirmDetailGuest": "Guest",
+    "confirmDetailTime": "Time",
+    "confirmDetailPax": "Party size",
+    "confirmDetailTable": "Table",
+    "totalLabel": "All",
+    "status": {
+      "pending": "Pending",
+      "awaitingPayment": "Awaiting Payment",
+      "confirmed": "Confirmed",
+      "seated": "Seated",
+      "completed": "Completed",
+      "cancelled": "Cancelled",
+      "noShow": "No-show"
+    }
   },
   "menus": {
     "downloadQR": {
@@ -796,7 +856,11 @@
     "cancelAction": "3. Cancel Action",
     "confirmCalendarChange": "Confirm Calendar Change",
     "bulkUpdateConfirm": "You are about to bulk update the calendar settings for the next 365 days. Please enter your administrator password to proceed.",
-    "updateCalendar": "Update Calendar"
+    "updateCalendar": "Update Calendar",
+    "timezone": "Timezone",
+    "timezoneHint": "The restaurant’s local timezone. Public booking times and blocked days are interpreted in this zone.",
+    "maxPartySize": "Max Party Size",
+    "maxPartySizeHint": "Largest party guests can select on the public booking form (shown as 1–N buttons)."
   },
   "waitTime": {
     "error": {
@@ -966,5 +1030,39 @@
     "backgroundColor": "Background Color",
     "deleteBoxBtn": "Delete Box",
     "saveBoxBtn": "SAVE BOX"
+  },
+  "profile": {
+    "title": "My Account",
+    "subtitle": "Profile & Security",
+    "loadFailed": "Failed to load profile",
+    "loading": "Loading…",
+    "saving": "Saving…",
+    "verifying": "Verifying…",
+    "changePassword": "Change Password",
+    "changePasswordDesc": "Update the password you use to sign in.",
+    "currentPassword": "Current Password",
+    "newPassword": "New Password",
+    "confirmNewPassword": "Confirm New Password",
+    "updatePassword": "Update Password",
+    "passwordsMismatch": "Passwords do not match",
+    "passwordTooShort": "Password must be at least 8 characters",
+    "passwordChanged": "Password updated successfully",
+    "passwordChangeFailed": "Failed to change password",
+    "twoFactor": "Two-Factor Authentication",
+    "twoFactorDesc": "Add an authenticator-app code to your sign-in.",
+    "twoFactorActive": "Active",
+    "twoFactorPending": "Setup required",
+    "twoFactorOff": "Off",
+    "twoFactorActiveDesc": "Two-factor authentication is active on your account.",
+    "twoFactorAdminControlled": "Two-factor is managed by your administrator and is not required for your account.",
+    "twoFactorRequiredNotice": "Your administrator requires two-factor authentication. Set it up to keep signing in.",
+    "twoFactorSetUp": "Set Up Two-Factor",
+    "twoFactorScan": "Scan this QR code with an authenticator app (Google Authenticator, Authy, 1Password), then enter the 6-digit code.",
+    "twoFactorManualKey": "Manual key",
+    "twoFactorEnterCode": "Enter 6-digit code",
+    "twoFactorVerifyEnable": "Verify & Enable",
+    "twoFactorSetupFailed": "Failed to start two-factor setup",
+    "twoFactorEnabled": "Two-factor authentication enabled",
+    "twoFactorCodeInvalid": "Invalid or expired code"
   }
 }

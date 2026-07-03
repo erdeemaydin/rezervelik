@@ -26,6 +26,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import { useTranslation } from '@/i18n/provider';
+import { ConfirmProvider } from '@/components/ui/confirm-dialog';
 
 interface AdminLayoutProps {
   children: ReactNode;
@@ -80,9 +81,9 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
   const navigation: NavSection[] = [
     { section: t('systemAdmin.globalOverview') || 'Overview', items: [
       { name: t('admin.dashboard'), href: '/dashboard', icon: LayoutDashboard },
-      { name: 'Analytics', href: '/dashboard/analytics', icon: BarChart3, badge: 'New' },
+      { name: t('admin.analytics'), href: '/dashboard/analytics', icon: BarChart3, badge: 'New' },
     ]},
-    { section: 'Operations', items: [
+    { section: t('admin.sectionOperations'), items: [
       { name: t('admin.reservations'), href: '/dashboard/reservations', icon: Calendar, badge: '12', perm: 'manage_reservations' },
       { name: t('admin.hostStand'), href: '/dashboard/host', icon: Tablet, badge: 'iPad', perm: 'manage_reservations' },
       { name: t('admin.calendar'), href: '/dashboard/calendar', icon: Calendar, badge: 'New', perm: 'manage_calendar' },
@@ -91,9 +92,9 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
       { name: t('admin.waitlist'), href: '/dashboard/wait-time', icon: Clock, badge: 'Live', perm: 'manage_settings', feature: 'hasWaitTimeFeature' },
       { name: t('admin.staffSchedule'), href: '/dashboard/scheduling', icon: Calendar, badge: 'New', feature: 'hasShiftFeature' },
     ]},
-    { section: 'Administration', items: [
+    { section: t('admin.sectionAdministration'), items: [
       { name: t('admin.payments'), href: '/dashboard/payments', icon: CreditCard, feature: 'hasPaymentFeature' },
-      { name: 'Staff Members', href: '/dashboard/staff', icon: Users, perm: 'manage_staff' },
+      { name: t('admin.staffMembers'), href: '/dashboard/staff', icon: Users, perm: 'manage_staff' },
       { name: t('admin.reviews'), href: '/dashboard/reviews', icon: MessageSquare },
       { name: t('admin.customization'), href: '/dashboard/customization', icon: Settings, perm: 'manage_settings' },
       { name: t('admin.settings'), href: '/dashboard/settings', icon: Settings, perm: 'manage_settings' },
@@ -163,7 +164,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
               return (
                 <div key={group.section}>
                   {isSidebarOpen && (
-                    <h3 className="px-3 text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mb-4">
+                    <h3 className="px-3 text-[11px] font-black text-slate-400 uppercase tracking-[0.18em] mb-3">
                       {group.section}
                     </h3>
                   )}
@@ -183,22 +184,22 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
                               }
                             }}
                             className={cn(
-                              "flex items-center justify-between px-3 py-2 text-xs font-bold rounded-md transition-all duration-150 group",
-                              isActive 
-                                ? "bg-blue-600 text-white shadow-lg shadow-blue-600/20" 
+                              "flex items-center justify-between px-3 py-2.5 text-sm font-semibold rounded-md transition-all duration-150 group",
+                              isActive
+                                ? "bg-blue-600 text-white shadow-lg shadow-blue-600/20"
                                 : "hover:bg-slate-800/50 hover:text-white"
                             )}
                           >
                             <div className="flex items-center gap-3">
                               <item.icon className={cn(
-                                "w-4 h-4 shrink-0",
+                                "w-[18px] h-[18px] shrink-0",
                                 isActive ? "text-white" : "text-slate-400 group-hover:text-white"
                               )} />
                               {isSidebarOpen && <span>{item.name}</span>}
                             </div>
                             {isSidebarOpen && item.badge && (
                               <Badge className={cn(
-                                "h-4 px-1.5 text-[8px] font-black uppercase tracking-wider",
+                                "h-5 px-1.5 text-[9px] font-black uppercase tracking-wider",
                                 isActive ? "bg-white text-blue-600" : "bg-blue-600/10 text-blue-500"
                               )}>
                                 {item.badge}
@@ -248,7 +249,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
 
           <div className="flex items-center gap-4">
             <LanguageSwitcher />
-            <div className="flex items-center gap-3 pr-4 border-r border-slate-100">
+            <Link href="/dashboard/profile" title={t('profile.title')} className="flex items-center gap-3 pr-4 border-r border-slate-100 rounded-md hover:bg-slate-50 transition-colors py-1 pl-2 -ml-2 cursor-pointer">
               <div className="flex flex-col items-end hidden sm:flex">
                 <span className="text-xs font-black text-slate-800 truncate capitalize">{user?.firstName} {user?.lastName}</span>
                 <span className="text-[9px] font-bold text-blue-600 uppercase tracking-tighter">{user?.role}</span>
@@ -257,7 +258,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
                 <AvatarImage src={`https://avatar.iran.liara.run/username?username=${user?.firstName}+${user?.lastName}`} />
                 <AvatarFallback className="bg-blue-600 text-white text-[10px] font-black uppercase">{user?.firstName?.[0]}{user?.lastName?.[0]}</AvatarFallback>
               </Avatar>
-            </div>
+            </Link>
             
             <Button
               variant="ghost"
@@ -274,7 +275,9 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
         {/* Scrollable Content */}
         <main className="flex-1 p-6 md:p-12">
           <div className="mx-auto max-w-full">
-            {children}
+            <ConfirmProvider>
+              {children}
+            </ConfirmProvider>
           </div>
         </main>
       </div>

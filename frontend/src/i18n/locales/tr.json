@@ -29,22 +29,26 @@
   },
   "admin": {
     "dashboard": "Panel",
+    "analytics": "Analizler",
     "reservations": "Rezervasyonlar",
     "calendar": "Takvim",
     "tablesAndFloor": "Masalar ve Plan",
-    "hostStand": "Karsilama",
+    "hostStand": "Karşılama",
     "waitlist": "Bekleme Listesi",
-    "menuManagement": "Menu Yonetimi",
-    "menuWizard": "Menu Sihirbazi",
-    "reviews": "Degerlendirmeler",
-    "staffSchedule": "Personel Planlamasi",
-    "payments": "Odemeler",
+    "menuManagement": "Menü Yönetimi",
+    "menuWizard": "Menü Sihirbazı",
+    "reviews": "Değerlendirmeler",
+    "staffSchedule": "Personel Planlaması",
+    "staffMembers": "Personeller",
+    "payments": "Ödemeler",
     "settings": "Ayarlar",
-    "customization": "Ozellestirme",
+    "customization": "Özelleştirme",
+    "sectionOperations": "Operasyonlar",
+    "sectionAdministration": "Yönetim",
     "systemOnline": "Sistem Aktif",
-    "zone": "Bolge",
+    "zone": "Bölge",
     "mainDiningRoom": "Ana Yemek Salonu",
-    "logout": "Cikis Yap"
+    "logout": "Çıkış Yap"
   },
   "public": {
     "ourStory": "Hikayemiz",
@@ -60,7 +64,8 @@
     "calories": "kcal",
     "containsAlcohol": "Alkol Icerir",
     "containsPork": "Domuz Turevi Icerir",
-    "allergens": "Alerjenler"
+    "allergens": "Alerjenler",
+    "redirectingToPayment": "Rezervasyon oluşturuldu — güvenli ödeme sayfasına yönlendiriliyorsunuz…"
   },
   "dashboard": {
     "loading": "Kontrol merkezi yukleniyor...",
@@ -176,7 +181,11 @@
     "status": {
       "completed": "Tamamlandi",
       "pending": "Bekliyor",
-      "failed": "Basarisiz"
+      "failed": "Basarisiz",
+      "label": "Durum",
+      "paid": "Ödendi",
+      "expired": "Süresi Doldu",
+      "refunded": "İade Edildi"
     },
     "title": "Islemler",
     "description": "Depozitolari, iadeleri ve odeme gecmisini yonetin.",
@@ -195,7 +204,21 @@
       "date": "Tarih",
       "amount": "Tutar",
       "status": "Durum"
-    }
+    },
+    "loadFailed": "Ödemeler yüklenemedi",
+    "depositsSubtitle": "Rezervasyon kapora işlemleri",
+    "totalCollected": "Toplam Tahsilat",
+    "paidDeposits": "ödenen kapora",
+    "awaiting": "Ödeme Bekleyen",
+    "awaitingHint": "henüz ödenmemiş kapora",
+    "totalTransactions": "İşlemler",
+    "transactions": "İşlemler",
+    "guest": "Misafir",
+    "amount": "Tutar",
+    "reference": "Referans",
+    "date": "Tarih",
+    "loading": "İşlemler yükleniyor…",
+    "empty": "Henüz ödeme yok"
   },
   "reviews": {
     "title": "Değerlendirmeler ve Geri Bildirim",
@@ -491,7 +514,44 @@
     "notesPlaceholder": "Orn. Alerji uyarisi, Oturma tercihi, VIP detayi...",
     "elevateVIP": "VIP Oncelik Durumuna Yukselt",
     "abort": "IPTAL",
-    "commitEntry": "KAYDI ONAYLA"
+    "commitEntry": "KAYDI ONAYLA",
+    "rescheduled": "Rezervasyon yeniden planlandı",
+    "conflictBlocked": "Bu masa seçilen saatte zaten dolu — taşıma engellendi.",
+    "overCapacity": "Kapasite aşımı",
+    "overCapacityHint": "Kişi sayısı bu masanın kapasitesinden fazla",
+    "overCapacityDialog": "Kişi sayısı masa kapasitesini aşıyor",
+    "displayHours": "Saat aralığı",
+    "paymentRequested": "Kapora ödemesi talep edildi",
+    "paymentRequestedTitle": "Kapora Ödemesi Talep Edildi",
+    "paymentRequestedDesc": "Misafire güvenli ödeme bağlantısı içeren bir SMS/e-posta gönderildi. Aşağıdaki bağlantıyı veya kodu da paylaşabilirsiniz.",
+    "paymentAmount": "Kapora tutarı",
+    "paymentLink": "Ödeme bağlantısı",
+    "paymentCode": "Ödeme kodu",
+    "paymentRequestedHint": "Rezervasyon ödeme bekliyor olarak tutulur ve kapora ödendiğinde otomatik onaylanır.",
+    "copied": "Kopyalandı!",
+    "copy": "Kopyala",
+    "close": "Kapat",
+    "skipPayment": "Ödemeyi atla",
+    "skipPaymentConfirmTitle": "Depozito atlanıp onaylansın mı?",
+    "skipPaymentConfirmDesc": "Rezervasyon, depozito alınmadan onaylanacak.",
+    "acceptConfirmTitle": "Bu rezervasyon kabul edilsin mi?",
+    "rejectConfirmTitle": "Bu rezervasyon reddedilsin mi?",
+    "cancelConfirmTitle": "Bu rezervasyon iptal edilsin mi?",
+    "deleteConfirmTitle": "Bu rezervasyon silinsin mi?",
+    "confirmDetailGuest": "Misafir",
+    "confirmDetailTime": "Saat",
+    "confirmDetailPax": "Kişi sayısı",
+    "confirmDetailTable": "Masa",
+    "totalLabel": "Tümü",
+    "status": {
+      "pending": "Bekliyor",
+      "awaitingPayment": "Ödeme Bekliyor",
+      "confirmed": "Onaylandı",
+      "seated": "Oturdu",
+      "completed": "Tamamlandı",
+      "cancelled": "İptal Edildi",
+      "noShow": "Gelmedi"
+    }
   },
   "menus": {
     "downloadQR": {
@@ -796,7 +856,11 @@
     "cancelAction": "3. Islemi Iptal Et",
     "confirmCalendarChange": "Takvim Degisikligini Onayla",
     "bulkUpdateConfirm": "Sonraki 365 gun icin takvim ayarlarini toplu olarak guncellemek uzeresiniz. Lutfen devam etmek icin yonetici sifrenizi girin.",
-    "updateCalendar": "Takvimi Guncelle"
+    "updateCalendar": "Takvimi Guncelle",
+    "timezone": "Saat Dilimi",
+    "timezoneHint": "Restoranın yerel saat dilimi. Herkese açık rezervasyon saatleri ve kapatılan günler bu dilime göre hesaplanır.",
+    "maxPartySize": "Maksimum Kişi Sayısı",
+    "maxPartySizeHint": "Misafirlerin herkese açık rezervasyon formunda seçebileceği en büyük grup (1–N düğmeleri olarak gösterilir)."
   },
   "waitTime": {
     "error": {
@@ -966,5 +1030,39 @@
     "backgroundColor": "Arkaplan Rengi",
     "deleteBoxBtn": "Kutuyu Sil",
     "saveBoxBtn": "KUTUYU KAYDET"
+  },
+  "profile": {
+    "title": "Hesabım",
+    "subtitle": "Profil ve Güvenlik",
+    "loadFailed": "Profil yüklenemedi",
+    "loading": "Yükleniyor…",
+    "saving": "Kaydediliyor…",
+    "verifying": "Doğrulanıyor…",
+    "changePassword": "Şifre Değiştir",
+    "changePasswordDesc": "Giriş yaparken kullandığınız şifreyi güncelleyin.",
+    "currentPassword": "Mevcut Şifre",
+    "newPassword": "Yeni Şifre",
+    "confirmNewPassword": "Yeni Şifre (Tekrar)",
+    "updatePassword": "Şifreyi Güncelle",
+    "passwordsMismatch": "Şifreler eşleşmiyor",
+    "passwordTooShort": "Şifre en az 8 karakter olmalı",
+    "passwordChanged": "Şifre başarıyla güncellendi",
+    "passwordChangeFailed": "Şifre değiştirilemedi",
+    "twoFactor": "İki Adımlı Doğrulama",
+    "twoFactorDesc": "Girişinize kimlik doğrulayıcı uygulama kodu ekleyin.",
+    "twoFactorActive": "Aktif",
+    "twoFactorPending": "Kurulum gerekli",
+    "twoFactorOff": "Kapalı",
+    "twoFactorActiveDesc": "Hesabınızda iki adımlı doğrulama aktif.",
+    "twoFactorAdminControlled": "İki adımlı doğrulama yöneticiniz tarafından yönetilir ve hesabınız için gerekli değildir.",
+    "twoFactorRequiredNotice": "Yöneticiniz iki adımlı doğrulama gerektiriyor. Giriş yapmaya devam etmek için kurun.",
+    "twoFactorSetUp": "İki Adımlı Doğrulamayı Kur",
+    "twoFactorScan": "Bu QR kodunu bir kimlik doğrulayıcı uygulamayla (Google Authenticator, Authy, 1Password) tarayın, sonra 6 haneli kodu girin.",
+    "twoFactorManualKey": "Manuel anahtar",
+    "twoFactorEnterCode": "6 haneli kodu girin",
+    "twoFactorVerifyEnable": "Doğrula ve Etkinleştir",
+    "twoFactorSetupFailed": "İki adımlı doğrulama kurulumu başlatılamadı",
+    "twoFactorEnabled": "İki adımlı doğrulama etkinleştirildi",
+    "twoFactorCodeInvalid": "Geçersiz veya süresi dolmuş kod"
   }
 }
