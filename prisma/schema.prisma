@@ -40,6 +40,7 @@ model Restaurant {
   customization         FrontendCustomization?
   scheduledPriceUpdates ScheduledPriceUpdate[]
   payments              Payment[]
+  timeEntries           TimeEntry[]
 }
 
 model FrontendCustomization {
@@ -184,6 +185,9 @@ model User {
   lastName     String
   role         String  @default("STAFF") // SUPER_ADMIN, ADMIN, MANAGER, STAFF
   permissions  String? // Comma-separated permission keys e.g. "manage_reservations,manage_menu"
+  // E.164 phone (e.g. "+905551234567"). Required for staff so published shift
+  // plans can be sent over WhatsApp (#7.6).
+  phone        String?
 
   setupToken          String?   @unique
   setupTokenExpiresAt DateTime?
@@ -205,8 +209,35 @@ model User {
   restaurant       Restaurant?            @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
   availabilities   EmployeeAvailability[]
   shiftAssignments ShiftAssignment[]
+  timeEntries      TimeEntry[]
 
   @@index([restaurantId])
+}
+
+// Actual worked-time records entered by staff (own portal) or the admin, per day
+// and optionally per shift. When absent, worked hours default to the scheduled
+// shift's defined duration (#7.8-#7.10). Times are wall-clock "HH:MM".
+model TimeEntry {
+  id           String  @id @default(uuid())
+  restaurantId String
+  userId       String
+  date         String // YYYY-MM-DD
+  shiftId      String? // optional link to the scheduled shift
+  checkIn      String? // "HH:MM"
+  checkOut     String? // "HH:MM"
+  breakMinutes Int     @default(0)
+  source       String  @default("MANUAL") // MANUAL, AUTO
+  note         String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  restaurant Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, date, shiftId])
+  @@index([restaurantId])
+  @@index([userId])
 }
 
 model TableType {

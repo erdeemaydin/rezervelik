@@ -22,6 +22,7 @@ import floorElementRoutes from './routes/floorElementRoutes';
 import customizationRoutes from './routes/customizationRoutes';
 import uploadRoutes from './routes/uploadRoutes';
 import paymentRoutes from './routes/paymentRoutes';
+import timeEntryRoutes from './routes/timeEntryRoutes';
 import path from 'path';
 
 const app = express();
@@ -61,6 +62,7 @@ app.use('/api/day-settings', daySettingRoutes);
 app.use('/api/menus', tenantMiddleware, menuRoutes);
 app.use('/api/staff', tenantMiddleware, staffRoutes);
 app.use('/api/scheduling', tenantMiddleware, schedulingRoutes);
+app.use('/api/time-entries', tenantMiddleware, timeEntryRoutes);
 app.use('/api/wait-time', tenantMiddleware, waitTimeRoutes);
 app.use('/api/customization', tenantMiddleware, customizationRoutes);
 app.use('/api/payments', tenantMiddleware, paymentRoutes);

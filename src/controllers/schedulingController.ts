@@ -1,6 +1,58 @@
 import { Request, Response } from 'express';
 import prisma from '../config/prisma';
 import { successResponse, errorResponse } from '../utils/response';
+import { sendShiftPlan } from '../services/notificationService';
+
+// Grace window before the published plan is actually sent to staff over WhatsApp
+// (#7.4) — lets the admin catch mistakes. In-process timer: fine for a single
+// instance; a durable job queue should replace this in production.
+const SHIFT_PUBLISH_DELAY_MS = parseInt(process.env.SHIFT_PUBLISH_DELAY_MS || '') || 5 * 60 * 1000;
+
+const fmtDateRange = (from: string, to: string) => (from === to ? from : `${from} – ${to}`);
+
+/**
+ * After the grace delay, WhatsApp each staff member their own shifts for the
+ * published range. Staff with no shifts in range are naturally skipped (we only
+ * iterate assignment owners); staff without a phone are skipped with a log (#7.5/#7.6).
+ */
+function scheduleShiftPlanBroadcast(restaurantId: string, startDate: string, endDate: string) {
+  setTimeout(async () => {
+    try {
+      const [restaurant, assignments] = await Promise.all([
+        prisma.restaurant.findUnique({ where: { id: restaurantId }, select: { name: true } }),
+        prisma.shiftAssignment.findMany({
+          where: { shift: { restaurantId }, date: { gte: startDate, lte: endDate }, isPublished: true },
+          include: { shift: true, user: true },
+          orderBy: { date: 'asc' },
+        }),
+      ]);
+
+      // Group each staff member's own shifts.
+      const byUser = new Map<string, { user: any; lines: string[] }>();
+      for (const a of assignments) {
+        if (!a.user) continue;
+        if (!byUser.has(a.userId)) byUser.set(a.userId, { user: a.user, lines: [] });
+        byUser.get(a.userId)!.lines.push(`${a.date} — ${a.shift.name} (${a.shift.startTime}-${a.shift.endTime})`);
+      }
+
+      for (const { user, lines } of byUser.values()) {
+        if (!user.phone) {
+          console.warn(`[ShiftPlan] skipping ${user.firstName} ${user.lastName} — no phone on file`);
+          continue;
+        }
+        await sendShiftPlan({
+          staffPhone: user.phone,
+          staffName: `${user.firstName} ${user.lastName}`,
+          restaurantName: restaurant?.name || 'Restaurant',
+          periodLabel: fmtDateRange(startDate, endDate),
+          shiftLines: lines,
+        });
+      }
+    } catch (e) {
+      console.error('[ShiftPlan] broadcast failed', e);
+    }
+  }, SHIFT_PUBLISH_DELAY_MS);
+}
 
 // --- SHIFTS MANAGEMENT (Tenant Admin / Manager) ---
 
@@ -279,7 +331,13 @@ export const publishAssignments = async (req: Request, res: Response) => {
       }
     });
 
-    return successResponse(res, { count: updated.count }, 'Assignments published successfully');
+    // Schedule the delayed WhatsApp broadcast to working staff (#7.2-#7.5).
+    scheduleShiftPlanBroadcast(restaurantId, startDate, endDate);
+
+    return successResponse(res, {
+      count: updated.count,
+      whatsappDelayMinutes: Math.round(SHIFT_PUBLISH_DELAY_MS / 60000),
+    }, 'Assignments published successfully');
   } catch (error) {
     console.error('Publish assignments error:', error);
     return errorResponse(res, 'errors.internal_error', 500);

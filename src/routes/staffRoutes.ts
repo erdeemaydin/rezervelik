@@ -10,6 +10,7 @@ router.use(requirePermission('manage_staff'));
 router.get('/', staffController.getStaffMembers);
 router.post('/', staffController.createStaffMember);
 router.put('/:id', staffController.updateStaffMember);
+router.post('/:id/reset-link', staffController.createStaffResetLink);
 router.delete('/:id', staffController.deleteStaffMember);
 
 export default router;
