@@ -4,7 +4,7 @@ import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { ChevronLeft, ChevronRight, GripVertical, X, Download, Send, CheckCircle2, Ban, Users, Activity, AlertTriangle, Plus } from 'lucide-react';
+import { ChevronLeft, ChevronRight, GripVertical, X, Download, Send, CheckCircle2, Ban, Users, Activity, AlertTriangle, Plus, CalendarCheck } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import api from '@/lib/api';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
@@ -52,14 +52,16 @@ interface ScheduleWarning {
 }
 
 // DRAGGABLE STAFF COMPONENT
-function DraggableStaff({ 
-  staff, 
-  isHighlighted, 
-  onToggleHighlight 
-}: { 
-  staff: Staff; 
-  isHighlighted: boolean; 
-  onToggleHighlight: () => void; 
+function DraggableStaff({
+  staff,
+  isHighlighted,
+  onToggleHighlight,
+  shiftCount = 0
+}: {
+  staff: Staff;
+  isHighlighted: boolean;
+  onToggleHighlight: () => void;
+  shiftCount?: number;
 }) {
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
     id: `staff-${staff.id}`,
@@ -93,14 +95,19 @@ function DraggableStaff({
           onToggleHighlight();
         }}
         className={cn(
-          "h-7 w-7 rounded-md flex items-center justify-center border transition-all shrink-0 ml-1.5",
-          isHighlighted 
-            ? "bg-blue-600 text-white border-blue-600 shadow-sm" 
-            : "bg-slate-50 text-slate-400 border-slate-200 hover:text-blue-600 hover:border-blue-300"
+          "h-7 min-w-7 px-1.5 rounded-md flex items-center justify-center gap-1 border transition-all shrink-0 ml-1.5 text-xs font-black tabular-nums",
+          isHighlighted
+            ? "bg-blue-600 text-white border-blue-600 shadow-sm"
+            : shiftCount > 0
+              ? "bg-blue-50 text-blue-600 border-blue-200 hover:border-blue-400"
+              : "bg-slate-50 text-slate-400 border-slate-200 hover:text-blue-600 hover:border-blue-300"
         )}
+        // Same behavior as before: toggles highlighting this staff's shifts.
+        // The icon is replaced by the live count of shifts they have in this plan (#6).
         title={isHighlighted ? "Clear Highlight" : "Highlight shifts"}
       >
-        <Activity className="h-3.5 w-3.5" />
+        <CalendarCheck className="h-3.5 w-3.5" />
+        {shiftCount}
       </button>
     </div>
   );
@@ -447,6 +454,17 @@ export default function ShiftAssigner({ viewMode = 'MONTHLY' }: { viewMode?: 'WE
     return warningsMap;
   }, [assignments, shifts, availabilities]);
 
+  // Number of shifts each staff member has in the currently-displayed plan range,
+  // shown live on their card (#6).
+  const shiftCountByStaff = useMemo(() => {
+    const counts: Record<string, number> = {};
+    const inRange = new Set(days.map(d => d.dateString));
+    assignments.forEach(a => {
+      if (inRange.has(a.date)) counts[a.userId] = (counts[a.userId] || 0) + 1;
+    });
+    return counts;
+  }, [assignments, days]);
+
   const isCurrentRangePublished = useMemo(() => {
     if (assignments.length === 0) return false;
     const rangeAssignments = assignments.filter(a => days.some(d => d.dateString === a.date));
@@ -650,10 +668,11 @@ export default function ShiftAssigner({ viewMode = 'MONTHLY' }: { viewMode?: 'WE
               <div className="flex flex-wrap gap-2 overflow-x-auto pb-2 max-h-40">
                 {staff.map(s => (
                   <div key={s.id} className="shrink-0 min-w-[180px]">
-                    <DraggableStaff 
-                      staff={s} 
+                    <DraggableStaff
+                      staff={s}
                       isHighlighted={highlightedStaffId === s.id}
                       onToggleHighlight={() => setHighlightedStaffId(prev => prev === s.id ? null : s.id)}
+                      shiftCount={shiftCountByStaff[s.id] || 0}
                     />
                   </div>
                 ))}
