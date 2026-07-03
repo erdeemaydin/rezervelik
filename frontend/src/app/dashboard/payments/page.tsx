@@ -1,115 +1,137 @@
 'use client';
 
+import { useEffect, useMemo, useState } from 'react';
 import AdminLayout from '@/components/layout/AdminLayout';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { CreditCard, CheckCircle2, XCircle, Clock } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { useTranslation } from "@/i18n/provider";
+import { CreditCard, CheckCircle2, XCircle, Clock, Hourglass } from 'lucide-react';
+import api from '@/lib/api';
+import { toast } from 'sonner';
+import { useTranslation } from '@/i18n/provider';
+
+interface PaymentRow {
+  id: string; merchantOid: string; provider: string; amount: number; currency: string;
+  status: 'PENDING' | 'PAID' | 'FAILED' | 'EXPIRED' | 'REFUNDED';
+  createdAt: string; paidAt: string | null;
+  reservation: { customerName: string; customerPhone: string; startTime: string; guestCount: number } | null;
+}
+
+const money = (minor: number, currency: string) => {
+  const v = (minor / 100).toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  return `${currency === 'TL' || currency === 'TRY' ? '₺' : currency + ' '}${v}`;
+};
 
 export default function PaymentsPage() {
   const { t } = useTranslation();
-  const mockTransactions = [
-    { id: 'TX-8923', customer: 'John Doe', amount: 500, date: '2026-05-15 14:30', status: 'COMPLETED', method: 'Credit Card (Visa)' },
-    { id: 'TX-8924', customer: 'Alice Smith', amount: 350, date: '2026-05-15 15:15', status: 'PENDING', method: 'Bank Transfer' },
-    { id: 'TX-8925', customer: 'Robert Johnson', amount: 1200, date: '2026-05-15 16:45', status: 'FAILED', method: 'Credit Card (Mastercard)' },
-    { id: 'TX-8926', customer: 'Emily Brown', amount: 800, date: '2026-05-15 17:20', status: 'COMPLETED', method: 'Credit Card (Amex)' },
-  ];
+  const [payments, setPayments] = useState<PaymentRow[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case 'COMPLETED': return <CheckCircle2 className="w-4 h-4 text-emerald-500" />;
-      case 'PENDING': return <Clock className="w-4 h-4 text-amber-500" />;
-      case 'FAILED': return <XCircle className="w-4 h-4 text-red-500" />;
-      default: return null;
-    }
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await api.get('/payments');
+        setPayments(res.data.data);
+      } catch {
+        toast.error(t('payments.loadFailed'));
+      } finally { setLoading(false); }
+    })();
+  }, []);
+
+  const stats = useMemo(() => {
+    const paid = payments.filter(p => p.status === 'PAID');
+    const collected = paid.reduce((s, p) => s + p.amount, 0);
+    const pending = payments.filter(p => p.status === 'PENDING').length;
+    const currency = payments[0]?.currency || 'TL';
+    return { collected, currency, count: payments.length, paidCount: paid.length, pending };
+  }, [payments]);
+
+  const statusBadge = (status: string) => {
+    const map: Record<string, string> = {
+      PAID: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+      PENDING: 'bg-amber-50 text-amber-700 border-amber-200',
+      FAILED: 'bg-red-50 text-red-700 border-red-200',
+      EXPIRED: 'bg-slate-100 text-slate-500 border-slate-200',
+      REFUNDED: 'bg-violet-50 text-violet-700 border-violet-200',
+    };
+    return <Badge className={`${map[status] || ''} hover:opacity-100 border font-black text-[10px] uppercase`}>{t(`payments.status.${status.toLowerCase()}`) || status}</Badge>;
   };
 
-  const getStatusBadge = (status: string) => {
+  const statusIcon = (status: string) => {
     switch (status) {
-      case 'COMPLETED': return <Badge className="bg-emerald-50 text-emerald-700 hover:bg-emerald-50 border-emerald-200">{t("payments.status.completed")}</Badge>;
-      case 'PENDING': return <Badge className="bg-amber-50 text-amber-700 hover:bg-amber-50 border-amber-200">{t("payments.status.pending")}</Badge>;
-      case 'FAILED': return <Badge className="bg-red-50 text-red-700 hover:bg-red-50 border-red-200">{t("payments.status.failed")}</Badge>;
-      default: return <Badge>{status}</Badge>;
+      case 'PAID': return <CheckCircle2 className="w-4 h-4 text-emerald-500" />;
+      case 'PENDING': return <Hourglass className="w-4 h-4 text-amber-500" />;
+      case 'FAILED': return <XCircle className="w-4 h-4 text-red-500" />;
+      case 'EXPIRED': return <Clock className="w-4 h-4 text-slate-400" />;
+      default: return <CreditCard className="w-4 h-4 text-slate-400" />;
     }
   };
 
   return (
     <AdminLayout>
       <div className="flex flex-col gap-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold text-slate-800">{t("payments.title")}</h1>
-            <p className="text-xs text-slate-500 font-medium">{t("payments.description")}</p>
-          </div>
-          <Button className="bg-blue-600 hover:bg-blue-700 text-xs font-bold shadow-sm">{t("payments.exportReport")}</Button>
+        <div>
+          <h1 className="text-2xl font-bold text-slate-800">{t('payments.title')}</h1>
+          <p className="text-xs text-slate-500 font-medium">{t('payments.depositsSubtitle')}</p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <Card className="border-slate-100 shadow-sm bg-gradient-to-br from-blue-600 to-indigo-700 text-white">
+          <Card className="border-slate-100 shadow-sm bg-gradient-to-br from-emerald-600 to-teal-700 text-white">
             <CardHeader className="p-4 pb-2">
-              <CardDescription className="text-[10px] font-black uppercase text-blue-100 tracking-wider">{t("payments.availableBalance")}</CardDescription>
-              <CardTitle className="text-2xl font-bold">₺24,500.00</CardTitle>
+              <CardDescription className="text-[10px] font-black uppercase text-emerald-100 tracking-wider">{t('payments.totalCollected')}</CardDescription>
+              <CardTitle className="text-2xl font-bold">{money(stats.collected, stats.currency)}</CardTitle>
             </CardHeader>
-            <CardContent className="p-4 pt-0">
-              <Button variant="secondary" size="sm" className="w-full text-xs font-bold mt-2 bg-white/20 hover:bg-white/30 text-white border-0">{t("payments.withdrawFunds")}</Button>
-            </CardContent>
+            <CardContent className="p-4 pt-0 text-[11px] font-bold text-emerald-100">{stats.paidCount} {t('payments.paidDeposits')}</CardContent>
           </Card>
-
           <Card className="border-slate-100 shadow-sm">
             <CardHeader className="p-4 pb-2">
-              <CardDescription className="text-[10px] font-black uppercase text-slate-500 tracking-wider">{t("payments.todayVolume")}</CardDescription>
-              <CardTitle className="text-2xl font-bold text-slate-800">₺3,250.00</CardTitle>
+              <CardDescription className="text-[10px] font-black uppercase text-slate-400 tracking-wider">{t('payments.awaiting')}</CardDescription>
+              <CardTitle className="text-2xl font-bold text-slate-800">{stats.pending}</CardTitle>
             </CardHeader>
-            <CardContent className="p-4 pt-0">
-              <p className="text-xs font-medium text-slate-400 mt-2">{t("payments.successfulTransactions")}</p>
-            </CardContent>
+            <CardContent className="p-4 pt-0 text-[11px] font-bold text-slate-400">{t('payments.awaitingHint')}</CardContent>
           </Card>
-
           <Card className="border-slate-100 shadow-sm">
             <CardHeader className="p-4 pb-2">
-              <CardDescription className="text-[10px] font-black uppercase text-slate-500 tracking-wider">{t("payments.pendingDeposits")}</CardDescription>
-              <CardTitle className="text-2xl font-bold text-slate-800">₺850.00</CardTitle>
+              <CardDescription className="text-[10px] font-black uppercase text-slate-400 tracking-wider">{t('payments.totalTransactions')}</CardDescription>
+              <CardTitle className="text-2xl font-bold text-slate-800">{stats.count}</CardTitle>
             </CardHeader>
-            <CardContent className="p-4 pt-0">
-              <p className="text-xs font-medium text-amber-500 mt-2">{t("payments.pendingReservations")}</p>
-            </CardContent>
+            <CardContent className="p-4 pt-0 text-[11px] font-bold text-slate-400">{payments[0]?.provider || '—'}</CardContent>
           </Card>
         </div>
 
-        <Card className="border-slate-100 shadow-sm bg-white overflow-hidden">
+        <Card className="border-slate-200 shadow-sm bg-white overflow-hidden">
           <CardHeader className="border-b border-slate-100 bg-slate-50/50 p-4">
             <div className="flex items-center gap-2">
-              <CreditCard className="w-4 h-4 text-blue-500" />
-              <CardTitle className="text-sm font-bold uppercase tracking-widest text-slate-700">{t("payments.recentLedger")}</CardTitle>
+              <CreditCard className="w-4 h-4 text-slate-500" />
+              <CardTitle className="text-sm font-bold uppercase tracking-widest text-slate-700">{t('payments.transactions')}</CardTitle>
             </div>
           </CardHeader>
           <CardContent className="p-0">
             <Table>
               <TableHeader>
                 <TableRow className="bg-slate-50/50 hover:bg-slate-50/50">
-                  <TableHead className="text-xs font-bold text-slate-500 w-[120px]">{t("payments.table.txId")}</TableHead>
-                  <TableHead className="text-xs font-bold text-slate-500">{t("payments.table.customer")}</TableHead>
-                  <TableHead className="text-xs font-bold text-slate-500">{t("payments.table.method")}</TableHead>
-                  <TableHead className="text-xs font-bold text-slate-500">{t("payments.table.date")}</TableHead>
-                  <TableHead className="text-xs font-bold text-slate-500 text-right">{t("payments.table.amount")}</TableHead>
-                  <TableHead className="text-xs font-bold text-slate-500 text-right w-[100px]">{t("payments.table.status")}</TableHead>
+                  <TableHead className="text-xs font-bold text-slate-500">{t('payments.guest')}</TableHead>
+                  <TableHead className="text-xs font-bold text-slate-500">{t('payments.amount')}</TableHead>
+                  <TableHead className="text-xs font-bold text-slate-500">{t('payments.status.label')}</TableHead>
+                  <TableHead className="text-xs font-bold text-slate-500">{t('payments.reference')}</TableHead>
+                  <TableHead className="text-xs font-bold text-slate-500 text-right">{t('payments.date')}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {mockTransactions.map((tx) => (
-                  <TableRow key={tx.id} className="hover:bg-slate-50/80 transition-colors">
-                    <TableCell className="font-mono text-xs font-medium text-slate-600">{tx.id}</TableCell>
-                    <TableCell className="font-semibold text-sm text-slate-800">{tx.customer}</TableCell>
-                    <TableCell className="text-xs text-slate-500">{tx.method}</TableCell>
-                    <TableCell className="text-xs text-slate-500">{tx.date}</TableCell>
-                    <TableCell className="text-sm font-bold text-slate-900 text-right">₺{tx.amount.toFixed(2)}</TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex items-center justify-end gap-2">
-                        {getStatusBadge(tx.status)}
-                      </div>
+                {loading ? (
+                  <TableRow><TableCell colSpan={5} className="h-32 text-center text-xs font-bold text-slate-400">{t('payments.loading')}</TableCell></TableRow>
+                ) : payments.length === 0 ? (
+                  <TableRow><TableCell colSpan={5} className="h-32 text-center text-xs font-bold text-slate-400">{t('payments.empty')}</TableCell></TableRow>
+                ) : payments.map((p) => (
+                  <TableRow key={p.id} className="hover:bg-slate-50/80 transition-colors">
+                    <TableCell>
+                      <div className="font-semibold text-sm text-slate-800">{p.reservation?.customerName || '—'}</div>
+                      <div className="text-[11px] text-slate-400 font-mono">{p.reservation?.customerPhone}</div>
                     </TableCell>
+                    <TableCell className="font-black text-slate-900">{money(p.amount, p.currency)}</TableCell>
+                    <TableCell><div className="flex items-center gap-2">{statusIcon(p.status)} {statusBadge(p.status)}</div></TableCell>
+                    <TableCell className="text-[11px] font-mono text-slate-400">{p.merchantOid}</TableCell>
+                    <TableCell className="text-xs text-slate-500 text-right">{new Date(p.paidAt || p.createdAt).toLocaleString('tr-TR')}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>

@@ -14,7 +14,7 @@ export function getDaySuggestions(): { week: DateSuggestion[]; weekend: DateSugg
     d.setDate(today.getDate() + i);
     week.push({
       label: i === 0 ? 'Today' : i === 1 ? 'Tomorrow' : d.toLocaleDateString([], { weekday: 'short' }),
-      value: d.toISOString().split('T')[0],
+      value: `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`,
       full: d.toLocaleDateString([], { month: 'short', day: 'numeric' }),
     });
   }
@@ -28,7 +28,7 @@ export function getDaySuggestions(): { week: DateSuggestion[]; weekend: DateSugg
       d.setDate(d.getDate() + diff + offsetDays);
       set.push({
         label: d.toLocaleDateString([], { weekday: 'short' }),
-        value: d.toISOString().split('T')[0],
+        value: `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`,
         full: d.toLocaleDateString([], { month: 'short', day: 'numeric' }),
       });
     }

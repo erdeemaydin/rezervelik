@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useTranslation } from "@/i18n/provider";
 import { Calendar as CalendarIcon, Clock, CheckCircle2, X, Menu, ChevronDown, ArrowLeft } from 'lucide-react';
@@ -11,7 +11,9 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
-import { getDaySuggestions, getTimeSuggestions } from '@/lib/reservationSuggestions';
+import { getTimeSuggestions } from '@/lib/reservationSuggestions';
+import ReservationCalendar from './ReservationCalendar';
+import { getTodayInTZ, zonedWallTimeToUTC, DEFAULT_TZ } from '@/lib/datetime';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || (typeof window !== 'undefined' ? `${window.location.protocol}//${window.location.hostname}:3000/api` : 'http://localhost:3000/api');
 
@@ -37,11 +39,10 @@ export default function OldenLayout({ slug, initialRestaurant, initialView, menu
 
   const customization = restaurant?.customization || {};
 
-  const getLocalYYYYMMDD = (d: Date) => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  const tz = restaurant?.settings?.timezone || DEFAULT_TZ;
 
-  const [selectedDate, setSelectedDate] = useState(getLocalYYYYMMDD(new Date()));
+  const [selectedDate, setSelectedDate] = useState(getTodayInTZ(tz));
   const [selectedTime, setSelectedTime] = useState('19:30');
-  const dateInputRef = useRef<HTMLInputElement>(null);
   const [resForm, setResForm] = useState({
     customerName: '',
     customerPhone: '',
@@ -74,7 +75,7 @@ export default function OldenLayout({ slug, initialRestaurant, initialView, menu
 
   const handleBooking = async (e: React.FormEvent) => {
     e.preventDefault();
-    const combinedDateTime = new Date(`${selectedDate}T${selectedTime}:00+03:00`);
+    const combinedDateTime = zonedWallTimeToUTC(selectedDate, selectedTime, tz);
 
     if (combinedDateTime < new Date()) {
       toast.error('Cannot create reservations for the past');
@@ -111,6 +112,12 @@ export default function OldenLayout({ slug, initialRestaurant, initialView, menu
         },
         { headers: { 'X-Restaurant-ID': restaurant.id } }
       );
+      const bookingData = res.data?.data;
+      if (bookingData?.payment?.token) {
+        toast.success(t('public.redirectingToPayment'));
+        setTimeout(() => { window.location.href = `/pay/${bookingData.payment.token}`; }, 1400);
+        return;
+      }
       setIsPossiblyFullyBooked(!!res.data?.data?.possiblyFullyBooked);
       setIsBookingSuccess(true);
     } catch (err: any) {
@@ -135,8 +142,8 @@ export default function OldenLayout({ slug, initialRestaurant, initialView, menu
   if (!restaurant) return <div className="min-h-screen flex items-center justify-center bg-white text-black font-serif">Experience not found.</div>;
 
   const bgImage = restaurant.logoUrl || HERO_IMAGE_FALLBACK;
-  const { week, weekend } = getDaySuggestions();
   const times = getTimeSuggestions();
+  const maxPartySize = restaurant?.settings?.maxPartySize || 8;
   const selectedDateLabel = new Date(`${selectedDate}T00:00:00`).toLocaleDateString([], { weekday: 'long', month: 'long', day: 'numeric' });
 
   const getFontClass = (type: string) => {
@@ -462,36 +469,8 @@ export default function OldenLayout({ slug, initialRestaurant, initialView, menu
 
               <div className="space-y-5">
                 <Label className="text-sm uppercase font-bold tracking-widest text-[#555]">Date</Label>
-                <div className="grid grid-cols-3 gap-3">
-                  {week.map(d => (
-                    <button key={d.value} type="button" onClick={() => setSelectedDate(d.value)} className={cn("flex h-16 flex-col items-center justify-center rounded-xl border-2 transition-all", selectedDate === d.value ? "border-[var(--accent)] bg-[var(--accent)] text-white" : "border-[#e0e0e0] bg-[#f9f9f9] hover:border-[var(--accent)]/40")}>
-                      <span className="text-[9px] font-bold uppercase opacity-70">{d.label}</span>
-                      <span className="text-sm font-bold">{d.full}</span>
-                    </button>
-                  ))}
-                </div>
-                <div className="space-y-2">
-                  <span className="text-[10px] font-bold uppercase tracking-widest text-[#999]">Also available</span>
-                  <div className="grid grid-cols-4 gap-3">
-                    {weekend.map(d => (
-                      <button key={d.value} type="button" onClick={() => setSelectedDate(d.value)} className={cn("flex h-16 flex-col items-center justify-center rounded-xl border-2 transition-all", selectedDate === d.value ? "border-[var(--accent)] bg-[var(--accent)] text-white" : "border-[#e0e0e0] bg-[#f9f9f9] hover:border-[var(--accent)]/40")}>
-                        <span className="text-[9px] font-bold uppercase opacity-70">{d.label}</span>
-                        <span className="text-sm font-bold">{d.full}</span>
-                      </button>
-                    ))}
-                    <div className="relative">
-                      <input type="date" ref={dateInputRef} value={selectedDate} onChange={(e) => setSelectedDate(e.target.value)} className="sr-only" />
-                      {(() => {
-                        const isCustom = !week.find(d => d.value === selectedDate) && !weekend.find(d => d.value === selectedDate);
-                        return (
-                          <button type="button" onClick={() => dateInputRef.current?.showPicker()} className={cn("flex h-16 w-full flex-col items-center justify-center rounded-xl border-2 transition-all", isCustom ? "border-[var(--accent)] bg-[var(--accent)] text-white" : "border-[#e0e0e0] bg-[#f9f9f9] hover:border-[var(--accent)]/40")}>
-                            <CalendarIcon className="mb-1 h-4 w-4" />
-                            <span className="text-[9px] font-bold uppercase">{isCustom ? new Date(`${selectedDate}T00:00:00`).toLocaleDateString([], { month: 'short', day: 'numeric' }) : 'Custom'}</span>
-                          </button>
-                        );
-                      })()}
-                    </div>
-                  </div>
+                <div className="rounded-xl border-2 border-[#e0e0e0] bg-[#f9f9f9] p-4">
+                  <ReservationCalendar value={selectedDate} onChange={setSelectedDate} tz={tz} accent="var(--accent)" />
                 </div>
               </div>
 
@@ -502,13 +481,6 @@ export default function OldenLayout({ slug, initialRestaurant, initialView, menu
                     <button key={tm} type="button" onClick={() => setSelectedTime(tm)} className={cn("h-11 rounded-lg border-2 text-sm font-bold transition-all", selectedTime === tm ? "border-[var(--accent)] bg-[var(--accent)] text-white" : "border-[#e0e0e0] bg-[#f9f9f9] hover:border-[var(--accent)]/40")}>{tm}</button>
                   ))}
                 </div>
-                <Input
-                  type="time"
-                  required
-                  value={selectedTime}
-                  onChange={e => setSelectedTime(e.target.value)}
-                  className="bg-[#f9f9f9] border-[#e0e0e0] text-[#2c2c2c] rounded-xl h-14 px-4 text-base focus-visible:ring-2 focus-visible:ring-[var(--accent)] transition-all"
-                />
               </div>
 
               {checkingDay ? (
@@ -554,15 +526,16 @@ export default function OldenLayout({ slug, initialRestaurant, initialView, menu
               ) : null}
 
               <div className="space-y-8 pt-8 border-t border-[#e0e0e0]">
-                <div className="grid grid-cols-1 gap-8 sm:grid-cols-2">
-                  <div className="space-y-3">
-                    <Label className="text-sm uppercase font-bold tracking-widest text-[#555]">Guest Count</Label>
-                    <Input
-                      type="number" min="1" required
-                      value={resForm.guestCount} onChange={e => setResForm({...resForm, guestCount: e.target.value})}
-                      className="bg-[#f9f9f9] border-[#e0e0e0] text-[#2c2c2c] rounded-xl h-14 px-4 text-base focus-visible:ring-2 focus-visible:ring-[var(--accent)] transition-all"
-                    />
+                <div className="space-y-3">
+                  <Label className="text-sm uppercase font-bold tracking-widest text-[#555]">Guest Count</Label>
+                  <div className="flex flex-wrap gap-2">
+                    {Array.from({ length: maxPartySize }, (_, i) => i + 1).map(n => (
+                      <button key={n} type="button" onClick={() => setResForm({...resForm, guestCount: String(n)})} className={cn("h-12 w-12 rounded-full border-2 text-base font-bold transition-all", resForm.guestCount === String(n) ? "border-[var(--accent)] bg-[var(--accent)] text-white scale-105" : "border-[#e0e0e0] bg-[#f9f9f9] hover:border-[var(--accent)]/40")}>{n}</button>
+                    ))}
                   </div>
+                </div>
+
+                <div className="grid grid-cols-1 gap-8 sm:grid-cols-2">
                   <div className="space-y-3">
                     <Label className="text-sm uppercase font-bold tracking-widest text-[#555]">Full Name</Label>
                     <Input
@@ -571,23 +544,12 @@ export default function OldenLayout({ slug, initialRestaurant, initialView, menu
                       className="bg-[#f9f9f9] border-[#e0e0e0] text-[#2c2c2c] rounded-xl h-14 px-4 text-base focus-visible:ring-2 focus-visible:ring-[var(--accent)] transition-all"
                     />
                   </div>
-                </div>
-
-                <div className="grid grid-cols-1 gap-8 sm:grid-cols-2">
                   <div className="space-y-3">
                     <Label className="text-sm uppercase font-bold tracking-widest text-[#555]">Phone Number</Label>
                     <Input
                       required
                       type="tel"
                       value={resForm.customerPhone} onChange={e => setResForm({...resForm, customerPhone: e.target.value})}
-                      className="bg-[#f9f9f9] border-[#e0e0e0] text-[#2c2c2c] rounded-xl h-14 px-4 text-base focus-visible:ring-2 focus-visible:ring-[var(--accent)] transition-all"
-                    />
-                  </div>
-                  <div className="space-y-3">
-                    <Label className="text-sm uppercase font-bold tracking-widest text-[#555]">Email Address</Label>
-                    <Input
-                      type="email"
-                      value={resForm.customerEmail} onChange={e => setResForm({...resForm, customerEmail: e.target.value})}
                       className="bg-[#f9f9f9] border-[#e0e0e0] text-[#2c2c2c] rounded-xl h-14 px-4 text-base focus-visible:ring-2 focus-visible:ring-[var(--accent)] transition-all"
                     />
                   </div>

@@ -342,19 +342,7 @@ export default function HostConsolePage() {
   // Hourly slots for navigation (e.g. 11:00 to 23:00)
   const hourSlots = [
     { label: t("host.allSlots"), value: 'all' as const },
-    { label: '11:00 AM', value: 11 },
-    { label: '12:00 PM', value: 12 },
-    { label: '1:00 PM', value: 13 },
-    { label: '2:00 PM', value: 14 },
-    { label: '3:00 PM', value: 15 },
-    { label: '4:00 PM', value: 16 },
-    { label: '5:00 PM', value: 17 },
-    { label: '6:00 PM', value: 18 },
-    { label: '7:00 PM', value: 19 },
-    { label: '8:00 PM', value: 20 },
-    { label: '9:00 PM', value: 21 },
-    { label: '10:00 PM', value: 22 },
-    { label: '11:00 PM', value: 23 }
+    ...Array.from({ length: 13 }, (_, i) => i + 11).map(h => ({ label: `${String(h).padStart(2, '0')}:00`, value: h })),
   ];
 
   // Helper: Elapsed time calculator
@@ -546,7 +534,7 @@ export default function HostConsolePage() {
                 ) : (
                   filteredReservations.map((res) => {
                     const dateObj = new Date(res.startTime);
-                    const formattedTime = dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                    const formattedTime = dateObj.toLocaleTimeString([], { hour12: false, hour: '2-digit', minute: '2-digit' });
                     
                     return (
                       <div 
@@ -1056,7 +1044,7 @@ export default function HostConsolePage() {
                           </Badge>
                         </div>
                         <div className="text-[10px] text-slate-400 font-bold uppercase mt-0.5">
-                          {res.guestCount} {t("host.paxDivider")} {new Date(res.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                          {res.guestCount} {t("host.paxDivider")} {new Date(res.startTime).toLocaleTimeString([], { hour12: false, hour: '2-digit', minute: '2-digit' })}
                         </div>
                       </div>
                       <Button 

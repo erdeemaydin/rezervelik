@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useTranslation } from "@/i18n/provider";
 import { Button } from '@/components/ui/button';
@@ -12,7 +12,9 @@ import axios from 'axios';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
-import { getDaySuggestions, getTimeSuggestions } from '@/lib/reservationSuggestions';
+import { getTimeSuggestions } from '@/lib/reservationSuggestions';
+import ReservationCalendar from './ReservationCalendar';
+import { getTodayInTZ, zonedWallTimeToUTC, DEFAULT_TZ } from '@/lib/datetime';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || (typeof window !== 'undefined' ? `${window.location.protocol}//${window.location.hostname}:3000/api` : 'http://localhost:3000/api');
 
@@ -44,11 +46,10 @@ export default function ClassicLayout({ slug, initialRestaurant, initialView = '
     notes: ''
   });
 
-  const getLocalYYYYMMDD = (d: Date) => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  const tz = restaurant?.settings?.timezone || DEFAULT_TZ;
 
-  const [selectedDate, setSelectedDate] = useState(getLocalYYYYMMDD(new Date()));
+  const [selectedDate, setSelectedDate] = useState(getTodayInTZ(tz));
   const [selectedTime, setSelectedTime] = useState('19:30');
-  const dateInputRef = useRef<HTMLInputElement>(null);
 
   const checkDayStatus = async (date: string) => {
       try {
@@ -70,7 +71,7 @@ export default function ClassicLayout({ slug, initialRestaurant, initialView = '
 
   const handleBooking = async (e: React.FormEvent) => {
     e.preventDefault();
-    const combinedDateTime = new Date(`${selectedDate}T${selectedTime}:00+03:00`);
+    const combinedDateTime = zonedWallTimeToUTC(selectedDate, selectedTime, tz);
 
     if (combinedDateTime < new Date()) {
       toast.error('Cannot create reservations for the past');
@@ -109,6 +110,12 @@ export default function ClassicLayout({ slug, initialRestaurant, initialView = '
         },
         { headers: { 'X-Restaurant-ID': restaurant.id } }
       );
+      const bookingData = res.data?.data;
+      if (bookingData?.payment?.token) {
+        toast.success(t('public.redirectingToPayment'));
+        setTimeout(() => { window.location.href = `/pay/${bookingData.payment.token}`; }, 1400);
+        return;
+      }
       setIsPossiblyFullyBooked(!!res.data?.data?.possiblyFullyBooked);
       setView('success');
       setResForm({ customerName: '', customerPhone: '', customerEmail: '', guestCount: '2', notes: '' });
@@ -137,8 +144,8 @@ export default function ClassicLayout({ slug, initialRestaurant, initialView = '
       }
   };
 
-  const { week, weekend } = getDaySuggestions();
   const times = getTimeSuggestions();
+  const maxPartySize = restaurant?.settings?.maxPartySize || 8;
   const selectedDateLabel = new Date(`${selectedDate}T00:00:00`).toLocaleDateString([], { weekday: 'long', month: 'long', day: 'numeric' });
 
   const customization = restaurant?.customization || {
@@ -550,57 +557,26 @@ export default function ClassicLayout({ slug, initialRestaurant, initialView = '
 
                         <div className="space-y-4">
                              <Label className="text-xs font-medium uppercase tracking-wide text-neutral-500">Date Selection</Label>
-                             <div className="space-y-5">
-                                <div className="grid grid-cols-3 gap-3">
-                                    {week.map(d => (
-                                        <Button key={d.value} type="button" variant={selectedDate === d.value ? 'default' : 'outline'} className={cn("h-16 flex flex-col items-center justify-center rounded-2xl border transition-all", selectedDate === d.value ? "bg-[var(--primary)] border-[var(--primary)] text-white" : "border-black/10 hover:border-black/20")} onClick={() => setSelectedDate(d.value)}>
-                                            <span className="text-[9px] uppercase font-medium opacity-70">{d.label}</span>
-                                            <span className="text-sm font-semibold">{d.full}</span>
-                                        </Button>
-                                    ))}
-                                </div>
-
-                                <div className="space-y-2">
-                                    <Badge variant="outline" className="border-neutral-200 bg-neutral-50 px-2 py-0 text-[9px] font-medium uppercase text-neutral-500">Also available</Badge>
-                                    <div className="grid grid-cols-4 gap-3">
-                                        {weekend.map(d => (
-                                            <Button key={d.value} type="button" variant={selectedDate === d.value ? 'default' : 'outline'} className={cn("h-16 flex flex-col items-center justify-center rounded-2xl border transition-all", selectedDate === d.value ? "bg-[var(--primary)] border-[var(--primary)] text-white" : "border-black/10 hover:border-black/20")} onClick={() => setSelectedDate(d.value)}>
-                                                <span className="text-[9px] uppercase font-medium opacity-70">{d.label}</span>
-                                                <span className="text-sm font-semibold">{d.full}</span>
-                                            </Button>
-                                        ))}
-                                        <div className="relative">
-                                            <input type="date" ref={dateInputRef} value={selectedDate} onChange={(e) => setSelectedDate(e.target.value)} className="sr-only" />
-                                            <Button type="button" variant={(!week.find(d=>d.value===selectedDate) && !weekend.find(d=>d.value===selectedDate)) ? 'default' : 'outline'} className={cn("w-full h-16 rounded-2xl border flex flex-col items-center justify-center transition-colors", (!week.find(d=>d.value===selectedDate) && !weekend.find(d=>d.value===selectedDate)) ? "bg-[var(--primary)] border-[var(--primary)] text-white" : "border-black/10 hover:bg-neutral-50")} onClick={() => dateInputRef.current?.showPicker()}>
-                                                <CalendarIcon className="mb-1 h-4 w-4" />
-                                                <span className="text-[9px] font-medium uppercase">
-                                                    {(!week.find(d=>d.value===selectedDate) && !weekend.find(d=>d.value===selectedDate)) ? new Date(selectedDate).toLocaleDateString([], { month: 'short', day: 'numeric' }) : 'Custom'}
-                                                </span>
-                                            </Button>
-                                        </div>
-                                    </div>
-                                </div>
+                             <div className="rounded-2xl border border-black/10 bg-white p-4">
+                                <ReservationCalendar value={selectedDate} onChange={setSelectedDate} tz={tz} accent="var(--primary)" />
                              </div>
                         </div>
 
-                        <div className="grid grid-cols-1 gap-8 border-t border-black/5 pt-8 sm:grid-cols-2">
+                        <div className="space-y-8 border-t border-black/5 pt-8">
                             <div className="space-y-4">
                                 <Label className="text-xs font-medium uppercase tracking-wide text-neutral-500">Preferred Time</Label>
-                                <div className="space-y-3">
-                                    <div className="grid grid-cols-4 gap-2">
-                                        {[...times.lunch, ...times.dinner].map(t => (
-                                            <Button key={t} type="button" variant={selectedTime === t ? 'default' : 'outline'} className={cn("h-11 rounded-xl text-sm font-medium border-black/10", selectedTime === t ? "bg-[var(--primary)] border-[var(--primary)] text-white" : "bg-white hover:bg-neutral-50")} onClick={() => setSelectedTime(t)}>{t}</Button>
-                                        ))}
-                                    </div>
-                                    <Input type="time" value={selectedTime} onChange={(e) => setSelectedTime(e.target.value)} className="h-14 rounded-2xl border-black/10 bg-neutral-50 px-5 text-base font-medium focus:bg-white focus:ring-4 focus:ring-black/5" />
+                                <div className="grid grid-cols-4 gap-2">
+                                    {[...times.lunch, ...times.dinner].map(t => (
+                                        <Button key={t} type="button" variant={selectedTime === t ? 'default' : 'outline'} className={cn("h-11 rounded-xl text-sm font-medium border-black/10", selectedTime === t ? "bg-[var(--primary)] border-[var(--primary)] text-white" : "bg-white hover:bg-neutral-50")} onClick={() => setSelectedTime(t)}>{t}</Button>
+                                    ))}
                                 </div>
                             </div>
                             <div className="space-y-4">
                                 <Label className="text-xs font-medium uppercase tracking-wide text-neutral-500">Guest Count</Label>
-                                <div className="flex items-center gap-4 rounded-2xl bg-neutral-50 p-3">
-                                    <Button type="button" variant="ghost" size="icon" className="h-12 w-12 rounded-xl bg-white text-lg shadow-sm" onClick={() => setResForm(f => ({...f, guestCount: Math.max(1, parseInt(f.guestCount)-1).toString()}))}>-</Button>
-                                    <div className="flex-1 text-center text-2xl font-semibold">{resForm.guestCount}</div>
-                                    <Button type="button" variant="ghost" size="icon" className="h-12 w-12 rounded-xl bg-white text-lg shadow-sm" onClick={() => setResForm(f => ({...f, guestCount: (parseInt(f.guestCount)+1).toString()}))}>+</Button>
+                                <div className="flex flex-wrap gap-2">
+                                    {Array.from({ length: maxPartySize }, (_, i) => i + 1).map(n => (
+                                        <button key={n} type="button" onClick={() => setResForm(f => ({...f, guestCount: String(n)}))} className={cn("h-12 w-12 rounded-full border text-base font-semibold transition-all", resForm.guestCount === String(n) ? "bg-[var(--primary)] border-[var(--primary)] text-white scale-105" : "border-black/10 bg-white hover:bg-neutral-50")}>{n}</button>
+                                    ))}
                                 </div>
                             </div>
                         </div>
@@ -629,7 +605,7 @@ export default function ClassicLayout({ slug, initialRestaurant, initialView = '
               <div className="mb-12 max-w-lg text-center text-lg font-light leading-relaxed text-neutral-500">
                   {isWaitlistSuccess ? (
                       <>
-                          You&apos;ve successfully joined the waitlist for <span className="font-medium text-neutral-900">{new Date(selectedDate).toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' })}</span>. You will receive an SMS if a table becomes available.
+                          You&apos;ve successfully joined the waitlist for <span className="font-medium text-neutral-900">{new Date(`${selectedDate}T00:00:00`).toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' })}</span>. You will receive an SMS if a table becomes available.
                       </>
                   ) : (
                       <>

@@ -140,7 +140,7 @@ export default function WaitlistOfferPage() {
           </div>
 
           <div className="text-center text-xs text-red-500 font-medium">
-            This offer expires at {new Date(offer.offerExpiresAt).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+            This offer expires at {new Date(offer.offerExpiresAt).toLocaleTimeString([], {hour12: false, hour: '2-digit', minute:'2-digit'})}
           </div>
 
           <div className="grid grid-cols-2 gap-4">

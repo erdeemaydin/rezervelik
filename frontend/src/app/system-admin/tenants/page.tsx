@@ -6,13 +6,14 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Building2, Plus, Settings2, ShieldCheck, ShieldAlert, Globe, Mail, Search } from 'lucide-react';
+import { Building2, Plus, Settings2, ShieldCheck, ShieldAlert, Globe, Mail, Search, KeyRound, Copy } from 'lucide-react';
 import { 
   Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter 
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Switch } from '@/components/ui/switch';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { useAuthStore } from '@/store/useAuthStore';
@@ -48,6 +49,45 @@ export default function TenantManagementPage() {
   });
   
   const [adminPermissions, setAdminPermissions] = useState<Set<string>>(new Set());
+
+  // Password reset link generated for the selected tenant's admin (shown once).
+  const [resetLink, setResetLink] = useState<string | null>(null);
+  const [resetLoading, setResetLoading] = useState(false);
+  const [resetExpiryMins, setResetExpiryMins] = useState<number | null>(null);
+
+  const handleGenerateReset = async (userId: string) => {
+    try {
+      setResetLoading(true);
+      const res = await api.post(`/system/users/${userId}/reset-link`);
+      setResetLink(`${window.location.origin}${res.data.data.resetLink}`);
+      setResetExpiryMins(res.data.data.expiresInMinutes ?? null);
+      toast.success('Password reset link generated');
+    } catch (err) {
+      toast.error('Failed to generate reset link');
+    } finally {
+      setResetLoading(false);
+    }
+  };
+
+  // Two-factor (OTP) enforcement for the tenant admin — root-controlled only.
+  const [otpRequired, setOtpRequired] = useState(false);
+  const [otpEnrolled, setOtpEnrolled] = useState(false);
+  const [otpBusy, setOtpBusy] = useState(false);
+
+  const handleToggleOtp = async (userId: string, required: boolean) => {
+    try {
+      setOtpBusy(true);
+      const res = await api.put(`/system/users/${userId}/otp`, { required });
+      setOtpRequired(res.data.data.otpRequired);
+      setOtpEnrolled(res.data.data.otpEnrolled);
+      toast.success(required ? 'Two-factor enabled for this admin' : 'Two-factor disabled');
+      fetchTenants();
+    } catch (err) {
+      toast.error('Failed to update two-factor setting');
+    } finally {
+      setOtpBusy(false);
+    }
+  };
 
   const AVAILABLE_PERMISSIONS = [
     { id: 'manage_reservations', label: 'Reservations' },
@@ -125,6 +165,10 @@ export default function TenantManagementPage() {
     
     const adminUser = tenant.users?.find((u: any) => u.role === 'ADMIN');
     setAdminPermissions(new Set(adminUser?.permissions ? adminUser.permissions.split(',') : []));
+    setResetLink(null);
+    setResetExpiryMins(null);
+    setOtpRequired(!!adminUser?.otpRequired);
+    setOtpEnrolled(!!adminUser?.otpConfirmedAt);
     setIsSettingsOpen(true);
   };
 
@@ -468,6 +512,56 @@ export default function TenantManagementPage() {
                                     </div>
                                 ))}
                             </div>
+
+                            {(() => {
+                                const adminUser = selectedTenant?.users?.find((u: any) => u.role === 'ADMIN');
+                                if (!adminUser) return null;
+                                return (
+                                  <>
+                                    <div className="pt-4 mt-2 border-t border-slate-100 space-y-2">
+                                        <div className="flex items-center justify-between">
+                                            <div className="flex items-center gap-2">
+                                                <ShieldCheck className="w-4 h-4 text-emerald-500" />
+                                                <Label className="text-xs font-black uppercase text-slate-800 tracking-tight">Two-Factor (OTP)</Label>
+                                            </div>
+                                            <Switch checked={otpRequired} disabled={otpBusy} onCheckedChange={(v: boolean) => handleToggleOtp(adminUser.id, v)} />
+                                        </div>
+                                        <p className="text-[10px] text-slate-400 font-medium leading-relaxed">
+                                            Require an authenticator-app code at sign-in for <span className="font-bold text-slate-600">{adminUser.email}</span>.
+                                            {otpRequired && (otpEnrolled
+                                                ? <span className="text-emerald-600 font-bold"> Enrolled.</span>
+                                                : <span className="text-amber-600 font-bold"> Awaiting setup at next sign-in.</span>)}
+                                        </p>
+                                    </div>
+                                    <div className="pt-4 mt-2 border-t border-slate-100 space-y-2">
+                                        <div className="flex items-center gap-2">
+                                            <KeyRound className="w-4 h-4 text-amber-500" />
+                                            <Label className="text-xs font-black uppercase text-slate-800 tracking-tight">Password Reset</Label>
+                                        </div>
+                                        <p className="text-[10px] text-slate-400 font-medium leading-relaxed">
+                                            Generate a secure single-use link to reset <span className="font-bold text-slate-600">{adminUser.email}</span>. The password is never shown or stored in plain text.
+                                        </p>
+                                        {resetLink ? (
+                                            <div className="space-y-2">
+                                                <div className="flex items-center gap-2">
+                                                    <Input readOnly value={resetLink} className="h-9 text-[10px] font-mono border-slate-200 bg-slate-50 rounded-sm" onFocus={(e) => e.target.select()} />
+                                                    <Button type="button" size="sm" onClick={() => { navigator.clipboard.writeText(resetLink); toast.success('Copied to clipboard!'); }} className="h-9 shrink-0 bg-slate-900 hover:bg-slate-800 text-white">
+                                                        <Copy className="w-3.5 h-3.5" />
+                                                    </Button>
+                                                </div>
+                                                <p className="text-[9px] text-amber-600 font-bold uppercase tracking-wide">
+                                                    Share securely{resetExpiryMins ? ` · Expires in ${resetExpiryMins} min` : ''} · Single use
+                                                </p>
+                                            </div>
+                                        ) : (
+                                            <Button type="button" onClick={() => handleGenerateReset(adminUser.id)} disabled={resetLoading} className="h-9 w-full bg-amber-500 hover:bg-amber-600 text-white text-[10px] font-black uppercase rounded-sm">
+                                                {resetLoading ? 'Generating…' : 'Generate Reset Link'}
+                                            </Button>
+                                        )}
+                                    </div>
+                                  </>
+                                );
+                            })()}
                         </div>
                     </div>
                     <div className="p-4 bg-slate-50 border-t border-slate-100 flex justify-end gap-2">

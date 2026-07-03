@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useTranslation } from "@/i18n/provider";
 import { Calendar as CalendarIcon, ChevronDown, CheckCircle2, X, Clock, Menu, ArrowLeft, Leaf, Sparkles, AlertTriangle, Flame } from 'lucide-react';
@@ -11,7 +11,9 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
-import { getDaySuggestions, getTimeSuggestions } from '@/lib/reservationSuggestions';
+import { getTimeSuggestions } from '@/lib/reservationSuggestions';
+import ReservationCalendar from './ReservationCalendar';
+import { getTodayInTZ, zonedWallTimeToUTC, DEFAULT_TZ } from '@/lib/datetime';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || (typeof window !== 'undefined' ? `${window.location.protocol}//${window.location.hostname}:3000/api` : 'http://localhost:3000/api');
 
@@ -37,11 +39,10 @@ export default function GardenLayout({ slug, initialRestaurant, initialView, men
 
   const customization = restaurant?.customization || {};
 
-  const getLocalYYYYMMDD = (d: Date) => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  const tz = restaurant?.settings?.timezone || DEFAULT_TZ;
 
-  const [selectedDate, setSelectedDate] = useState(getLocalYYYYMMDD(new Date()));
+  const [selectedDate, setSelectedDate] = useState(getTodayInTZ(tz));
   const [selectedTime, setSelectedTime] = useState('19:30');
-  const dateInputRef = useRef<HTMLInputElement>(null);
   const [resForm, setResForm] = useState({
     customerName: '',
     customerPhone: '',
@@ -74,7 +75,7 @@ export default function GardenLayout({ slug, initialRestaurant, initialView, men
 
   const handleBooking = async (e: React.FormEvent) => {
     e.preventDefault();
-    const combinedDateTime = new Date(`${selectedDate}T${selectedTime}:00+03:00`);
+    const combinedDateTime = zonedWallTimeToUTC(selectedDate, selectedTime, tz);
 
     if (combinedDateTime < new Date()) {
       toast.error('Cannot create reservations for the past');
@@ -111,6 +112,12 @@ export default function GardenLayout({ slug, initialRestaurant, initialView, men
         },
         { headers: { 'X-Restaurant-ID': restaurant.id } }
       );
+      const bookingData = res.data?.data;
+      if (bookingData?.payment?.token) {
+        toast.success(t('public.redirectingToPayment'));
+        setTimeout(() => { window.location.href = `/pay/${bookingData.payment.token}`; }, 1400);
+        return;
+      }
       setIsPossiblyFullyBooked(!!res.data?.data?.possiblyFullyBooked);
       setIsBookingSuccess(true);
     } catch (err: any) {
@@ -135,8 +142,8 @@ export default function GardenLayout({ slug, initialRestaurant, initialView, men
   if (!restaurant) return <div className="min-h-screen flex items-center justify-center bg-[#fdfaf3] text-[#3d3524] font-medium">Experience not found.</div>;
 
   const bgImage = restaurant.logoUrl || HERO_IMAGE_FALLBACK;
-  const { week, weekend } = getDaySuggestions();
   const times = getTimeSuggestions();
+  const maxPartySize = restaurant?.settings?.maxPartySize || 8;
   const selectedDateLabel = new Date(`${selectedDate}T00:00:00`).toLocaleDateString([], { weekday: 'long', month: 'long', day: 'numeric' });
 
   const getFontClass = (type: string) => {
@@ -460,36 +467,8 @@ export default function GardenLayout({ slug, initialRestaurant, initialView, men
 
               <div className="space-y-5">
                 <Label className="text-xs font-semibold uppercase tracking-widest opacity-60">Date</Label>
-                <div className="grid grid-cols-3 gap-3">
-                  {week.map(d => (
-                    <button key={d.value} type="button" onClick={() => setSelectedDate(d.value)} className={cn("flex h-16 flex-col items-center justify-center rounded-2xl border transition-all", selectedDate === d.value ? "border-[var(--accent)] bg-[var(--accent)] text-white" : "border-black/10 bg-[#fdfaf3] hover:border-[var(--accent)]/40")}>
-                      <span className="text-[9px] font-medium uppercase opacity-70">{d.label}</span>
-                      <span className="text-sm font-semibold">{d.full}</span>
-                    </button>
-                  ))}
-                </div>
-                <div className="space-y-2">
-                  <span className="text-[10px] font-semibold uppercase tracking-widest opacity-40">Also available</span>
-                  <div className="grid grid-cols-4 gap-3">
-                    {weekend.map(d => (
-                      <button key={d.value} type="button" onClick={() => setSelectedDate(d.value)} className={cn("flex h-16 flex-col items-center justify-center rounded-2xl border transition-all", selectedDate === d.value ? "border-[var(--accent)] bg-[var(--accent)] text-white" : "border-black/10 bg-[#fdfaf3] hover:border-[var(--accent)]/40")}>
-                        <span className="text-[9px] font-medium uppercase opacity-70">{d.label}</span>
-                        <span className="text-sm font-semibold">{d.full}</span>
-                      </button>
-                    ))}
-                    <div className="relative">
-                      <input type="date" ref={dateInputRef} value={selectedDate} onChange={(e) => setSelectedDate(e.target.value)} className="sr-only" />
-                      {(() => {
-                        const isCustom = !week.find(d => d.value === selectedDate) && !weekend.find(d => d.value === selectedDate);
-                        return (
-                          <button type="button" onClick={() => dateInputRef.current?.showPicker()} className={cn("flex h-16 w-full flex-col items-center justify-center rounded-2xl border transition-all", isCustom ? "border-[var(--accent)] bg-[var(--accent)] text-white" : "border-black/10 bg-[#fdfaf3] hover:border-[var(--accent)]/40")}>
-                            <CalendarIcon className="mb-1 h-4 w-4" />
-                            <span className="text-[9px] font-medium uppercase">{isCustom ? new Date(`${selectedDate}T00:00:00`).toLocaleDateString([], { month: 'short', day: 'numeric' }) : 'Custom'}</span>
-                          </button>
-                        );
-                      })()}
-                    </div>
-                  </div>
+                <div className="rounded-2xl border border-black/10 bg-[#fdfaf3] p-4">
+                  <ReservationCalendar value={selectedDate} onChange={setSelectedDate} tz={tz} accent="var(--accent)" />
                 </div>
               </div>
 
@@ -500,13 +479,6 @@ export default function GardenLayout({ slug, initialRestaurant, initialView, men
                     <button key={tm} type="button" onClick={() => setSelectedTime(tm)} className={cn("h-11 rounded-xl border text-sm font-medium transition-all", selectedTime === tm ? "border-[var(--accent)] bg-[var(--accent)] text-white" : "border-black/10 bg-[#fdfaf3] hover:border-[var(--accent)]/40")}>{tm}</button>
                   ))}
                 </div>
-                <Input
-                  type="time"
-                  required
-                  value={selectedTime}
-                  onChange={e => setSelectedTime(e.target.value)}
-                  className="h-14 rounded-2xl border-black/10 bg-[#fdfaf3] px-5 text-base font-medium focus-visible:ring-4 focus-visible:ring-[var(--accent)]/10"
-                />
               </div>
 
               {checkingDay ? (
@@ -551,22 +523,24 @@ export default function GardenLayout({ slug, initialRestaurant, initialView, men
                 </div>
               ) : null}
 
-              <div className="grid grid-cols-1 gap-6 border-t border-black/5 pt-8 sm:grid-cols-2">
+              <div className="space-y-6 border-t border-black/5 pt-8">
                 <div className="space-y-2">
                   <Label className="text-xs font-semibold uppercase tracking-widest opacity-60">Guests</Label>
-                  <Input type="number" min="1" required value={resForm.guestCount} onChange={e => setResForm({...resForm, guestCount: e.target.value})} className="h-14 rounded-2xl border-black/10 bg-[#fdfaf3] px-5 text-base font-medium focus-visible:ring-4 focus-visible:ring-[var(--accent)]/10" />
+                  <div className="flex flex-wrap gap-2">
+                    {Array.from({ length: maxPartySize }, (_, i) => i + 1).map(n => (
+                      <button key={n} type="button" onClick={() => setResForm({...resForm, guestCount: String(n)})} className={cn("h-12 w-12 rounded-full border text-base font-semibold transition-all", resForm.guestCount === String(n) ? "border-[var(--accent)] bg-[var(--accent)] text-white scale-105" : "border-black/10 bg-[#fdfaf3] hover:border-[var(--accent)]/40")}>{n}</button>
+                    ))}
+                  </div>
                 </div>
-                <div className="space-y-2">
-                  <Label className="text-xs font-semibold uppercase tracking-widest opacity-60">Name</Label>
-                  <Input required value={resForm.customerName} onChange={e => setResForm({...resForm, customerName: e.target.value})} className="h-14 rounded-2xl border-black/10 bg-[#fdfaf3] px-5 text-base font-medium focus-visible:ring-4 focus-visible:ring-[var(--accent)]/10" />
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-xs font-semibold uppercase tracking-widest opacity-60">Phone</Label>
-                  <Input required type="tel" value={resForm.customerPhone} onChange={e => setResForm({...resForm, customerPhone: e.target.value})} className="h-14 rounded-2xl border-black/10 bg-[#fdfaf3] px-5 text-base font-medium focus-visible:ring-4 focus-visible:ring-[var(--accent)]/10" />
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-xs font-semibold uppercase tracking-widest opacity-60">Email</Label>
-                  <Input type="email" value={resForm.customerEmail} onChange={e => setResForm({...resForm, customerEmail: e.target.value})} className="h-14 rounded-2xl border-black/10 bg-[#fdfaf3] px-5 text-base font-medium focus-visible:ring-4 focus-visible:ring-[var(--accent)]/10" />
+                <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label className="text-xs font-semibold uppercase tracking-widest opacity-60">Name</Label>
+                    <Input required value={resForm.customerName} onChange={e => setResForm({...resForm, customerName: e.target.value})} className="h-14 rounded-2xl border-black/10 bg-[#fdfaf3] px-5 text-base font-medium focus-visible:ring-4 focus-visible:ring-[var(--accent)]/10" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-xs font-semibold uppercase tracking-widest opacity-60">Phone</Label>
+                    <Input required type="tel" value={resForm.customerPhone} onChange={e => setResForm({...resForm, customerPhone: e.target.value})} className="h-14 rounded-2xl border-black/10 bg-[#fdfaf3] px-5 text-base font-medium focus-visible:ring-4 focus-visible:ring-[var(--accent)]/10" />
+                  </div>
                 </div>
               </div>
 
