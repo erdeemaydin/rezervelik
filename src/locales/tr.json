@@ -5,10 +5,12 @@
     "validation_error": "Doğrulama hatası",
     "internal_error": "Sunucu hatası",
     "tenant_required": "X-Restaurant-ID başlığı gereklidir",
-    "table_conflict": "Bu masa, çakışan bir zaman dilimi için zaten rezerve edilmiş"
+    "table_conflict": "Bu masa, çakışan bir zaman dilimi için zaten rezerve edilmiş",
+    "fully_booked": "Seçtiğiniz tarih ve saat için tüm masalar dolu. Lütfen bekleme listesine katılın veya başka bir saat seçin."
   },
   "messages": {
     "reservation_created": "Rezervasyon başarıyla oluşturuldu",
-    "welcome": "{{name}} restoranına hoş geldiniz"
+    "welcome": "{{name}} restoranına hoş geldiniz",
+    "password_reset": "Şifre başarıyla güncellendi"
   }
 }

@@ -39,6 +39,7 @@ model Restaurant {
   floorElements         FloorElement[]
   customization         FrontendCustomization?
   scheduledPriceUpdates ScheduledPriceUpdate[]
+  payments              Payment[]
 }
 
 model FrontendCustomization {
@@ -94,7 +95,14 @@ model RestaurantSettings {
   isPaidReservationEnabled Boolean @default(false)
   depositAmount            Float?
   currency                 String  @default("TRY")
+  // Largest party a guest can pick on the public booking form (rendered as
+  // 1..maxPartySize bubble buttons). Admin-configurable.
+  maxPartySize             Int     @default(8)
   operatingHours           String?
+  // IANA timezone (e.g. "Europe/Istanbul") — the authoritative wall-clock zone for
+  // this restaurant. Public booking interprets/display times in this zone, and the
+  // backend derives the reservation's calendar day (for DaySetting lookups) from it.
+  timezone                 String  @default("Europe/Istanbul")
 
   schedulingSystem String @default("MONTHLY") // "WEEKLY" or "MONTHLY"
 
@@ -174,6 +182,18 @@ model User {
 
   setupToken          String?   @unique
   setupTokenExpiresAt DateTime?
+
+  // Password reset: only the SHA-256 hash of the token is stored, never the raw
+  // token. The raw token lives only in the reset link handed out once.
+  resetTokenHash      String?   @unique
+  resetTokenExpiresAt DateTime?
+
+  // Two-factor (TOTP) authentication. `otpRequired` is toggled only by the root
+  // admin; `otpSecret` (base32) is set when the user enrolls; `otpConfirmedAt`
+  // marks a completed enrollment. Login enforces OTP only when required + confirmed.
+  otpRequired    Boolean   @default(false)
+  otpSecret      String?
+  otpConfirmedAt DateTime?
 
   createdAt        DateTime               @default(now())
   updatedAt        DateTime               @updatedAt
@@ -295,11 +315,52 @@ model Reservation {
   table      Table?               @relation(fields: [tableId], references: [id])
   category   ReservationCategory? @relation(fields: [categoryId], references: [id])
   restaurant Restaurant           @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  payments   Payment[]
 
   @@index([restaurantId])
   @@index([tableId])
   @@index([categoryId])
   @@index([startTime])
+}
+
+// A payment attempt for a reservation deposit. Provider-agnostic: `provider`
+// records which gateway (PAYTR / MOCK / …) handled it. Amounts are stored in
+// MINOR units (kuruş/cents) as integers to avoid floating-point money bugs.
+// Card data never touches this table — the customer enters it in the provider's
+// hosted iframe (PCI SAQ A).
+model Payment {
+  id            String    @id @default(uuid())
+  restaurantId  String
+  reservationId String?
+  provider      String    @default("PAYTR") // PAYTR, MOCK, STRIPE, IYZICO
+  merchantOid   String    @unique // our order id echoed back by the provider callback
+  providerRef   String? // provider-side transaction reference
+  amount        Int // minor units (e.g. kuruş)
+  currency      String    @default("TL")
+  status        String    @default("PENDING") // PENDING, PAID, FAILED, EXPIRED, REFUNDED
+
+  // Customer access to the hosted payment page. Only the SHA-256 hash of the raw
+  // link token is stored; the raw token lives only in the payment link. `code` is
+  // a short human-typeable fallback so guests can reach payment from the known site
+  // instead of trusting a raw SMS link (anti-phishing).
+  linkTokenHash String    @unique
+  code          String
+  expiresAt     DateTime
+
+  paidAt        DateTime?
+  failReason    String?
+  rawCallback   String? // JSON of the last provider callback, for audit
+
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  reservation Reservation? @relation(fields: [reservationId], references: [id], onDelete: SetNull)
+  restaurant  Restaurant   @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+
+  @@index([restaurantId])
+  @@index([reservationId])
+  @@index([code])
+  @@index([status])
 }
 
 model Menu {

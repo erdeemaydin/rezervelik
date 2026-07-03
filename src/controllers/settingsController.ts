@@ -23,10 +23,12 @@ export const updateSettings = async (req: Request, res: Response) => {
       defaultDurationMinutes, 
       isPaidReservationEnabled, 
       depositAmount, 
-      currency, 
+      currency,
       operatingHours,
       schedulingSystem,
-      staffScheduleView
+      staffScheduleView,
+      timezone,
+      maxPartySize
     } = req.body;
 
     const settings = await prisma.restaurantSettings.update({
@@ -40,7 +42,9 @@ export const updateSettings = async (req: Request, res: Response) => {
         currency,
         operatingHours,
         schedulingSystem,
-        staffScheduleView
+        staffScheduleView,
+        timezone,
+        maxPartySize: maxPartySize != null ? parseInt(maxPartySize) : undefined
       }
     });
 

@@ -16,6 +16,8 @@ router.post('/tenants', systemController.createTenant);
 router.put('/tenants/:id/subscription', systemController.updateTenantSubscription);
 router.put('/tenants/:id/settings', systemController.updateTenantSettings);
 router.put('/users/:userId/permissions', systemController.updateTenantUserPermissions);
+router.post('/users/:userId/reset-link', systemController.createPasswordResetLink);
+router.put('/users/:userId/otp', systemController.setUserOtp);
 
 router.get('/settings/global', systemController.getGlobalSettings);
 router.put('/settings/global', systemController.updateGlobalSettings);

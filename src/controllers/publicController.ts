@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import prisma from '../config/prisma';
 import { successResponse, errorResponse } from '../utils/response';
+import { findAvailableTable } from '../utils/reservationConflict';
 
 export const getRestaurantBySlug = async (req: Request, res: Response) => {
   try {
@@ -184,24 +185,33 @@ export const acceptOffer = async (req: Request, res: Response) => {
 
     // Create a real reservation
     const startTimeStr = entry.offeredTime ? `${entry.targetDate}T${entry.offeredTime}:00+03:00` : `${entry.targetDate}T19:00:00+03:00`;
-    
-    await prisma.$transaction([
-      prisma.reservation.create({
+    const start = new Date(startTimeStr);
+    const settings = await prisma.restaurantSettings.findUnique({ where: { restaurantId: entry.restaurantId } });
+    const end = new Date(start.getTime() + (settings?.defaultDurationMinutes || 90) * 60000);
+
+    await prisma.$transaction(async (tx) => {
+      // Try to seat the offer on a free table; leave unassigned for staff if none.
+      const table = await findAvailableTable({
+        restaurantId: entry.restaurantId, partySize: entry.partySize, start, end, tx,
+      });
+      await tx.reservation.create({
         data: {
           restaurantId: entry.restaurantId,
+          tableId: table?.id ?? null,
           customerName: entry.customerName,
           customerPhone: entry.customerPhone,
           guestCount: entry.partySize,
-          startTime: new Date(startTimeStr),
+          startTime: start,
+          endTime: end,
           status: 'CONFIRMED',
           notes: 'Converted from Waitlist Offer'
         }
-      }),
-      prisma.waitlistEntry.update({
+      });
+      await tx.waitlistEntry.update({
         where: { id: entry.id },
         data: { status: 'ACCEPTED' }
-      })
-    ]);
+      });
+    });
 
     return successResponse(res, { message: 'Offer accepted' });
   } catch (error) {

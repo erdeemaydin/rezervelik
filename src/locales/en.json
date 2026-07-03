@@ -5,10 +5,12 @@
     "validation_error": "Validation error",
     "internal_error": "Internal server error",
     "tenant_required": "X-Restaurant-ID header is required",
-    "table_conflict": "This table is already reserved for an overlapping time"
+    "table_conflict": "This table is already reserved for an overlapping time",
+    "fully_booked": "All tables are booked for this date and time. Please join the waitlist or pick another time."
   },
   "messages": {
     "reservation_created": "Reservation created successfully",
-    "welcome": "Welcome to {{name}}"
+    "welcome": "Welcome to {{name}}",
+    "password_reset": "Password updated successfully"
   }
 }

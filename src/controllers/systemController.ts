@@ -2,6 +2,66 @@ import { Request, Response } from 'express';
 import bcrypt from 'bcrypt';
 import prisma from '../config/prisma';
 import { successResponse, errorResponse } from '../utils/response';
+import { generateResetToken, RESET_TOKEN_TTL_MS } from '../utils/resetToken';
+
+// POST /system/users/:userId/reset-link (SUPER_ADMIN only)
+// Mints a single-use password reset link for any user. The raw token is returned
+// exactly once here; only its SHA-256 hash is persisted.
+export const createPasswordResetLink = async (req: Request, res: Response) => {
+  try {
+    const { userId } = req.params;
+
+    const user = await prisma.user.findUnique({ where: { id: userId } });
+    if (!user) return errorResponse(res, 'errors.validation_error', 404, { message: 'User not found' });
+
+    const { rawToken, tokenHash, expiresAt } = generateResetToken();
+
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { resetTokenHash: tokenHash, resetTokenExpiresAt: expiresAt }
+    });
+
+    return successResponse(res, {
+      resetLink: `/auth/reset/${rawToken}`,
+      email: user.email,
+      expiresAt,
+      expiresInMinutes: Math.round(RESET_TOKEN_TTL_MS / 60000)
+    });
+  } catch (error) {
+    console.error('Create password reset link error:', error);
+    return errorResponse(res, 'errors.internal_error', 500);
+  }
+};
+
+// PUT /system/users/:userId/otp (SUPER_ADMIN only)
+// Enable/disable the two-factor requirement for a user. Only the root admin can
+// flip this. Disabling also wipes any existing enrollment so re-enabling forces
+// a fresh setup.
+export const setUserOtp = async (req: Request, res: Response) => {
+  try {
+    const { userId } = req.params;
+    const { required } = req.body;
+
+    const user = await prisma.user.findUnique({ where: { id: userId } });
+    if (!user) return errorResponse(res, 'errors.validation_error', 404, { message: 'User not found' });
+
+    const updated = await prisma.user.update({
+      where: { id: user.id },
+      data: required
+        ? { otpRequired: true }
+        : { otpRequired: false, otpSecret: null, otpConfirmedAt: null }
+    });
+
+    return successResponse(res, {
+      id: updated.id,
+      otpRequired: updated.otpRequired,
+      otpEnrolled: !!updated.otpConfirmedAt
+    });
+  } catch (error) {
+    console.error('Set user OTP error:', error);
+    return errorResponse(res, 'errors.internal_error', 500);
+  }
+};
 
 export const getAllTenants = async (req: Request, res: Response) => {
   try {
@@ -16,7 +76,9 @@ export const getAllTenants = async (req: Request, res: Response) => {
             firstName: true,
             lastName: true,
             role: true,
-            permissions: true
+            permissions: true,
+            otpRequired: true,
+            otpConfirmedAt: true
           }
         }
       }

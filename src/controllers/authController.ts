@@ -1,8 +1,10 @@
 import { Request, Response } from 'express';
 import bcrypt from 'bcrypt';
 import prisma from '../config/prisma';
-import { generateToken } from '../utils/jwt';
+import { generateToken, generateOtpChallengeToken, verifyOtpChallengeToken } from '../utils/jwt';
 import { successResponse, errorResponse } from '../utils/response';
+import { hashResetToken } from '../utils/resetToken';
+import { generateOtpSecret, verifyTotp, buildOtpAuthUrl } from '../utils/totp';
 
 export const register = async (req: Request, res: Response) => {
   try {
@@ -100,6 +102,31 @@ export const login = async (req: Request, res: Response) => {
       return errorResponse(res, 'errors.unauthorized', 401, { message: 'Invalid credentials' });
     }
 
+    // Two-factor gate: if the root admin requires OTP for this user, the password
+    // step alone does not grant a session — return a short-lived challenge instead.
+    if (user.otpRequired) {
+      const enrolled = !!user.otpConfirmedAt && !!user.otpSecret;
+      if (enrolled) {
+        // Already set up: just ask for a code, verified against the stored secret.
+        return successResponse(res, {
+          otpRequired: true,
+          setupRequired: false,
+          otpToken: generateOtpChallengeToken(user.id)
+        });
+      }
+      // Not yet enrolled: mint a fresh provisional secret and carry it *inside* the
+      // signed challenge token rather than persisting it. Each login attempt gets a
+      // new secret, so returning to this screen never re-shows a stale one.
+      const secret = generateOtpSecret();
+      return successResponse(res, {
+        otpRequired: true,
+        setupRequired: true,
+        otpToken: generateOtpChallengeToken(user.id, secret),
+        otpauthUrl: buildOtpAuthUrl(secret, user.email),
+        otpSecret: secret
+      });
+    }
+
     console.log(`[Auth] Login successful: ${user.id} (${user.role})`);
     const token = generateToken(user.id, user.restaurantId, user.role);
 
@@ -119,6 +146,159 @@ export const login = async (req: Request, res: Response) => {
   } catch (error: any) {
     console.error('[Auth] Critical Login Error:', error.message, error.stack);
     return errorResponse(res, 'errors.internal_error', 500, { detail: error.message });
+  }
+};
+
+// POST /auth/login/otp — second step of a two-factor login. Verifies the TOTP
+// code against the challenge token from the password step, and (on first use)
+// confirms enrollment before issuing the real session token.
+export const loginVerifyOtp = async (req: Request, res: Response) => {
+  try {
+    const { otpToken, code } = req.body;
+    if (!otpToken || !code) {
+      return errorResponse(res, 'errors.validation_error', 400, { message: 'OTP token and code are required' });
+    }
+
+    let userId: string;
+    let setupSecret: string | undefined;
+    try {
+      ({ userId, setupSecret } = verifyOtpChallengeToken(otpToken));
+    } catch {
+      return errorResponse(res, 'errors.unauthorized', 401, { message: 'OTP session expired, please sign in again' });
+    }
+
+    const user = await prisma.user.findUnique({ where: { id: userId } });
+    if (!user || !user.otpRequired) {
+      return errorResponse(res, 'errors.unauthorized', 401, { message: 'Invalid credentials' });
+    }
+
+    // During first-time setup the secret lives in the challenge token; afterwards
+    // it's the confirmed secret stored on the user.
+    const secret = setupSecret || user.otpSecret;
+    if (!secret) {
+      return errorResponse(res, 'errors.unauthorized', 401, { message: 'Invalid credentials' });
+    }
+
+    if (!verifyTotp(secret, String(code))) {
+      return errorResponse(res, 'errors.unauthorized', 401, { message: 'Invalid or expired verification code' });
+    }
+
+    // Persist the secret + confirm enrollment only now that possession is proven.
+    if (setupSecret) {
+      await prisma.user.update({ where: { id: user.id }, data: { otpSecret: setupSecret, otpConfirmedAt: new Date() } });
+    } else if (!user.otpConfirmedAt) {
+      await prisma.user.update({ where: { id: user.id }, data: { otpConfirmedAt: new Date() } });
+    }
+
+    const token = generateToken(user.id, user.restaurantId, user.role);
+    return successResponse(res, {
+      user: {
+        id: user.id,
+        email: user.email,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        role: user.role,
+        restaurantId: user.restaurantId,
+        permissions: user.permissions
+      },
+      token
+    });
+  } catch (error) {
+    console.error('[Auth] OTP verify error:', error);
+    return errorResponse(res, 'errors.internal_error', 500);
+  }
+};
+
+// POST /auth/change-password (authenticated) — universal self-service change for
+// any user. Requires the current password; new password is bcrypt-hashed.
+export const changePassword = async (req: Request, res: Response) => {
+  try {
+    const userId = req.user!.userId;
+    const { currentPassword, newPassword } = req.body;
+
+    if (!currentPassword || !newPassword) {
+      return errorResponse(res, 'errors.validation_error', 400, { message: 'Current and new password are required' });
+    }
+    if (typeof newPassword !== 'string' || newPassword.length < 8) {
+      return errorResponse(res, 'errors.validation_error', 400, { message: 'New password must be at least 8 characters long' });
+    }
+
+    const user = await prisma.user.findUnique({ where: { id: userId } });
+    if (!user) return errorResponse(res, 'errors.unauthorized', 401);
+
+    const valid = await bcrypt.compare(currentPassword, user.passwordHash);
+    if (!valid) {
+      return errorResponse(res, 'errors.validation_error', 400, { message: 'Current password is incorrect' });
+    }
+
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    await prisma.user.update({ where: { id: user.id }, data: { passwordHash: hashedPassword } });
+
+    return successResponse(res, { ok: true }, 'messages.password_reset', 200);
+  } catch (error) {
+    console.error('[Auth] Change password error:', error);
+    return errorResponse(res, 'errors.internal_error', 500);
+  }
+};
+
+// GET /auth/me (authenticated) — current user profile incl. 2FA status, used by
+// the profile page.
+export const getMe = async (req: Request, res: Response) => {
+  try {
+    const user = await prisma.user.findUnique({ where: { id: req.user!.userId } });
+    if (!user) return errorResponse(res, 'errors.unauthorized', 401);
+    return successResponse(res, {
+      id: user.id,
+      email: user.email,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      role: user.role,
+      restaurantId: user.restaurantId,
+      permissions: user.permissions,
+      otpRequired: user.otpRequired,
+      otpEnrolled: !!user.otpConfirmedAt
+    });
+  } catch (error) {
+    return errorResponse(res, 'errors.internal_error', 500);
+  }
+};
+
+// POST /auth/2fa/setup (authenticated) — begin in-app enrollment: (re)provision a
+// secret and return its provisioning URI for the QR code.
+export const setupTwoFactor = async (req: Request, res: Response) => {
+  try {
+    const user = await prisma.user.findUnique({ where: { id: req.user!.userId } });
+    if (!user) return errorResponse(res, 'errors.unauthorized', 401);
+
+    const secret = generateOtpSecret();
+    await prisma.user.update({ where: { id: user.id }, data: { otpSecret: secret, otpConfirmedAt: null } });
+
+    return successResponse(res, {
+      otpauthUrl: buildOtpAuthUrl(secret, user.email),
+      otpSecret: secret
+    });
+  } catch (error) {
+    console.error('[Auth] 2FA setup error:', error);
+    return errorResponse(res, 'errors.internal_error', 500);
+  }
+};
+
+// POST /auth/2fa/confirm (authenticated) — finish enrollment by verifying a code.
+export const confirmTwoFactor = async (req: Request, res: Response) => {
+  try {
+    const { code } = req.body;
+    const user = await prisma.user.findUnique({ where: { id: req.user!.userId } });
+    if (!user || !user.otpSecret) {
+      return errorResponse(res, 'errors.validation_error', 400, { message: 'Start setup before confirming' });
+    }
+    if (!verifyTotp(user.otpSecret, String(code || ''))) {
+      return errorResponse(res, 'errors.validation_error', 400, { message: 'Invalid or expired verification code' });
+    }
+    await prisma.user.update({ where: { id: user.id }, data: { otpConfirmedAt: new Date() } });
+    return successResponse(res, { otpEnrolled: true });
+  } catch (error) {
+    console.error('[Auth] 2FA confirm error:', error);
+    return errorResponse(res, 'errors.internal_error', 500);
   }
 };
 
@@ -189,6 +369,63 @@ export const completeSetup = async (req: Request, res: Response) => {
 
   } catch (error) {
     console.error('[Auth] Complete setup error:', error);
+    return errorResponse(res, 'errors.internal_error', 500);
+  }
+};
+
+// GET /auth/reset-password/:token — lets the reset page confirm a link is still
+// valid (and show whose account it is) before rendering the new-password form.
+export const validateResetToken = async (req: Request, res: Response) => {
+  try {
+    const { token } = req.params;
+    if (!token) return errorResponse(res, 'errors.validation_error', 400, { message: 'Token required' });
+
+    const user = await prisma.user.findUnique({ where: { resetTokenHash: hashResetToken(token) } });
+
+    if (!user || !user.resetTokenExpiresAt || new Date() > user.resetTokenExpiresAt) {
+      return errorResponse(res, 'errors.validation_error', 400, { message: 'Invalid or expired reset link' });
+    }
+
+    return successResponse(res, { valid: true, email: user.email });
+  } catch (error) {
+    console.error('[Auth] Validate reset token error:', error);
+    return errorResponse(res, 'errors.internal_error', 500);
+  }
+};
+
+// POST /auth/reset-password — set a new password from a valid reset token.
+// The password is bcrypt-hashed; the reset token is consumed (single-use).
+export const resetPassword = async (req: Request, res: Response) => {
+  try {
+    const { token, password } = req.body;
+    if (!token || !password) {
+      return errorResponse(res, 'errors.validation_error', 400, { message: 'Token and password required' });
+    }
+    if (typeof password !== 'string' || password.length < 8) {
+      return errorResponse(res, 'errors.validation_error', 400, { message: 'Password must be at least 8 characters long' });
+    }
+
+    const user = await prisma.user.findUnique({ where: { resetTokenHash: hashResetToken(token) } });
+
+    if (!user || !user.resetTokenExpiresAt || new Date() > user.resetTokenExpiresAt) {
+      return errorResponse(res, 'errors.validation_error', 400, { message: 'Invalid or expired reset link' });
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    await prisma.user.update({
+      where: { id: user.id },
+      data: {
+        passwordHash: hashedPassword,
+        // Consume the token so the link cannot be reused.
+        resetTokenHash: null,
+        resetTokenExpiresAt: null
+      }
+    });
+
+    return successResponse(res, { email: user.email }, 'messages.password_reset', 200);
+  } catch (error) {
+    console.error('[Auth] Reset password error:', error);
     return errorResponse(res, 'errors.internal_error', 500);
   }
 };

@@ -13,6 +13,7 @@ router.use(requirePermission('manage_reservations'));
 
 router.get('/', reservationController.getReservations);
 router.put('/:id', reservationController.updateReservation);
+router.patch('/:id/schedule', reservationController.updateReservationSchedule);
 router.put('/:id/status', reservationController.updateReservationStatus);
 router.delete('/:id', reservationController.deleteReservation);
 
