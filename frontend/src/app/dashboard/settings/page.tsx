@@ -26,7 +26,29 @@ interface RestaurantSettings {
     operatingHours: string;
     schedulingSystem: string;
     staffScheduleView: string;
+    timezone: string;
+    maxPartySize: number;
+    openingHour: number;
+    closingHour: number;
 }
+
+// Common IANA timezones offered in the settings picker.
+const TIMEZONE_OPTIONS = [
+    'Europe/Istanbul',
+    'Europe/London',
+    'Europe/Berlin',
+    'Europe/Paris',
+    'Europe/Madrid',
+    'Europe/Amsterdam',
+    'Europe/Moscow',
+    'America/New_York',
+    'America/Chicago',
+    'America/Los_Angeles',
+    'Asia/Dubai',
+    'Asia/Tokyo',
+    'Australia/Sydney',
+    'UTC',
+];
 
 export default function SettingsPage() {
     const router = useRouter();
@@ -42,7 +64,11 @@ export default function SettingsPage() {
         currency: 'TRY',
         operatingHours: '',
         schedulingSystem: 'MONTHLY',
-        staffScheduleView: 'OWN_ONLY'
+        staffScheduleView: 'OWN_ONLY',
+        timezone: 'Europe/Istanbul',
+        maxPartySize: 8,
+        openingHour: 10,
+        closingHour: 23
     });
 
     const fetchSettings = useCallback(async () => {
@@ -61,7 +87,11 @@ export default function SettingsPage() {
                     currency: data.currency ?? 'TRY',
                     operatingHours: data.operatingHours ?? '',
                     schedulingSystem: data.schedulingSystem ?? 'MONTHLY',
-                    staffScheduleView: data.staffScheduleView ?? 'OWN_ONLY'
+                    staffScheduleView: data.staffScheduleView ?? 'OWN_ONLY',
+                    timezone: data.timezone ?? 'Europe/Istanbul',
+                    maxPartySize: data.maxPartySize ?? 8,
+                    openingHour: data.openingHour ?? 10,
+                    closingHour: data.closingHour ?? 23
                 });
             }
         } catch (error) {
@@ -265,6 +295,43 @@ export default function SettingsPage() {
                                         <SelectItem value="FIXED_SLOTS" className="text-sm py-2">{t("settings.fixedTimeSlots")}</SelectItem>
                                         </SelectContent>
                                 </Select>
+                            </div>
+                            <div className="grid gap-3 pt-2">
+                                <Label className="text-xs font-black uppercase tracking-wider text-slate-500">{t("settings.maxPartySize")}</Label>
+                                <Input type="number" min="1" max="30" value={settings.maxPartySize}
+                                    onChange={(e) => setSettings(prev => ({...prev, maxPartySize: Math.max(1, parseInt(e.target.value) || 1)}))}
+                                    className="h-12 text-base font-bold rounded-lg px-4" />
+                                <p className="text-[10px] text-slate-400 leading-relaxed">{t("settings.maxPartySizeHint")}</p>
+                            </div>
+                            {/* Opening / closing hours (#1.3) — bounds booking times and the analytics heatmap axis */}
+                            <div className="grid grid-cols-2 gap-4 pt-2">
+                                <div className="grid gap-3">
+                                    <Label className="text-xs font-black uppercase tracking-wider text-slate-500">{t("settings.openingHour")}</Label>
+                                    <Input type="number" min="0" max="23" value={settings.openingHour}
+                                        onChange={(e) => setSettings(prev => ({...prev, openingHour: Math.min(23, Math.max(0, parseInt(e.target.value) || 0))}))}
+                                        className="h-12 text-base font-bold rounded-lg px-4" />
+                                </div>
+                                <div className="grid gap-3">
+                                    <Label className="text-xs font-black uppercase tracking-wider text-slate-500">{t("settings.closingHour")}</Label>
+                                    <Input type="number" min="0" max="23" value={settings.closingHour}
+                                        onChange={(e) => setSettings(prev => ({...prev, closingHour: Math.min(23, Math.max(0, parseInt(e.target.value) || 0))}))}
+                                        className="h-12 text-base font-bold rounded-lg px-4" />
+                                </div>
+                                <p className="text-[10px] text-slate-400 leading-relaxed col-span-2">{t("settings.openingHoursHint")}</p>
+                            </div>
+                            <div className="grid gap-3 pt-2">
+                                <Label className="text-xs font-black uppercase tracking-wider text-slate-500">{t("settings.timezone")}</Label>
+                                <Select value={settings.timezone || 'Europe/Istanbul'} onValueChange={(v: string | null) => setSettings(prev => ({...prev, timezone: v || 'Europe/Istanbul'}))}>
+                                    <SelectTrigger className="h-12 text-sm font-bold rounded-lg px-4">
+                                        <SelectValue placeholder={t("settings.timezone")} />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {TIMEZONE_OPTIONS.map(tzName => (
+                                            <SelectItem key={tzName} value={tzName} className="text-sm py-2">{tzName.replace('_', ' ')}</SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                                <p className="text-[10px] text-slate-400 leading-relaxed">{t("settings.timezoneHint")}</p>
                             </div>
                         </CardContent>
                     </Card>

@@ -139,7 +139,21 @@
     "waitlistPerformance": "Waitlist Performance",
     "avgWait": "Avg Wait",
     "conversion": "Conversion",
-    "seated": "Seated"
+    "seated": "Seated",
+    "customRange": "Custom range",
+    "from": "From",
+    "to": "To",
+    "clear": "Clear",
+    "cancelRate": "Cancellation Rate",
+    "noShowRate": "No-show Rate",
+    "avgLeadTime": "Avg Booking Lead Time",
+    "leadTimeHint": "How far ahead guests book",
+    "days": "days",
+    "hours": "hours",
+    "customerMix": "Customer Mix",
+    "newCustomers": "New",
+    "returningCustomers": "Returning",
+    "regularCustomers": "Regulars"
   },
   "menusWizard": {
     "creatingMenu": "Creating your premium menu...",
@@ -860,7 +874,10 @@
     "timezone": "Timezone",
     "timezoneHint": "The restaurant’s local timezone. Public booking times and blocked days are interpreted in this zone.",
     "maxPartySize": "Max Party Size",
-    "maxPartySizeHint": "Largest party guests can select on the public booking form (shown as 1–N buttons)."
+    "maxPartySizeHint": "Largest party guests can select on the public booking form (shown as 1–N buttons).",
+    "openingHour": "Opening Hour",
+    "closingHour": "Closing Hour",
+    "openingHoursHint": "Service window (0–23). Bounds the booking time options and the analytics peak-hours heatmap."
   },
   "waitTime": {
     "error": {
