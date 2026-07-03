@@ -23,6 +23,7 @@ import {
 } from '@/lib/api/scheduling';
 import { toast } from 'sonner';
 import { useAuthStore } from '@/store/useAuthStore';
+import { useConfirm } from '@/components/ui/confirm-dialog';
 
 import {
   DndContext,
@@ -161,6 +162,7 @@ function DroppableCell({
 
 export default function ShiftAssigner({ viewMode = 'MONTHLY' }: { viewMode?: 'WEEKLY' | 'MONTHLY' }) {
   const { user } = useAuthStore();
+  const confirm = useConfirm();
   const isAdminOrManager = user?.role === 'ADMIN' || user?.role === 'MANAGER';
   
   const [currentDate, setCurrentDate] = useState<Date>(new Date());
@@ -478,13 +480,27 @@ export default function ShiftAssigner({ viewMode = 'MONTHLY' }: { viewMode?: 'WE
       return;
     }
 
+    const startDate = days[0].dateString;
+    const endDate = days[days.length - 1].dateString;
+    const staffWithShifts = new Set(
+      assignments.filter(a => days.some(d => d.dateString === a.date)).map(a => a.userId)
+    ).size;
+
+    // Confirmation popup before publishing (#7.3).
+    const ok = await confirm({
+      title: 'Publish this schedule?',
+      description: 'Working staff will receive their shift plan on WhatsApp 5 minutes after publishing.',
+      details: [
+        { label: 'Period', value: startDate === endDate ? startDate : `${startDate} – ${endDate}` },
+        { label: 'Staff to notify', value: `${staffWithShifts}` },
+      ],
+      confirmText: 'Publish',
+    });
+    if (!ok) return;
+
     try {
-      const startDate = days[0].dateString;
-      const endDate = days[days.length - 1].dateString;
-      
-      toast.info('Publishing schedule to staff...');
-      await publishAssignments({ startDate, endDate });
-      
+      const res: any = await publishAssignments({ startDate, endDate });
+
       // Update local state to reflect published status for the current range
       setAssignments(prev => prev.map(a => {
         if (days.some(d => d.dateString === a.date)) {
@@ -492,7 +508,9 @@ export default function ShiftAssigner({ viewMode = 'MONTHLY' }: { viewMode?: 'WE
         }
         return a;
       }));
-      toast.success('Schedule published successfully!');
+      const mins = res?.data?.whatsappDelayMinutes ?? res?.whatsappDelayMinutes ?? 5;
+      // Inform the admin about the delayed WhatsApp send (#7.4).
+      toast.success(`Published — the plan will be sent to all working staff in ${mins} minutes.`);
     } catch (error) {
       console.error(error);
       toast.error('Failed to publish schedule');
@@ -1058,8 +1076,14 @@ export default function ShiftAssigner({ viewMode = 'MONTHLY' }: { viewMode?: 'WE
                                                             size="sm" 
                                                             variant="destructive"
                                                             className="h-6 bg-red-600 hover:bg-red-700 font-black uppercase text-[8px] px-1.5 rounded shrink-0"
-                                                            onClick={() => {
-                                                              if (confirm(`Warning: ${s.firstName} marked themselves as UNAVAILABLE for this shift. Do you still want to assign them?`)) {
+                                                            onClick={async () => {
+                                                              const ok = await confirm({
+                                                                title: 'Assign unavailable staff?',
+                                                                description: `${s.firstName} marked themselves as UNAVAILABLE for this shift. Assign them anyway?`,
+                                                                tone: 'danger',
+                                                                confirmText: 'Force assign',
+                                                              });
+                                                              if (ok) {
                                                                 handleAssign(shift.id, s.id, day.dateString);
                                                                 setOpenPopoverCellId(null);
                                                               }
