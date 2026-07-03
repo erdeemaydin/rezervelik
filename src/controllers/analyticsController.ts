@@ -9,15 +9,39 @@ import { successResponse, errorResponse } from '../utils/response';
 export const getAnalytics = async (req: Request, res: Response) => {
   try {
     const restaurantId = req.restaurantId!;
-    const periodDays = parseInt(req.query.period as string) || 30;
 
-    // Validate period
-    const allowedPeriods = [7, 30, 60, 90];
-    const period = allowedPeriods.includes(periodDays) ? periodDays : 30;
+    // Two ways to scope the window:
+    //  - explicit custom range via ?from=YYYY-MM-DD&to=YYYY-MM-DD, or
+    //  - a rolling ?period=<days> (default 30). Custom range wins when valid.
+    const fromStr = req.query.from as string | undefined;
+    const toStr = req.query.to as string | undefined;
 
-    const now = new Date();
-    const periodStart = new Date(now.getTime() - period * 24 * 60 * 60 * 1000);
+    let periodStart: Date;
+    let rangeEnd: Date;
+    let period: number;
+
+    const fromValid = fromStr && !isNaN(new Date(fromStr).getTime());
+    const toValid = toStr && !isNaN(new Date(toStr).getTime());
+
+    if (fromValid && toValid) {
+      periodStart = new Date(`${fromStr}T00:00:00`);
+      rangeEnd = new Date(`${toStr}T23:59:59`);
+      if (rangeEnd < periodStart) [periodStart, rangeEnd] = [rangeEnd, periodStart];
+      period = Math.max(1, Math.round((rangeEnd.getTime() - periodStart.getTime()) / (24 * 60 * 60 * 1000)));
+    } else {
+      const periodDays = parseInt(req.query.period as string) || 30;
+      const allowedPeriods = [7, 30, 60, 90];
+      period = allowedPeriods.includes(periodDays) ? periodDays : 30;
+      rangeEnd = new Date();
+      periodStart = new Date(rangeEnd.getTime() - period * 24 * 60 * 60 * 1000);
+    }
+
+    const now = rangeEnd;
     const prevPeriodStart = new Date(periodStart.getTime() - period * 24 * 60 * 60 * 1000);
+
+    const settings = await prisma.restaurantSettings.findUnique({ where: { restaurantId } });
+    const openingHour = settings?.openingHour ?? 10;
+    const closingHour = settings?.closingHour ?? 23;
 
     // ─── 1. Fetch all reservations in current & previous period ───
     const [currentReservations, prevReservations] = await Promise.all([
@@ -215,8 +239,47 @@ export const getAnalytics = async (req: Request, res: Response) => {
         ? Math.round((seated / totalJoined) * 1000) / 10
         : 0;
 
+    // ─── 10. Booking lead time (how far in advance guests book) ───
+    // Average hours between when a reservation was created and its start time.
+    const leadReservations = currentReservations.filter((r) => r.createdAt);
+    const avgLeadHours =
+      leadReservations.length > 0
+        ? Math.round(
+            (leadReservations.reduce((sum, r) => {
+              const leadMs = r.startTime.getTime() - r.createdAt.getTime();
+              return sum + Math.max(0, leadMs) / 3600000;
+            }, 0) / leadReservations.length) * 10
+          ) / 10
+        : 0;
+    const avgLeadDays = Math.round((avgLeadHours / 24) * 10) / 10;
+
+    // ─── 11. New vs returning vs regular customers ───
+    // Classify each distinct guest (by phone) who booked in the period by their
+    // all-time reservation count at this restaurant:
+    //   new = 1 total · returning = 2-4 · regular = 5+.
+    const periodPhones = [...new Set(currentReservations.map((r) => r.customerPhone).filter(Boolean))];
+    const lifetimeCounts = periodPhones.length
+      ? await prisma.reservation.groupBy({
+          by: ['customerPhone'],
+          where: { restaurantId, customerPhone: { in: periodPhones } },
+          _count: { _all: true },
+        })
+      : [];
+    let newCustomers = 0;
+    let returningCustomers = 0;
+    let regularCustomers = 0;
+    for (const row of lifetimeCounts) {
+      const total = row._count._all;
+      if (total <= 1) newCustomers += 1;
+      else if (total <= 4) returningCustomers += 1;
+      else regularCustomers += 1;
+    }
+
     return successResponse(res, {
       period,
+      range: { from: periodStart.toISOString(), to: now.toISOString() },
+      openingHour,
+      closingHour,
       summary: {
         totalReservations,
         totalGuests,
@@ -250,6 +313,15 @@ export const getAnalytics = async (req: Request, res: Response) => {
         avgWaitMinutes,
         conversionRate,
       },
+      leadTime: {
+        avgHours: avgLeadHours,
+        avgDays: avgLeadDays,
+      },
+      customerSegments: {
+        new: newCustomers,
+        returning: returningCustomers,
+        regular: regularCustomers,
+      },
     });
   } catch (error) {
     console.error('Get analytics error:', error);
@@ -265,8 +337,15 @@ export const getTodayStats = async (req: Request, res: Response) => {
   try {
     const restaurantId = req.restaurantId!;
     const now = new Date();
-    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+    // Optional ?date=YYYY-MM-DD to view another day's stats (#2.1). Defaults to today.
+    const dateStr = req.query.date as string | undefined;
+    const anchor = dateStr && !isNaN(new Date(dateStr).getTime()) ? new Date(`${dateStr}T00:00:00`) : now;
+    const todayStart = new Date(anchor.getFullYear(), anchor.getMonth(), anchor.getDate());
     const todayEnd = new Date(todayStart.getTime() + 24 * 60 * 60 * 1000);
+    const isToday = todayStart.getFullYear() === now.getFullYear()
+      && todayStart.getMonth() === now.getMonth()
+      && todayStart.getDate() === now.getDate();
 
     // Fetch all of today's reservations in one query
     const todayReservations = await prisma.reservation.findMany({
@@ -290,9 +369,11 @@ export const getTodayStats = async (req: Request, res: Response) => {
     const canceledCount = todayReservations.filter((r) => r.status === 'CANCELLED').length;
     const noShowCount = todayReservations.filter((r) => r.status === 'NO_SHOW').length;
 
-    // ─── 2. Upcoming reservations (next 10, startTime > now, today only) ───
+    // ─── 2. Upcoming reservations (next 10). For today, only those still ahead;
+    //        for another selected day, the day's whole schedule. ───
+    const upcomingThreshold = isToday ? now : todayStart;
     const upcomingReservations = todayReservations
-      .filter((r) => r.startTime > now)
+      .filter((r) => r.startTime > upcomingThreshold)
       .sort((a, b) => a.startTime.getTime() - b.startTime.getTime())
       .slice(0, 10)
       .map((r) => ({
@@ -330,6 +411,8 @@ export const getTodayStats = async (req: Request, res: Response) => {
         : 0;
 
     return successResponse(res, {
+      date: todayStart.toISOString().split('T')[0],
+      isToday,
       todayReservations: todayReservationsCount,
       todayGuests,
       pendingCount,

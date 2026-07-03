@@ -99,6 +99,11 @@ model RestaurantSettings {
   // 1..maxPartySize bubble buttons). Admin-configurable.
   maxPartySize             Int     @default(8)
   operatingHours           String?
+  // Service window as whole hours (0-23), admin-configurable. Drives the public
+  // booking time options and bounds the analytics peak-hours heatmap axis so it
+  // only spans the hours the restaurant is actually open.
+  openingHour              Int     @default(10)
+  closingHour              Int     @default(23)
   // IANA timezone (e.g. "Europe/Istanbul") — the authoritative wall-clock zone for
   // this restaurant. Public booking interprets/display times in this zone, and the
   // backend derives the reservation's calendar day (for DaySetting lookups) from it.

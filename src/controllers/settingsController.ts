@@ -28,8 +28,17 @@ export const updateSettings = async (req: Request, res: Response) => {
       schedulingSystem,
       staffScheduleView,
       timezone,
-      maxPartySize
+      maxPartySize,
+      openingHour,
+      closingHour
     } = req.body;
+
+    // Clamp the service window to valid whole hours (0-23), opening strictly before closing.
+    const clampHour = (v: any, fallback: number) => {
+      const n = parseInt(v);
+      if (isNaN(n)) return fallback;
+      return Math.min(23, Math.max(0, n));
+    };
 
     const settings = await prisma.restaurantSettings.update({
       where: { restaurantId },
@@ -44,7 +53,9 @@ export const updateSettings = async (req: Request, res: Response) => {
         schedulingSystem,
         staffScheduleView,
         timezone,
-        maxPartySize: maxPartySize != null ? parseInt(maxPartySize) : undefined
+        maxPartySize: maxPartySize != null ? parseInt(maxPartySize) : undefined,
+        openingHour: openingHour != null ? clampHour(openingHour, 10) : undefined,
+        closingHour: closingHour != null ? clampHour(closingHour, 23) : undefined
       }
     });
 
