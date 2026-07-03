@@ -20,6 +20,7 @@ import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useTranslation } from "@/i18n/provider";
+import { useConfirm } from '@/components/ui/confirm-dialog';
 
 interface TableType {
   id: string;
@@ -62,6 +63,7 @@ interface FloorElement {
 
 export default function TablesPage() {
   const { t } = useTranslation();
+  const confirm = useConfirm();
   const currentUser = useAuthStore(state => state.user);
   const hasEditPermission = currentUser?.role === 'SUPER_ADMIN' || currentUser?.role === 'ADMIN' || (currentUser?.permissions || '').includes('edit_floor_plan');
 
@@ -177,7 +179,7 @@ export default function TablesPage() {
   };
 
   const handleDeleteZone = async (id: string) => {
-    if (!confirm(t("tables.confirmDeleteZone"))) return;
+    if (!await confirm({ title: t("tables.confirmDeleteZone"), tone: 'danger', confirmText: t("tables.deleteBtn") })) return;
     try {
       await api.delete(`/table-types/${id}`);
       toast.success(t("tables.zoneDeleted"));
@@ -208,7 +210,7 @@ export default function TablesPage() {
   };
 
   const handleDeleteTable = async (id: string) => {
-    if (!confirm(t("tables.confirmDeleteTable"))) return;
+    if (!await confirm({ title: t("tables.confirmDeleteTable"), tone: 'danger', confirmText: t("tables.deleteBtn") })) return;
     try {
       await api.delete(`/tables/${id}`);
       toast.success(t("tables.deleted"));
@@ -258,7 +260,7 @@ export default function TablesPage() {
   };
 
   const handleDeleteElement = async (id: string) => {
-    if (!confirm(t("tables.confirmDeleteBox"))) return;
+    if (!await confirm({ title: t("tables.confirmDeleteBox"), tone: 'danger', confirmText: t("tables.deleteBtn") })) return;
     try {
       await api.delete(`/floor-elements/${id}`);
       toast.success(t("tables.deleted"));
@@ -725,14 +727,12 @@ export default function TablesPage() {
                                 )}
                             </TableCell>
                             <TableCell className="px-4 text-right">
-                            {isFloorPlanEditMode ? (
-                              <div className="flex justify-end gap-1">
-                                  <Button variant="ghost" size="icon" onClick={() => handleOpenEditTable(table)} className="h-7 w-7 text-slate-300 hover:text-blue-600 transition-colors"><Edit2 className="w-3.5 h-3.5" /></Button>
-                                  <Button variant="ghost" size="icon" onClick={() => handleDeleteTable(table.id)} className="h-7 w-7 text-slate-300 hover:text-red-600 transition-colors"><Trash2 className="w-3.5 h-3.5" /></Button>
-                              </div>
-                            ) : (
-                                <span className="text-[9px] font-bold text-slate-400 uppercase">{t("tables.viewOnly")}</span>
-                            )}
+                            {/* Edit/Delete are always available in the list view — only
+                                dragging tables on the floor plan is gated by edit mode (#4.2) */}
+                            <div className="flex justify-end gap-1">
+                                <Button variant="ghost" size="icon" onClick={() => handleOpenEditTable(table)} className="h-7 w-7 text-slate-400 hover:text-blue-600 transition-colors"><Edit2 className="w-3.5 h-3.5" /></Button>
+                                <Button variant="ghost" size="icon" onClick={() => handleDeleteTable(table.id)} className="h-7 w-7 text-slate-400 hover:text-red-600 transition-colors"><Trash2 className="w-3.5 h-3.5" /></Button>
+                            </div>
                             </TableCell>
                         </TableRow>
                         ))}

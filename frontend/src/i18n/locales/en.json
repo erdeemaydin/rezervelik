@@ -1040,6 +1040,7 @@
     "widthPx": "Width (px)",
     "heightPx": "Height (px)",
     "deleteTableBtn": "Delete Table",
+    "deleteBtn": "Delete",
     "cancelBtn": "CANCEL",
     "savePhysicalTableBtn": "SAVE PHYSICAL TABLE",
     "editVisualBox": "Edit Visual Box",
