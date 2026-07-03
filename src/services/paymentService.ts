@@ -2,7 +2,34 @@ import crypto from 'crypto';
 import prisma from '../config/prisma';
 import { getPaymentProvider } from './payments';
 
-export const PAYMENT_LINK_TTL_MS = 60 * 60 * 1000; // 1 hour
+export const PAYMENT_LINK_TTL_MS = 60 * 60 * 1000; // 1 hour (fallback default)
+
+const MIN = 60 * 1000;
+
+// How long the guest has to pay the deposit, based on how imminent the booking is (#4.5):
+//   - reservation < 2h away  -> 30 minutes
+//   - reservation same day   -> 1 hour
+//   - otherwise              -> 2 hours
+// The deadline is also capped at the reservation start time (paying after the
+// party's slot has begun is pointless).
+export function computePaymentDeadline(startTime: Date, now: Date = new Date()): Date {
+  const msUntilStart = startTime.getTime() - now.getTime();
+  const sameDay = startTime.getFullYear() === now.getFullYear()
+    && startTime.getMonth() === now.getMonth()
+    && startTime.getDate() === now.getDate();
+
+  let windowMs: number;
+  if (msUntilStart < 2 * 60 * MIN) windowMs = 30 * MIN;
+  else if (sameDay) windowMs = 60 * MIN;
+  else windowMs = 120 * MIN;
+
+  const deadline = new Date(now.getTime() + windowMs);
+  // Never past the reservation start, but always leave a small minimum window.
+  if (startTime.getTime() > now.getTime() && deadline > startTime) {
+    return new Date(Math.max(startTime.getTime(), now.getTime() + 5 * MIN));
+  }
+  return deadline;
+}
 
 const CODE_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // no I/O/0/1 ambiguity
 
@@ -38,7 +65,7 @@ export interface CreatedPayment {
 // checkout (iframe token) is created lazily when the payment page loads, so the
 // token is always fresh. Returns null if the deposit amount is not positive.
 export async function createPaymentForReservation(
-  reservation: { id: string; restaurantId: string },
+  reservation: { id: string; restaurantId: string; startTime?: Date | string | null },
   settings: { depositAmount?: number | null; currency?: string | null }
 ): Promise<CreatedPayment | null> {
   const amountMinor = Math.round((settings.depositAmount || 0) * 100);
@@ -47,7 +74,12 @@ export async function createPaymentForReservation(
   const rawLinkToken = crypto.randomBytes(32).toString('hex');
   const code = genCode();
   const currency = toProviderCurrency(settings.currency);
-  const expiresAt = new Date(Date.now() + PAYMENT_LINK_TTL_MS);
+  // Deadline depends on how imminent the reservation is (#4.5); fall back to the
+  // flat TTL if we somehow don't have a start time.
+  const startTime = reservation.startTime ? new Date(reservation.startTime) : null;
+  const expiresAt = startTime
+    ? computePaymentDeadline(startTime)
+    : new Date(Date.now() + PAYMENT_LINK_TTL_MS);
 
   const payment = await prisma.payment.create({
     data: {
