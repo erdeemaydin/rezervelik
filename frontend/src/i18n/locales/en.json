@@ -107,7 +107,9 @@
     "upcomingTimeline": "Upcoming Timeline",
     "nextReservations": "Next",
     "reservationsArrivingToday": "reservations arriving today",
-    "noMoreReservations": "No more upcoming reservations for today."
+    "noMoreReservations": "No more upcoming reservations for today.",
+    "today": "Today",
+    "now": "Now"
   },
   "analytics": {
     "fetchError": "Failed to load analytics data",

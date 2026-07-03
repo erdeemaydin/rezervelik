@@ -3,46 +3,45 @@
 import React, { useEffect, useState } from 'react';
 import AdminLayout from '@/components/layout/AdminLayout';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Users, Calendar, Clock, Activity, Loader2, Star, CheckCircle2, Clock3, XCircle, AlertCircle } from 'lucide-react';
-import { 
+import { Users, Calendar, Clock, Activity, Loader2, CheckCircle2, Clock3, XCircle, AlertCircle } from 'lucide-react';
+import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, ReferenceLine
 } from 'recharts';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
 import api from '@/lib/api';
 import { toast } from 'sonner';
 import { useTranslation } from '@/i18n/provider';
 
-interface UpcomingReservation {
-  customerName: string;
-  guestCount: number;
-  startTime: string;
-  table: { identifier: string } | null;
-  status: string;
-  isVIP: boolean;
-}
-
 interface TodayStats {
+  date: string;
+  isToday: boolean;
   todayReservations: number;
   todayGuests: number;
   pendingCount: number;
   confirmedCount: number;
   canceledCount: number;
   noShowCount: number;
-  upcomingReservations: UpcomingReservation[];
   todayByHour: { hour: number; count: number }[];
   avgDuration: number;
 }
+
+const localDateStr = (d: Date) =>
+  `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 
 export default function DashboardPage() {
   const { t } = useTranslation();
   const [data, setData] = useState<TodayStats | null>(null);
   const [loading, setLoading] = useState(true);
+  // Selected operations day (#2.1). Defaults to today.
+  const [selectedDate, setSelectedDate] = useState(localDateStr(new Date()));
+  const isViewingToday = selectedDate === localDateStr(new Date());
 
   useEffect(() => {
     const fetchStats = async () => {
       try {
         setLoading(true);
-        const response = await api.get('/restaurants/today');
+        const response = await api.get(`/restaurants/today?date=${selectedDate}`);
         setData(response.data.data);
       } catch (error) {
         console.error('Failed to fetch stats:', error);
@@ -53,10 +52,11 @@ export default function DashboardPage() {
     };
 
     fetchStats();
-    // Optional: Refresh every 5 minutes
+    // Only auto-refresh when viewing today's live operations.
+    if (!isViewingToday) return;
     const interval = setInterval(fetchStats, 5 * 60 * 1000);
     return () => clearInterval(interval);
-  }, []);
+  }, [selectedDate, isViewingToday]);
 
   if (loading && !data) {
     return (
@@ -73,23 +73,42 @@ export default function DashboardPage() {
 
   if (!data) return null;
 
-  const currentHour = new Date().getHours();
+  // "Now" markers only make sense while viewing today.
+  const currentHour = isViewingToday ? new Date().getHours() : -1;
 
   return (
     <AdminLayout>
       <div className="space-y-8 animate-in fade-in duration-500 pb-8">
-        
+
         {/* Page Header */}
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div>
             <h1 className="text-3xl font-bold tracking-tight text-slate-900">{t('dashboard.todaysOperations')}</h1>
             <p className="text-slate-500 mt-1">{t('dashboard.realtimeCommand')}</p>
           </div>
-          <div className="mt-4 md:mt-0 flex items-center space-x-2">
-            <span className="text-xs font-bold text-emerald-600 bg-emerald-50 border border-emerald-100 px-3 py-1.5 rounded-full flex items-center shadow-sm">
-              <span className="w-2 h-2 bg-emerald-500 rounded-full mr-2 animate-pulse"></span>
-              {t('dashboard.liveData')}
-            </span>
+          <div className="flex items-center gap-3">
+            {/* Day selector (#2.1) */}
+            <Input
+              type="date"
+              value={selectedDate}
+              onChange={(e) => setSelectedDate(e.target.value || localDateStr(new Date()))}
+              className="h-9 w-44 bg-white border-slate-200 shadow-sm text-sm font-semibold"
+            />
+            {!isViewingToday && (
+              <Button variant="outline" className="h-9" onClick={() => setSelectedDate(localDateStr(new Date()))}>
+                {t('dashboard.today')}
+              </Button>
+            )}
+            {isViewingToday ? (
+              <span className="text-xs font-bold text-emerald-600 bg-emerald-50 border border-emerald-100 px-3 py-1.5 rounded-full flex items-center shadow-sm">
+                <span className="w-2 h-2 bg-emerald-500 rounded-full mr-2 animate-pulse"></span>
+                {t('dashboard.liveData')}
+              </span>
+            ) : (
+              <span className="text-xs font-bold text-slate-500 bg-slate-100 border border-slate-200 px-3 py-1.5 rounded-full flex items-center shadow-sm">
+                {new Date(`${selectedDate}T00:00:00`).toLocaleDateString([], { weekday: 'long', day: 'numeric', month: 'long' })}
+              </span>
+            )}
           </div>
         </div>
 
@@ -231,7 +250,7 @@ export default function DashboardPage() {
                       contentStyle={{ borderRadius: '12px', border: '1px solid #e2e8f0', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
                       labelFormatter={(label) => `${label}:00 - ${Number(label)+1}:00`}
                     />
-                    <ReferenceLine x={currentHour} stroke="#ef4444" strokeDasharray="3 3" label={{ position: 'top', value: 'Now', fill: '#ef4444', fontSize: 10, fontWeight: 'bold' }} />
+                    {isViewingToday && <ReferenceLine x={currentHour} stroke="#ef4444" strokeDasharray="3 3" label={{ position: 'top', value: t('dashboard.now'), fill: '#ef4444', fontSize: 10, fontWeight: 'bold' }} />}
                     <Bar 
                       dataKey="count" 
                       name="Reservations"
@@ -248,56 +267,6 @@ export default function DashboardPage() {
             </CardContent>
           </Card>
         </div>
-
-        {/* Bottom Row - Upcoming Timeline */}
-        <Card className="shadow-sm border-slate-200">
-          <CardHeader className="pb-4 border-b border-slate-100 bg-slate-50/50">
-            <CardTitle className="text-lg text-slate-800">{t('dashboard.upcomingTimeline')}</CardTitle>
-            <CardDescription>{t('dashboard.nextReservations')} {data.upcomingReservations.length} {t('dashboard.reservationsArrivingToday')}</CardDescription>
-          </CardHeader>
-          <CardContent className="pt-0 p-0">
-            {data.upcomingReservations.length === 0 ? (
-              <div className="p-12 text-center text-slate-500">
-                <Calendar className="w-12 h-12 mx-auto mb-3 text-slate-300" />
-                <p>{t('dashboard.noMoreReservations')}</p>
-              </div>
-            ) : (
-              <div className="divide-y divide-slate-100">
-                {data.upcomingReservations.map((res, i) => (
-                  <div key={i} className="flex items-center p-4 hover:bg-slate-50 transition-colors">
-                    <div className="w-24 text-sm font-bold text-slate-600">
-                      {new Date(res.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                    </div>
-                    <div className="flex-1 px-4">
-                      <div className="flex items-center gap-2">
-                        <span className="font-semibold text-slate-900">{res.customerName}</span>
-                        {res.isVIP && <Badge className="bg-amber-100 text-amber-800 border-amber-200 px-1.5 py-0 rounded text-[10px]">VIP <Star className="w-3 h-3 inline ml-0.5"/></Badge>}
-                      </div>
-                      <div className="text-xs text-slate-500 flex items-center gap-2 mt-1">
-                        <span className="flex items-center"><Users className="w-3 h-3 mr-1"/> {res.guestCount} {t('dashboard.guests').toLowerCase()}</span>
-                        {res.table && (
-                          <>
-                            <span className="w-1 h-1 rounded-full bg-slate-300"></span>
-                            <span className="font-medium text-indigo-600">{t('dashboard.table')} {res.table.identifier}</span>
-                          </>
-                        )}
-                      </div>
-                    </div>
-                    <div>
-                      <Badge variant="outline" className={
-                        res.status === 'CONFIRMED' ? 'border-emerald-200 text-emerald-700 bg-emerald-50' :
-                        res.status === 'PENDING' ? 'border-amber-200 text-amber-700 bg-amber-50' :
-                        'border-slate-200 text-slate-700 bg-slate-50'
-                      }>
-                        {res.status}
-                      </Badge>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
 
       </div>
     </AdminLayout>
