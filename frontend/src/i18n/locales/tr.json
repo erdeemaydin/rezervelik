@@ -275,7 +275,14 @@
       "removed": "Personel silindi"
     },
     "confirm": {
-      "remove": "Bu personeli silmek istediginize emin misiniz?"
+      "remove": "Bu personeli silmek istediğinize emin misiniz?"
+    },
+    "resetLink": {
+      "title": "Şifre sıfırlama bağlantısı",
+      "desc": "Bu tek kullanımlık bağlantıyı personelle paylaşın; şifresini kendisi belirleyecek.",
+      "copy": "Kopyala",
+      "copied": "Bağlantı kopyalandı",
+      "expiryHint": "Bu bağlantı bir kez kullanılabilir ve 1 saat içinde geçersiz olur."
     },
     "table": {
       "identity": "Kimlik",
@@ -291,21 +298,24 @@
       "protected": "Korumali"
     },
     "dialog": {
-      "editTitle": "Personel Kaydini Guncelle",
+      "editTitle": "Personel Kaydını Güncelle",
       "createTitle": "Yeni Personel Kaydet",
       "firstName": "Ad",
       "lastName": "Soyad",
-      "email": "E-posta / Giris Kimligi",
-      "newPassword": "Yeni Sifre (Istege Bagli)",
-      "initialPassword": "Ilk Sifre",
-      "baseRoleTemplate": "Temel Rol Sablonu",
-      "roleManager": "Yonetici (Tum Islemler)",
-      "roleHost": "Karsilama (Masalar ve Rez.)",
-      "roleStaff": "Standart Personel (Sadece Goruntuleme)",
-      "granularEntitlements": "Detayli Yetkiler",
-      "entitlementsDesc": "Temel rol sablonunun otesinde belirli erisim haklarini degistirin.",
-      "cancel": "Iptal",
-      "commit": "Kaydi Onayla"
+      "email": "E-posta / Giriş Kimliği",
+      "phone": "Telefon Numarası",
+      "phoneHint": "Numarayı başındaki sıfır olmadan girin.",
+      "resetLinkOnCreate": "Personel, kendi şifresini belirlemek için bir bağlantı alacak.",
+      "sendResetLink": "Şifre sıfırlama bağlantısı gönder",
+      "sendResetLinkDesc": "Bu personelin şifresini sıfırlayabilmesi için yeni bir bağlantı oluşturun.",
+      "baseRoleTemplate": "Temel Rol Şablonu",
+      "roleManager": "Yönetici (Tüm İşlemler)",
+      "roleHost": "Karşılama (Masalar ve Rez.)",
+      "roleStaff": "Standart Personel (Sadece Görüntüleme)",
+      "granularEntitlements": "Detaylı Yetkiler",
+      "entitlementsDesc": "Temel rol şablonunun ötesinde belirli erişim haklarını değiştirin.",
+      "cancel": "İptal",
+      "commit": "Kaydı Onayla"
     },
     "permissions": {
       "manage_reservations": {

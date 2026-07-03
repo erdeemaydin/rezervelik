@@ -16,6 +16,9 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { PhoneInput } from '@/components/ui/phone-input';
+import { useConfirm } from '@/components/ui/confirm-dialog';
+import { Copy, Link2 } from 'lucide-react';
 import api from '@/lib/api';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
@@ -29,6 +32,7 @@ interface StaffMember {
   email: string;
   role: string;
   permissions: string | null;
+  phone: string | null;
   createdAt: string;
 }
 
@@ -50,7 +54,10 @@ const PRESET_ROLES = {
 
 export default function StaffManagementPage() {
   const { t } = useTranslation();
+  const confirm = useConfirm();
   const [staff, setStaff] = useState<StaffMember[]>([]);
+  // Holds a freshly-issued password-reset link to show/copy for the admin (#7.1).
+  const [resetLinkInfo, setResetLinkInfo] = useState<{ name: string; link: string } | null>(null);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   
@@ -62,8 +69,9 @@ export default function StaffManagementPage() {
     firstName: '',
     lastName: '',
     email: '',
-    password: '',
+    phone: '',
     role: 'STAFF',
+    sendResetLink: false,
     permissions: new Set<string>()
   });
 
@@ -87,8 +95,8 @@ export default function StaffManagementPage() {
     setIsEditMode(false);
     setSelectedId(null);
     setFormData({
-      firstName: '', lastName: '', email: '', password: '', role: 'STAFF',
-      permissions: new Set()
+      firstName: '', lastName: '', email: '', phone: '', role: 'STAFF',
+      sendResetLink: false, permissions: new Set()
     });
     setIsDialogOpen(true);
   };
@@ -100,8 +108,9 @@ export default function StaffManagementPage() {
       firstName: member.firstName,
       lastName: member.lastName,
       email: member.email,
-      password: '', // blank unless changing
+      phone: member.phone || '',
       role: member.role,
+      sendResetLink: false,
       permissions: new Set(member.permissions ? member.permissions.split(',') : [])
     });
     setIsDialogOpen(true);
@@ -133,24 +142,35 @@ export default function StaffManagementPage() {
         permissions: Array.from(formData.permissions)
       };
 
+      let resetLink: string | undefined;
       if (isEditMode && selectedId) {
-        await api.put(`/staff/${selectedId}`, payload);
+        const res = await api.put(`/staff/${selectedId}`, payload);
+        resetLink = res.data?.data?.resetLink;
         toast.success(t("staff.success.updated"));
       } else {
-        await api.post('/staff', payload);
+        const res = await api.post('/staff', payload);
+        resetLink = res.data?.data?.resetLink;
         toast.success(t("staff.success.created"));
       }
       setIsDialogOpen(false);
+      // Surface the reset link so the admin can hand it to the staff member (#7.1).
+      if (resetLink) setResetLinkInfo({ name: `${formData.firstName} ${formData.lastName}`, link: resetLink });
       fetchData();
     } catch (err: any) {
       toast.error(err.response?.data?.error || t("staff.errors.saveFailed"));
     }
   };
 
-  const handleDelete = async (id: string) => {
-    if (!confirm(t("staff.confirm.remove"))) return;
+  const handleDelete = async (member: StaffMember) => {
+    const ok = await confirm({
+      title: t("staff.confirm.remove"),
+      details: [{ label: t("staff.table.identity"), value: `${member.firstName} ${member.lastName}` }],
+      tone: 'danger',
+      confirmText: t("tables.deleteBtn"),
+    });
+    if (!ok) return;
     try {
-      await api.delete(`/staff/${id}`);
+      await api.delete(`/staff/${member.id}`);
       toast.success(t("staff.success.removed"));
       fetchData();
     } catch (err: any) {
@@ -243,7 +263,7 @@ export default function StaffManagementPage() {
                         {member.id !== currentUser?.id && member.role !== 'SUPER_ADMIN' && member.role !== 'ADMIN' ? (
                             <div className="flex justify-end gap-1">
                                 <Button variant="ghost" size="icon" onClick={() => handleOpenEdit(member)} className="h-7 w-7 text-slate-300 hover:text-blue-600 transition-colors"><Edit2 className="w-3.5 h-3.5" /></Button>
-                                <Button variant="ghost" size="icon" onClick={() => handleDelete(member.id)} className="h-7 w-7 text-slate-300 hover:text-red-600 transition-colors"><Trash2 className="w-3.5 h-3.5" /></Button>
+                                <Button variant="ghost" size="icon" onClick={() => handleDelete(member)} className="h-7 w-7 text-slate-300 hover:text-red-600 transition-colors"><Trash2 className="w-3.5 h-3.5" /></Button>
                             </div>
                         ) : (
                             <span className="text-[9px] font-black text-slate-300 uppercase tracking-widest mr-2">{t("staff.table.protected")}</span>
@@ -282,9 +302,23 @@ export default function StaffManagementPage() {
                                 <Input type="email" required value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} className="h-10 text-sm font-bold border-slate-200 rounded-sm font-mono" />
                             </div>
                             <div className="grid gap-1.5">
-                                <Label className="text-[10px] font-black uppercase text-slate-400 ml-1">{isEditMode ? t("staff.dialog.newPassword") : t("staff.dialog.initialPassword")}</Label>
-                                <Input type="password" required={!isEditMode} value={formData.password} onChange={e => setFormData({...formData, password: e.target.value})} className="h-10 text-sm font-bold border-slate-200 rounded-sm" />
+                                <Label className="text-[10px] font-black uppercase text-slate-400 ml-1">{t("staff.dialog.phone")}</Label>
+                                <PhoneInput value={formData.phone} onChange={(p) => setFormData({...formData, phone: p})} countryHint={t("staff.dialog.phoneHint")} />
                             </div>
+                            {/* Passwords are set by the staff member via a reset link, never by the admin (#7.1) */}
+                            {!isEditMode ? (
+                                <p className="text-[10px] font-bold text-slate-400 leading-relaxed bg-slate-50 border border-slate-100 rounded-sm p-2 flex items-start gap-1.5">
+                                    <Link2 className="w-3 h-3 mt-0.5 text-blue-500 shrink-0" /> {t("staff.dialog.resetLinkOnCreate")}
+                                </p>
+                            ) : (
+                                <div className={cn("flex items-center justify-between p-3 border rounded-sm transition-all", formData.sendResetLink ? "border-blue-200 bg-blue-50/30" : "border-slate-100 bg-slate-50/50")}>
+                                    <div className="space-y-0.5">
+                                        <div className="text-xs font-black uppercase tracking-tight text-slate-600">{t("staff.dialog.sendResetLink")}</div>
+                                        <div className="text-[9px] font-bold text-slate-400">{t("staff.dialog.sendResetLinkDesc")}</div>
+                                    </div>
+                                    <Checkbox checked={formData.sendResetLink} onCheckedChange={() => setFormData(prev => ({...prev, sendResetLink: !prev.sendResetLink}))} />
+                                </div>
+                            )}
                             <div className="grid gap-1.5 pt-4 border-t border-slate-100">
                                 <Label className="text-[10px] font-black uppercase text-slate-400 ml-1">{t("staff.dialog.baseRoleTemplate")}</Label>
                                 <Select value={formData.role} onValueChange={handleRoleChange}>
@@ -323,6 +357,24 @@ export default function StaffManagementPage() {
                         <Button type="submit" className="h-9 bg-blue-600 hover:bg-blue-700 text-xs font-black uppercase px-8 rounded-sm shadow-lg shadow-blue-600/20">{t("staff.dialog.commit")}</Button>
                     </div>
                 </form>
+            </DialogContent>
+        </Dialog>
+
+        {/* One-time reset link to hand to the staff member (#7.1) */}
+        <Dialog open={!!resetLinkInfo} onOpenChange={(o) => { if (!o) setResetLinkInfo(null); }}>
+            <DialogContent maxWidth="sm:max-w-lg">
+                <DialogHeader>
+                    <DialogTitle className="text-lg">{t("staff.resetLink.title")}</DialogTitle>
+                    <DialogDescription>{t("staff.resetLink.desc", )}</DialogDescription>
+                </DialogHeader>
+                <div className="rounded-lg border bg-muted/40 p-3 flex items-center gap-2">
+                    <Link2 className="w-4 h-4 text-blue-500 shrink-0" />
+                    <span className="text-xs font-mono break-all flex-1">{resetLinkInfo?.link}</span>
+                    <Button type="button" size="sm" variant="outline" onClick={() => { if (resetLinkInfo) { navigator.clipboard?.writeText(resetLinkInfo.link); toast.success(t("staff.resetLink.copied")); } }}>
+                        <Copy className="w-3.5 h-3.5 mr-1" /> {t("staff.resetLink.copy")}
+                    </Button>
+                </div>
+                <p className="text-[11px] text-slate-400">{t("staff.resetLink.expiryHint")}</p>
             </DialogContent>
         </Dialog>
       </div>

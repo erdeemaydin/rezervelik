@@ -277,6 +277,13 @@
     "confirm": {
       "remove": "Are you sure you want to remove this staff member?"
     },
+    "resetLink": {
+      "title": "Password reset link",
+      "desc": "Share this one-time link with the staff member so they can set their password.",
+      "copy": "Copy",
+      "copied": "Link copied",
+      "expiryHint": "This link can be used once and expires in 1 hour."
+    },
     "table": {
       "identity": "Identity",
       "baseRole": "Base Role",
@@ -296,8 +303,11 @@
       "firstName": "First Name",
       "lastName": "Last Name",
       "email": "Email / Login ID",
-      "newPassword": "New Password (Optional)",
-      "initialPassword": "Initial Password",
+      "phone": "Phone Number",
+      "phoneHint": "Enter the number without the leading zero.",
+      "resetLinkOnCreate": "The staff member will receive a link to set their own password.",
+      "sendResetLink": "Send password reset link",
+      "sendResetLinkDesc": "Generate a new link so this staff member can reset their password.",
       "baseRoleTemplate": "Base Role Template",
       "roleManager": "Manager (All Ops)",
       "roleHost": "Host (Tables & Res.)",
