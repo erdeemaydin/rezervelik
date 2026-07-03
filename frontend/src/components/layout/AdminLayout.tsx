@@ -91,6 +91,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
       { name: t('admin.menuManagement'), href: '/dashboard/menus', icon: UtensilsCrossed, perm: 'manage_menu', feature: 'hasMenuFeature' },
       { name: t('admin.waitlist'), href: '/dashboard/wait-time', icon: Clock, badge: 'Live', perm: 'manage_settings', feature: 'hasWaitTimeFeature' },
       { name: t('admin.staffSchedule'), href: '/dashboard/scheduling', icon: Calendar, badge: 'New', feature: 'hasShiftFeature' },
+      { name: t('admin.timesheet'), href: '/dashboard/timesheet', icon: Clock },
     ]},
     { section: t('admin.sectionAdministration'), items: [
       { name: t('admin.payments'), href: '/dashboard/payments', icon: CreditCard, feature: 'hasPaymentFeature' },
