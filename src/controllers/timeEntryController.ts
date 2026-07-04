@@ -32,13 +32,18 @@ const resolveUserId = (req: Request, requested?: string): string => {
 export const getTimeEntries = async (req: Request, res: Response) => {
   try {
     const restaurantId = req.restaurantId!;
-    const { from, to, userId } = req.query as Record<string, string>;
-    const targetUserId = resolveUserId(req, userId);
+    const { from, to, userId, all } = req.query as Record<string, string>;
+    const role = req.user?.role;
+    const isManager = role === 'ADMIN' || role === 'MANAGER' || role === 'SUPER_ADMIN';
+    // Managers can request every staff member's entries at once (all=1) to drive
+    // the shared schedule view; otherwise entries are scoped to a single user.
+    const wantsAll = isManager && (all === '1' || all === 'true');
+    const targetUserId = wantsAll ? undefined : resolveUserId(req, userId);
 
     const entries = await prisma.timeEntry.findMany({
       where: {
         restaurantId,
-        userId: targetUserId,
+        ...(targetUserId ? { userId: targetUserId } : {}),
         ...(from && to ? { date: { gte: from, lte: to } } : {}),
       },
       orderBy: { date: 'desc' },
@@ -113,7 +118,7 @@ export const getWorkedHoursSummary = async (req: Request, res: Response) => {
     const isManager = role === 'ADMIN' || role === 'MANAGER' || role === 'SUPER_ADMIN';
     const scopeUserId = isManager ? (userId || undefined) : req.user!.userId;
 
-    const [assignments, entries, users] = await Promise.all([
+    const [assignments, entries, users, settings] = await Promise.all([
       prisma.shiftAssignment.findMany({
         where: {
           date: { gte: from, lte: to },
@@ -129,7 +134,11 @@ export const getWorkedHoursSummary = async (req: Request, res: Response) => {
         where: { restaurantId, role: { not: 'SUPER_ADMIN' }, ...(scopeUserId ? { id: scopeUserId } : {}) },
         select: { id: true, firstName: true, lastName: true },
       }),
+      prisma.restaurantSettings.findUnique({ where: { restaurantId }, select: { defaultBreakMinutes: true } }),
     ]);
+
+    // Default break deducted from a scheduled shift with no explicit entry (#break).
+    const defaultBreak = settings?.defaultBreakMinutes || 0;
 
     // Index actual entries by user|date|shift for quick lookup.
     const entryKey = (uId: string, date: string, sId: string | null) => `${uId}|${date}|${sId || ''}`;
@@ -143,7 +152,8 @@ export const getWorkedHoursSummary = async (req: Request, res: Response) => {
     };
 
     for (const a of assignments) {
-      const scheduled = entryWorkedMinutes(a.shift.startTime, a.shift.endTime, 0) ?? 0;
+      // Expected worked time for the shift = its length minus the default break.
+      const scheduled = entryWorkedMinutes(a.shift.startTime, a.shift.endTime, defaultBreak) ?? 0;
       const t = bump(a.userId);
       t.scheduledMinutes += scheduled;
       const entry = entryMap.get(entryKey(a.userId, a.date, a.shiftId));
@@ -164,6 +174,7 @@ export const getWorkedHoursSummary = async (req: Request, res: Response) => {
       workedMinutes: v.actualMinutes,
       workedHours: Math.round((v.actualMinutes / 60) * 10) / 10,
       scheduledMinutes: v.scheduledMinutes,
+      scheduledHours: Math.round((v.scheduledMinutes / 60) * 10) / 10,
       estimatedShifts: v.estimatedCount,
     }));
 
