@@ -100,9 +100,13 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
           // Hydrate the platform-wide date/time convention for the whole dashboard.
           useFormatStore.getState().setSystem(res.data.data?.measurementSystem || 'METRIC');
           // Apply the tenant's default UI language (set by the root admin) for users
-          // who haven't picked one yet. An explicit choice (NEXT_LOCALE cookie) wins.
+          // who haven't explicitly picked one. Only a deliberate LanguageSwitcher
+          // choice sets NEXT_LOCALE_EXPLICIT — the plain NEXT_LOCALE cookie is
+          // auto-negotiated by proxy.ts from Accept-Language, so it can't count as
+          // "the user chose this" or the tenant default would never take effect.
           const def = res.data.data?.defaultLanguage;
-          if (def && !Cookies.get('NEXT_LOCALE')) {
+          const explicit = Cookies.get('NEXT_LOCALE_EXPLICIT') === '1';
+          if (def && !explicit && Cookies.get('NEXT_LOCALE') !== def) {
             setLocale(def);
           }
         }).catch(err => console.error('Failed to fetch settings:', err));

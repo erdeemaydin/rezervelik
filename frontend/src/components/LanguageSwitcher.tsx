@@ -22,13 +22,13 @@ export function LanguageSwitcher() {
       <DropdownMenuContent align="end" className="w-32 bg-white rounded-md shadow-lg border border-slate-100">
         <DropdownMenuItem 
           className={`text-xs cursor-pointer ${locale === 'tr' ? 'bg-slate-50 font-bold' : ''}`}
-          onClick={() => setLocale('tr')}
+          onClick={() => setLocale('tr', true)}
         >
           Türkçe
         </DropdownMenuItem>
         <DropdownMenuItem 
           className={`text-xs cursor-pointer ${locale === 'en' ? 'bg-slate-50 font-bold' : ''}`}
-          onClick={() => setLocale('en')}
+          onClick={() => setLocale('en', true)}
         >
           English
         </DropdownMenuItem>

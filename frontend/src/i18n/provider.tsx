@@ -17,7 +17,10 @@ const dictionaries: Record<string, Translations> = {
 interface I18nContextProps {
   t: (key: string) => string;
   locale: string;
-  setLocale: (locale: string) => void;
+  // `explicit` marks a deliberate user choice (e.g. the LanguageSwitcher) so it
+  // can win over the tenant's default language. Programmatic calls that merely
+  // apply a default (AdminLayout) must leave it false.
+  setLocale: (locale: string, explicit?: boolean) => void;
 }
 
 const I18nContext = createContext<I18nContextProps>({
@@ -42,8 +45,14 @@ export const I18nProvider = ({
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
 
-  const setLocale = (newLocale: string) => {
+  const setLocale = (newLocale: string, explicit = false) => {
     Cookies.set('NEXT_LOCALE', newLocale, { path: '/', expires: 365 });
+    // Remember that the user picked a language themselves. The proxy auto-sets
+    // NEXT_LOCALE from Accept-Language, so that cookie alone can't tell an
+    // explicit choice apart from a negotiated default — this marker can.
+    if (explicit) {
+      Cookies.set('NEXT_LOCALE_EXPLICIT', '1', { path: '/', expires: 365 });
+    }
     setLocaleState(newLocale);
     startTransition(() => {
       router.refresh();
