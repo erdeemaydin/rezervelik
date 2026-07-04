@@ -73,9 +73,12 @@ model FrontendCustomization {
 model ScheduledPriceUpdate {
   id           String    @id @default(uuid())
   restaurantId String
-  updateType   String // PERCENTAGE, FIXED_AMOUNT
+  updateType   String // PERCENTAGE, FIXED_AMOUNT, EXPLICIT_SET
   value        Float
   isIncrease   Boolean   @default(true)
+  // For updateType = EXPLICIT_SET: JSON array of { id, price } target prices set
+  // from the bulk price editor (used when the change is scheduled for later).
+  payload      String?
   status       String    @default("PENDING") // PENDING, APPLIED, FAILED
   scheduledFor DateTime
   appliedAt    DateTime?
@@ -93,6 +96,11 @@ model RestaurantSettings {
   isReservationEnabled     Boolean @default(true)
   logic                    String  @default("DYNAMIC_DURATION")
   defaultDurationMinutes   Int     @default(90)
+  // Default unpaid break (minutes) deducted from a scheduled shift when computing
+  // worked hours. When a staff member is assigned to a shift but has entered no
+  // explicit check-in/out, they are credited with the shift's length minus this
+  // break. Admin-configurable; 0 means the full shift counts as worked.
+  defaultBreakMinutes      Int     @default(0)
   isPaidReservationEnabled Boolean @default(false)
   depositAmount            Float?
   currency                 String  @default("TRY")
@@ -124,6 +132,18 @@ model RestaurantSettings {
 
   // Privacy & Staff View Settings
   staffScheduleView String @default("OWN_ONLY") // "OWN_ONLY", "SHIFT_TEAM", "FULL_ROSTER"
+
+  // Two-factor authentication. `twoFactorEnabled` is a capability flag toggled
+  // ONLY by the root/system admin per restaurant. When enabled, the tenant admin
+  // chooses which roles must use 2FA via `twoFactorRoles` (comma-separated, e.g.
+  // "ADMIN,MANAGER"). Staff are excluded by default (empty list).
+  twoFactorEnabled  Boolean @default(false)
+  twoFactorRoles    String  @default("")
+
+  // Default UI language for this tenant, set by the root/system admin. Applied on
+  // the dashboard when a user hasn't explicitly picked a language yet. "tr" is the
+  // platform default.
+  defaultLanguage   String  @default("tr")
 
   updatedAt  DateTime   @updatedAt
   restaurant Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
@@ -579,5 +599,9 @@ model GlobalSettings {
   maintenanceMode           Boolean  @default(false)
   publicRegistrationEnabled Boolean  @default(true)
   enforce2FAForAdmins       Boolean  @default(true)
+  // Platform-wide date/time display convention, set by the root system admin.
+  // "METRIC" = European/Turkish style: DD/MM/YYYY dates + 24-hour clock.
+  // "US"     = United States style: MM/DD/YYYY dates + 12-hour clock (AM/PM).
+  measurementSystem         String   @default("METRIC")
   updatedAt                 DateTime @updatedAt
 }
