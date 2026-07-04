@@ -8,6 +8,7 @@ import ShiftManager from '@/components/scheduling/ShiftManager';
 import AvailabilitySubmitter from '@/components/scheduling/AvailabilitySubmitter';
 import ShiftAssigner from '@/components/scheduling/ShiftAssigner';
 import MySchedule from '@/components/scheduling/MySchedule';
+import TimesheetPanel from '@/components/timesheet/TimesheetPanel';
 import api from '@/lib/api';
 import { useTranslation } from "@/i18n/provider";
 
@@ -38,27 +39,29 @@ export default function SchedulingPage() {
 
   return (
     <AdminLayout>
-      <div className="flex flex-col gap-6">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">{t("scheduling.title")}</h1>
-          <p className="text-muted-foreground mt-2">
+      <div className="flex flex-col gap-3">
+        <div className="flex items-baseline gap-3 flex-wrap">
+          <h1 className="text-lg font-black tracking-tight">{t("scheduling.title")}</h1>
+          <p className="text-muted-foreground text-xs hidden sm:block">
             {t("scheduling.description")}
           </p>
         </div>
 
-        <Tabs defaultValue={isAdminOrManager ? 'roster' : 'my-schedule'} className="space-y-4">
-          <TabsList>
+        <Tabs defaultValue={isAdminOrManager ? 'roster' : 'my-schedule'} className="space-y-3">
+          <TabsList className="h-auto flex-wrap">
             {isAdminOrManager ? (
               <>
-                <TabsTrigger value="roster">{t("scheduling.tabs.rosterAndAssignments")}</TabsTrigger>
-                <TabsTrigger value="shifts">{t("scheduling.tabs.manageShifts")}</TabsTrigger>
+                <TabsTrigger className="text-xs md:text-sm py-1.5" value="roster">{t("scheduling.tabs.rosterAndAssignments")}</TabsTrigger>
+                <TabsTrigger className="text-xs md:text-sm py-1.5" value="shifts">{t("scheduling.tabs.manageShifts")}</TabsTrigger>
+                <TabsTrigger className="text-xs md:text-sm py-1.5" value="timesheet">{t("scheduling.tabs.timesheet")}</TabsTrigger>
               </>
             ) : (
               <>
-                <TabsTrigger value="my-schedule">{t("scheduling.tabs.mySchedule")}</TabsTrigger>
-                <TabsTrigger value="availability">{t("scheduling.tabs.myAvailability")}</TabsTrigger>
+                <TabsTrigger className="text-xs md:text-sm py-1.5" value="my-schedule">{t("scheduling.tabs.mySchedule")}</TabsTrigger>
+                <TabsTrigger className="text-xs md:text-sm py-1.5" value="availability">{t("scheduling.tabs.myAvailability")}</TabsTrigger>
+                <TabsTrigger className="text-xs md:text-sm py-1.5" value="timesheet">{t("scheduling.tabs.timesheet")}</TabsTrigger>
                 {staffScheduleView === 'FULL_ROSTER' && (
-                  <TabsTrigger value="roster">{t("scheduling.tabs.fullRoster")}</TabsTrigger>
+                  <TabsTrigger className="text-xs md:text-sm py-1.5" value="roster">{t("scheduling.tabs.fullRoster")}</TabsTrigger>
                 )}
               </>
             )}
@@ -82,6 +85,10 @@ export default function SchedulingPage() {
               </TabsContent>
             </>
           )}
+
+          <TabsContent value="timesheet">
+            <TimesheetPanel />
+          </TabsContent>
         </Tabs>
       </div>
     </AdminLayout>

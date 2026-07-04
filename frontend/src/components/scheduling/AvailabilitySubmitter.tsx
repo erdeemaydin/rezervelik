@@ -8,8 +8,13 @@ import { ChevronLeft, ChevronRight, Save } from 'lucide-react';
 import { Shift, getShifts, getAvailabilities, setAvailability } from '@/lib/api/scheduling';
 import { toast } from 'sonner';
 import { useAuthStore } from '@/store/useAuthStore';
+import { useFormat } from '@/store/useFormatStore';
+import { useTranslation } from '@/i18n/provider';
 
 export default function AvailabilitySubmitter({ viewMode = 'MONTHLY' }: { viewMode?: 'WEEKLY' | 'MONTHLY' }) {
+  const { formatTimeRange } = useFormat();
+  const { t, locale } = useTranslation();
+  const dateLocale = locale === 'tr' ? 'tr-TR' : 'en-US';
   const [shifts, setShifts] = useState<Shift[]>([]);
   const [availabilities, setAvailabilities] = useState<Record<string, boolean>>({});
   const [currentDate, setCurrentDate] = useState<Date>(new Date());
@@ -32,8 +37,8 @@ export default function AvailabilitySubmitter({ viewMode = 'MONTHLY' }: { viewMo
         return {
           dateObj: curr,
           dateString: `${curr.getFullYear()}-${String(curr.getMonth() + 1).padStart(2, '0')}-${String(curr.getDate()).padStart(2, '0')}`,
-          dayName: curr.toLocaleDateString('en-US', { weekday: 'short' }),
-          formattedDate: curr.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+          dayName: curr.toLocaleDateString(dateLocale, { weekday: 'short' }),
+          formattedDate: curr.toLocaleDateString(dateLocale, { month: 'short', day: 'numeric' })
         };
       });
     }
@@ -44,8 +49,8 @@ export default function AvailabilitySubmitter({ viewMode = 'MONTHLY' }: { viewMo
       return {
         dateObj: d,
         dateString: `${year}-${String(month + 1).padStart(2, '0')}-${String(i + 1).padStart(2, '0')}`,
-        dayName: d.toLocaleDateString('en-US', { weekday: 'short' }),
-        formattedDate: d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+        dayName: d.toLocaleDateString(dateLocale, { weekday: 'short' }),
+        formattedDate: d.toLocaleDateString(dateLocale, { month: 'short', day: 'numeric' })
       };
     });
   }, [viewMode]);
@@ -73,7 +78,7 @@ export default function AvailabilitySubmitter({ viewMode = 'MONTHLY' }: { viewMo
         });
         setAvailabilities(availRecord);
       } catch (error) {
-        toast.error('Failed to load availability data');
+        toast.error(t('scheduling.availability.loadFailed'));
       } finally {
         setLoading(false);
       }
@@ -103,9 +108,9 @@ export default function AvailabilitySubmitter({ viewMode = 'MONTHLY' }: { viewMo
       });
 
       await Promise.all(promises);
-      toast.success('Availability updated successfully');
+      toast.success(t('scheduling.availability.saved'));
     } catch (error) {
-      toast.error('Failed to save availability');
+      toast.error(t('scheduling.availability.saveFailed'));
     } finally {
       setLoading(false);
     }
@@ -136,8 +141,8 @@ export default function AvailabilitySubmitter({ viewMode = 'MONTHLY' }: { viewMo
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
           <div>
-            <CardTitle>Submit Availability</CardTitle>
-            <CardDescription>Select the shifts you are available to work.</CardDescription>
+            <CardTitle>{t('scheduling.availability.title')}</CardTitle>
+            <CardDescription>{t('scheduling.availability.desc')}</CardDescription>
           </div>
           <div className="flex items-center space-x-2">
             <Button variant="outline" size="icon" onClick={handlePrev}>
@@ -145,15 +150,15 @@ export default function AvailabilitySubmitter({ viewMode = 'MONTHLY' }: { viewMo
             </Button>
             <h3 className="text-sm font-semibold w-40 text-center">
               {viewMode === 'WEEKLY' 
-                ? `Week of ${days[0]?.formattedDate}`
-                : currentDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
+                ? `${t('scheduling.mySchedule.weekOf')} ${days[0]?.formattedDate}`
+                : currentDate.toLocaleDateString(dateLocale, { month: 'long', year: 'numeric' })
               }
             </h3>
             <Button variant="outline" size="icon" onClick={handleNext}>
               <ChevronRight className="h-4 w-4" />
             </Button>
             <Button onClick={handleSave} disabled={loading} className="bg-blue-600 hover:bg-blue-700 text-white ml-4">
-              <Save className="h-4 w-4 mr-2" /> Save Changes
+              <Save className="h-4 w-4 mr-2" /> {t('scheduling.availability.saveChanges')}
             </Button>
           </div>
         </CardHeader>
@@ -162,11 +167,11 @@ export default function AvailabilitySubmitter({ viewMode = 'MONTHLY' }: { viewMo
             <table className="w-full text-sm text-left border-collapse">
               <thead>
                 <tr className="border-b bg-slate-50">
-                  <th className="px-4 py-3 font-bold text-slate-700 uppercase text-[10px] tracking-wider border-r sticky left-0 bg-slate-50 z-10">Date</th>
+                  <th className="px-4 py-3 font-bold text-slate-700 uppercase text-[10px] tracking-wider border-r sticky left-0 bg-slate-50 z-10">{t('scheduling.availability.date')}</th>
                   {shifts.map(shift => (
                     <th key={shift.id} className="px-4 py-3 font-bold text-slate-700 uppercase text-[10px] tracking-wider text-center">
                       {shift.name}
-                      <div className="text-[9px] font-normal text-slate-500 lowercase mt-0.5">{shift.startTime}-{shift.endTime}</div>
+                      <div className="text-[9px] font-normal text-slate-500 lowercase mt-0.5">{formatTimeRange(shift.startTime, shift.endTime)}</div>
                     </th>
                   ))}
                 </tr>

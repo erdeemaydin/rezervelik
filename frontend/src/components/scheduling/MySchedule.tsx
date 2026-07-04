@@ -1,77 +1,93 @@
 'use client';
 
 import React, { useEffect, useState, useMemo, useCallback } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, Clock } from 'lucide-react';
-import { 
-  ShiftAssignment, 
-  getAssignments 
+import { ChevronLeft, ChevronRight, Clock } from 'lucide-react';
+import {
+  ShiftAssignment,
+  getAssignments
 } from '@/lib/api/scheduling';
 import { toast } from 'sonner';
 import { useAuthStore } from '@/store/useAuthStore';
+import { useFormat } from '@/store/useFormatStore';
+import { useTranslation } from '@/i18n/provider';
+
+type DayCell = {
+  dateString: string;
+  dateObj: Date;
+  inMonth: boolean;
+};
+
+const toDateString = (d: Date) =>
+  `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 
 export default function MySchedule({ viewMode = 'MONTHLY', staffScheduleView = 'OWN_ONLY' }: { viewMode?: 'WEEKLY' | 'MONTHLY', staffScheduleView?: string }) {
+  const { formatTimeRange } = useFormat();
+  const { t, locale } = useTranslation();
+  const dateLocale = locale === 'tr' ? 'tr-TR' : 'en-US';
   const [currentDate, setCurrentDate] = useState<Date>(new Date());
   const [assignments, setAssignments] = useState<ShiftAssignment[]>([]);
   const [loading, setLoading] = useState(false);
   const { user } = useAuthStore();
 
-  const getMonthDates = useCallback((date: Date) => {
-    const year = date.getFullYear();
-    const month = date.getMonth();
+  // Monday-first weekday header labels, localized.
+  const weekdayLabels = useMemo(() => {
+    // 2024-01-01 is a Monday — walk 7 days from it for stable Mon..Sun labels.
+    return Array.from({ length: 7 }, (_, i) => {
+      const d = new Date(2024, 0, 1 + i);
+      return d.toLocaleDateString(dateLocale, { weekday: 'short' });
+    });
+  }, [dateLocale]);
 
+  // The visible grid: a full weekday-aligned month, or a single Mon..Sun week.
+  const cells = useMemo<DayCell[]>(() => {
     if (viewMode === 'WEEKLY') {
-      const d = new Date(date);
-      const dayNum = d.getDay();
-      const diff = d.getDate() - dayNum + (dayNum === 0 ? -6 : 1); 
-      const startOfWeek = new Date(d.setDate(diff));
-      
+      const d = new Date(currentDate);
+      const mondayOffset = (d.getDay() + 6) % 7;
+      const start = new Date(d.getFullYear(), d.getMonth(), d.getDate() - mondayOffset);
       return Array.from({ length: 7 }, (_, i) => {
-        const curr = new Date(startOfWeek);
-        curr.setDate(startOfWeek.getDate() + i);
-        return {
-          dateObj: curr,
-          dateString: `${curr.getFullYear()}-${String(curr.getMonth() + 1).padStart(2, '0')}-${String(curr.getDate()).padStart(2, '0')}`,
-          dayName: curr.toLocaleDateString('en-US', { weekday: 'short' }),
-          formattedDate: curr.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
-        };
+        const curr = new Date(start.getFullYear(), start.getMonth(), start.getDate() + i);
+        return { dateString: toDateString(curr), dateObj: curr, inMonth: true };
       });
     }
 
+    const year = currentDate.getFullYear();
+    const month = currentDate.getMonth();
+    const first = new Date(year, month, 1);
+    const leading = (first.getDay() + 6) % 7; // blanks before the 1st (Mon-based)
     const daysInMonth = new Date(year, month + 1, 0).getDate();
-    return Array.from({ length: daysInMonth }, (_, i) => {
-      const d = new Date(year, month, i + 1);
+    const total = Math.ceil((leading + daysInMonth) / 7) * 7;
+
+    return Array.from({ length: total }, (_, i) => {
+      const dayNum = i - leading + 1;
+      const curr = new Date(year, month, dayNum);
       return {
-        dateObj: d,
-        dateString: `${year}-${String(month + 1).padStart(2, '0')}-${String(i + 1).padStart(2, '0')}`,
-        dayName: d.toLocaleDateString('en-US', { weekday: 'short' }),
-        formattedDate: d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+        dateString: toDateString(curr),
+        dateObj: curr,
+        inMonth: dayNum >= 1 && dayNum <= daysInMonth,
       };
     });
-  }, [viewMode]);
-
-  const days = useMemo(() => getMonthDates(currentDate), [currentDate, getMonthDates]);
+  }, [currentDate, viewMode]);
 
   useEffect(() => {
     const fetchAssignments = async () => {
       try {
         setLoading(true);
-        const startDate = days[0].dateString;
-        const endDate = days[days.length - 1].dateString;
-        
-        // If staffScheduleView is OWN_ONLY, only fetch own assignments
-        // Otherwise, fetch all published assignments and filter locally
+        const startDate = cells[0].dateString;
+        const endDate = cells[cells.length - 1].dateString;
+
+        // The backend enforces visibility from the restaurant's staffScheduleView
+        // setting; we still pass userId in OWN_ONLY as a hint.
         const params: any = { startDate, endDate };
         if (staffScheduleView === 'OWN_ONLY') {
-            params.userId = user?.id;
+          params.userId = user?.id;
         }
 
         const data = await getAssignments(params);
         setAssignments(data);
       } catch (error) {
-        toast.error('Failed to load your schedule');
+        toast.error(t('scheduling.mySchedule.loadFailed'));
       } finally {
         setLoading(false);
       }
@@ -80,13 +96,12 @@ export default function MySchedule({ viewMode = 'MONTHLY', staffScheduleView = '
     if (user?.id) {
       fetchAssignments();
     }
-  }, [days, user?.id, staffScheduleView]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cells, user?.id, staffScheduleView]);
 
   const handlePrev = () => {
     if (viewMode === 'WEEKLY') {
-      const d = new Date(currentDate);
-      d.setDate(d.getDate() - 7);
-      setCurrentDate(d);
+      setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate() - 7));
     } else {
       setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1));
     }
@@ -94,9 +109,7 @@ export default function MySchedule({ viewMode = 'MONTHLY', staffScheduleView = '
 
   const handleNext = () => {
     if (viewMode === 'WEEKLY') {
-      const d = new Date(currentDate);
-      d.setDate(d.getDate() + 7);
-      setCurrentDate(d);
+      setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate() + 7));
     } else {
       setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1));
     }
@@ -104,100 +117,112 @@ export default function MySchedule({ viewMode = 'MONTHLY', staffScheduleView = '
 
   const getAssignmentsForDay = (dateString: string) => {
     const dayAssignments = assignments.filter(a => a.date === dateString);
-    
+
     if (staffScheduleView === 'OWN_ONLY') {
-        return dayAssignments.filter(a => a.userId === user?.id);
+      return dayAssignments.filter(a => a.userId === user?.id);
     }
-    
+
     if (staffScheduleView === 'SHIFT_TEAM') {
-        // Find shift IDs the user is working on this day
-        const userShiftIds = dayAssignments
-            .filter(a => a.userId === user?.id)
-            .map(a => a.shiftId);
-        
-        // Return assignments for those shifts (user + teammates)
-        return dayAssignments.filter(a => userShiftIds.includes(a.shiftId));
+      const userShiftIds = dayAssignments
+        .filter(a => a.userId === user?.id)
+        .map(a => a.shiftId);
+      return dayAssignments.filter(a => userShiftIds.includes(a.shiftId));
     }
-    
-    // FULL_ROSTER case or fallback: show all assigned shifts for the day
+
     return dayAssignments;
   };
+
+  const todayString = toDateString(new Date());
+  const headerLabel = viewMode === 'WEEKLY'
+    ? `${t('scheduling.mySchedule.weekOf')} ${cells[0]?.dateObj.toLocaleDateString(dateLocale, { day: 'numeric', month: 'short' })}`
+    : currentDate.toLocaleDateString(dateLocale, { month: 'long', year: 'numeric' });
 
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
+        <h3 className="text-xl font-bold capitalize">{headerLabel}</h3>
         <div className="flex items-center space-x-2">
           <Button variant="outline" size="icon" onClick={handlePrev}>
             <ChevronLeft className="h-4 w-4" />
           </Button>
-          <h3 className="text-lg font-semibold w-48 text-center">
-            {viewMode === 'WEEKLY' 
-              ? `Week of ${days[0]?.formattedDate}`
-              : currentDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
-            }
-          </h3>
           <Button variant="outline" size="icon" onClick={handleNext}>
             <ChevronRight className="h-4 w-4" />
           </Button>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-        {days.map((day) => {
-          const dayAssignments = getAssignmentsForDay(day.dateString);
-          const isToday = new Date().toISOString().split('T')[0] === day.dateString;
+      <div className="rounded-lg border overflow-hidden">
+        {/* Weekday header */}
+        <div className="grid grid-cols-7 bg-slate-50 border-b">
+          {weekdayLabels.map((label) => (
+            <div key={label} className="px-2 py-2 text-center text-xs md:text-sm font-bold uppercase tracking-wide text-slate-500">
+              {label}
+            </div>
+          ))}
+        </div>
 
-          return (
-            <Card key={day.dateString} className={`${isToday ? 'border-blue-500 ring-1 ring-blue-500' : ''}`}>
-              <CardHeader className="p-4 pb-2 flex flex-row items-center justify-between space-y-0">
-                <div>
-                  <p className="text-sm font-bold">{day.formattedDate}</p>
-                  <p className="text-xs text-muted-foreground uppercase">{day.dayName}</p>
-                </div>
-                {isToday && <Badge className="bg-blue-500">Today</Badge>}
-              </CardHeader>
-              <CardContent className="p-4 pt-0">
-                <div className="space-y-2 mt-2">
-                  {dayAssignments.length > 0 ? (
-                    dayAssignments.map((assignment) => {
-                      const isOwnShift = assignment.userId === user?.id;
-                      const isTeammate = !isOwnShift && staffScheduleView === 'SHIFT_TEAM';
+        {/* Day grid */}
+        <div className="grid grid-cols-7">
+          {cells.map((cell, idx) => {
+            const dayAssignments = cell.inMonth ? getAssignmentsForDay(cell.dateString) : [];
+            const isToday = cell.dateString === todayString;
 
-                      return (
-                        <div key={assignment.id} className={`p-2 rounded-md border ${isOwnShift ? 'bg-blue-50 border-blue-100' : 'bg-slate-50 border-slate-100'}`}>
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-2 text-sm font-semibold text-slate-800">
-                              <Clock className={`w-3 h-3 ${isOwnShift ? 'text-blue-500' : 'text-slate-400'}`} />
-                              {assignment.shift?.name}
-                            </div>
-                            {isTeammate && (
-                                <Badge variant="secondary" className="text-[8px] h-3 px-1 bg-slate-200">Teammate</Badge>
-                            )}
-                          </div>
-                          <div className="text-[10px] text-slate-500 mt-1 ml-5 font-medium">
-                            {assignment.shift?.startTime} - {assignment.shift?.endTime}
-                          </div>
-                          
-                          {(staffScheduleView === 'SHIFT_TEAM' || staffScheduleView === 'FULL_ROSTER') && (
-                            <div className={`text-[10px] mt-2 ml-5 px-2 py-1 rounded ${isOwnShift ? 'bg-blue-100 text-blue-700 font-bold' : 'bg-white text-slate-600 border border-slate-100'}`}>
-                              {assignment.user?.firstName} {assignment.user?.lastName} {isOwnShift && '(You)'}
-                            </div>
-                          )}
-
-                          {isOwnShift && assignment.isPublished && (
-                             <Badge variant="outline" className="mt-2 text-[8px] h-4 bg-green-50 text-green-600 border-green-100 uppercase font-black ml-5">Published</Badge>
-                          )}
-                        </div>
-                      );
-                    })
-                  ) : (
-                    <p className="text-[10px] text-slate-400 italic py-2">No shifts assigned</p>
+            return (
+              <div
+                key={`${cell.dateString}-${idx}`}
+                className={[
+                  'min-h-[92px] md:min-h-[110px] border-b border-r p-1.5 md:p-2 flex flex-col',
+                  !cell.inMonth ? 'bg-slate-50/60' : '',
+                  isToday ? 'bg-blue-50/60 ring-1 ring-inset ring-blue-400' : '',
+                ].join(' ')}
+              >
+                <div className="flex items-center justify-between mb-1">
+                  <span className={[
+                    'text-sm md:text-base font-bold',
+                    cell.inMonth ? 'text-slate-700' : 'text-slate-300',
+                    isToday ? 'text-blue-600' : '',
+                  ].join(' ')}>
+                    {cell.dateObj.getDate()}
+                  </span>
+                  {isToday && (
+                    <Badge className="bg-blue-500 text-[10px] h-4 px-1.5">{t('scheduling.mySchedule.today')}</Badge>
                   )}
                 </div>
-              </CardContent>
-            </Card>
-          );
-        })}
+
+                <div className="space-y-1 flex-1">
+                  {dayAssignments.map((assignment) => {
+                    const isOwnShift = assignment.userId === user?.id;
+                    const isTeammate = !isOwnShift && staffScheduleView === 'SHIFT_TEAM';
+                    return (
+                      <div
+                        key={assignment.id}
+                        className={`rounded-md border px-1.5 py-1 ${isOwnShift ? 'bg-blue-100/70 border-blue-200' : 'bg-slate-100 border-slate-200'}`}
+                      >
+                        <div className="flex items-center gap-1 text-xs md:text-sm font-semibold text-slate-800">
+                          <Clock className={`w-3 h-3 shrink-0 ${isOwnShift ? 'text-blue-500' : 'text-slate-400'}`} />
+                          <span className="truncate">{assignment.shift?.name}</span>
+                        </div>
+                        <div className="text-[11px] md:text-xs text-slate-500 mt-0.5 font-medium">
+                          {assignment.shift ? formatTimeRange(assignment.shift.startTime, assignment.shift.endTime) : ''}
+                        </div>
+                        {(staffScheduleView === 'SHIFT_TEAM' || staffScheduleView === 'FULL_ROSTER') && (
+                          <div className={`text-[11px] md:text-xs mt-1 truncate ${isOwnShift ? 'text-blue-700 font-bold' : 'text-slate-600'}`}>
+                            {assignment.user?.firstName} {assignment.user?.lastName}
+                            {isOwnShift ? ` (${t('scheduling.mySchedule.you')})` : ''}
+                            {isTeammate ? ` · ${t('scheduling.mySchedule.teammate')}` : ''}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                  {cell.inMonth && dayAssignments.length === 0 && (
+                    <p className="text-[11px] md:text-xs text-slate-300 italic">{t('scheduling.mySchedule.noShifts')}</p>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
       </div>
     </div>
   );

@@ -23,7 +23,11 @@ import {
 } from '@/lib/api/scheduling';
 import { toast } from 'sonner';
 import { useAuthStore } from '@/store/useAuthStore';
+import { useFormatStore } from '@/store/useFormatStore';
+import { formatDate, formatTimeRange } from '@/lib/format';
+import { computeWorked, formatHM, workedTone } from '@/lib/workedHours';
 import { useConfirm } from '@/components/ui/confirm-dialog';
+import { useTranslation } from '@/i18n/provider';
 
 import {
   DndContext,
@@ -44,6 +48,18 @@ interface Staff {
   role: string;
 }
 
+interface TimeEntry {
+  id: string;
+  userId: string;
+  date: string;
+  shiftId: string | null;
+  checkIn: string | null;
+  checkOut: string | null;
+  breakMinutes: number;
+}
+
+const entryKey = (userId: string, date: string, shiftId: string | null) => `${userId}|${date}|${shiftId || ''}`;
+
 interface ScheduleWarning {
   userId: string;
   date: string;
@@ -57,13 +73,16 @@ function DraggableStaff({
   staff,
   isHighlighted,
   onToggleHighlight,
-  shiftCount = 0
+  shiftCount = 0,
+  workedLabel
 }: {
   staff: Staff;
   isHighlighted: boolean;
   onToggleHighlight: () => void;
   shiftCount?: number;
+  workedLabel?: string;
 }) {
+  const { t } = useTranslation();
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
     id: `staff-${staff.id}`,
     data: { staff },
@@ -73,22 +92,31 @@ function DraggableStaff({
     <div
       ref={setNodeRef}
       className={cn(
-        "flex items-center justify-between p-2 mb-2 bg-white border rounded shadow-sm hover:border-blue-400 hover:shadow transition-all relative group",
+        "flex items-center justify-between p-1.5 bg-white border rounded-md shadow-sm hover:border-blue-400 hover:shadow transition-all relative group",
         isDragging && 'opacity-50',
         isHighlighted ? 'border-blue-600 bg-blue-50/50 ring-2 ring-blue-500/20' : 'border-slate-200'
       )}
     >
-      <div 
-        {...listeners} 
-        {...attributes} 
-        className="cursor-grab active:cursor-grabbing p-1 hover:bg-slate-100 rounded mr-1 shrink-0"
-        title="Drag to assign"
+      <div
+        {...listeners}
+        {...attributes}
+        className="cursor-grab active:cursor-grabbing p-0.5 hover:bg-slate-100 rounded mr-0.5 shrink-0"
+        title={t('scheduling.assigner.dragToAssign')}
       >
-        <GripVertical className="h-4 w-4 text-slate-400" />
+        <GripVertical className="h-3.5 w-3.5 text-slate-400" />
       </div>
 
-      <span className="text-sm font-medium flex-1 truncate">{staff.firstName} {staff.lastName}</span>
-      
+      <span className="text-xs font-semibold flex-1 truncate">{staff.firstName} {staff.lastName}</span>
+
+      {workedLabel && (
+        <span
+          className="h-6 px-1 rounded flex items-center justify-center border border-emerald-200 bg-emerald-50 text-emerald-700 text-[9px] font-black tabular-nums shrink-0 ml-1"
+          title={t('scheduling.assigner.hoursCredited')}
+        >
+          {workedLabel}
+        </span>
+      )}
+
       <button
         type="button"
         onClick={(e) => {
@@ -96,7 +124,7 @@ function DraggableStaff({
           onToggleHighlight();
         }}
         className={cn(
-          "h-7 min-w-7 px-1.5 rounded-md flex items-center justify-center gap-1 border transition-all shrink-0 ml-1.5 text-xs font-black tabular-nums",
+          "h-6 min-w-6 px-1 rounded flex items-center justify-center gap-0.5 border transition-all shrink-0 ml-1 text-[11px] font-black tabular-nums",
           isHighlighted
             ? "bg-blue-600 text-white border-blue-600 shadow-sm"
             : shiftCount > 0
@@ -105,7 +133,7 @@ function DraggableStaff({
         )}
         // Same behavior as before: toggles highlighting this staff's shifts.
         // The icon is replaced by the live count of shifts they have in this plan (#6).
-        title={isHighlighted ? "Clear Highlight" : "Highlight shifts"}
+        title={isHighlighted ? t('scheduling.assigner.clearHighlight') : t('scheduling.assigner.highlightShifts')}
       >
         <CalendarCheck className="h-3.5 w-3.5" />
         {shiftCount}
@@ -130,6 +158,7 @@ function DroppableCell({
   isHighlightedAssigned?: boolean;
   availabilityStatus?: 'available' | 'unavailable' | null;
 }) {
+  const { t } = useTranslation();
   const { isOver, setNodeRef } = useDroppable({ id, disabled });
 
   return (
@@ -153,7 +182,7 @@ function DroppableCell({
       <div className="flex flex-col gap-1 min-h-[50px] w-full">
         {children}
         {isUnderstaffed && !isOver && !disabled && (
-           <div className="text-[10px] text-red-400 opacity-50 italic text-center mt-1 select-none pointer-events-none">Drag staff here</div>
+           <div className="text-[10px] text-red-400 opacity-50 italic text-center mt-1 select-none pointer-events-none">{t('scheduling.assigner.dragStaffHere')}</div>
         )}
       </div>
     </td>
@@ -162,7 +191,12 @@ function DroppableCell({
 
 export default function ShiftAssigner({ viewMode = 'MONTHLY' }: { viewMode?: 'WEEKLY' | 'MONTHLY' }) {
   const { user } = useAuthStore();
+  const { t, locale } = useTranslation();
+  const dateLocale = locale === 'tr' ? 'tr-TR' : 'en-US';
   const confirm = useConfirm();
+  // Read the platform date/time convention as a stable primitive so memoized
+  // day/label builders don't churn every render.
+  const system = useFormatStore(s => s.system);
   const isAdminOrManager = user?.role === 'ADMIN' || user?.role === 'MANAGER';
   
   const [currentDate, setCurrentDate] = useState<Date>(new Date());
@@ -170,6 +204,8 @@ export default function ShiftAssigner({ viewMode = 'MONTHLY' }: { viewMode?: 'WE
   const [staff, setStaff] = useState<Staff[]>([]);
   const [availabilities, setAvailabilities] = useState<EmployeeAvailability[]>([]);
   const [assignments, setAssignments] = useState<ShiftAssignment[]>([]);
+  const [timeEntries, setTimeEntries] = useState<TimeEntry[]>([]);
+  const [defaultBreak, setDefaultBreak] = useState(0);
   const [loading, setLoading] = useState(false);
 
   // Drag state
@@ -204,8 +240,8 @@ export default function ShiftAssigner({ viewMode = 'MONTHLY' }: { viewMode?: 'WE
         return {
           dateObj: curr,
           dateString,
-          dayName: curr.toLocaleDateString('en-US', { weekday: 'short' }),
-          formattedDate: curr.toLocaleDateString('en-US', { month: 'numeric', day: 'numeric', year: 'numeric' })
+          dayName: curr.toLocaleDateString(dateLocale, { weekday: 'short' }),
+          formattedDate: formatDate(curr, system)
         };
       });
     }
@@ -218,11 +254,11 @@ export default function ShiftAssigner({ viewMode = 'MONTHLY' }: { viewMode?: 'WE
       return {
         dateObj: d,
         dateString,
-        dayName: d.toLocaleDateString('en-US', { weekday: 'short' }),
-        formattedDate: d.toLocaleDateString('en-US', { month: 'numeric', day: 'numeric', year: 'numeric' })
+        dayName: d.toLocaleDateString(dateLocale, { weekday: 'short' }),
+        formattedDate: formatDate(d, system)
       };
     });
-  }, [viewMode]);
+  }, [viewMode, system, dateLocale]);
 
   const days = useMemo(() => getMonthDates(currentDate), [currentDate, getMonthDates]);
 
@@ -232,23 +268,32 @@ export default function ShiftAssigner({ viewMode = 'MONTHLY' }: { viewMode?: 'WE
       const startDate = days[0].dateString;
       const endDate = days[days.length - 1].dateString;
 
-      const [shiftsData, availData, assignData, staffRes] = await Promise.all([
+      // Pull actual worked-time entries (all staff for managers) + the restaurant's
+      // default break so each assignment can show real/credited hours (#integration).
+      const entriesUrl = isAdminOrManager
+        ? `/time-entries?from=${startDate}&to=${endDate}&all=1`
+        : `/time-entries?from=${startDate}&to=${endDate}`;
+      const [shiftsData, availData, assignData, staffRes, entriesRes, settingsRes] = await Promise.all([
         getShifts(),
         getAvailabilities({ startDate, endDate }),
         getAssignments({ startDate, endDate }),
-        api.get('/staff')
+        api.get('/staff'),
+        api.get(entriesUrl),
+        api.get('/settings')
       ]);
 
       setShifts(shiftsData);
       setAvailabilities(availData);
       setAssignments(assignData);
       setStaff(staffRes.data.data || []);
+      setTimeEntries(entriesRes.data.data || []);
+      setDefaultBreak(settingsRes.data.data?.defaultBreakMinutes ?? 0);
     } catch (error) {
-      toast.error('Failed to load roster data');
+      toast.error(t('scheduling.assigner.loadFailed'));
     } finally {
       setLoading(false);
     }
-  }, [days]);
+  }, [days, isAdminOrManager]);
 
   useEffect(() => {
     loadData();
@@ -257,26 +302,26 @@ export default function ShiftAssigner({ viewMode = 'MONTHLY' }: { viewMode?: 'WE
   const handleAssign = async (shiftId: string, userId: string, date: string) => {
     // Prevent duplicate assignment in the UI first
     if (assignments.some(a => a.shiftId === shiftId && a.userId === userId && a.date === date)) {
-      toast.warning('Staff is already assigned to this shift');
+      toast.warning(t('scheduling.assigner.alreadyAssigned'));
       return;
     }
 
     try {
       const newAssignment = await assignShift({ shiftId, userId, date });
-      toast.success('Assigned successfully');
+      toast.success(t('scheduling.assigner.assigned'));
       setAssignments(prev => [...prev, { ...newAssignment, user: staff.find(s => s.id === userId) }]);
     } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Failed to assign staff');
+      toast.error(error.response?.data?.message || t('scheduling.assigner.assignFailed'));
     }
   };
 
   const handleRemoveAssignment = async (id: string) => {
     try {
       await removeAssignment(id);
-      toast.success('Assignment removed');
+      toast.success(t('scheduling.assigner.assignmentRemoved'));
       setAssignments(prev => prev.filter(a => a.id !== id));
     } catch (error) {
-      toast.error('Failed to remove assignment');
+      toast.error(t('scheduling.assigner.removeFailed'));
     }
   };
 
@@ -467,6 +512,36 @@ export default function ShiftAssigner({ viewMode = 'MONTHLY' }: { viewMode?: 'WE
     return counts;
   }, [assignments, days]);
 
+  // Actual worked-time entries indexed by user|date|shift for O(1) lookup.
+  const entryMap = useMemo(() => {
+    const m = new Map<string, TimeEntry>();
+    for (const e of timeEntries) m.set(entryKey(e.userId, e.date, e.shiftId), e);
+    return m;
+  }, [timeEntries]);
+
+  // Worked time for one assignment: real check-in/out if entered, otherwise the
+  // scheduled shift length minus the default break (#schedule-timesheet integration).
+  const workedForAssignment = useCallback((a: ShiftAssignment) => {
+    const sh = a.shift || shifts.find(s => s.id === a.shiftId);
+    if (!sh) return { minutes: 0, scheduledMinutes: 0, source: 'SCHEDULED' as const };
+    const entry = entryMap.get(entryKey(a.userId, a.date, a.shiftId));
+    return computeWorked(sh.startTime, sh.endTime, entry, defaultBreak);
+  }, [entryMap, shifts, defaultBreak]);
+
+  // Total credited minutes per day and per staff member across the visible range.
+  const dayTotalMinutes = useCallback((dateString: string) =>
+    assignments.filter(a => a.date === dateString).reduce((sum, a) => sum + workedForAssignment(a).minutes, 0),
+    [assignments, workedForAssignment]);
+
+  const workedMinutesByStaff = useMemo(() => {
+    const totals: Record<string, number> = {};
+    const inRange = new Set(days.map(d => d.dateString));
+    assignments.forEach(a => {
+      if (inRange.has(a.date)) totals[a.userId] = (totals[a.userId] || 0) + workedForAssignment(a).minutes;
+    });
+    return totals;
+  }, [assignments, days, workedForAssignment]);
+
   const isCurrentRangePublished = useMemo(() => {
     if (assignments.length === 0) return false;
     const rangeAssignments = assignments.filter(a => days.some(d => d.dateString === a.date));
@@ -476,7 +551,7 @@ export default function ShiftAssigner({ viewMode = 'MONTHLY' }: { viewMode?: 'WE
 
   const handlePublishSchedule = async () => {
     if (isCurrentRangePublished) {
-      toast.info('This schedule is already published to staff.');
+      toast.info(t('scheduling.assigner.alreadyPublished'));
       return;
     }
 
@@ -488,13 +563,13 @@ export default function ShiftAssigner({ viewMode = 'MONTHLY' }: { viewMode?: 'WE
 
     // Confirmation popup before publishing (#7.3).
     const ok = await confirm({
-      title: 'Publish this schedule?',
-      description: 'Working staff will receive their shift plan on WhatsApp 5 minutes after publishing.',
+      title: t('scheduling.assigner.publishConfirmTitle'),
+      description: t('scheduling.assigner.publishConfirmDesc'),
       details: [
-        { label: 'Period', value: startDate === endDate ? startDate : `${startDate} – ${endDate}` },
-        { label: 'Staff to notify', value: `${staffWithShifts}` },
+        { label: t('scheduling.assigner.period'), value: startDate === endDate ? startDate : `${startDate} – ${endDate}` },
+        { label: t('scheduling.assigner.staffToNotify'), value: `${staffWithShifts}` },
       ],
-      confirmText: 'Publish',
+      confirmText: t('scheduling.assigner.publish'),
     });
     if (!ok) return;
 
@@ -510,10 +585,10 @@ export default function ShiftAssigner({ viewMode = 'MONTHLY' }: { viewMode?: 'WE
       }));
       const mins = res?.data?.whatsappDelayMinutes ?? res?.whatsappDelayMinutes ?? 5;
       // Inform the admin about the delayed WhatsApp send (#7.4).
-      toast.success(`Published — the plan will be sent to all working staff in ${mins} minutes.`);
+      toast.success(`${t('scheduling.assigner.publishedPrefix')} ${mins} ${t('scheduling.assigner.publishedSuffix')}`);
     } catch (error) {
       console.error(error);
-      toast.error('Failed to publish schedule');
+      toast.error(t('scheduling.assigner.publishFailed'));
     }
   };
 
@@ -524,7 +599,7 @@ export default function ShiftAssigner({ viewMode = 'MONTHLY' }: { viewMode?: 'WE
       const startDate = days[0].dateString;
       const endDate = days[days.length - 1].dateString;
       
-      toast.info('Unpublishing schedule...');
+      toast.info(t('scheduling.assigner.unpublishing'));
       await unpublishAssignments({ startDate, endDate });
       
       // Update local state
@@ -534,17 +609,17 @@ export default function ShiftAssigner({ viewMode = 'MONTHLY' }: { viewMode?: 'WE
         }
         return a;
       }));
-      toast.success('Schedule unpublished. It is no longer visible to staff.');
+      toast.success(t('scheduling.assigner.unpublished'));
     } catch (error) {
       console.error(error);
-      toast.error('Failed to unpublish schedule');
+      toast.error(t('scheduling.assigner.unpublishFailed'));
     }
   };
 
   const handleExportPDF = async () => {
     try {
-      toast.info('Generating PDF document...');
-      
+      toast.info(t('scheduling.assigner.generatingPdf'));
+
       const { jsPDF } = await import('jspdf');
       const autoTable = (await import('jspdf-autotable')).default;
 
@@ -554,12 +629,12 @@ export default function ShiftAssigner({ viewMode = 'MONTHLY' }: { viewMode?: 'WE
 
       // Title
       doc.setFontSize(22);
-      doc.text(`Staff Schedule - ${viewMode}`, 14, 20);
+      doc.text(`${t('scheduling.assigner.pdfTitle')} - ${viewMode}`, 14, 20);
       doc.setFontSize(12);
-      doc.text(`Generated on: ${new Date().toLocaleDateString()}`, 14, 28);
+      doc.text(`${t('scheduling.assigner.generatedOn')}: ${formatDate(new Date(), system)}`, 14, 28);
 
       // Define table columns
-      const tableColumn = ["Date", ...shifts.map(s => `${s.name}\n(${s.startTime}-${s.endTime})`)];
+      const tableColumn = [t('scheduling.assigner.colDate'), ...shifts.map(s => `${s.name}\n(${formatTimeRange(s.startTime, s.endTime, system)})`)];
       
       // Define table rows
       const tableRows: any[][] = [];
@@ -572,7 +647,7 @@ export default function ShiftAssigner({ viewMode = 'MONTHLY' }: { viewMode?: 'WE
         shifts.forEach(shift => {
           const shiftAssignments = assignments.filter(a => a.date === day.dateString && a.shiftId === shift.id);
           if (shiftAssignments.length === 0) {
-            rowData.push('Unassigned');
+            rowData.push(t('scheduling.assigner.unassigned'));
           } else {
             // Passing an array to autoTable guarantees each element gets its own line
             const staffNames = shiftAssignments.map(a => {
@@ -600,10 +675,10 @@ export default function ShiftAssigner({ viewMode = 'MONTHLY' }: { viewMode?: 'WE
       });
 
       doc.save(`roster_${viewMode}_${currentDate.toISOString().split('T')[0]}.pdf`);
-      toast.success('PDF exported successfully');
+      toast.success(t('scheduling.assigner.pdfExported'));
     } catch (error) {
       console.error('PDF Export Error:', error);
-      toast.error('Failed to export PDF');
+      toast.error(t('scheduling.assigner.pdfFailed'));
     }
   };
 
@@ -612,7 +687,7 @@ export default function ShiftAssigner({ viewMode = 'MONTHLY' }: { viewMode?: 'WE
     if (!input) return;
 
     try {
-      toast.info('Generating PNG image...');
+      toast.info(t('scheduling.assigner.generatingPng'));
       
       const originalBg = input.style.backgroundColor;
       input.style.backgroundColor = '#ffffff';
@@ -637,10 +712,10 @@ export default function ShiftAssigner({ viewMode = 'MONTHLY' }: { viewMode?: 'WE
       link.href = dataUrl;
       link.click();
       
-      toast.success('PNG exported successfully');
+      toast.success(t('scheduling.assigner.pngExported'));
     } catch (error) {
       console.error('PNG Export Error:', error);
-      toast.error('Failed to export PNG');
+      toast.error(t('scheduling.assigner.pngFailed'));
     }
   };
 
@@ -651,46 +726,38 @@ export default function ShiftAssigner({ viewMode = 'MONTHLY' }: { viewMode?: 'WE
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
     >
-      <div className="flex flex-col gap-6 w-full max-w-[95vw] mx-auto">
-        
-        {/* DRAGGABLE STAFF SECTION - NOW ON TOP */}
+      <div className="flex flex-col gap-3 w-full max-w-[95vw] mx-auto">
+
+        {/* DRAGGABLE STAFF SECTION — compact single strip (no big header/titles) */}
         {isAdminOrManager && (
           <Card className="w-full">
-            <CardHeader className="pb-4 pt-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <CardTitle className="text-lg flex items-center">
-                    <Users className="h-5 w-5 mr-2 text-blue-600" />
-                    Staff Pool
-                  </CardTitle>
-                  <CardDescription className="text-xs">Drag the grip handle to assign or click the highlight pulse icon to analyze shifts.</CardDescription>
+            <CardContent className="p-2.5">
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-1.5 text-xs font-black uppercase tracking-wide text-slate-600">
+                  <Users className="h-4 w-4 text-blue-600" />
+                  {t('scheduling.assigner.staffPool')}
+                  <span className="text-slate-400 font-bold normal-case">· {staff.length}</span>
                 </div>
-                <div className="flex items-center gap-2">
-                  {highlightedStaffId && (
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
-                      onClick={() => setHighlightedStaffId(null)}
-                      className="h-7 text-[9px] font-black uppercase text-blue-600 bg-blue-50 hover:bg-blue-100 hover:text-blue-700"
-                    >
-                      Clear Highlight
-                    </Button>
-                  )}
-                  <Badge variant="outline" className="text-[10px] font-normal border-slate-200">
-                    {staff.length} Members Available
-                  </Badge>
-                </div>
+                {highlightedStaffId && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setHighlightedStaffId(null)}
+                    className="h-6 text-[9px] font-black uppercase text-blue-600 bg-blue-50 hover:bg-blue-100 hover:text-blue-700"
+                  >
+                    {t('scheduling.assigner.clearHighlight')}
+                  </Button>
+                )}
               </div>
-            </CardHeader>
-            <CardContent className="pb-6">
-              <div className="flex flex-wrap gap-2 overflow-x-auto pb-2 max-h-40">
+              <div className="flex flex-nowrap gap-2 overflow-x-auto pb-1 hide-scrollbar">
                 {staff.map(s => (
-                  <div key={s.id} className="shrink-0 min-w-[180px]">
+                  <div key={s.id} className="shrink-0 w-[150px]">
                     <DraggableStaff
                       staff={s}
                       isHighlighted={highlightedStaffId === s.id}
                       onToggleHighlight={() => setHighlightedStaffId(prev => prev === s.id ? null : s.id)}
                       shiftCount={shiftCountByStaff[s.id] || 0}
+                      workedLabel={workedMinutesByStaff[s.id] ? formatHM(workedMinutesByStaff[s.id]) : undefined}
                     />
                   </div>
                 ))}
@@ -701,10 +768,10 @@ export default function ShiftAssigner({ viewMode = 'MONTHLY' }: { viewMode?: 'WE
 
         {/* MAIN ROSTER GRID */}
         <Card className="flex-1 overflow-hidden">
-          <CardHeader className="flex flex-col lg:flex-row items-start lg:items-center justify-between pb-6 gap-4">
-            <div>
-              <CardTitle className="text-xl">Schedule Builder</CardTitle>
-              <CardDescription>Plan and manage restaurant shifts.</CardDescription>
+          <CardHeader className="flex flex-col lg:flex-row items-start lg:items-center justify-between p-3 gap-2">
+            <div className="flex items-baseline gap-2 flex-wrap">
+              <CardTitle className="text-base">{t('scheduling.assigner.scheduleBuilder')}</CardTitle>
+              <CardDescription className="hidden md:block text-xs">{t('scheduling.assigner.scheduleBuilderDesc')}</CardDescription>
             </div>
             <div className="flex flex-wrap items-center gap-2">
               <div className="flex items-center bg-white border rounded-md p-1 shadow-sm mr-2">
@@ -712,9 +779,9 @@ export default function ShiftAssigner({ viewMode = 'MONTHLY' }: { viewMode?: 'WE
                   <ChevronLeft className="h-4 w-4" />
                 </Button>
                 <h3 className="text-sm font-bold px-2 min-w-[140px] text-center">
-                  {viewMode === 'WEEKLY' 
-                    ? `Week of ${days[0]?.dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`
-                    : currentDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
+                  {viewMode === 'WEEKLY'
+                    ? `${t('scheduling.mySchedule.weekOf')} ${days[0]?.dateObj.toLocaleDateString(dateLocale, { month: 'short', day: 'numeric' })}`
+                    : currentDate.toLocaleDateString(dateLocale, { month: 'long', year: 'numeric' })
                   }
                 </h3>
                 <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleNextMonth}>
@@ -737,9 +804,9 @@ export default function ShiftAssigner({ viewMode = 'MONTHLY' }: { viewMode?: 'WE
                       onClick={handlePublishSchedule}
                     >
                       {isCurrentRangePublished ? (
-                        <><CheckCircle2 className="h-4 w-4 mr-2" /> Published</>
+                        <><CheckCircle2 className="h-4 w-4 mr-2" /> {t('scheduling.assigner.published')}</>
                       ) : (
-                        <><Send className="h-4 w-4 mr-2" /> Publish</>
+                        <><Send className="h-4 w-4 mr-2" /> {t('scheduling.assigner.publish')}</>
                       )}
                     </Button>
 
@@ -750,7 +817,7 @@ export default function ShiftAssigner({ viewMode = 'MONTHLY' }: { viewMode?: 'WE
                         className="h-9 px-2 text-red-600 hover:bg-red-50 hover:text-red-700 text-[9px] font-black uppercase"
                         onClick={handleUnpublishSchedule}
                       >
-                        <Ban className="h-3.5 w-3.5 mr-1" /> Unpublish
+                        <Ban className="h-3.5 w-3.5 mr-1" /> {t('scheduling.assigner.unpublish')}
                       </Button>
                     )}
                     
@@ -769,11 +836,11 @@ export default function ShiftAssigner({ viewMode = 'MONTHLY' }: { viewMode?: 'WE
           </CardHeader>
           <CardContent className="p-0 overflow-auto max-h-[calc(100vh-350px)]">
             {loading ? (
-              <div className="flex justify-center p-12"><p className="text-slate-500 animate-pulse">Loading roster data...</p></div>
+              <div className="flex justify-center p-12"><p className="text-slate-500 animate-pulse">{t('scheduling.assigner.loadingRoster')}</p></div>
             ) : shifts.length === 0 ? (
               <div className="p-12 text-center bg-slate-50">
-                <p className="text-muted-foreground">No shifts configured for this restaurant.</p>
-                <Button variant="link" className="mt-2 text-blue-600">Setup Shifts</Button>
+                <p className="text-muted-foreground">{t('scheduling.assigner.noShiftsConfigured')}</p>
+                <Button variant="link" className="mt-2 text-blue-600">{t('scheduling.assigner.setupShifts')}</Button>
               </div>
             ) : (
               <div id="roster-table-container" className="w-full bg-white p-4">
@@ -781,17 +848,23 @@ export default function ShiftAssigner({ viewMode = 'MONTHLY' }: { viewMode?: 'WE
                   <thead className="text-[10px] text-slate-700 uppercase bg-slate-50 sticky top-0 z-30">
                     <tr>
                       <th scope="col" className="px-3 py-3 border-b border-slate-100 min-w-[100px] sticky left-0 bg-slate-50 z-40">
-                        Date & Weekday
+                        {t('scheduling.assigner.dateWeekday')}
                       </th>
                       {shifts.map(shift => (
                         <th key={shift.id} scope="col" className="px-2 py-3 border-b border-slate-100 min-w-[140px]">
                           <div className="font-bold text-center text-slate-900 leading-tight">{shift.name}</div>
                           <div className="text-[9px] text-slate-500 font-normal text-center mt-1 bg-white/50 rounded-sm py-0.5 border border-slate-100">
-                            {shift.startTime} - {shift.endTime}
+                            {formatTimeRange(shift.startTime, shift.endTime, system)}
                           </div>
 
                         </th>
                       ))}
+                      {isAdminOrManager && (
+                        <th scope="col" className="px-3 py-3 border-b border-slate-100 min-w-[70px] text-right bg-slate-50">
+                          <div className="font-bold text-slate-900">{t('scheduling.assigner.total')}</div>
+                          <div className="text-[9px] text-slate-400 font-normal mt-1">h:mm</div>
+                        </th>
+                      )}
                     </tr>
                   </thead>
                   <tbody>
@@ -814,7 +887,7 @@ export default function ShiftAssigner({ viewMode = 'MONTHLY' }: { viewMode?: 'WE
                             isToday ? 'bg-blue-50 text-blue-700' : isWeekend ? 'bg-slate-50 text-red-500' : 'bg-white'
                           )}>
                             <div className="flex flex-col">
-                              <span className="text-sm font-bold">{day.dateObj.getDate()} {day.dateObj.toLocaleDateString('en-US', { month: 'short' })}</span>
+                              <span className="text-sm font-bold">{day.dateObj.getDate()} {day.dateObj.toLocaleDateString(dateLocale, { month: 'short' })}</span>
                               <span className="text-[10px] text-muted-foreground uppercase font-semibold">{day.dayName}</span>
                             </div>
                           </td>
@@ -853,9 +926,9 @@ export default function ShiftAssigner({ viewMode = 'MONTHLY' }: { viewMode?: 'WE
                               >
                                 {isAdminOrManager && (
                                   <div className="flex justify-between items-center text-[10px] text-slate-500 font-semibold mb-1 w-full uppercase">
-                                    <span>Assigned: {cellAssignments.length}</span>
+                                    <span>{t('scheduling.assigner.assignedCount')}: {cellAssignments.length}</span>
                                     <span className={cn(isUnderstaffed ? "text-red-500" : "text-emerald-500")}>
-                                      Req: {requiredForDay}
+                                      {t('scheduling.assigner.req')}: {requiredForDay}
                                     </span>
                                   </div>
                                 )}
@@ -867,6 +940,10 @@ export default function ShiftAssigner({ viewMode = 'MONTHLY' }: { viewMode?: 'WE
 
                                   const isHighlighted = highlightedStaffId === assignment.userId;
                                   const isDimmed = highlightedStaffId && !isHighlighted;
+
+                                  // Credited worked time for this assignment (real entry or scheduled).
+                                  const worked = workedForAssignment(assignment);
+                                  const wTone = worked.source === 'ENTRY' ? workedTone(worked.minutes, worked.scheduledMinutes) : 'ok';
 
                                   return (
                                     <Badge 
@@ -901,8 +978,25 @@ export default function ShiftAssigner({ viewMode = 'MONTHLY' }: { viewMode?: 'WE
                                           </span>
                                         )}
                                       </span>
+                                      <span
+                                        className={cn(
+                                          "shrink-0 tabular-nums font-black text-[10px] mr-1",
+                                          isHighlighted
+                                            ? "text-white"
+                                            : wTone === 'over'
+                                              ? "text-red-600"
+                                              : wTone === 'under'
+                                                ? "text-amber-600"
+                                                : worked.source === 'ENTRY'
+                                                  ? "text-emerald-600"
+                                                  : "text-slate-400"
+                                        )}
+                                        title={worked.source === 'ENTRY' ? t('scheduling.assigner.fromActual') : t('scheduling.assigner.fromScheduled')}
+                                      >
+                                        {formatHM(worked.minutes)}
+                                      </span>
                                       {isAdminOrManager && (
-                                          <button 
+                                          <button
                                             className={cn(
                                               "hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100 shrink-0",
                                               isHighlighted ? "text-blue-200 hover:text-white" : "text-slate-400"
@@ -949,12 +1043,12 @@ export default function ShiftAssigner({ viewMode = 'MONTHLY' }: { viewMode?: 'WE
                                          )}
                                        >
                                          <Plus className="w-2.5 h-2.5" />
-                                         <span>{availableCount > 0 ? `${availableCount} Avail` : "Add"}</span>
+                                         <span>{availableCount > 0 ? `${availableCount} ${t('scheduling.assigner.avail')}` : t('scheduling.assigner.add')}</span>
                                        </PopoverTrigger>
                                       <PopoverContent className="w-64 p-0 bg-white border border-slate-200 shadow-xl rounded-xl overflow-hidden z-50">
                                         <div className="bg-slate-900 p-3 text-white">
                                           <div className="text-xs font-black uppercase tracking-wider">
-                                            Assign Staff
+                                            {t('scheduling.assigner.assignStaff')}
                                           </div>
                                           <div className="text-[9px] text-slate-400 font-bold uppercase mt-0.5">
                                             {shift.name} • {day.dateString}
@@ -965,10 +1059,10 @@ export default function ShiftAssigner({ viewMode = 'MONTHLY' }: { viewMode?: 'WE
                                           {/* 1. AVAILABLE STAFF */}
                                           <div className="space-y-1">
                                             <h4 className="text-[9px] font-black uppercase text-emerald-600 tracking-wider">
-                                              🟢 Available ({available.length})
+                                              🟢 {t('scheduling.assigner.available')} ({available.length})
                                             </h4>
                                             {available.length === 0 ? (
-                                              <p className="text-[9px] text-slate-400 italic pl-1 uppercase font-bold">None marked available</p>
+                                              <p className="text-[9px] text-slate-400 italic pl-1 uppercase font-bold">{t('scheduling.assigner.noneAvailable')}</p>
                                             ) : (
                                               <div className="space-y-1">
                                                 {available.map(s => {
@@ -981,12 +1075,12 @@ export default function ShiftAssigner({ viewMode = 'MONTHLY' }: { viewMode?: 'WE
                                                         <span className="text-[10px] font-bold text-slate-800 truncate">{s.firstName} {s.lastName}</span>
                                                         {others.length > 0 && (
                                                           <span className="text-[8px] text-amber-600 font-black uppercase tracking-tight truncate mt-0.5">
-                                                            Works other shift
+                                                            {t('scheduling.assigner.worksOtherShift')}
                                                           </span>
                                                         )}
                                                       </div>
                                                       {isAssigned ? (
-                                                        <span className="text-[8px] font-black uppercase text-slate-400 shrink-0">Assigned</span>
+                                                        <span className="text-[8px] font-black uppercase text-slate-400 shrink-0">{t('scheduling.assigner.assignedTag')}</span>
                                                       ) : (
                                                         <Button 
                                                           size="sm" 
@@ -996,7 +1090,7 @@ export default function ShiftAssigner({ viewMode = 'MONTHLY' }: { viewMode?: 'WE
                                                             setOpenPopoverCellId(null);
                                                           }}
                                                         >
-                                                          Add
+                                                          {t('scheduling.assigner.add')}
                                                         </Button>
                                                       )}
                                                     </div>
@@ -1009,10 +1103,10 @@ export default function ShiftAssigner({ viewMode = 'MONTHLY' }: { viewMode?: 'WE
                                           {/* 2. OTHER STAFF (NO EXPLICIT AVAILABILITY) */}
                                           <div className="space-y-1 pt-2 border-t border-slate-100">
                                             <h4 className="text-[9px] font-black uppercase text-slate-600 tracking-wider">
-                                              ⚪ Other Staff ({unspecified.length})
+                                              ⚪ {t('scheduling.assigner.otherStaff')} ({unspecified.length})
                                             </h4>
                                             {unspecified.length === 0 ? (
-                                              <p className="text-[9px] text-slate-400 italic pl-1 uppercase font-bold">All staff accounted</p>
+                                              <p className="text-[9px] text-slate-400 italic pl-1 uppercase font-bold">{t('scheduling.assigner.allAccounted')}</p>
                                             ) : (
                                               <div className="space-y-1">
                                                 {unspecified.map(s => {
@@ -1025,12 +1119,12 @@ export default function ShiftAssigner({ viewMode = 'MONTHLY' }: { viewMode?: 'WE
                                                         <span className="text-[10px] font-bold text-slate-700 truncate">{s.firstName} {s.lastName}</span>
                                                         {others.length > 0 && (
                                                           <span className="text-[8px] text-amber-600 font-black uppercase tracking-tight truncate mt-0.5">
-                                                            Works other shift
+                                                            {t('scheduling.assigner.worksOtherShift')}
                                                           </span>
                                                         )}
                                                       </div>
                                                       {isAssigned ? (
-                                                        <span className="text-[8px] font-black uppercase text-slate-400 shrink-0">Assigned</span>
+                                                        <span className="text-[8px] font-black uppercase text-slate-400 shrink-0">{t('scheduling.assigner.assignedTag')}</span>
                                                       ) : (
                                                         <Button 
                                                           size="sm" 
@@ -1041,7 +1135,7 @@ export default function ShiftAssigner({ viewMode = 'MONTHLY' }: { viewMode?: 'WE
                                                             setOpenPopoverCellId(null);
                                                           }}
                                                         >
-                                                          Add
+                                                          {t('scheduling.assigner.add')}
                                                         </Button>
                                                       )}
                                                     </div>
@@ -1054,10 +1148,10 @@ export default function ShiftAssigner({ viewMode = 'MONTHLY' }: { viewMode?: 'WE
                                           {/* 3. EXPLICITLY UNAVAILABLE */}
                                           <div className="space-y-1 pt-2 border-t border-slate-100">
                                             <h4 className="text-[9px] font-black uppercase text-red-600 tracking-wider">
-                                              🔴 Unavailable ({unavailable.length})
+                                              🔴 {t('scheduling.assigner.unavailable')} ({unavailable.length})
                                             </h4>
                                             {unavailable.length === 0 ? (
-                                              <p className="text-[9px] text-slate-400 italic pl-1 uppercase font-bold">No unavailable requests</p>
+                                              <p className="text-[9px] text-slate-400 italic pl-1 uppercase font-bold">{t('scheduling.assigner.noUnavailable')}</p>
                                             ) : (
                                               <div className="space-y-1">
                                                 {unavailable.map(s => {
@@ -1070,7 +1164,7 @@ export default function ShiftAssigner({ viewMode = 'MONTHLY' }: { viewMode?: 'WE
                                                       <div className="flex items-center justify-between gap-2 w-full">
                                                         <span className="text-[10px] font-bold text-red-955 truncate flex-1">{s.firstName} {s.lastName}</span>
                                                         {isAssigned ? (
-                                                          <span className="text-[8px] font-black uppercase text-slate-400 shrink-0">Assigned</span>
+                                                          <span className="text-[8px] font-black uppercase text-slate-400 shrink-0">{t('scheduling.assigner.assignedTag')}</span>
                                                         ) : (
                                                           <Button 
                                                             size="sm" 
@@ -1078,10 +1172,10 @@ export default function ShiftAssigner({ viewMode = 'MONTHLY' }: { viewMode?: 'WE
                                                             className="h-6 bg-red-600 hover:bg-red-700 font-black uppercase text-[8px] px-1.5 rounded shrink-0"
                                                             onClick={async () => {
                                                               const ok = await confirm({
-                                                                title: 'Assign unavailable staff?',
-                                                                description: `${s.firstName} marked themselves as UNAVAILABLE for this shift. Assign them anyway?`,
+                                                                title: t('scheduling.assigner.forceTitle'),
+                                                                description: `${s.firstName} ${t('scheduling.assigner.forceDesc')}`,
                                                                 tone: 'danger',
-                                                                confirmText: 'Force assign',
+                                                                confirmText: t('scheduling.assigner.forceConfirm'),
                                                               });
                                                               if (ok) {
                                                                 handleAssign(shift.id, s.id, day.dateString);
@@ -1089,7 +1183,7 @@ export default function ShiftAssigner({ viewMode = 'MONTHLY' }: { viewMode?: 'WE
                                                               }
                                                             }}
                                                           >
-                                                            Force
+                                                            {t('scheduling.assigner.force')}
                                                           </Button>
                                                         )}
                                                       </div>
@@ -1100,7 +1194,7 @@ export default function ShiftAssigner({ viewMode = 'MONTHLY' }: { viewMode?: 'WE
                                                       )}
                                                       {others.length > 0 && (
                                                         <span className="text-[8px] text-amber-600 font-black uppercase tracking-tight truncate">
-                                                          ⚠️ Works other shift
+                                                          ⚠️ {t('scheduling.assigner.worksOtherShift')}
                                                         </span>
                                                       )}
                                                     </div>
@@ -1117,6 +1211,17 @@ export default function ShiftAssigner({ viewMode = 'MONTHLY' }: { viewMode?: 'WE
                               </DroppableCell>
                             );
                           })}
+                          {isAdminOrManager && (() => {
+                            const total = dayTotalMinutes(day.dateString);
+                            return (
+                              <td className={cn(
+                                "px-3 py-2 border-b border-slate-100 text-right align-top font-black tabular-nums",
+                                isToday ? 'bg-blue-50/40' : isWeekend ? 'bg-slate-50/50' : 'bg-white'
+                              )}>
+                                {total > 0 ? <span className="text-slate-900">{formatHM(total)}</span> : <span className="text-slate-300">—</span>}
+                              </td>
+                            );
+                          })()}
                         </tr>
                       );
                     })}

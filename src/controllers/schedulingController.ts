@@ -271,26 +271,56 @@ export const getAssignments = async (req: Request, res: Response) => {
     const restaurantId = req.restaurantId!;
     const { startDate, endDate, userId, shiftId } = req.query;
     
-    const isAdmin = req.user?.role === 'ADMIN' || req.user?.role === 'MANAGER';
+    const isAdmin = req.user?.role === 'ADMIN' || req.user?.role === 'MANAGER' || req.user?.role === 'SUPER_ADMIN';
 
     const whereClause: any = {
       shift: { restaurantId }
     };
 
-    if (!isAdmin) {
-      whereClause.isPublished = true;
-    }
-
-    if (userId) whereClause.userId = userId as string;
-    if (shiftId) whereClause.shiftId = shiftId as string;
-    
+    // Date range is shared by the visibility sub-query below, so build it first.
     if (startDate && endDate) {
-      whereClause.date = {
-        gte: startDate as string,
-        lte: endDate as string
-      };
+      whereClause.date = { gte: startDate as string, lte: endDate as string };
     } else if (startDate) {
       whereClause.date = startDate as string;
+    }
+
+    if (shiftId) whereClause.shiftId = shiftId as string;
+
+    if (isAdmin) {
+      // Admins/managers may filter by any user and see draft + published rosters.
+      if (userId) whereClause.userId = userId as string;
+    } else {
+      // Non-admins never see drafts, and the roster's privacy mode is enforced
+      // here (not on the client) so shifts can't be pulled just by knowing the URL.
+      whereClause.isPublished = true;
+      const selfId = req.user!.userId;
+      const settings = await prisma.restaurantSettings.findUnique({
+        where: { restaurantId },
+        select: { staffScheduleView: true }
+      });
+      const scheduleView = settings?.staffScheduleView || 'OWN_ONLY';
+
+      if (scheduleView === 'OWN_ONLY') {
+        // Only your own shifts — any client-supplied userId is ignored.
+        whereClause.userId = selfId;
+      } else if (scheduleView === 'SHIFT_TEAM') {
+        // Only shifts you are on that day: find your own (shift, date) pairs, then
+        // return every assignment sharing one of those pairs (you + teammates).
+        const own = await prisma.shiftAssignment.findMany({
+          where: {
+            shift: { restaurantId },
+            isPublished: true,
+            userId: selfId,
+            ...(whereClause.date ? { date: whereClause.date } : {})
+          },
+          select: { shiftId: true, date: true }
+        });
+        if (own.length === 0) {
+          return successResponse(res, []);
+        }
+        whereClause.OR = own.map(o => ({ shiftId: o.shiftId, date: o.date }));
+      }
+      // FULL_ROSTER: no ownership filter — all published assignments are visible.
     }
 
     const assignments = await prisma.shiftAssignment.findMany({
