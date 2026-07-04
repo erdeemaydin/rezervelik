@@ -241,7 +241,7 @@ module.exports = {
       name: 'dining-api',
       cwd: '/home/deploy/dining-reservation',
       script: 'dist/server.js',
-      instances: 1,                 // MUST be 1 — the price-updater worker runs in-process
+      exec_mode: 'fork',            // fork (NOT cluster) — the price-updater worker runs in-process; never run >1
       env: { NODE_ENV: 'production' },
     },
     {
@@ -266,13 +266,17 @@ pm2 status
 
 ## 8. Bootstrap the first super admin
 
-With the API running (via the local port for now):
+With the API running, on the server. The JSON field is **`secretToken`** and it must
+equal `SETUP_SECRET_TOKEN` in your `.env`. This reads the token straight from `.env`
+so you don't mis-paste it — just replace the email/password/name values:
 ```bash
+TOKEN=$(grep '^SETUP_SECRET_TOKEN=' .env | cut -d= -f2- | tr -d '"')
 curl -X POST http://127.0.0.1:3000/api/system/setup-super-admin \
   -H "Content-Type: application/json" \
-  -d '{"token":"<SETUP_SECRET_TOKEN from .env>","email":"you@YOUR_DOMAIN","password":"a-strong-password","firstName":"You","lastName":"Admin"}'
+  -d "{\"secretToken\":\"$TOKEN\",\"email\":\"you@YOUR_DOMAIN\",\"password\":\"a-strong-password\",\"firstName\":\"You\",\"lastName\":\"Admin\"}"
 ```
-(Confirm the exact body fields against `src/controllers/systemController.ts` if it errors.)
+> If you edited `.env` *after* starting PM2, run `pm2 restart dining-api` first so the
+> process picks up the token. A 403 means `secretToken` didn't match `SETUP_SECRET_TOKEN`.
 
 ---
 
