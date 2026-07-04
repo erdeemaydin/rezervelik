@@ -50,18 +50,10 @@ export default function LoginPage() {
     defaultValues: { email: '', password: '' },
   });
 
-  useEffect(() => {
-    if (isAuthenticated) {
-      if (user?.role === 'SUPER_ADMIN') {
-        window.location.href = '/system-admin/tenants';
-      } else {
-        window.location.href = '/dashboard';
-      }
-    }
-  }, [isAuthenticated, user]);
-
   const finishLogin = (token: string, user: any) => {
     login(token, user);
+    if (user.role === 'SUPER_ADMIN') window.location.href = '/system-admin/tenants';
+    else window.location.href = '/dashboard';
   };
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
