@@ -1,0 +1,24 @@
+name: Post-deploy smoke
+
+# Run AFTER a deployment to verify the live instance is healthy. Trigger it
+# manually (Actions → Run workflow) or call it as the last step of your CD
+# pipeline. Configure the target via repository/environment secrets.
+on:
+  workflow_dispatch:
+  workflow_call:
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Smoke test the live instance
+        env:
+          SMOKE_BASE_URL: ${{ secrets.SMOKE_BASE_URL }}
+          SMOKE_EMAIL: ${{ secrets.SMOKE_EMAIL }}
+          SMOKE_PASSWORD: ${{ secrets.SMOKE_PASSWORD }}
+          SMOKE_RESTAURANT_ID: ${{ secrets.SMOKE_RESTAURANT_ID }}
+        run: node scripts/smoke-test.mjs
