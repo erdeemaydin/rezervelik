@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import Cookies from 'js-cookie';
+import { readAuth, writeAuth, clearAuth } from '@/lib/authStorage';
 
 interface User {
   id: string;
@@ -13,30 +13,43 @@ interface User {
 
 interface AuthState {
   user: User | null;
+  token: string | null;
   isAuthenticated: boolean;
   login: (token: string, user: User) => void;
   logout: () => void;
 }
 
+const parseUser = (raw?: string): User | null => {
+  if (!raw) return null;
+  try {
+    return JSON.parse(raw) as User;
+  } catch {
+    return null;
+  }
+};
+
 export const useAuthStore = create<AuthState>((set) => {
-  const savedUser = Cookies.get('user');
-  
+  const savedToken = readAuth('token');
+  const savedUser = parseUser(readAuth('user'));
+
   return {
-    user: savedUser ? JSON.parse(savedUser) : null,
-    isAuthenticated: !!Cookies.get('token'),
-    
+    user: savedUser,
+    token: savedToken ?? null,
+    // In-memory token is the runtime source of truth; persisted storage only
+    // needs to survive a reload. Requiring both a token and a user avoids a
+    // half-hydrated "ghost" session.
+    isAuthenticated: !!savedToken && !!savedUser,
+
     login: (token, user) => {
-      Cookies.set('token', token, { expires: 1 });
-      Cookies.set('restaurantId', user.restaurantId, { expires: 1 });
-      Cookies.set('user', JSON.stringify(user), { expires: 1 });
-      set({ user, isAuthenticated: true });
+      writeAuth('token', token);
+      writeAuth('restaurantId', user.restaurantId);
+      writeAuth('user', JSON.stringify(user));
+      set({ user, token, isAuthenticated: true });
     },
-    
+
     logout: () => {
-      Cookies.remove('token');
-      Cookies.remove('restaurantId');
-      Cookies.remove('user');
-      set({ user: null, isAuthenticated: false });
+      clearAuth();
+      set({ user: null, token: null, isAuthenticated: false });
     },
   };
 });

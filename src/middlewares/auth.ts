@@ -47,7 +47,10 @@ export const roleMiddleware = (roles: string[]) => {
   };
 };
 
-export const requirePermission = (requiredPermission: string) => {
+export const requirePermission = (
+  requiredPermission: string,
+  options: { allowRoles?: string[] } = {}
+) => {
   return async (req: Request, res: Response, next: NextFunction) => {
     if (!req.user) {
       return errorResponse(res, 'errors.unauthorized', 401);
@@ -55,6 +58,13 @@ export const requirePermission = (requiredPermission: string) => {
 
     // Super Admin and Tenant Admin have full access bypass
     if (req.user.role === 'SUPER_ADMIN' || req.user.role === 'ADMIN') {
+      return next();
+    }
+
+    // Additional roles that are always granted this permission (e.g. MANAGER for
+    // back-office "view_*" permissions) without needing it in their permission
+    // string. Keeps existing users working without a data migration.
+    if (options.allowRoles && options.allowRoles.includes(req.user.role)) {
       return next();
     }
 

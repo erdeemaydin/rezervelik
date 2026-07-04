@@ -32,7 +32,12 @@ export default function SystemAdminLayout({ children }: SystemAdminLayoutProps) 
 
   useEffect(() => {
     setMounted(true);
-    if (user && user.role !== 'SUPER_ADMIN') {
+    // Server-side route protection was removed (token is in localStorage, not a
+    // cookie), so guard here: bounce unauthenticated users to login, and
+    // non-superadmins to their tenant dashboard.
+    if (!user) {
+      router.push('/auth/login');
+    } else if (user.role !== 'SUPER_ADMIN') {
       router.push('/dashboard');
     }
   }, [user, router]);

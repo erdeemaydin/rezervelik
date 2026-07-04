@@ -20,12 +20,14 @@ import {
   Tablet
 } from 'lucide-react';
 import { useAuthStore } from '@/store/useAuthStore';
+import { useFormatStore } from '@/store/useFormatStore';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import { useTranslation } from '@/i18n/provider';
+import Cookies from 'js-cookie';
 
 interface AdminLayoutProps {
   children: ReactNode;
@@ -45,6 +47,35 @@ interface NavSection {
   items: NavItem[];
 }
 
+// Permission required to open each dashboard route. Enforced here so a page can't
+// be reached just by pasting its URL — the backend rejects the underlying data
+// calls too, this is the matching client-side guard. Longest prefix wins; routes
+// not listed (profile, scheduling) are open to any authenticated staff member.
+const ROUTE_PERMS: { prefix: string; perm: string; exact?: boolean }[] = [
+  { prefix: '/dashboard', perm: 'view_analytics', exact: true },
+  { prefix: '/dashboard/analytics', perm: 'view_analytics' },
+  { prefix: '/dashboard/payments', perm: 'view_payments' },
+  { prefix: '/dashboard/reviews', perm: 'view_reviews' },
+  { prefix: '/dashboard/reservations', perm: 'manage_reservations' },
+  { prefix: '/dashboard/host', perm: 'manage_reservations' },
+  { prefix: '/dashboard/calendar', perm: 'manage_calendar' },
+  { prefix: '/dashboard/tables', perm: 'manage_tables' },
+  { prefix: '/dashboard/menus', perm: 'manage_menu' },
+  { prefix: '/dashboard/wait-time', perm: 'manage_settings' },
+  { prefix: '/dashboard/staff', perm: 'manage_staff' },
+  { prefix: '/dashboard/customization', perm: 'manage_settings' },
+  { prefix: '/dashboard/settings', perm: 'manage_settings' },
+];
+
+const requiredPermForPath = (path: string): string | undefined => {
+  const matches = ROUTE_PERMS.filter(r =>
+    r.exact ? path === r.prefix : (path === r.prefix || path.startsWith(`${r.prefix}/`))
+  );
+  if (matches.length === 0) return undefined;
+  // Longest prefix wins so /dashboard/analytics beats the exact /dashboard rule.
+  return matches.sort((a, b) => b.prefix.length - a.prefix.length)[0].perm;
+};
+
 export default function AdminLayout({ children }: AdminLayoutProps) {
   const pathname = usePathname();
   const router = useRouter();
@@ -52,22 +83,32 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
   const [tenantSettings, setTenantSettings] = useState<any>(null);
-  const { t } = useTranslation();
+  const { t, setLocale } = useTranslation();
 
   useEffect(() => {
     setIsMounted(true);
-    if (window.innerWidth >= 768) {
+    // Only desktop (lg+) auto-opens; tablets keep the sidebar as a closed overlay.
+    if (window.innerWidth >= 1024) {
       setIsSidebarOpen(true);
     }
-    
+
     if (isAuthenticated) {
       // Fetch tenant settings to check feature flags
       import('@/lib/api').then(({ default: api }) => {
         api.get('/settings').then((res) => {
           setTenantSettings(res.data.data);
+          // Hydrate the platform-wide date/time convention for the whole dashboard.
+          useFormatStore.getState().setSystem(res.data.data?.measurementSystem || 'METRIC');
+          // Apply the tenant's default UI language (set by the root admin) for users
+          // who haven't picked one yet. An explicit choice (NEXT_LOCALE cookie) wins.
+          const def = res.data.data?.defaultLanguage;
+          if (def && !Cookies.get('NEXT_LOCALE')) {
+            setLocale(def);
+          }
         }).catch(err => console.error('Failed to fetch settings:', err));
       });
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAuthenticated]);
 
   // AUTH GUARD - Prevent "ghost" staff login
@@ -79,8 +120,8 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
 
   const navigation: NavSection[] = [
     { section: t('systemAdmin.globalOverview') || 'Overview', items: [
-      { name: t('admin.dashboard'), href: '/dashboard', icon: LayoutDashboard },
-      { name: t('admin.analytics'), href: '/dashboard/analytics', icon: BarChart3, badge: 'New' },
+      { name: t('admin.dashboard'), href: '/dashboard', icon: LayoutDashboard, perm: 'view_analytics' },
+      { name: t('admin.analytics'), href: '/dashboard/analytics', icon: BarChart3, badge: 'New', perm: 'view_analytics' },
     ]},
     { section: t('admin.sectionOperations'), items: [
       { name: t('admin.reservations'), href: '/dashboard/reservations', icon: Calendar, badge: '12', perm: 'manage_reservations' },
@@ -90,20 +131,25 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
       { name: t('admin.menuManagement'), href: '/dashboard/menus', icon: UtensilsCrossed, perm: 'manage_menu', feature: 'hasMenuFeature' },
       { name: t('admin.waitlist'), href: '/dashboard/wait-time', icon: Clock, badge: 'Live', perm: 'manage_settings', feature: 'hasWaitTimeFeature' },
       { name: t('admin.staffSchedule'), href: '/dashboard/scheduling', icon: Calendar, badge: 'New', feature: 'hasShiftFeature' },
-      { name: t('admin.timesheet'), href: '/dashboard/timesheet', icon: Clock },
     ]},
     { section: t('admin.sectionAdministration'), items: [
-      { name: t('admin.payments'), href: '/dashboard/payments', icon: CreditCard, feature: 'hasPaymentFeature' },
+      { name: t('admin.payments'), href: '/dashboard/payments', icon: CreditCard, feature: 'hasPaymentFeature', perm: 'view_payments' },
       { name: t('admin.staffMembers'), href: '/dashboard/staff', icon: Users, perm: 'manage_staff' },
-      { name: t('admin.reviews'), href: '/dashboard/reviews', icon: MessageSquare },
+      { name: t('admin.reviews'), href: '/dashboard/reviews', icon: MessageSquare, perm: 'view_reviews' },
       { name: t('admin.customization'), href: '/dashboard/customization', icon: Settings, perm: 'manage_settings' },
       { name: t('admin.settings'), href: '/dashboard/settings', icon: Settings, perm: 'manage_settings' },
     ]}
   ];
 
+  // Back-office "view_*" permissions that MANAGER always has (mirrors the backend
+  // `allowRoles: ['MANAGER']` guards) so existing managers keep access without a
+  // permission-string migration.
+  const MANAGER_VIEW_PERMS = ['view_analytics', 'view_payments', 'view_reviews'];
+
   const hasPermission = (perm?: string) => {
     if (!perm) return true;
     if (user?.role === 'SUPER_ADMIN' || user?.role === 'ADMIN') return true;
+    if (user?.role === 'MANAGER' && MANAGER_VIEW_PERMS.includes(perm)) return true;
     if (user?.role === 'HOST' && (perm === 'manage_reservations' || perm === 'manage_tables')) return true;
     if (!user?.permissions) return false;
     return user.permissions.includes(perm);
@@ -115,6 +161,21 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
     return tenantSettings[feature] !== false;
   };
 
+  // Route-level authorization: if the current page needs a permission the user
+  // lacks, bounce them to the first page they can open (or their profile). This
+  // stops direct-URL access to dashboards they aren't assigned.
+  useEffect(() => {
+    if (!isMounted || !isAuthenticated || !user) return;
+    const needed = requiredPermForPath(pathname);
+    if (needed && !hasPermission(needed)) {
+      const firstAllowed = navigation
+        .flatMap(g => g.items)
+        .find(item => hasPermission(item.perm) && hasFeature(item.feature));
+      router.replace(firstAllowed ? firstAllowed.href : '/dashboard/profile');
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isMounted, isAuthenticated, user, pathname, tenantSettings]);
+
   const handleLogout = () => {
     logout();
     router.push('/auth/login');
@@ -123,35 +184,75 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
   if (!isMounted) return null; // Avoid hydration mismatch
   if (!isAuthenticated) return null; // Wait for redirect
 
+  // Don't mount the page (and let it fire its data request → 403) if the user
+  // isn't allowed here; the effect above redirects them. Show chrome + spinner.
+  const routeRequiredPerm = requiredPermForPath(pathname);
+  const routeAuthorized = !routeRequiredPerm || hasPermission(routeRequiredPerm);
+
   return (
     <div className="flex min-h-screen bg-[#f8fafc]">
-      {/* Mobile overlay */}
+      {/* Mobile/tablet overlay — clicking anywhere off the sidebar closes it. */}
       {isSidebarOpen && (
-        <div 
-          className="fixed inset-0 bg-slate-900/50 z-40 md:hidden backdrop-blur-sm"
+        <div
+          className="fixed inset-0 bg-slate-900/50 z-40 lg:hidden backdrop-blur-sm"
           onClick={() => setIsSidebarOpen(false)}
         />
       )}
 
-      {/* Sidebar */}
-      <aside 
+      {/* Floating open button — only on mobile/tablet when the sidebar is hidden.
+          Bright/colored so it's obviously the way to reveal navigation. */}
+      {!isSidebarOpen && (
+        <button
+          onClick={() => setIsSidebarOpen(true)}
+          aria-label="Open navigation"
+          className="lg:hidden fixed top-3 left-3 z-40 w-11 h-11 rounded-xl bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-600/30 flex items-center justify-center active:scale-95 transition-all"
+        >
+          <ChevronRight className="w-6 h-6 stroke-[2.5]" />
+        </button>
+      )}
+
+      {/* Sidebar — below lg it fully hides off-canvas and overlays when open (no
+          layout push); at lg+ it collapses to a 16-unit icon rail as before. */}
+      <aside
         className={cn(
-          "bg-[#0f172a] text-slate-300 transition-all duration-300 ease-in-out flex flex-col z-50 shadow-xl fixed md:sticky top-0 h-screen",
-          isSidebarOpen ? "w-64 translate-x-0" : "w-64 -translate-x-full md:w-16 md:translate-x-0"
+          "bg-[#0f172a] text-slate-300 transition-all duration-300 ease-in-out flex flex-col z-50 shadow-xl fixed lg:sticky top-0 h-screen",
+          isSidebarOpen ? "w-64 translate-x-0" : "w-64 -translate-x-full lg:w-16 lg:translate-x-0"
         )}
       >
-        {/* Sidebar Header */}
-        <div className="h-16 flex items-center px-4 border-b border-slate-800 bg-[#1e293b]/20">
-          <div className="flex items-center gap-3 overflow-hidden">
-            <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center shrink-0">
-              <UtensilsCrossed className="w-5 h-5 text-white" />
-            </div>
-            {isSidebarOpen && (
-              <span className="font-black text-sm tracking-tight text-white uppercase whitespace-nowrap">
-                Reserve<span className="text-blue-500">Pro</span>
-              </span>
-            )}
-          </div>
+        {/* Sidebar Header — logo + collapse/expand toggle (works on desktop too,
+            since there's no top bar anymore). */}
+        <div className="h-16 flex items-center justify-between px-3 border-b border-slate-800 bg-[#1e293b]/20">
+          {isSidebarOpen ? (
+            <>
+              <div className="flex items-center gap-3 overflow-hidden">
+                <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center shrink-0">
+                  <UtensilsCrossed className="w-5 h-5 text-white" />
+                </div>
+                <span className="font-black text-sm tracking-tight text-white uppercase whitespace-nowrap">
+                  Reserve<span className="text-blue-500">Pro</span>
+                </span>
+              </div>
+              <button
+                onClick={() => setIsSidebarOpen(false)}
+                aria-label="Collapse navigation"
+                className="text-slate-400 hover:text-white hover:bg-slate-800/60 rounded-md w-8 h-8 flex items-center justify-center shrink-0"
+              >
+                <ChevronLeft className="w-5 h-5" />
+              </button>
+            </>
+          ) : (
+            <button
+              onClick={() => setIsSidebarOpen(true)}
+              aria-label="Expand navigation"
+              title="Expand"
+              className="w-full flex items-center justify-center group"
+            >
+              <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center shrink-0 group-hover:hidden">
+                <UtensilsCrossed className="w-5 h-5 text-white" />
+              </div>
+              <ChevronRight className="w-6 h-6 text-blue-400 hidden group-hover:block" />
+            </button>
+          )}
         </div>
 
         {/* Sidebar Navigation */}
@@ -176,7 +277,8 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
                           <Link
                             href={item.href}
                             onClick={(e) => {
-                              if (window.innerWidth < 768) {
+                              // Below lg the sidebar is an overlay — close it after navigating.
+                              if (window.innerWidth < 1024) {
                                 setIsSidebarOpen(false);
                               } else if (!isSidebarOpen) {
                                 e.preventDefault();
@@ -216,66 +318,76 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
           </div>
         </nav>
 
-        {/* Sidebar Footer */}
-        <div className="p-4 border-t border-slate-800 bg-[#1e293b]/20 mt-auto">
-          <div className="flex items-center gap-3 px-2">
-             <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-             <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">System Online</span>
+        {/* Sidebar Footer — the account area. All the old top-bar controls
+            (profile/user settings, language, logout) live here now. */}
+        <div className="border-t border-slate-800 bg-[#1e293b]/20 mt-auto">
+          {isSidebarOpen ? (
+            <div className="p-3 space-y-2">
+              <span className="block px-1 text-[9px] font-black uppercase tracking-[0.18em] text-slate-500">{t('admin.userSettings')}</span>
+              <Link
+                href="/dashboard/profile"
+                onClick={() => { if (window.innerWidth < 1024) setIsSidebarOpen(false); }}
+                title={t('admin.userSettings')}
+                className="flex items-center gap-3 p-2 rounded-md hover:bg-slate-800/60 transition-colors group"
+              >
+                <Avatar className="w-9 h-9 border border-slate-700 shrink-0">
+                  <AvatarImage src={`https://avatar.iran.liara.run/username?username=${user?.firstName}+${user?.lastName}`} />
+                  <AvatarFallback className="bg-blue-600 text-white text-[10px] font-black uppercase">{user?.firstName?.[0]}{user?.lastName?.[0]}</AvatarFallback>
+                </Avatar>
+                <div className="flex flex-col min-w-0 flex-1">
+                  <span className="text-xs font-black text-white truncate capitalize">{user?.firstName} {user?.lastName}</span>
+                  <span className="text-[9px] font-bold text-blue-400 uppercase tracking-tighter">{user?.role}</span>
+                </div>
+                <Settings className="w-4 h-4 text-slate-500 group-hover:text-white transition-colors shrink-0" />
+              </Link>
+              <div className="flex items-center justify-between gap-2 pt-2 border-t border-slate-800/60">
+                <LanguageSwitcher />
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleLogout}
+                  className="text-slate-400 hover:text-red-400 hover:bg-red-500/10 font-bold text-xs gap-2 px-2 h-9"
+                >
+                  <LogOut className="w-4 h-4" /> {t('admin.logout')}
+                </Button>
+              </div>
+            </div>
+          ) : (
+            /* Collapsed rail: icon-only profile + logout. */
+            <div className="py-3 flex flex-col items-center gap-2">
+              <Link href="/dashboard/profile" title={t('admin.userSettings')}>
+                <Avatar className="w-8 h-8 border border-slate-700">
+                  <AvatarImage src={`https://avatar.iran.liara.run/username?username=${user?.firstName}+${user?.lastName}`} />
+                  <AvatarFallback className="bg-blue-600 text-white text-[9px] font-black uppercase">{user?.firstName?.[0]}{user?.lastName?.[0]}</AvatarFallback>
+                </Avatar>
+              </Link>
+              <button
+                onClick={handleLogout}
+                title={t('admin.logout')}
+                className="text-slate-400 hover:text-red-400 hover:bg-red-500/10 w-8 h-8 flex items-center justify-center rounded-md transition-colors"
+              >
+                <LogOut className="w-4 h-4" />
+              </button>
+            </div>
+          )}
+          <div className="px-4 py-2 flex items-center gap-2 border-t border-slate-800/60 justify-center lg:justify-start">
+            <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shrink-0" />
+            {isSidebarOpen && <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">System Online</span>}
           </div>
         </div>
       </aside>
 
-      {/* Main Content Area */}
+      {/* Main Content Area — no top bar; all account/nav controls live in the sidebar. */}
       <div className="flex-1 flex flex-col min-w-0 relative">
-        {/* Header */}
-        <header className="h-20 bg-white border-b border-slate-100 flex items-center justify-between px-6 md:px-10 shrink-0 z-40 shadow-sm shadow-slate-200/20 sticky top-0">
-          <div className="flex items-center gap-4">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-              className="text-slate-500 hover:bg-slate-50"
-            >
-              {isSidebarOpen ? <ChevronLeft className="w-5 h-5" /> : <ChevronRight className="w-5 h-5" />}
-            </Button>
-            <div className="h-4 w-px bg-slate-200" />
-            <div className="flex items-center gap-2">
-              <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">{t('admin.zone')}:</span>
-              <Badge variant="outline" className="text-[10px] font-black uppercase border-blue-200 text-blue-600 bg-blue-50">
-                {t('admin.mainDiningRoom')}
-              </Badge>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-4">
-            <LanguageSwitcher />
-            <Link href="/dashboard/profile" title={t('profile.title')} className="flex items-center gap-3 pr-4 border-r border-slate-100 rounded-md hover:bg-slate-50 transition-colors py-1 pl-2 -ml-2 cursor-pointer">
-              <div className="flex flex-col items-end hidden sm:flex">
-                <span className="text-xs font-black text-slate-800 truncate capitalize">{user?.firstName} {user?.lastName}</span>
-                <span className="text-[9px] font-bold text-blue-600 uppercase tracking-tighter">{user?.role}</span>
-              </div>
-              <Avatar className="w-9 h-9 border-2 border-slate-100 ring-2 ring-blue-50">
-                <AvatarImage src={`https://avatar.iran.liara.run/username?username=${user?.firstName}+${user?.lastName}`} />
-                <AvatarFallback className="bg-blue-600 text-white text-[10px] font-black uppercase">{user?.firstName?.[0]}{user?.lastName?.[0]}</AvatarFallback>
-              </Avatar>
-            </Link>
-            
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleLogout}
-              className="text-slate-500 hover:text-red-600 hover:bg-red-50 font-bold text-xs gap-2 px-3 h-9"
-            >
-              <LogOut className="w-4 h-4" />
-              <span className="hidden md:inline">{t('admin.logout')}</span>
-            </Button>
-          </div>
-        </header>
-
-        {/* Scrollable Content */}
-        <main className="flex-1 p-6 md:p-12">
+        {/* Scrollable Content. Mobile/tablet gets minimal padding (and top space for
+            the floating menu button) so the dashboard uses the full screen. */}
+        <main className="flex-1 p-3 pt-16 sm:p-4 sm:pt-16 lg:p-6 lg:pt-6">
           <div className="mx-auto max-w-full">
-            {children}
+            {routeAuthorized ? children : (
+              <div className="flex items-center justify-center h-[60vh]">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600" />
+              </div>
+            )}
           </div>
         </main>
       </div>

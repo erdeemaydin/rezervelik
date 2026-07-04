@@ -34,19 +34,16 @@ export function proxy(request: NextRequest) {
 
   const response = NextResponse.next();
 
-  // Auth logic
-  const token = request.cookies.get('token')?.value;
-  const isAuthPage = pathname.startsWith('/auth');
-  const isDashboardPage = pathname.startsWith('/dashboard') || pathname.startsWith('/system-admin');
+  // NOTE: route protection is intentionally NOT done here. The session token
+  // lives in localStorage (not a cookie), so this server-side proxy cannot read
+  // it — gating on a `token` cookie here would redirect every browser to /login
+  // even when logged in. Access control is enforced in two places instead:
+  //   1. The backend rejects any data request without a valid Bearer token.
+  //   2. AdminLayout / SystemAdminLayout redirect unauthenticated users on the
+  //      client. The dashboard pages are client shells with no server-rendered
+  //      private data, so serving the empty shell before that redirect is safe.
+  // See src/lib/authStorage.ts for why the token is not a cookie.
 
-  if (!token && isDashboardPage) {
-    return NextResponse.redirect(new URL('/auth/login', request.url));
-  }
-
-  if (token && isAuthPage && !pathname.includes('setup')) {
-    return NextResponse.redirect(new URL('/dashboard', request.url));
-  }
-  
   // Check if NEXT_LOCALE cookie exists
   let locale = request.cookies.get('NEXT_LOCALE')?.value;
   

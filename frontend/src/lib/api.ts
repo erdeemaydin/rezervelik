@@ -1,10 +1,14 @@
 import axios from 'axios';
-import Cookies from 'js-cookie';
+import { readAuth, clearAuth } from '@/lib/authStorage';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || (typeof window !== 'undefined' ? `${window.location.protocol}//${window.location.hostname}:3000/api` : 'http://localhost:3000/api');
 
 const api = axios.create({
   baseURL: API_URL,
+  // Without a timeout a request to an unreachable backend hangs forever, so the
+  // UI just sits there with no error (e.g. a phone that can load the frontend on
+  // :3001 but can't reach the API on :3000). Fail fast so the catch blocks show it.
+  timeout: 20000,
   headers: {
     'Content-Type': 'application/json',
   },
@@ -12,13 +16,16 @@ const api = axios.create({
 
 api.interceptors.request.use(
   (config) => {
-    const token = Cookies.get('token');
-    const restaurantId = Cookies.get('restaurantId');
+    // Read straight from authStorage (in-memory cache → localStorage → legacy
+    // cookie). No store coupling here, so a Fast Refresh that re-creates the
+    // Zustand singleton can't desync the token the interceptor sends.
+    const authToken = readAuth('token');
+    const restaurantId = readAuth('restaurantId');
 
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
+    if (authToken) {
+      config.headers.Authorization = `Bearer ${authToken}`;
     }
-    
+
     if (restaurantId) {
       config.headers['X-Restaurant-ID'] = restaurantId;
     }
@@ -33,9 +40,7 @@ api.interceptors.response.use(
   (error) => {
     if (error.response?.status === 401) {
       if (typeof window !== 'undefined' && !window.location.pathname.startsWith('/auth/')) {
-        Cookies.remove('token');
-        Cookies.remove('restaurantId');
-        Cookies.remove('user');
+        clearAuth(); // wipe storage; the full reload below re-inits the store as logged-out
         window.location.href = '/auth/login';
       }
     }

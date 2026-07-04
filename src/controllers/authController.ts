@@ -6,6 +6,22 @@ import { successResponse, errorResponse } from '../utils/response';
 import { hashResetToken } from '../utils/resetToken';
 import { generateOtpSecret, verifyTotp, buildOtpAuthUrl } from '../utils/totp';
 
+// Whether a given user is required to complete 2FA at login. The requirement is
+// role-based per restaurant (root admin enables the capability; the tenant admin
+// picks which roles it applies to). Root/system admins fall back to the legacy
+// per-user flag since they aren't scoped to a restaurant's settings.
+const userNeedsOtp = async (user: { role: string; restaurantId: string | null; otpRequired: boolean }): Promise<boolean> => {
+  if (user.role === 'SUPER_ADMIN') return user.otpRequired;
+  if (!user.restaurantId) return false;
+  const s = await prisma.restaurantSettings.findUnique({
+    where: { restaurantId: user.restaurantId },
+    select: { twoFactorEnabled: true, twoFactorRoles: true }
+  });
+  if (!s?.twoFactorEnabled) return false;
+  const roles = s.twoFactorRoles ? s.twoFactorRoles.split(',').map(r => r.trim()).filter(Boolean) : [];
+  return roles.includes(user.role);
+};
+
 export const register = async (req: Request, res: Response) => {
   try {
     const { email, password, firstName, lastName, restaurantName } = req.body;
@@ -102,9 +118,9 @@ export const login = async (req: Request, res: Response) => {
       return errorResponse(res, 'errors.unauthorized', 401, { message: 'Invalid credentials' });
     }
 
-    // Two-factor gate: if the root admin requires OTP for this user, the password
-    // step alone does not grant a session — return a short-lived challenge instead.
-    if (user.otpRequired) {
+    // Two-factor gate: if this user's role requires OTP for their restaurant, the
+    // password step alone does not grant a session — return a challenge instead.
+    if (await userNeedsOtp(user)) {
       const enrolled = !!user.otpConfirmedAt && !!user.otpSecret;
       if (enrolled) {
         // Already set up: just ask for a code, verified against the stored secret.
@@ -168,7 +184,7 @@ export const loginVerifyOtp = async (req: Request, res: Response) => {
     }
 
     const user = await prisma.user.findUnique({ where: { id: userId } });
-    if (!user || !user.otpRequired) {
+    if (!user || !(await userNeedsOtp(user))) {
       return errorResponse(res, 'errors.unauthorized', 401, { message: 'Invalid credentials' });
     }
 

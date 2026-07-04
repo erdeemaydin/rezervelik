@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -38,7 +38,17 @@ interface OtpChallenge {
 export default function LoginPage() {
   const router = useRouter();
   const login = useAuthStore((state) => state.login);
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+  const currentUser = useAuthStore((state) => state.user);
   const [error, setError] = useState('');
+
+  // Server-side proxy no longer bounces logged-in users off /auth/login (token
+  // is in localStorage, not a readable cookie) — do it on the client instead.
+  useEffect(() => {
+    if (isAuthenticated && currentUser) {
+      router.replace(currentUser.role === 'SUPER_ADMIN' ? '/system-admin/tenants' : '/dashboard');
+    }
+  }, [isAuthenticated, currentUser, router]);
 
   // Second-factor challenge, present only when the account requires OTP.
   const [challenge, setChallenge] = useState<OtpChallenge | null>(null);
@@ -52,8 +62,8 @@ export default function LoginPage() {
 
   const finishLogin = (token: string, user: any) => {
     login(token, user);
-    if (user.role === 'SUPER_ADMIN') window.location.href = '/system-admin/tenants';
-    else window.location.href = '/dashboard';
+    if (user.role === 'SUPER_ADMIN') router.push('/system-admin/tenants');
+    else router.push('/dashboard');
   };
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
