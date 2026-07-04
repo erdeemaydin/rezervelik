@@ -16,7 +16,12 @@ out/
 prisma/dev.db
 prisma/dev.db-journal
 *.db
+*.db-journal
 *.sqlite
+
+# Test artifacts
+prisma/schema.test.prisma
+coverage/
 
 # Environment variables
 .env
