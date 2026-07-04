@@ -8,7 +8,14 @@ export const getSettings = async (req: Request, res: Response) => {
     const settings = await prisma.restaurantSettings.findUnique({
       where: { restaurantId }
     });
-    return successResponse(res, settings);
+    // The date/time display convention is a platform-wide choice made by the root
+    // system admin (GlobalSettings). Surface it here so the tenant dashboard can
+    // render dates/times consistently without needing SUPER_ADMIN access.
+    const global = await prisma.globalSettings.findUnique({ where: { id: 'global_1' } });
+    return successResponse(res, {
+      ...settings,
+      measurementSystem: global?.measurementSystem || 'METRIC',
+    });
   } catch (error) {
     return errorResponse(res, 'errors.internal_error', 500);
   }
@@ -17,21 +24,39 @@ export const getSettings = async (req: Request, res: Response) => {
 export const updateSettings = async (req: Request, res: Response) => {
   try {
     const restaurantId = req.restaurantId!;
-    const { 
-      isReservationEnabled, 
-      logic, 
-      defaultDurationMinutes, 
-      isPaidReservationEnabled, 
-      depositAmount, 
-      currency,
+    const {
+      isReservationEnabled,
+      logic,
+      defaultDurationMinutes,
+      isPaidReservationEnabled,
+      depositAmount,
       operatingHours,
       schedulingSystem,
       staffScheduleView,
       timezone,
       maxPartySize,
       openingHour,
-      closingHour
+      closingHour,
+      defaultBreakMinutes,
+      twoFactorRoles
     } = req.body;
+    // Note: `currency` is intentionally NOT read here — it is a root-admin-only
+    // (system) setting. Tenant admins can view it but cannot change it.
+
+    // The set of roles that must use 2FA is only meaningful when the root admin
+    // has enabled the 2FA capability for this restaurant. Guard against a tenant
+    // turning it on for themselves by checking the current capability flag.
+    let twoFactorRolesUpdate: any = undefined;
+    if (twoFactorRoles !== undefined) {
+      const current = await prisma.restaurantSettings.findUnique({
+        where: { restaurantId },
+        select: { twoFactorEnabled: true }
+      });
+      if (current?.twoFactorEnabled) {
+        const roles = Array.isArray(twoFactorRoles) ? twoFactorRoles.join(',') : String(twoFactorRoles || '');
+        twoFactorRolesUpdate = roles;
+      }
+    }
 
     // Clamp the service window to valid whole hours (0-23), opening strictly before closing.
     const clampHour = (v: any, fallback: number) => {
@@ -48,14 +73,15 @@ export const updateSettings = async (req: Request, res: Response) => {
         defaultDurationMinutes,
         isPaidReservationEnabled,
         depositAmount,
-        currency,
         operatingHours,
         schedulingSystem,
         staffScheduleView,
         timezone,
         maxPartySize: maxPartySize != null ? parseInt(maxPartySize) : undefined,
         openingHour: openingHour != null ? clampHour(openingHour, 10) : undefined,
-        closingHour: closingHour != null ? clampHour(closingHour, 23) : undefined
+        closingHour: closingHour != null ? clampHour(closingHour, 23) : undefined,
+        defaultBreakMinutes: defaultBreakMinutes != null ? Math.max(0, parseInt(defaultBreakMinutes) || 0) : undefined,
+        ...(twoFactorRolesUpdate !== undefined ? { twoFactorRoles: twoFactorRolesUpdate } : {})
       }
     });
 

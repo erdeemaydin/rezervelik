@@ -10,7 +10,7 @@ import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import api from '@/lib/api';
 import { toast } from 'sonner';
-import { Save, Calendar, Clock, CreditCard, ArrowLeft, CalendarClock, AlertCircle, Check, Timer } from 'lucide-react';
+import { Save, Calendar, Clock, CreditCard, ArrowLeft, CalendarClock, AlertCircle, Check, Timer, ShieldCheck } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { PasswordConfirmDialog } from '@/components/auth/PasswordConfirmDialog';
@@ -20,6 +20,7 @@ interface RestaurantSettings {
     isReservationEnabled: boolean;
     logic: string;
     defaultDurationMinutes: number;
+    defaultBreakMinutes: number;
     isPaidReservationEnabled: boolean;
     depositAmount: number;
     currency: string;
@@ -30,6 +31,8 @@ interface RestaurantSettings {
     maxPartySize: number;
     openingHour: number;
     closingHour: number;
+    twoFactorEnabled: boolean;
+    twoFactorRoles: string;
 }
 
 // Common IANA timezones offered in the settings picker.
@@ -59,6 +62,7 @@ export default function SettingsPage() {
         isReservationEnabled: true,
         logic: 'DYNAMIC_DURATION',
         defaultDurationMinutes: 90,
+        defaultBreakMinutes: 0,
         isPaidReservationEnabled: false,
         depositAmount: 0,
         currency: 'TRY',
@@ -68,7 +72,9 @@ export default function SettingsPage() {
         timezone: 'Europe/Istanbul',
         maxPartySize: 8,
         openingHour: 10,
-        closingHour: 23
+        closingHour: 23,
+        twoFactorEnabled: false,
+        twoFactorRoles: ''
     });
 
     const fetchSettings = useCallback(async () => {
@@ -82,6 +88,7 @@ export default function SettingsPage() {
                     isReservationEnabled: data.isReservationEnabled ?? true,
                     logic: data.logic ?? 'DYNAMIC_DURATION',
                     defaultDurationMinutes: data.defaultDurationMinutes ?? 90,
+                    defaultBreakMinutes: data.defaultBreakMinutes ?? 0,
                     isPaidReservationEnabled: data.isPaidReservationEnabled ?? false,
                     depositAmount: data.depositAmount ?? 0,
                     currency: data.currency ?? 'TRY',
@@ -91,7 +98,9 @@ export default function SettingsPage() {
                     timezone: data.timezone ?? 'Europe/Istanbul',
                     maxPartySize: data.maxPartySize ?? 8,
                     openingHour: data.openingHour ?? 10,
-                    closingHour: data.closingHour ?? 23
+                    closingHour: data.closingHour ?? 23,
+                    twoFactorEnabled: data.twoFactorEnabled ?? false,
+                    twoFactorRoles: data.twoFactorRoles ?? ''
                 });
             }
         } catch (error) {
@@ -115,6 +124,15 @@ export default function SettingsPage() {
         } finally {
             setLoading(false);
         }
+    };
+
+    // Roles the tenant admin requires 2FA for (only editable when the root admin
+    // has enabled the 2FA capability for this restaurant).
+    const twoFactorRoleList = settings.twoFactorRoles ? settings.twoFactorRoles.split(',').filter(Boolean) : [];
+    const toggleTwoFactorRole = (role: string) => {
+        const set = new Set(twoFactorRoleList);
+        if (set.has(role)) set.delete(role); else set.add(role);
+        setSettings(prev => ({ ...prev, twoFactorRoles: Array.from(set).join(',') }));
     };
 
     const [futureModeAction, setFutureModeAction] = useState<string | null>(null);
@@ -248,8 +266,8 @@ export default function SettingsPage() {
                                         <Label className="text-xs font-bold text-slate-700">{t("settings.staffPrivacy")}</Label>
                                         <p className="text-[10px] text-slate-400">{t("settings.staffPrivacyDesc")}</p>
                                     </div>
-                                    <Select 
-                                        value={settings.staffScheduleView} 
+                                    <Select
+                                        value={settings.staffScheduleView}
                                         onValueChange={(v: string | null) => setSettings(prev => ({...prev, staffScheduleView: v || 'OWN_ONLY'}))}
                                     >
                                         <SelectTrigger className="h-9 text-xs font-bold rounded-sm w-full">
@@ -259,6 +277,30 @@ export default function SettingsPage() {
                                             <SelectItem value="OWN_ONLY" className="text-xs">{t("settings.onlyMyShifts")}</SelectItem>
                                             <SelectItem value="SHIFT_TEAM" className="text-xs">{t("settings.myShiftsAndTeam")}</SelectItem>
                                             <SelectItem value="FULL_ROSTER" className="text-xs">{t("settings.completeRoster")}</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                    {/* What the selected privacy mode actually exposes to staff. */}
+                                    <p className="text-[11px] text-slate-500 leading-relaxed bg-slate-50 border border-slate-100 rounded-md p-2.5">
+                                        {t(`settings.privacyExplain.${settings.staffScheduleView}`)}
+                                    </p>
+                                </div>
+
+                                <div className="pt-4 border-t border-slate-100 space-y-3">
+                                    <div className="space-y-0.5">
+                                        <Label className="text-xs font-bold text-slate-700">{t("settings.defaultBreak")}</Label>
+                                        <p className="text-[10px] text-slate-400">{t("settings.defaultBreakDesc")}</p>
+                                    </div>
+                                    <Select
+                                        value={String(settings.defaultBreakMinutes)}
+                                        onValueChange={(v: string | null) => setSettings(prev => ({...prev, defaultBreakMinutes: parseInt(v || '0') || 0}))}
+                                    >
+                                        <SelectTrigger className="h-9 text-xs font-bold rounded-sm w-full">
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {[0, 15, 30, 45, 60, 90].map(m => (
+                                                <SelectItem key={m} value={String(m)} className="text-xs">{m} {t("timesheet.min")}</SelectItem>
+                                            ))}
                                         </SelectContent>
                                     </Select>
                                 </div>
@@ -295,6 +337,10 @@ export default function SettingsPage() {
                                         <SelectItem value="FIXED_SLOTS" className="text-sm py-2">{t("settings.fixedTimeSlots")}</SelectItem>
                                         </SelectContent>
                                 </Select>
+                                {/* Explain how the chosen mode computes a booking's end time. */}
+                                <p className="text-[11px] text-slate-500 leading-relaxed bg-slate-50 border border-slate-100 rounded-md p-2.5">
+                                    {t(`settings.logicExplain.${settings.logic === 'DYNAMIC_DURATION' ? 'DYNAMIC_DURATION' : 'FIXED_SLOTS'}`)}
+                                </p>
                             </div>
                             <div className="grid gap-3 pt-2">
                                 <Label className="text-xs font-black uppercase tracking-wider text-slate-500">{t("settings.maxPartySize")}</Label>
@@ -362,20 +408,51 @@ export default function SettingsPage() {
                             </div>
                             <div className="grid gap-3 pt-2">
                                 <Label className="text-xs font-black uppercase tracking-wider text-slate-500">{t("settings.currency")}</Label>
-                                <Select value={settings.currency || 'TRY'} onValueChange={(v: string | null) => setSettings(prev => ({...prev, currency: v || 'TRY'}))}>
-                                    <SelectTrigger className="h-12 text-sm font-bold rounded-lg px-4">
-                                        <SelectValue placeholder={t("settings.selectCurrency")} />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="TRY" className="text-sm py-2">{t("settings.tryCurrency")}</SelectItem>
-                                        <SelectItem value="USD" className="text-sm py-2">{t("settings.usdCurrency")}</SelectItem>
-                                        <SelectItem value="EUR" className="text-sm py-2">{t("settings.eurCurrency")}</SelectItem>
-                                        <SelectItem value="GBP" className="text-sm py-2">{t("settings.gbpCurrency")}</SelectItem>
-                                    </SelectContent>
-                                </Select>
+                                {/* Currency is a platform-wide setting configured by the system
+                                    administrator — shown read-only to the tenant admin. */}
+                                <div className="h-12 flex items-center justify-between rounded-lg px-4 border border-slate-200 bg-slate-50">
+                                    <span className="text-base font-black text-slate-700">{settings.currency || 'TRY'}</span>
+                                    <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">{t("settings.currencyManagedBySystem")}</span>
+                                </div>
+                                <p className="text-[10px] text-slate-400 leading-relaxed">{t("settings.currencyHint")}</p>
                             </div>
                         </CardContent>
                     </Card>
+
+                    {/* Two-Factor Authentication — only shown when the root admin has
+                        enabled the capability for this restaurant. */}
+                    {settings.twoFactorEnabled && (
+                    <Card className="rounded-xl border-slate-200 shadow-sm overflow-hidden bg-white md:col-span-2">
+                        <CardHeader className="p-6 bg-slate-50/50 border-b border-slate-100 flex flex-row items-center gap-4">
+                            <div className="p-3 bg-rose-100 rounded-lg text-rose-600"><ShieldCheck className="w-6 h-6" /></div>
+                            <div>
+                                <CardTitle className="text-lg font-black uppercase tracking-tight">{t("settings.twoFactorTitle")}</CardTitle>
+                                <CardDescription className="text-sm">{t("settings.twoFactorDesc")}</CardDescription>
+                            </div>
+                        </CardHeader>
+                        <CardContent className="p-6 space-y-4">
+                            <p className="text-[11px] text-slate-500 leading-relaxed">{t("settings.twoFactorRolesHint")}</p>
+                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                                {['ADMIN', 'MANAGER', 'HOST', 'STAFF'].map(role => {
+                                    const active = twoFactorRoleList.includes(role);
+                                    return (
+                                        <button
+                                            key={role}
+                                            type="button"
+                                            onClick={() => toggleTwoFactorRole(role)}
+                                            className={`flex items-center justify-between gap-2 p-4 border-2 rounded-md transition-all ${active ? 'border-rose-500 bg-rose-50/60' : 'border-slate-100 hover:border-slate-300'}`}
+                                        >
+                                            <span className="font-black text-sm text-slate-800">{t(`settings.role.${role}`)}</span>
+                                            <span className={`w-4 h-4 rounded-sm border flex items-center justify-center ${active ? 'bg-rose-500 border-rose-500' : 'border-slate-300'}`}>
+                                                {active && <Check className="w-3 h-3 text-white" />}
+                                            </span>
+                                        </button>
+                                    );
+                                })}
+                            </div>
+                        </CardContent>
+                    </Card>
+                    )}
 
                     {/* Calendar Master Customization */}
                     <Card className="rounded-xl border-slate-200 shadow-sm overflow-hidden bg-white md:col-span-2">

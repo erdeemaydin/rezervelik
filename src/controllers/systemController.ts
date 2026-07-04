@@ -194,14 +194,17 @@ export const updateTenantSubscription = async (req: Request, res: Response) => {
 export const updateTenantSettings = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const { 
-      isVipEnabled, 
-      isInternalNotesEnabled, 
+    const {
+      isVipEnabled,
+      isInternalNotesEnabled,
       isCategoriesEnabled,
       hasWaitTimeFeature,
       hasShiftFeature,
       hasMenuFeature,
-      hasPaymentFeature
+      hasPaymentFeature,
+      currency,
+      twoFactorEnabled,
+      defaultLanguage
     } = req.body;
 
     const updated = await prisma.restaurantSettings.update({
@@ -213,7 +216,12 @@ export const updateTenantSettings = async (req: Request, res: Response) => {
         hasWaitTimeFeature,
         hasShiftFeature,
         hasMenuFeature,
-        hasPaymentFeature
+        hasPaymentFeature,
+        // Currency, the 2FA capability flag and the default language are
+        // root-admin-only controls.
+        ...(currency !== undefined ? { currency } : {}),
+        ...(twoFactorEnabled !== undefined ? { twoFactorEnabled } : {}),
+        ...(defaultLanguage !== undefined ? { defaultLanguage } : {})
       }
     });
 
@@ -301,12 +309,15 @@ export const getGlobalSettings = async (req: Request, res: Response) => {
 
 export const updateGlobalSettings = async (req: Request, res: Response) => {
   try {
-    const { maintenanceMode, publicRegistrationEnabled, enforce2FAForAdmins } = req.body;
-    
+    const { maintenanceMode, publicRegistrationEnabled, enforce2FAForAdmins, measurementSystem } = req.body;
+
+    // Only accept the two supported conventions; anything else falls back to METRIC.
+    const normalizedSystem = measurementSystem === 'US' ? 'US' : 'METRIC';
+
     const settings = await prisma.globalSettings.upsert({
       where: { id: 'global_1' },
-      update: { maintenanceMode, publicRegistrationEnabled, enforce2FAForAdmins },
-      create: { id: 'global_1', maintenanceMode, publicRegistrationEnabled, enforce2FAForAdmins }
+      update: { maintenanceMode, publicRegistrationEnabled, enforce2FAForAdmins, measurementSystem: normalizedSystem },
+      create: { id: 'global_1', maintenanceMode, publicRegistrationEnabled, enforce2FAForAdmins, measurementSystem: normalizedSystem }
     });
     
     return successResponse(res, settings);

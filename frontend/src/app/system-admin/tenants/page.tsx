@@ -41,7 +41,9 @@ export default function TenantManagementPage() {
   const [settingsForm, setSettingsForm] = useState({
     isVipEnabled: true, isInternalNotesEnabled: true, isCategoriesEnabled: true,
     hasWaitTimeFeature: true, hasShiftFeature: true, hasMenuFeature: true, hasPaymentFeature: true,
-    layoutStyle: 'CLASSIC_LIST'
+    layoutStyle: 'CLASSIC_LIST',
+    // Root-admin-only controls: platform currency + 2FA capability + default language.
+    currency: 'TRY', twoFactorEnabled: false, defaultLanguage: 'tr'
   });
   
   const [subscriptionForm, setSubscriptionForm] = useState({
@@ -153,6 +155,9 @@ export default function TenantManagementPage() {
       hasShiftFeature: tenant.settings?.hasShiftFeature ?? true,
       hasMenuFeature: tenant.settings?.hasMenuFeature ?? true,
       hasPaymentFeature: tenant.settings?.hasPaymentFeature ?? true,
+      currency: tenant.settings?.currency ?? 'TRY',
+      twoFactorEnabled: tenant.settings?.twoFactorEnabled ?? false,
+      defaultLanguage: tenant.settings?.defaultLanguage ?? 'tr',
       layoutStyle: tenant.customization?.layoutStyle || 'CLASSIC_LIST',
     });
     
@@ -441,6 +446,52 @@ export default function TenantManagementPage() {
                                   <option value="ANIMATED">Olden (Vintage)</option>
                                   <option value="GARDEN_FRESH">Garden (Light & Creative)</option>
                                 </select>
+                            </div>
+                        </div>
+
+                        <div className="space-y-4">
+                            <div className="flex items-center gap-2 mb-2">
+                                <Label className="text-xs font-black uppercase text-slate-800 tracking-tight">Platform Configuration</Label>
+                            </div>
+                            {/* Global currency — root-admin-only; tenant admins see it read-only. */}
+                            <div className="flex items-center justify-between p-3 border border-slate-100 rounded-sm">
+                                <div className="space-y-0.5">
+                                    <Label className="text-xs font-black uppercase">Currency</Label>
+                                    <p className="text-[9px] text-slate-400 font-bold uppercase">Global Menu & Deposit Currency</p>
+                                </div>
+                                <select
+                                  className="h-8 px-2 text-xs font-bold border border-slate-200 rounded-sm bg-slate-50"
+                                  value={settingsForm.currency}
+                                  onChange={e => setSettingsForm({...settingsForm, currency: e.target.value})}
+                                >
+                                  <option value="TRY">TRY (₺)</option>
+                                  <option value="USD">USD ($)</option>
+                                  <option value="EUR">EUR (€)</option>
+                                  <option value="GBP">GBP (£)</option>
+                                </select>
+                            </div>
+                            {/* Default UI language — applied for users who haven't chosen one. */}
+                            <div className="flex items-center justify-between p-3 border border-slate-100 rounded-sm">
+                                <div className="space-y-0.5">
+                                    <Label className="text-xs font-black uppercase">Default Language</Label>
+                                    <p className="text-[9px] text-slate-400 font-bold uppercase">Dashboard UI Language</p>
+                                </div>
+                                <select
+                                  className="h-8 px-2 text-xs font-bold border border-slate-200 rounded-sm bg-slate-50"
+                                  value={settingsForm.defaultLanguage}
+                                  onChange={e => setSettingsForm({...settingsForm, defaultLanguage: e.target.value})}
+                                >
+                                  <option value="tr">Türkçe (TR)</option>
+                                  <option value="en">English (EN)</option>
+                                </select>
+                            </div>
+                            {/* 2FA capability — when on, the tenant admin can require 2FA by role. */}
+                            <div className="flex items-center justify-between p-3 border border-slate-100 rounded-sm bg-rose-50/30">
+                                <div className="space-y-0.5">
+                                    <Label className="text-xs font-black uppercase text-rose-900">Two-Factor Capability</Label>
+                                    <p className="text-[9px] text-rose-400 font-bold uppercase">Let Tenant Require 2FA By Role</p>
+                                </div>
+                                <Checkbox checked={settingsForm.twoFactorEnabled} onCheckedChange={(c) => setSettingsForm({...settingsForm, twoFactorEnabled: !!c})} />
                             </div>
                         </div>
 
