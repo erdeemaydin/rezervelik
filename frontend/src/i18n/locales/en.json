@@ -49,7 +49,8 @@
     "systemOnline": "System Online",
     "zone": "Zone",
     "mainDiningRoom": "Main Dining Room",
-    "logout": "Logout"
+    "logout": "Logout",
+    "userSettings": "User Settings"
   },
   "timesheet": {
     "title": "Timesheet",
@@ -76,7 +77,27 @@
     "deleted": "Time entry deleted",
     "loading": "Loading...",
     "loadFailed": "Failed to load timesheet",
-    "noEntries": "No time entries for this period. If nothing is entered, scheduled shift hours are assumed."
+    "noEntries": "No time entries for this period. If nothing is entered, scheduled shift hours are assumed.",
+    "logFor": "Log time for",
+    "selectStaff": "Select staff member",
+    "shift": "Shift",
+    "customShift": "Custom / off-schedule",
+    "shiftPlanTitle": "Shift Plan",
+    "shiftPlanSubtitle": "Who is scheduled to work this period.",
+    "unassigned": "—",
+    "breakLabel": "Break",
+    "minutes": "minutes",
+    "scheduled": "Scheduled",
+    "overtime": "Overtime",
+    "undertime": "Under scheduled",
+    "legendOvertime": "Worked more than scheduled",
+    "legendUndertime": "Worked less than scheduled",
+    "noShifts": "No shifts scheduled for this period.",
+    "myEntries": "Time Entries",
+    "prefilledFromShift": "Pre-filled from the assigned shift — adjust if needed.",
+    "total": "Total",
+    "fromEntry": "From actual check-in/out",
+    "fromSchedule": "Assumed from scheduled shift"
   },
   "public": {
     "ourStory": "Our Story",
@@ -283,7 +304,121 @@
       "manageShifts": "Manage Shifts",
       "mySchedule": "My Schedule",
       "myAvailability": "My Availability",
-      "fullRoster": "Full Roster"
+      "fullRoster": "Full Roster",
+      "timesheet": "Timesheet"
+    },
+    "mySchedule": {
+      "weekOf": "Week of",
+      "today": "Today",
+      "noShifts": "No shifts",
+      "you": "You",
+      "teammate": "Teammate",
+      "published": "Published",
+      "loadFailed": "Failed to load your schedule"
+    },
+    "shiftManager": {
+      "loadFailed": "Failed to load shifts",
+      "fillRequired": "Please fill in all required fields",
+      "updated": "Shift updated",
+      "created": "Shift created",
+      "saveFailed": "Failed to save shift",
+      "confirmDelete": "Are you sure you want to delete this shift?",
+      "deleted": "Shift deleted",
+      "deleteFailed": "Failed to delete shift",
+      "editShift": "Edit Shift",
+      "addShift": "Add Shift",
+      "defineHours": "Define working hours for your staff.",
+      "shiftName": "Shift Name",
+      "shiftNamePlaceholder": "e.g., Morning Shift",
+      "startTime": "Start Time",
+      "endTime": "End Time",
+      "requiredStaffPerDay": "Required Staff per Day",
+      "update": "Update",
+      "create": "Create",
+      "cancel": "Cancel",
+      "existingShifts": "Existing Shifts",
+      "loading": "Loading shifts...",
+      "colName": "Name",
+      "colHours": "Hours",
+      "colRequiredStaff": "Required Staff (Total/Week)",
+      "colActions": "Actions",
+      "noShifts": "No shifts defined yet.",
+      "delete": "Delete"
+    },
+    "assigner": {
+      "dragToAssign": "Drag to assign",
+      "hoursCredited": "Hours worked / credited in this plan",
+      "clearHighlight": "Clear Highlight",
+      "highlightShifts": "Highlight shifts",
+      "dragStaffHere": "Drag staff here",
+      "loadFailed": "Failed to load roster data",
+      "alreadyAssigned": "Staff is already assigned to this shift",
+      "assigned": "Assigned successfully",
+      "assignFailed": "Failed to assign staff",
+      "assignmentRemoved": "Assignment removed",
+      "removeFailed": "Failed to remove assignment",
+      "alreadyPublished": "This schedule is already published to staff.",
+      "publishConfirmTitle": "Publish this schedule?",
+      "publishConfirmDesc": "Working staff will receive their shift plan on WhatsApp 5 minutes after publishing.",
+      "period": "Period",
+      "staffToNotify": "Staff to notify",
+      "publish": "Publish",
+      "publishedPrefix": "Published — the plan will be sent to all working staff in",
+      "publishedSuffix": "minutes.",
+      "publishFailed": "Failed to publish schedule",
+      "unpublishing": "Unpublishing schedule...",
+      "unpublished": "Schedule unpublished. It is no longer visible to staff.",
+      "unpublishFailed": "Failed to unpublish schedule",
+      "generatingPdf": "Generating PDF document...",
+      "pdfTitle": "Staff Schedule",
+      "generatedOn": "Generated on",
+      "colDate": "Date",
+      "unassigned": "Unassigned",
+      "pdfExported": "PDF exported successfully",
+      "pdfFailed": "Failed to export PDF",
+      "generatingPng": "Generating PNG image...",
+      "pngExported": "PNG exported successfully",
+      "pngFailed": "Failed to export PNG",
+      "staffPool": "Staff Pool",
+      "staffPoolDesc": "Drag the grip handle to assign or click the highlight pulse icon to analyze shifts.",
+      "membersAvailable": "Members Available",
+      "scheduleBuilder": "Schedule Builder",
+      "scheduleBuilderDesc": "Plan and manage restaurant shifts.",
+      "published": "Published",
+      "unpublish": "Unpublish",
+      "loadingRoster": "Loading roster data...",
+      "noShiftsConfigured": "No shifts configured for this restaurant.",
+      "setupShifts": "Setup Shifts",
+      "dateWeekday": "Date & Weekday",
+      "total": "Total",
+      "assignedCount": "Assigned",
+      "req": "Req",
+      "fromActual": "From actual check-in/out",
+      "fromScheduled": "Assumed from scheduled shift",
+      "avail": "Avail",
+      "add": "Add",
+      "assignStaff": "Assign Staff",
+      "available": "Available",
+      "noneAvailable": "None marked available",
+      "otherStaff": "Other Staff",
+      "allAccounted": "All staff accounted",
+      "unavailable": "Unavailable",
+      "noUnavailable": "No unavailable requests",
+      "worksOtherShift": "Works other shift",
+      "assignedTag": "Assigned",
+      "forceTitle": "Assign unavailable staff?",
+      "forceDesc": "marked themselves as UNAVAILABLE for this shift. Assign them anyway?",
+      "forceConfirm": "Force assign",
+      "force": "Force"
+    },
+    "availability": {
+      "loadFailed": "Failed to load availability data",
+      "saved": "Availability updated successfully",
+      "saveFailed": "Failed to save availability",
+      "title": "Submit Availability",
+      "desc": "Select the shifts you are available to work.",
+      "saveChanges": "Save Changes",
+      "date": "Date"
     }
   },
   "staff": {
@@ -373,6 +508,18 @@
       "manage_settings": {
         "label": "Manage Settings",
         "desc": "Change core restaurant config"
+      },
+      "view_analytics": {
+        "label": "View Dashboard & Analytics",
+        "desc": "See the main dashboard and analytics reports"
+      },
+      "view_payments": {
+        "label": "View Payments",
+        "desc": "See the payments dashboard"
+      },
+      "view_reviews": {
+        "label": "View Reviews",
+        "desc": "See the reviews dashboard"
       }
     }
   },
@@ -605,7 +752,20 @@
       "completed": "Completed",
       "cancelled": "Cancelled",
       "noShow": "No-show"
-    }
+    },
+    "sortBy": "Sort",
+    "sortTime": "Time",
+    "sortGuest": "Guest",
+    "sortTable": "Table",
+    "reservationDatabase": "Reservation Database",
+    "filterAllTime": "All Time",
+    "filterLastMonth": "Last Month",
+    "filterLastWeek": "Last Week",
+    "filterInterval": "Interval",
+    "dbAll": "All",
+    "dbActive": "Active",
+    "dbDeactive": "Inactive",
+    "editBooking": "Edit booking"
   },
   "menus": {
     "downloadQR": {
@@ -665,7 +825,8 @@
       "saveCategory": "Save Category",
       "saveDishDetails": "Save Dish Details",
       "scheduleUpdate": "Schedule Update",
-      "applyNow": "Apply Now"
+      "applyNow": "Apply Now",
+      "priceEditor": "Price Editor"
     },
     "badges": {
       "items": "Items",
@@ -731,6 +892,33 @@
       "value": "Value",
       "scheduleForLater": "Schedule for Later?",
       "dateTime": "Date & Time"
+    },
+    "bulkEditor": {
+      "loadFailed": "Failed to load the menu",
+      "enterPercent": "Enter a percentage first",
+      "noChanges": "No price changes to save",
+      "savedSuffix": "prices updated",
+      "saveFailed": "Failed to save prices",
+      "title": "Bulk Price Update",
+      "subtitle": "Review and update every item's price",
+      "currency": "Currency",
+      "toolsTitle": "Bulk Tools",
+      "percentLabel": "Increase / decrease by %",
+      "applyPercent": "Apply %",
+      "roundUpLabel": "Round up to next",
+      "reset": "Reset",
+      "empty": "No menu items found",
+      "oldPrice": "Old",
+      "newPrice": "New price",
+      "pendingChanges": "pending change(s)",
+      "noPending": "No pending changes",
+      "saving": "Saving…",
+      "save": "Save Prices",
+      "scheduleForLater": "Schedule for later",
+      "schedule": "Schedule",
+      "roundUpShort": "Round up",
+      "pickSchedule": "Pick a date & time for the scheduled update",
+      "scheduledSuffix": "price change(s) scheduled"
     }
   },
   "host": {
@@ -845,7 +1033,9 @@
     "recentlySeatedCancelledWalkins": "Recently Seated / Cancelled Walk-ins",
     "noRecentWaitlistChanges": "No recent waitlist changes",
     "waited": "Waited",
-    "closeActivityLogBtn": "Close Activity Log"
+    "closeActivityLogBtn": "Close Activity Log",
+    "confirmProceed": "Proceed",
+    "cancel": "Cancel"
   },
   "settings": {
     "failedLoad": "Failed to load settings",
@@ -917,7 +1107,29 @@
     "maxPartySizeHint": "Largest party guests can select on the public booking form (shown as 1–N buttons).",
     "openingHour": "Opening Hour",
     "closingHour": "Closing Hour",
-    "openingHoursHint": "Service window (0–23). Bounds the booking time options and the analytics peak-hours heatmap."
+    "openingHoursHint": "Service window (0–23). Bounds the booking time options and the analytics peak-hours heatmap.",
+    "defaultBreak": "Default break",
+    "defaultBreakDesc": "Unpaid break deducted from a scheduled shift when no check-in/out is entered.",
+    "privacyExplain": {
+      "OWN_ONLY": "Each staff member sees only their own assigned shifts on the schedule — they cannot see who else is working.",
+      "SHIFT_TEAM": "Staff see their own shifts plus the teammates working the same shift that day, but not the full roster.",
+      "FULL_ROSTER": "Every staff member can see the complete roster for all colleagues and shifts."
+    },
+    "logicExplain": {
+      "DYNAMIC_DURATION": "A booking's end time is calculated automatically from the default duration set above (e.g. 90 minutes after the start time).",
+      "FIXED_SLOTS": "Bookings use fixed, pre-defined time slots. Each reservation occupies a set slot regardless of the duration field."
+    },
+    "currencyManagedBySystem": "Set by platform admin",
+    "currencyHint": "The currency is a platform-wide setting managed by the system administrator and cannot be changed here.",
+    "twoFactorTitle": "Two-Factor Authentication",
+    "twoFactorDesc": "Require an authenticator code at sign-in for selected roles",
+    "twoFactorRolesHint": "Choose which roles must complete two-factor authentication when signing in. Staff are excluded by default.",
+    "role": {
+      "ADMIN": "Admin",
+      "MANAGER": "Manager",
+      "HOST": "Host",
+      "STAFF": "Staff"
+    }
   },
   "waitTime": {
     "error": {
@@ -1122,5 +1334,12 @@
     "twoFactorSetupFailed": "Failed to start two-factor setup",
     "twoFactorEnabled": "Two-factor authentication enabled",
     "twoFactorCodeInvalid": "Invalid or expired code"
+  },
+  "common": {
+    "confirmTitle": "Are you sure?",
+    "confirm": "Confirm",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "deleteConfirm": "This action cannot be undone."
   }
 }
