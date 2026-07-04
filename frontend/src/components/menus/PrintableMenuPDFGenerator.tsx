@@ -53,14 +53,14 @@ export const PrintableMenuPDFGenerator = ({ menu, restaurantProfile }: { menu: a
             startY += 6;
 
             const tableData = allItems.map((item: any) => {
-                let desc = item.description || '';
-                let details = [];
+                const desc = item.description || '';
+                const details = [];
                 if (item.calories) details.push(`${item.calories} kcal`);
                 if (item.containsAlcohol) details.push(`Alkol Icerir`);
                 if (item.containsPork) details.push(`Domuz Eti Icerir`);
                 if (item.dietaryTags) details.push(item.dietaryTags);
                 
-                let detailStr = details.length > 0 ? `\n[${details.join(' | ')}]` : '';
+                const detailStr = details.length > 0 ? `\n[${details.join(' | ')}]` : '';
                 return [
                     `${item.name}\n${desc}${detailStr}`,
                     `${item.price.toLocaleString('tr-TR')} TL`

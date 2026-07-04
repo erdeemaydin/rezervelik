@@ -36,7 +36,7 @@ export function PhoneInput({ value, onChange, countryHint, className, disabled }
     const s = splitPhone(value)
     setCode(s.code)
     setNumber(s.number)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
   }, [value])
 
   const emit = (c: string, n: string) => {

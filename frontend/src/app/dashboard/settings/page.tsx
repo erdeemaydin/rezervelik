@@ -153,7 +153,7 @@ export default function SettingsPage() {
         const autoConfirm = futureModeAction === 'AUTO_CONFIRM';
 
         try {
-            let existingMap: Record<string, boolean> = {};
+            const existingMap: Record<string, boolean> = {};
             if (!overwriteAll) {
                 const res = await api.get('/day-settings');
                 res.data.data.forEach((s: any) => {

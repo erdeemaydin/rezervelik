@@ -167,8 +167,8 @@ export default function CalendarSettingsPage() {
     const year = currentMonth.getFullYear();
     const month = currentMonth.getMonth();
     const totalDays = new Date(year, month + 1, 0).getDate();
-    let firstDay = new Date(year, month, 1).getDay();
-    let padding = firstDay === 0 ? 6 : firstDay - 1;
+    const firstDay = new Date(year, month, 1).getDay();
+    const padding = firstDay === 0 ? 6 : firstDay - 1;
     
     const days = [];
     for (let i = 0; i < padding; i++) days.push(<div key={`pad-${i}`} className="h-32 bg-slate-50/20 border border-slate-100/30" />);

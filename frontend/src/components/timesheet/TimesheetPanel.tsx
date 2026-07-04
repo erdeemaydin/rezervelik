@@ -151,7 +151,7 @@ export default function TimesheetPanel() {
     } else {
       setForm(f => ({ ...f, shiftId: '', checkIn: '', checkOut: '' }));
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
   }, [targetUserId, form.date, assignments]);
 
   const onShiftChange = (shiftId: string) => {
