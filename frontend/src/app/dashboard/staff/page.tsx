@@ -44,6 +44,9 @@ const AVAILABLE_PERMISSIONS = [
   { id: 'manage_calendar', label: 'Manage Calendar', desc: 'Set blackout days and events' },
   { id: 'manage_staff', label: 'Manage Staff', desc: 'Add/remove users and set permissions' },
   { id: 'manage_settings', label: 'Manage Settings', desc: 'Change core restaurant config' },
+  { id: 'view_analytics', label: 'View Dashboard & Analytics', desc: 'See the main dashboard and analytics reports' },
+  { id: 'view_payments', label: 'View Payments', desc: 'See the payments dashboard' },
+  { id: 'view_reviews', label: 'View Reviews', desc: 'See the reviews dashboard' },
 ];
 
 const PRESET_ROLES = {

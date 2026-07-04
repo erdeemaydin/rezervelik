@@ -104,8 +104,12 @@ export default function TablesPage() {
     if (!outer) return;
     const updateScale = () => {
       const width = outer.clientWidth;
-      if (!width) return;
-      const next = Math.min(1, width / CANVAS_WIDTH);
+      const height = outer.clientHeight;
+      if (!width || !height) return;
+      // Fit the whole logical floor inside the visible area (both axes), so the
+      // entire floor is always shown and rescales with the window — no scroll,
+      // no dead space on the right. Capped at 1.5 to avoid over-zooming.
+      const next = Math.min(1.5, width / CANVAS_WIDTH, height / CANVAS_HEIGHT);
       scaleRef.current = next;
       setScale(next);
     };
@@ -563,7 +567,10 @@ export default function TablesPage() {
                   </div>
                 )}
 
-                <div ref={outerRef} className="flex-1 min-h-[500px] border border-slate-200 rounded-lg bg-slate-50 relative overflow-auto">
+                <div ref={outerRef} className="flex-1 min-h-[420px] border border-slate-200 rounded-lg bg-slate-50 relative overflow-hidden flex items-center justify-center">
+                    {/* Sizer: its box occupies the scaled footprint so the transformed
+                        canvas has no dead layout space and stays centered. */}
+                    <div style={{ width: CANVAS_WIDTH * scale, height: CANVAS_HEIGHT * scale }} className="relative">
                     <div
                         ref={containerRef}
                         className="relative bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] [background-size:16px_16px]"
@@ -670,6 +677,7 @@ export default function TablesPage() {
                                 </div>
                             ))
                         )}
+                    </div>
                     </div>
                 </div>
             </TabsContent>

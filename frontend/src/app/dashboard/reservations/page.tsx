@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef, useMemo } from 'react';
+import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import AdminLayout from '@/components/layout/AdminLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -61,7 +61,16 @@ export default function ReservationsPage() {
   const [activeTab, setActiveTab] = useState('upcoming');
   const [timeFilter, setTimeFilter] = useState('today');
   const [customDate, setCustomFilterDate] = useState('');
+  // Interval (from–to) date range picker.
+  const [customFrom, setCustomFrom] = useState('');
+  const [customTo, setCustomTo] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
+  // Clickable overview filter (status) + column sorting for the table tabs.
+  const [statusFilter, setStatusFilter] = useState<string | null>(null);
+  const [sortBy, setSortBy] = useState<'time' | 'guest' | 'table'>('time');
+  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
+  // Reservation Database (history tab) status scope: all / active / deactive.
+  const [dbFilter, setDbFilter] = useState<'all' | 'active' | 'deactive'>('all');
   
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
@@ -139,53 +148,102 @@ export default function ReservationsPage() {
     } finally { setLoading(false); }
   };
 
-  const filteredReservations = useMemo(() => {
+  // Shared time-window matcher: today / tomorrow / this-week / next-week /
+  // last-week / last-month / custom (single day) / interval (range) / all.
+  const matchesTime = useCallback((res: Reservation) => {
+    if (timeFilter === 'all') return true;
+    const resDate = new Date(res.startTime);
+    const resDay = toLocalDateStr(resDate);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const mondayOffset = (d: Date) => (d.getDay() === 0 ? 6 : d.getDay() - 1);
+
+    if (timeFilter === 'today') return resDay === toLocalDateStr(today);
+    if (timeFilter === 'tomorrow') {
+      const tomorrow = new Date(today); tomorrow.setDate(today.getDate() + 1);
+      return resDay === toLocalDateStr(tomorrow);
+    }
+    if (timeFilter === 'this-week' || timeFilter === 'next-week' || timeFilter === 'last-week') {
+      const start = new Date(today);
+      const shift = timeFilter === 'next-week' ? 7 : timeFilter === 'last-week' ? -7 : 0;
+      start.setDate(today.getDate() - mondayOffset(today) + shift);
+      const end = new Date(start); end.setDate(start.getDate() + 7);
+      return resDate >= start && resDate < end;
+    }
+    if (timeFilter === 'last-month') {
+      const start = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+      const end = new Date(today.getFullYear(), today.getMonth(), 1);
+      return resDate >= start && resDate < end;
+    }
+    if (timeFilter === 'custom' && customDate) return resDay === customDate;
+    if (timeFilter === 'interval' && (customFrom || customTo)) {
+      if (customFrom && resDay < customFrom) return false;
+      if (customTo && resDay > customTo) return false;
+      return true;
+    }
+    return true;
+  }, [timeFilter, customDate, customFrom, customTo]);
+
+  // Reservations in the selected time window (ignoring tab + status), so the
+  // overview chips show totals for that period (e.g. all bookings today).
+  const periodReservations = useMemo(() => {
     return reservations.filter(res => {
       const matchesSearch = res.customerName.toLowerCase().includes(searchQuery.toLowerCase()) || res.customerPhone.includes(searchQuery);
+      return matchesSearch && matchesTime(res);
+    });
+  }, [reservations, searchQuery, matchesTime]);
+
+  // Base list: tab/database scope + time + search, before the clicked status filter.
+  const baseReservations = useMemo(() => {
+    return periodReservations.filter(res => {
       const isClosed = ['COMPLETED', 'CANCELLED', 'NO_SHOW'].includes(res.status);
-      const tabMatch = activeTab === 'upcoming' ? !isClosed : isClosed;
-      if (!tabMatch || !matchesSearch) return false;
-
-      if (timeFilter === 'all') return true;
-
-      const resDate = new Date(res.startTime);
-      const resDay = toLocalDateStr(resDate);
-      const today = new Date();
-      today.setHours(0,0,0,0);
-
-      if (timeFilter === 'today') {
-          return resDay === toLocalDateStr(today);
-      }
-
-      if (timeFilter === 'tomorrow') {
-          const tomorrow = new Date(today);
-          tomorrow.setDate(today.getDate() + 1);
-          return resDay === toLocalDateStr(tomorrow);
-      }
-
-      if (timeFilter === 'this-week') {
-          const start = new Date(today);
-          start.setDate(today.getDate() - (today.getDay() === 0 ? 6 : today.getDay() - 1));
-          const end = new Date(start);
-          end.setDate(start.getDate() + 7);
-          return resDate >= start && resDate < end;
-      }
-
-      if (timeFilter === 'next-week') {
-          const start = new Date(today);
-          start.setDate(today.getDate() - (today.getDay() === 0 ? 6 : today.getDay() - 1) + 7);
-          const end = new Date(start);
-          end.setDate(start.getDate() + 7);
-          return resDate >= start && resDate < end;
-      }
-
-      if (timeFilter === 'custom' && customDate) {
-          return resDay === customDate;
-      }
-
+      if (activeTab === 'upcoming') return !isClosed;
+      // Reservation Database (history) tab: active = live, deactive = closed.
+      if (dbFilter === 'active') return !isClosed;
+      if (dbFilter === 'deactive') return isClosed;
       return true;
     });
-  }, [reservations, activeTab, timeFilter, customDate, searchQuery]);
+  }, [periodReservations, activeTab, dbFilter]);
+
+  // Apply the clicked status filter, then column sort (default Time ascending).
+  const filteredReservations = useMemo(() => {
+    const list = statusFilter
+      ? baseReservations.filter(r => r.status === statusFilter)
+      : baseReservations;
+    const dir = sortDir === 'asc' ? 1 : -1;
+    return [...list].sort((a, b) => {
+      if (sortBy === 'guest') return dir * a.customerName.localeCompare(b.customerName);
+      if (sortBy === 'table') {
+        const ta = a.table?.identifier || '';
+        const tb = b.table?.identifier || '';
+        if (!ta && tb) return 1;
+        if (ta && !tb) return -1;
+        return dir * ta.localeCompare(tb, undefined, { numeric: true });
+      }
+      return dir * (new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
+    });
+  }, [baseReservations, statusFilter, sortBy, sortDir]);
+
+  // Clicking a column header sorts by it; clicking the active one flips direction.
+  const toggleSort = (col: 'time' | 'guest' | 'table') => {
+    if (sortBy === col) {
+      setSortDir(d => (d === 'asc' ? 'desc' : 'asc'));
+    } else {
+      setSortBy(col);
+      setSortDir('asc');
+    }
+  };
+
+  // Overview chip → filter by that status and jump to the tab where it lives.
+  const CLOSED_STATUSES = ['COMPLETED', 'CANCELLED', 'NO_SHOW'];
+  const handleStatusSelect = (status: string | null) => {
+    setStatusFilter(status);
+    if (status) {
+      const closed = CLOSED_STATUSES.includes(status);
+      setActiveTab(closed ? 'history' : 'upcoming');
+      if (closed) setDbFilter('deactive');
+    }
+  };
 
   const updateStatus = async (id: string, status: string, skipPayment = false) => {
     try {
@@ -369,8 +427,9 @@ export default function ReservationsPage() {
           </Button>
         </div>
 
-        {/* Status legend: colored count dots per reservation status (#5.7) */}
-        <StatusDots items={reservations} />
+        {/* Status legend: colored count dots per reservation status (#5.7), counted
+            over the selected time period. Clickable — filters the list + jumps tab. */}
+        <StatusDots items={periodReservations} onSelect={handleStatusSelect} activeStatus={statusFilter} />
 
         {/* Command Center - Integrated & High Density */}
         <Card className="rounded-md border-slate-200 shadow-sm overflow-hidden bg-white">
@@ -378,14 +437,14 @@ export default function ReservationsPage() {
             <div className="flex flex-col">
               {/* Tab Selector */}
               <div className="flex items-center border-b border-slate-50 p-1 bg-slate-50/50">
-                <Button variant="ghost" size="sm" onClick={() => setActiveTab('upcoming')} className={cn("flex-1 h-9 text-[10px] font-black uppercase rounded-sm transition-all", activeTab === 'upcoming' ? "bg-white text-blue-600 shadow-sm border border-slate-100" : "text-slate-400 hover:text-slate-600")}>
+                <Button variant="ghost" size="sm" onClick={() => { setActiveTab('upcoming'); setStatusFilter(null); if (!['today','tomorrow','this-week','next-week','all','custom','interval'].includes(timeFilter)) setTimeFilter('today'); }} className={cn("flex-1 h-9 text-[10px] font-black uppercase rounded-sm transition-all", activeTab === 'upcoming' ? "bg-white text-blue-600 shadow-sm border border-slate-100" : "text-slate-400 hover:text-slate-600")}>
                     <Timer className="w-3.5 h-3.5 mr-2" /> {t("reservations.liveAndPending")}
                 </Button>
-                <Button variant="ghost" size="sm" onClick={() => setActiveTab('timeline')} className={cn("flex-1 h-9 text-[10px] font-black uppercase rounded-sm transition-all", activeTab === 'timeline' ? "bg-white text-blue-600 shadow-sm border border-slate-100" : "text-slate-400 hover:text-slate-600")}>
+                <Button variant="ghost" size="sm" onClick={() => { setActiveTab('timeline'); setStatusFilter(null); }} className={cn("flex-1 h-9 text-[10px] font-black uppercase rounded-sm transition-all", activeTab === 'timeline' ? "bg-white text-blue-600 shadow-sm border border-slate-100" : "text-slate-400 hover:text-slate-600")}>
                     <CalendarDays className="w-3.5 h-3.5 mr-2" /> {t("reservations.timeline")}
                 </Button>
-                <Button variant="ghost" size="sm" onClick={() => setActiveTab('history')} className={cn("flex-1 h-9 text-[10px] font-black uppercase rounded-sm transition-all", activeTab === 'history' ? "bg-white text-blue-600 shadow-sm border border-slate-100" : "text-slate-400 hover:text-slate-600")}>
-                    <CheckCircle2 className="w-3.5 h-3.5 mr-2" /> {t("reservations.serviceHistory")}
+                <Button variant="ghost" size="sm" onClick={() => { setActiveTab('history'); setStatusFilter(null); if (!['today','this-week','last-week','last-month','custom','interval'].includes(timeFilter)) setTimeFilter('today'); }} className={cn("flex-1 h-9 text-[10px] font-black uppercase rounded-sm transition-all", activeTab === 'history' ? "bg-white text-blue-600 shadow-sm border border-slate-100" : "text-slate-400 hover:text-slate-600")}>
+                    <CheckCircle2 className="w-3.5 h-3.5 mr-2" /> {t("reservations.reservationDatabase")}
                 </Button>
               </div>
 
@@ -426,14 +485,22 @@ export default function ReservationsPage() {
                 </div>
               ) : (
               <div className="flex flex-wrap items-center justify-between p-3 gap-4">
-                <div className="flex items-center gap-1 bg-slate-100/50 p-1 rounded-md border border-slate-200/60">
-                  {[
-                    { label: t("reservations.filterAll"), value: 'all' },
-                    { label: t("reservations.filterToday"), value: 'today' },
-                    { label: t("reservations.filterTomorrow"), value: 'tomorrow' },
-                    { label: t("reservations.filterThisWeek"), value: 'this-week' },
-                    { label: t("reservations.filterNextWeek"), value: 'next-week' }
-                  ].map(f => (
+                <div className="flex items-center gap-1 bg-slate-100/50 p-1 rounded-md border border-slate-200/60 flex-wrap">
+                  {(activeTab === 'history'
+                    ? [
+                        { label: t("reservations.filterLastMonth"), value: 'last-month' },
+                        { label: t("reservations.filterLastWeek"), value: 'last-week' },
+                        { label: t("reservations.filterToday"), value: 'today' },
+                        { label: t("reservations.filterThisWeek"), value: 'this-week' },
+                      ]
+                    : [
+                        { label: t("reservations.filterToday"), value: 'today' },
+                        { label: t("reservations.filterTomorrow"), value: 'tomorrow' },
+                        { label: t("reservations.filterThisWeek"), value: 'this-week' },
+                        { label: t("reservations.filterNextWeek"), value: 'next-week' },
+                        { label: t("reservations.filterAllTime"), value: 'all' },
+                      ]
+                  ).map(f => (
                     <Button key={f.value} variant="ghost" size="sm" onClick={() => setTimeFilter(f.value)} className={cn("h-7 text-[9px] font-black uppercase px-3 rounded-sm transition-all", timeFilter === f.value ? "bg-white text-slate-900 shadow-sm border border-slate-200/50" : "text-slate-500 hover:text-slate-700")}>{f.label}</Button>
                   ))}
                   <div className="w-px h-4 bg-slate-300 mx-1" />
@@ -443,11 +510,36 @@ export default function ReservationsPage() {
                         <CalendarIcon className="w-3 h-3 mr-1.5" /> {timeFilter === 'custom' && customDate ? customDate : t("reservations.picker")}
                     </Button>
                   </div>
+                  {/* Interval (date range) picker. */}
+                  <Button variant="ghost" size="sm" onClick={() => setTimeFilter('interval')} className={cn("h-7 text-[9px] font-black uppercase px-3 rounded-sm transition-all", timeFilter === 'interval' ? "bg-blue-600 text-white" : "text-slate-500")}>
+                    <CalendarIcon className="w-3 h-3 mr-1.5" /> {t("reservations.filterInterval")}
+                  </Button>
+                  {timeFilter === 'interval' && (
+                    <div className="flex items-center gap-1">
+                      <input type="date" value={customFrom} onChange={(e) => { setCustomFrom(e.target.value); setTimeFilter('interval'); }} className="h-7 text-[10px] font-bold border border-slate-200 rounded px-1.5 bg-white" />
+                      <span className="text-[10px] font-black text-slate-400">–</span>
+                      <input type="date" value={customTo} onChange={(e) => { setCustomTo(e.target.value); setTimeFilter('interval'); }} className="h-7 text-[10px] font-bold border border-slate-200 rounded px-1.5 bg-white" />
+                    </div>
+                  )}
                 </div>
 
-                <div className="relative flex-1 max-w-sm">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                  <Input placeholder={t("reservations.searchPlaceholder")} className="pl-10 h-10 text-xs bg-slate-50 border-slate-200 focus:bg-white focus:ring-4 focus:ring-blue-500/5 rounded-md transition-all font-bold" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
+                <div className="flex items-center gap-3 flex-wrap">
+                  {/* Reservation Database scope: all / active / deactive. */}
+                  {activeTab === 'history' && (
+                    <div className="flex items-center gap-1 bg-slate-100/50 p-1 rounded-md border border-slate-200/60">
+                      {[
+                        { label: t("reservations.dbAll"), value: 'all' as const },
+                        { label: t("reservations.dbActive"), value: 'active' as const },
+                        { label: t("reservations.dbDeactive"), value: 'deactive' as const },
+                      ].map(f => (
+                        <Button key={f.value} variant="ghost" size="sm" onClick={() => setDbFilter(f.value)} className={cn("h-7 text-[9px] font-black uppercase px-3 rounded-sm transition-all", dbFilter === f.value ? "bg-white text-slate-900 shadow-sm border border-slate-200/50" : "text-slate-500 hover:text-slate-700")}>{f.label}</Button>
+                      ))}
+                    </div>
+                  )}
+                  <div className="relative flex-1 min-w-[180px] max-w-sm">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                    <Input placeholder={t("reservations.searchPlaceholder")} className="pl-10 h-10 text-xs bg-slate-50 border-slate-200 focus:bg-white focus:ring-4 focus:ring-blue-500/5 rounded-md transition-all font-bold" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
+                  </div>
                 </div>
               </div>
               )}
@@ -465,15 +557,28 @@ export default function ReservationsPage() {
                 endHour={timelineEndHour}
                 onCreateAt={(tableId, time) => openCreate({ tableId, date: timelineDate, time })}
                 onReschedule={handleReschedule}
+                onEdit={handleOpenEdit}
                 t={t}
               />
             ) : (
             <Table>
               <TableHeader className="bg-slate-50/80">
                 <TableRow className="h-10 hover:bg-transparent border-b border-slate-200">
-                  <TableHead className="text-[10px] font-black text-slate-500 uppercase tracking-widest px-6">{t("reservations.schedule")}</TableHead>
-                  <TableHead className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{t("reservations.guestContext")}</TableHead>
-                  <TableHead className="text-[10px] font-black text-slate-500 uppercase tracking-widest text-center">{t("reservations.table")}</TableHead>
+                  <TableHead className="text-[10px] font-black text-slate-500 uppercase tracking-widest px-6">
+                    <button type="button" onClick={() => toggleSort('time')} className="inline-flex items-center gap-1 hover:text-slate-800 transition-colors uppercase">
+                      {t("reservations.schedule")}<span className="text-[8px] w-2">{sortBy === 'time' ? (sortDir === 'asc' ? '▲' : '▼') : ''}</span>
+                    </button>
+                  </TableHead>
+                  <TableHead className="text-[10px] font-black text-slate-500 uppercase tracking-widest">
+                    <button type="button" onClick={() => toggleSort('guest')} className="inline-flex items-center gap-1 hover:text-slate-800 transition-colors uppercase">
+                      {t("reservations.guestContext")}<span className="text-[8px] w-2">{sortBy === 'guest' ? (sortDir === 'asc' ? '▲' : '▼') : ''}</span>
+                    </button>
+                  </TableHead>
+                  <TableHead className="text-[10px] font-black text-slate-500 uppercase tracking-widest text-center">
+                    <button type="button" onClick={() => toggleSort('table')} className="inline-flex items-center gap-1 hover:text-slate-800 transition-colors uppercase">
+                      {t("reservations.table")}<span className="text-[8px] w-2">{sortBy === 'table' ? (sortDir === 'asc' ? '▲' : '▼') : ''}</span>
+                    </button>
+                  </TableHead>
                   <TableHead className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{t("reservations.serviceNotes")}</TableHead>
                   <TableHead className="text-[10px] font-black text-slate-500 uppercase tracking-widest text-right px-6">{t("reservations.command")}</TableHead>
                 </TableRow>
@@ -771,7 +876,7 @@ interface TimelineDrag {
   overlap: boolean;
 }
 
-function ReservationTimeline({ tables, reservations, timelineDate, scrollRef, startHour, endHour, onCreateAt, onReschedule, t }: {
+function ReservationTimeline({ tables, reservations, timelineDate, scrollRef, startHour, endHour, onCreateAt, onReschedule, onEdit, t }: {
   tables: any[];
   reservations: Reservation[];
   timelineDate: string;
@@ -780,6 +885,7 @@ function ReservationTimeline({ tables, reservations, timelineDate, scrollRef, st
   endHour: number;
   onCreateAt: (tableId: string, time: string) => void;
   onReschedule: (id: string, payload: { tableId: string | null; startTime: string; endTime: string }) => void;
+  onEdit: (r: Reservation) => void;
   t: (key: string) => string;
 }) {
   const slots = useMemo(() => {
@@ -952,7 +1058,6 @@ function ReservationTimeline({ tables, reservations, timelineDate, scrollRef, st
                       <div
                         key={r.id}
                         onPointerDown={(e) => beginDrag(e, r, 'move')}
-                        onClick={(e) => e.stopPropagation()}
                         title={`${r.customerName} · ${r.guestCount} ${t("reservations.pax")} · ${fmtTime(start)}${overCap ? ` · ${t("reservations.overCapacityHint")}` : ''}`}
                         className={cn(
                           "group absolute top-1.5 bottom-1.5 rounded-md border px-2 py-1 text-[10px] font-bold text-white overflow-hidden shadow-sm cursor-grab active:cursor-grabbing",
@@ -964,7 +1069,17 @@ function ReservationTimeline({ tables, reservations, timelineDate, scrollRef, st
                       >
                         <div className="absolute left-0 top-0 bottom-0 w-2 cursor-ew-resize z-10" onPointerDown={(e) => beginDrag(e, r, 'resize-l')} />
                         <div className="absolute right-0 top-0 bottom-0 w-2 cursor-ew-resize z-10" onPointerDown={(e) => beginDrag(e, r, 'resize-r')} />
-                        <div className="truncate flex items-center gap-1">{overCap && <AlertTriangle className="w-2.5 h-2.5 shrink-0" />}{r.customerName}</div>
+                        {/* Edit this booking. stopPropagation so it doesn't start a drag or create. */}
+                        <button
+                          type="button"
+                          onPointerDown={(e) => e.stopPropagation()}
+                          onClick={(e) => { e.stopPropagation(); onEdit(r); }}
+                          title={t("reservations.editBooking")}
+                          className="absolute top-0.5 right-0.5 z-20 w-4 h-4 rounded bg-black/20 hover:bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                        >
+                          <Edit2 className="w-2.5 h-2.5" />
+                        </button>
+                        <div className="truncate flex items-center gap-1 pr-4">{overCap && <AlertTriangle className="w-2.5 h-2.5 shrink-0" />}{r.customerName}</div>
                         <div className="truncate opacity-80 text-[9px] font-medium">{r.guestCount} {t("reservations.pax")}</div>
                       </div>
                     );
