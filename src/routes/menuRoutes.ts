@@ -24,6 +24,7 @@ router.put('/items/:id', menuController.updateMenuItem);
 router.delete('/items/:id', menuController.deleteMenuItem);
 
 router.post('/prices/bulk', priceUpdateController.bulkUpdatePrices);
+router.post('/prices/set', priceUpdateController.setItemPrices);
 
 router.post('/import', menuController.importMenuFromImage);
 

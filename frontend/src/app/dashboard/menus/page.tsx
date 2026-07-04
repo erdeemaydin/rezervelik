@@ -6,7 +6,9 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Plus, Trash2, Edit2, Search, LayoutGrid, List, ChevronDown, ChevronRight, Image as ImageIcon, Flame, Leaf, AlertTriangle, Layers, QrCode } from 'lucide-react';
+import { Plus, Trash2, Edit2, Search, LayoutGrid, List, ChevronDown, ChevronRight, Image as ImageIcon, Flame, Leaf, AlertTriangle, Layers, QrCode, ListChecks } from 'lucide-react';
+import Link from 'next/link';
+import { useConfirm } from '@/components/ui/confirm-dialog';
 import { QRCodePDFGenerator } from '@/components/menus/QRCodePDFGenerator';
 import { PrintableMenuPDFGenerator } from '@/components/menus/PrintableMenuPDFGenerator';
 import { 
@@ -64,6 +66,7 @@ interface Menu {
 
 export default function MenuManagementPage() {
   const { t } = useTranslation();
+  const confirm = useConfirm();
   const [menus, setMenus] = useState<Menu[]>([]);
   const [loading, setLoading] = useState(true);
   
@@ -74,8 +77,7 @@ export default function MenuManagementPage() {
   const [isMenuDialogOpen, setIsMenuDialogOpen] = useState(false);
   const [isCategoryDialogOpen, setIsCategoryDialogOpen] = useState(false);
   const [isItemDialogOpen, setIsItemDialogOpen] = useState(false);
-  const [isBulkPriceDialogOpen, setIsBulkPriceDialogOpen] = useState(false);
-  
+
   const [isEditMode, setIsEditMode] = useState(false);
   const [deleteMenuId, setDeleteMenuId] = useState<string | null>(null);
   const [restaurantProfile, setRestaurantProfile] = useState<any>(null);
@@ -92,40 +94,6 @@ export default function MenuManagementPage() {
       ingredients: '', calories: '', containsAlcohol: false, containsPork: false
   });
   
-  // Bulk Pricing Form
-  const [bulkPriceForm, setBulkPriceForm] = useState({
-      updateType: 'PERCENTAGE', // PERCENTAGE or FIXED_AMOUNT
-      value: '',
-      isIncrease: true,
-      scheduleUpdate: false,
-      scheduledFor: ''
-  });
-
-  const handleBulkPriceSubmit = async (e: React.FormEvent) => {
-      e.preventDefault();
-      if (!bulkPriceForm.value) return toast.error(t('menus.toast.valueRequired'));
-
-      try {
-          const payload: any = {
-              updateType: bulkPriceForm.updateType,
-              value: parseFloat(bulkPriceForm.value),
-              isIncrease: bulkPriceForm.isIncrease
-          };
-
-          if (bulkPriceForm.scheduleUpdate && bulkPriceForm.scheduledFor) {
-              payload.scheduledFor = new Date(bulkPriceForm.scheduledFor).toISOString();
-          }
-
-          await api.post('/menus/prices/bulk', payload);
-          toast.success(bulkPriceForm.scheduleUpdate ? t('menus.toast.priceUpdateScheduled') : t('menus.toast.pricesUpdated'));
-          setIsBulkPriceDialogOpen(false);
-          setBulkPriceForm({ updateType: 'PERCENTAGE', value: '', isIncrease: true, scheduleUpdate: false, scheduledFor: '' });
-          if (!bulkPriceForm.scheduleUpdate) fetchMenus();
-      } catch (err) {
-          toast.error(t('menus.toast.bulkPriceFailed'));
-      }
-  };
-
   const fetchMenus = useCallback(async () => {
     try {
       setLoading(true);
@@ -239,7 +207,8 @@ export default function MenuManagementPage() {
   };
 
   const handleDeleteCategory = async (id: string) => {
-      if (!confirm(t('menus.confirm.deleteCategory'))) return;
+      const ok = await confirm({ title: t('menus.confirm.deleteCategory'), tone: 'danger', confirmText: t('common.delete'), cancelText: t('common.cancel') });
+      if (!ok) return;
       try {
           await api.delete(`/menus/categories/${id}`);
           toast.success(t('menus.toast.categoryDeleted'));
@@ -289,7 +258,8 @@ export default function MenuManagementPage() {
   };
 
   const handleDeleteItem = async (id: string) => {
-      if (!confirm(t('menus.confirm.deleteItem'))) return;
+      const ok = await confirm({ title: t('menus.confirm.deleteItem'), tone: 'danger', confirmText: t('common.delete'), cancelText: t('common.cancel') });
+      if (!ok) return;
       try {
           await api.delete(`/menus/items/${id}`);
           toast.success(t('menus.toast.itemDeleted'));
@@ -443,9 +413,11 @@ export default function MenuManagementPage() {
             <p className="text-[10px] text-slate-400 font-black uppercase tracking-[0.2em] mt-1 italic">{t('menus.title.digitalCatalogue')}</p>
           </div>
           <div className="flex gap-2">
-            <Button size="sm" variant="outline" onClick={() => setIsBulkPriceDialogOpen(true)} className="h-9 px-4 text-[10px] font-black uppercase border-blue-200 text-blue-700 shadow-sm bg-blue-50 hover:bg-blue-100">
-                <Edit2 className="w-3.5 h-3.5 mr-1.5" /> {t('menus.buttons.bulkPriceUpdate')}
-            </Button>
+            <Link href="/dashboard/menus/bulk-prices">
+              <Button size="sm" variant="outline" className="h-9 px-4 text-[10px] font-black uppercase border-blue-200 text-blue-700 shadow-sm bg-blue-50 hover:bg-blue-100">
+                <ListChecks className="w-3.5 h-3.5 mr-1.5" /> {t('menus.buttons.bulkPriceUpdate')}
+              </Button>
+            </Link>
             <Button size="sm" variant="outline" onClick={() => { setIsEditMode(false); setMenuForm({name:'', isActive:true, footnotes: ''}); setIsMenuDialogOpen(true); }} className="h-9 px-4 text-[10px] font-black uppercase border-slate-200 text-slate-600 shadow-sm bg-white">
                 <Plus className="w-3.5 h-3.5 mr-1.5" /> {t('menus.buttons.quickCreate')}
             </Button>
@@ -702,70 +674,7 @@ export default function MenuManagementPage() {
                 </form>
             </DialogContent>
         </Dialog>
-        {/* Bulk Price Update Dialog */}
-        <Dialog open={isBulkPriceDialogOpen} onOpenChange={setIsBulkPriceDialogOpen}>
-            <DialogContent maxWidth="sm:max-w-md" className="p-0 rounded-md border-0 shadow-2xl">
-                <form onSubmit={handleBulkPriceSubmit}>
-                    <div className="bg-slate-900 p-4 text-white">
-                        <DialogHeader><DialogTitle className="text-sm font-bold uppercase tracking-widest">{t('menus.title.bulkPriceUpdate')}</DialogTitle></DialogHeader>
-                    </div>
-                    <div className="p-6 space-y-6 bg-white">
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="space-y-1.5">
-                                <Label className="text-[10px] font-black uppercase text-slate-400 ml-1">{t('menus.form.type')}</Label>
-                                <Select value={bulkPriceForm.updateType} onValueChange={v => { if (v) setBulkPriceForm({...bulkPriceForm, updateType: v}); }}>
-                                    <SelectTrigger className="h-10 text-xs font-bold border-slate-200 rounded-sm">
-                                        <SelectValue />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="PERCENTAGE" className="text-xs">{t('menus.form.percentage')}</SelectItem>
-                                        <SelectItem value="FIXED_AMOUNT" className="text-xs">{t('menus.form.fixedAmount')}</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                            <div className="space-y-1.5">
-                                <Label className="text-[10px] font-black uppercase text-slate-400 ml-1">{t('menus.form.direction')}</Label>
-                                <Select value={bulkPriceForm.isIncrease ? 'true' : 'false'} onValueChange={v => setBulkPriceForm({...bulkPriceForm, isIncrease: v === 'true'})}>
-                                    <SelectTrigger className="h-10 text-xs font-bold border-slate-200 rounded-sm">
-                                        <SelectValue />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="true" className="text-xs">{t('menus.form.increase')}</SelectItem>
-                                        <SelectItem value="false" className="text-xs">{t('menus.form.decrease')}</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                        </div>
-
-                        <div className="space-y-1.5">
-                            <Label className="text-[10px] font-black uppercase text-slate-400 ml-1">{t('menus.form.value')} ({bulkPriceForm.updateType === 'PERCENTAGE' ? '%' : 'TRY'})</Label>
-                            <Input required type="number" step="0.01" value={bulkPriceForm.value} onChange={e => setBulkPriceForm({...bulkPriceForm, value: e.target.value})} className="h-10 text-sm font-bold border-slate-200 rounded-sm font-mono" />
-                        </div>
-
-                        <div className="pt-4 border-t border-slate-100 space-y-4">
-                            <div className="flex items-center justify-between">
-                                <Label className="text-xs font-bold text-slate-700">{t('menus.form.scheduleForLater')}</Label>
-                                <Checkbox checked={bulkPriceForm.scheduleUpdate} onCheckedChange={c => setBulkPriceForm({...bulkPriceForm, scheduleUpdate: !!c})} />
-                            </div>
-                            {bulkPriceForm.scheduleUpdate && (
-                                <div className="space-y-1.5">
-                                    <Label className="text-[10px] font-black uppercase text-slate-400 ml-1">{t('menus.form.dateTime')}</Label>
-                                    <Input required type="datetime-local" value={bulkPriceForm.scheduledFor} onChange={e => setBulkPriceForm({...bulkPriceForm, scheduledFor: e.target.value})} className="h-10 text-xs font-medium border-slate-200 rounded-sm" />
-                                </div>
-                            )}
-                        </div>
-                    </div>
-                    <div className="p-4 bg-slate-50 border-t border-slate-100 flex justify-end gap-2">
-                        <Button type="button" variant="ghost" onClick={() => setIsBulkPriceDialogOpen(false)} className="h-9 text-xs font-bold text-slate-400 uppercase">{t('menus.buttons.cancel')}</Button>
-                        <Button type="submit" className="h-9 bg-blue-600 hover:bg-blue-700 text-white text-xs font-black uppercase px-6 rounded-sm">
-                            {bulkPriceForm.scheduleUpdate ? t('menus.buttons.scheduleUpdate') : t('menus.buttons.applyNow')}
-                        </Button>
-                    </div>
-                </form>
-            </DialogContent>
-        </Dialog>
-
-        <PasswordConfirmDialog 
+        <PasswordConfirmDialog
             open={!!deleteMenuId} 
             onOpenChange={(open) => { if (!open) setDeleteMenuId(null); }}
             onConfirm={executeDeleteMenu}

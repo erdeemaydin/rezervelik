@@ -19,6 +19,30 @@ export const startPriceUpdater = () => {
       for (const update of pendingUpdates) {
         try {
           await prisma.$transaction(async (tx) => {
+            // Explicit per-item prices scheduled from the bulk editor: apply the
+            // stored target prices directly (only to items still in this tenant).
+            if (update.updateType === 'EXPLICIT_SET') {
+              const targets: { id: string; price: number }[] = update.payload ? JSON.parse(update.payload) : [];
+              if (targets.length > 0) {
+                const owned = await tx.menuItem.findMany({
+                  where: { id: { in: targets.map(t => t.id) }, category: { menu: { restaurantId: update.restaurantId } } },
+                  select: { id: true }
+                });
+                const ownedIds = new Set(owned.map(o => o.id));
+                for (const target of targets) {
+                  if (ownedIds.has(target.id) && !isNaN(target.price) && target.price >= 0) {
+                    await tx.menuItem.update({ where: { id: target.id }, data: { price: Math.round(target.price * 100) / 100 } });
+                  }
+                }
+              }
+              await tx.scheduledPriceUpdate.update({
+                where: { id: update.id },
+                data: { status: 'APPLIED', appliedAt: new Date() }
+              });
+              console.log(`[Worker] Successfully applied explicit update ${update.id}`);
+              return;
+            }
+
             const menuItems = await tx.menuItem.findMany({
               where: {
                 category: {

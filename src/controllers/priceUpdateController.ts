@@ -31,3 +31,70 @@ export const bulkUpdatePrices = async (req: Request, res: Response) => {
     return errorResponse(res, 'errors.internal_error', 500);
   }
 };
+
+// Applies an explicit new price to individual menu items (from the bulk-price
+// editor, where the admin reviews/tweaks each computed value before saving).
+// Only items whose price actually changed are sent by the client; anything
+// omitted keeps its old price. Every id is verified to belong to this tenant.
+export const setItemPrices = async (req: Request, res: Response) => {
+  try {
+    const restaurantId = req.restaurantId!;
+    const { items, scheduledFor } = req.body as { items?: { id: string; price: number }[]; scheduledFor?: string };
+
+    if (!Array.isArray(items) || items.length === 0) {
+      return errorResponse(res, 'errors.validation_error', 400, { message: 'No items provided' });
+    }
+
+    // Normalize + validate the payload up front.
+    const clean: { id: string; price: number }[] = [];
+    for (const it of items) {
+      const price = typeof it.price === 'number' ? it.price : parseFloat(it.price as any);
+      if (!it.id || isNaN(price) || price < 0) {
+        return errorResponse(res, 'errors.validation_error', 400, { message: 'Invalid item price' });
+      }
+      clean.push({ id: it.id, price });
+    }
+
+    // Restrict to items that actually belong to this restaurant (via category → menu).
+    const owned = await prisma.menuItem.findMany({
+      where: { id: { in: clean.map(c => c.id) }, category: { menu: { restaurantId } } },
+      select: { id: true }
+    });
+    const ownedIds = new Set(owned.map(o => o.id));
+    const toUpdate = clean.filter(c => ownedIds.has(c.id));
+
+    if (toUpdate.length === 0) {
+      return errorResponse(res, 'errors.not_found', 404, { message: 'No matching menu items' });
+    }
+
+    // Scheduled for a future time: store the target prices for the worker to apply
+    // later instead of changing them now.
+    if (scheduledFor) {
+      const when = new Date(scheduledFor);
+      if (isNaN(when.getTime())) {
+        return errorResponse(res, 'errors.validation_error', 400, { message: 'Invalid schedule date' });
+      }
+      if (when.getTime() > Date.now() + 60 * 1000) {
+        const scheduled = await prisma.scheduledPriceUpdate.create({
+          data: {
+            restaurantId,
+            updateType: 'EXPLICIT_SET',
+            value: 0,
+            payload: JSON.stringify(toUpdate),
+            scheduledFor: when
+          }
+        });
+        return successResponse(res, { scheduled: true, scheduledFor: when, count: toUpdate.length, id: scheduled.id }, undefined, 201);
+      }
+    }
+
+    await prisma.$transaction(
+      toUpdate.map(c => prisma.menuItem.update({ where: { id: c.id }, data: { price: c.price } }))
+    );
+
+    return successResponse(res, { updated: toUpdate.length });
+  } catch (error) {
+    console.error('Set item prices error:', error);
+    return errorResponse(res, 'errors.internal_error', 500);
+  }
+};

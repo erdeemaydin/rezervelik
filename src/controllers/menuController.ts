@@ -41,8 +41,12 @@ export const createMenu = async (req: Request, res: Response) => {
   try {
     const restaurantId = req.restaurantId!;
     const { name, isActive, footnotes } = req.body;
-    const menu = await prisma.menu.create({
-      data: { restaurantId, name, isActive, footnotes }
+    // Only one menu may be live at a time — creating an active menu takes the others offline.
+    const menu = await prisma.$transaction(async (tx) => {
+      if (isActive) {
+        await tx.menu.updateMany({ where: { restaurantId }, data: { isActive: false } });
+      }
+      return tx.menu.create({ data: { restaurantId, name, isActive, footnotes } });
     });
     return successResponse(res, menu, undefined, 201);
   } catch (error) {
@@ -52,11 +56,18 @@ export const createMenu = async (req: Request, res: Response) => {
 
 export const updateMenu = async (req: Request, res: Response) => {
   try {
+    const restaurantId = req.restaurantId!;
     const { id } = req.params;
     const { name, isActive, footnotes } = req.body;
-    const menu = await prisma.menu.update({
-      where: { id },
-      data: { name, isActive, footnotes }
+    // Enforce a single live menu: activating one deactivates the rest for this tenant.
+    const menu = await prisma.$transaction(async (tx) => {
+      if (isActive === true) {
+        await tx.menu.updateMany({
+          where: { restaurantId, id: { not: id } },
+          data: { isActive: false }
+        });
+      }
+      return tx.menu.update({ where: { id }, data: { name, isActive, footnotes } });
     });
     return successResponse(res, menu);
   } catch (error) {
