@@ -258,7 +258,10 @@ export default function ReservationsPage() {
         toast.success(t("reservations.statusUpdated"));
       }
       fetchData();
-    } catch (err) { toast.error(t("reservations.updateFailed")); }
+    } catch (err: any) { 
+      const backendMsg = err.response?.data?.details?.message || err.response?.data?.error;
+      toast.error(backendMsg || t("reservations.updateFailed")); 
+    }
   };
 
   const [paymentInfo, setPaymentInfo] = useState<{ url: string; code: string; amount: number; currency: string } | null>(null);
@@ -365,7 +368,8 @@ export default function ReservationsPage() {
         setShowConflictWarning(true);
         return;
       }
-      toast.error(err.response?.data?.error || t("reservations.failedToSave"));
+      const backendMsg = err.response?.data?.details?.message || err.response?.data?.error;
+      toast.error(backendMsg || t("reservations.failedToSave"));
     }
   };
 
