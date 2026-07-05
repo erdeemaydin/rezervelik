@@ -1,16 +1,26 @@
 import { Request, Response } from 'express';
+import crypto from 'crypto';
 import prisma from '../config/prisma';
 import { successResponse, errorResponse } from '../utils/response';
 
-// Wedding/organization vertical (Phase 4). Events (with a sales pipeline), their
-// installment payment plans, and guest lists (RSVP + seating). Every query is
-// scoped to req.restaurantId; sub-resources verify their parent belongs to the
-// tenant before mutating. See MULTI_BUSINESS_ROADMAP.md §6.
+// Wedding/organization vertical (Phase 4 + 5). Events (with a sales pipeline),
+// their installment payment plans, guest lists (RSVP + seating), vendor
+// coordination and the e-davetiye invitation microsite. Every query is scoped to
+// req.restaurantId; sub-resources verify their parent belongs to the tenant
+// before mutating. See MULTI_BUSINESS_ROADMAP.md §6.
 
 export const EVENT_STAGES = ['LEAD', 'VISIT', 'QUOTE', 'CONTRACT', 'CONFIRMED', 'COMPLETED', 'CANCELED'];
 export const EVENT_TYPES = ['WEDDING', 'ENGAGEMENT', 'HENNA', 'CORPORATE'];
 const RSVP_VALUES = ['PENDING', 'YES', 'NO', 'MAYBE'];
 const INSTALLMENT_STATUS = ['PENDING', 'PAID', 'OVERDUE'];
+const VENDOR_LINK_STATUS = ['PENDING', 'CONFIRMED', 'CANCELED'];
+
+// Verify a vendor belongs to this tenant; returns the id if valid, else null.
+async function ownedVendorId(restaurantId: string, id?: string | null): Promise<string | null> {
+  if (!id) return null;
+  const row = await prisma.vendor.findFirst({ where: { id, restaurantId }, select: { id: true } });
+  return row ? id : null;
+}
 
 // Verify a referenced row belongs to this tenant; returns the id if valid, else null.
 async function ownedResourceId(restaurantId: string, id?: string | null): Promise<string | null> {
@@ -68,6 +78,10 @@ export const getEvent = async (req: Request, res: Response) => {
         coordinator: { select: { id: true, firstName: true, lastName: true } },
         paymentPlan: { include: { installments: { orderBy: { dueDate: 'asc' } } } },
         guests: { include: { resource: { select: { id: true, identifier: true } } }, orderBy: { name: 'asc' } },
+        vendors: {
+          include: { vendor: { select: { id: true, name: true, category: true, phone: true } } },
+          orderBy: { createdAt: 'asc' },
+        },
       },
     });
     if (!event) return errorResponse(res, 'errors.not_found', 404);
@@ -169,6 +183,13 @@ export const updateEvent = async (req: Request, res: Response) => {
         guestCount: b.guestCount !== undefined ? count : undefined,
         stage: b.stage,
         notes: b.notes,
+        // Contract / proposal + invitation display fields (Phase 5).
+        contractUrl: b.contractUrl,
+        venueName: b.venueName,
+        venueAddress: b.venueAddress,
+        invitationMessage: b.invitationMessage,
+        ...(b.contractSignedAt !== undefined ? { contractSignedAt: b.contractSignedAt ? new Date(b.contractSignedAt) : null } : {}),
+        ...(b.proposalSentAt !== undefined ? { proposalSentAt: b.proposalSentAt ? new Date(b.proposalSentAt) : null } : {}),
         ...(quotedTotal !== undefined ? { quotedTotal } : {}),
         ...(b.resourceId !== undefined ? { resourceId: await ownedResourceId(restaurantId, b.resourceId) } : {}),
         ...(b.packageId !== undefined ? { packageId: (await ownedPackage(restaurantId, b.packageId))?.id ?? null } : {}),
@@ -392,6 +413,121 @@ export const deleteGuest = async (req: Request, res: Response) => {
     if (!existing) return errorResponse(res, 'errors.not_found', 404);
     await prisma.guest.delete({ where: { id: guestId } });
     return successResponse(res, null, 'Guest deleted');
+  } catch (error) {
+    return errorResponse(res, 'errors.internal_error', 500);
+  }
+};
+
+// ------------------------------------------------------------ e-davetiye link
+
+// Lazily mint (or, with { regenerate: true }, rotate) the public invitation token
+// for an event. The token is the key for the public RSVP microsite; rotating it
+// invalidates any previously shared link.
+export const generateInvitation = async (req: Request, res: Response) => {
+  try {
+    const restaurantId = req.restaurantId!;
+    const { id } = req.params;
+    const event = await prisma.event.findFirst({ where: { id, restaurantId }, select: { id: true, publicToken: true } });
+    if (!event) return errorResponse(res, 'errors.not_found', 404);
+
+    let token = event.publicToken;
+    if (!token || req.body?.regenerate === true) {
+      token = crypto.randomBytes(24).toString('hex');
+      await prisma.event.update({ where: { id }, data: { publicToken: token } });
+    }
+    return successResponse(res, { publicToken: token });
+  } catch (error) {
+    return errorResponse(res, 'errors.internal_error', 500);
+  }
+};
+
+// -------------------------------------------------------------- Event vendors
+
+export const getEventVendors = async (req: Request, res: Response) => {
+  try {
+    const restaurantId = req.restaurantId!;
+    const { eventId } = req.params;
+    if (!(await ownedEventId(restaurantId, eventId))) return errorResponse(res, 'errors.not_found', 404);
+    const links = await prisma.eventVendor.findMany({
+      where: { restaurantId, eventId },
+      include: { vendor: { select: { id: true, name: true, category: true, phone: true } } },
+      orderBy: { createdAt: 'asc' },
+    });
+    return successResponse(res, links);
+  } catch (error) {
+    return errorResponse(res, 'errors.internal_error', 500);
+  }
+};
+
+export const addEventVendor = async (req: Request, res: Response) => {
+  try {
+    const restaurantId = req.restaurantId!;
+    const { eventId } = req.params;
+    if (!(await ownedEventId(restaurantId, eventId))) return errorResponse(res, 'errors.not_found', 404);
+
+    const { vendorId, role, cost, status, notes } = req.body;
+    const ownedVendor = await ownedVendorId(restaurantId, vendorId);
+    if (!ownedVendor) return errorResponse(res, 'errors.validation_error', 400, { message: 'Unknown vendor' });
+    if (status && !VENDOR_LINK_STATUS.includes(status)) {
+      return errorResponse(res, 'errors.validation_error', 400, { message: 'Invalid status' });
+    }
+    // A vendor can only be linked to an event once (schema unique constraint).
+    const existing = await prisma.eventVendor.findFirst({ where: { eventId, vendorId: ownedVendor }, select: { id: true } });
+    if (existing) return errorResponse(res, 'errors.validation_error', 400, { message: 'Vendor already added to this event' });
+
+    const link = await prisma.eventVendor.create({
+      data: {
+        restaurantId,
+        eventId,
+        vendorId: ownedVendor,
+        role: role || null,
+        cost: cost !== undefined && cost !== null && cost !== '' ? Math.round(Number(cost)) : null,
+        status: status || 'PENDING',
+        notes: notes || null,
+      },
+      include: { vendor: { select: { id: true, name: true, category: true, phone: true } } },
+    });
+    return successResponse(res, link, 'Vendor added', 201);
+  } catch (error) {
+    return errorResponse(res, 'errors.internal_error', 500);
+  }
+};
+
+export const updateEventVendor = async (req: Request, res: Response) => {
+  try {
+    const restaurantId = req.restaurantId!;
+    const { linkId } = req.params;
+    const existing = await prisma.eventVendor.findFirst({ where: { id: linkId, restaurantId }, select: { id: true } });
+    if (!existing) return errorResponse(res, 'errors.not_found', 404);
+
+    const b = req.body;
+    if (b.status !== undefined && !VENDOR_LINK_STATUS.includes(b.status)) {
+      return errorResponse(res, 'errors.validation_error', 400, { message: 'Invalid status' });
+    }
+    const link = await prisma.eventVendor.update({
+      where: { id: linkId },
+      data: {
+        role: b.role,
+        status: b.status,
+        notes: b.notes,
+        ...(b.cost !== undefined ? { cost: b.cost === null || b.cost === '' ? null : Math.round(Number(b.cost)) } : {}),
+      },
+      include: { vendor: { select: { id: true, name: true, category: true, phone: true } } },
+    });
+    return successResponse(res, link);
+  } catch (error) {
+    return errorResponse(res, 'errors.internal_error', 500);
+  }
+};
+
+export const removeEventVendor = async (req: Request, res: Response) => {
+  try {
+    const restaurantId = req.restaurantId!;
+    const { linkId } = req.params;
+    const existing = await prisma.eventVendor.findFirst({ where: { id: linkId, restaurantId }, select: { id: true } });
+    if (!existing) return errorResponse(res, 'errors.not_found', 404);
+    await prisma.eventVendor.delete({ where: { id: linkId } });
+    return successResponse(res, null, 'Vendor removed');
   } catch (error) {
     return errorResponse(res, 'errors.internal_error', 500);
   }

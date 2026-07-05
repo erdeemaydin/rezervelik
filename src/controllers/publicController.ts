@@ -241,3 +241,93 @@ export const declineOffer = async (req: Request, res: Response) => {
     return errorResponse(res, 'errors.internal_error', 500);
   }
 };
+
+// ----------------------------------------------- e-davetiye (invitation microsite)
+
+const RSVP_VALUES = ['PENDING', 'YES', 'NO', 'MAYBE'];
+
+// Public read for the invitation page. Keyed by the event's shareable token; only
+// display-safe fields are returned (never financials, notes, or the guest list).
+export const getInvitation = async (req: Request, res: Response) => {
+  try {
+    const { token } = req.params;
+    const event = await prisma.event.findUnique({
+      where: { publicToken: token },
+      include: {
+        restaurant: { select: { name: true, slug: true, customization: true } },
+        resource: { select: { identifier: true } },
+      },
+    });
+    if (!event) return errorResponse(res, 'errors.not_found', 404);
+
+    return successResponse(res, {
+      eventType: event.eventType,
+      clientName: event.clientName,
+      eventDate: event.eventDate,
+      slot: event.slot,
+      venueName: event.venueName || event.resource?.identifier || null,
+      venueAddress: event.venueAddress,
+      invitationMessage: event.invitationMessage,
+      restaurant: { name: event.restaurant.name, slug: event.restaurant.slug },
+      customization: event.restaurant.customization,
+    });
+  } catch (error) {
+    return errorResponse(res, 'errors.internal_error', 500);
+  }
+};
+
+// Public RSVP submission. Adds the responder to the event's guest list (or updates
+// a prior response with the same name), stamping respondedAt so staff can tell
+// self-serve replies from ones they entered.
+export const submitInvitationRsvp = async (req: Request, res: Response) => {
+  try {
+    const { token } = req.params;
+    const { name, partySize, rsvp, dietary, note } = req.body;
+    if (!name) return errorResponse(res, 'errors.validation_error', 400, { message: 'name is required' });
+    if (rsvp && !RSVP_VALUES.includes(rsvp)) {
+      return errorResponse(res, 'errors.validation_error', 400, { message: 'Invalid rsvp' });
+    }
+
+    const event = await prisma.event.findUnique({
+      where: { publicToken: token },
+      select: { id: true, restaurantId: true },
+    });
+    if (!event) return errorResponse(res, 'errors.not_found', 404);
+
+    const size = partySize ? Math.max(1, parseInt(partySize)) : 1;
+    // Deduplicate on the responder's name so a repeat RSVP updates, not stacks.
+    const existing = await prisma.guest.findFirst({
+      where: { eventId: event.id, name: { equals: name, mode: 'insensitive' } },
+      select: { id: true },
+    });
+
+    if (existing) {
+      await prisma.guest.update({
+        where: { id: existing.id },
+        data: {
+          partySize: size,
+          rsvp: rsvp || 'YES',
+          dietary: dietary || null,
+          note: note || null,
+          respondedAt: new Date(),
+        },
+      });
+    } else {
+      await prisma.guest.create({
+        data: {
+          restaurantId: event.restaurantId,
+          eventId: event.id,
+          name,
+          partySize: size,
+          rsvp: rsvp || 'YES',
+          dietary: dietary || null,
+          note: note || null,
+          respondedAt: new Date(),
+        },
+      });
+    }
+    return successResponse(res, { message: 'RSVP received' });
+  } catch (error) {
+    return errorResponse(res, 'errors.internal_error', 500);
+  }
+};

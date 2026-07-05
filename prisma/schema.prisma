@@ -49,6 +49,8 @@ model Restaurant {
   events                Event[]
   paymentPlans          PaymentPlan[]
   guests                Guest[]
+  vendors               Vendor[]
+  eventVendors          EventVendor[]
 }
 
 model FrontendCustomization {
@@ -143,6 +145,7 @@ model RestaurantSettings {
   hasEventPipeline   Boolean @default(false) // Event sales pipeline (lead → confirmed)
   hasInstallmentPlans Boolean @default(false) // kapora + taksit payment schedules
   hasGuestList       Boolean @default(false) // guest list, RSVP, seating assignment
+  hasVendors         Boolean @default(false) // external vendor coordination (organizer model)
 
   // Privacy & Staff View Settings
   staffScheduleView String @default("OWN_ONLY") // "OWN_ONLY", "SHIFT_TEAM", "FULL_ROSTER"
@@ -671,6 +674,19 @@ model Event {
   quotedTotal Int? // minor units (kuruş)
   notes       String?
 
+  // Contract / proposal tracking (Phase 5). The quote is derived from
+  // package × guestCount (quotedTotal); the contract is an uploaded/linked doc.
+  contractUrl      String? // link to the signed contract document
+  contractSignedAt DateTime?
+  proposalSentAt   DateTime? // when the quote/proposal was sent to the client
+
+  // e-davetiye (invitation microsite, Phase 5). `publicToken` is the shareable
+  // key for the public RSVP page; guests self-serve their RSVP into the guest list.
+  publicToken       String? @unique
+  invitationMessage String? // custom greeting shown on the invitation
+  venueName         String? // display venue/location name on the invitation
+  venueAddress      String? // free-text address for the invitation map/link
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -680,6 +696,7 @@ model Event {
   coordinator User?             @relation("EventCoordinator", fields: [coordinatorId], references: [id])
   paymentPlan PaymentPlan?
   guests      Guest[]
+  vendors     EventVendor[]
 
   @@index([restaurantId])
   @@index([eventDate])
@@ -732,6 +749,7 @@ model Guest {
   rsvp         String  @default("PENDING") // PENDING, YES, NO, MAYBE
   dietary      String?
   note         String?
+  respondedAt  DateTime? // set when the guest self-responds via the invitation microsite
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -740,6 +758,53 @@ model Guest {
   event      Event             @relation(fields: [eventId], references: [id], onDelete: Cascade)
   resource   BookableResource? @relation("GuestSeat", fields: [resourceId], references: [id])
 
+  @@index([restaurantId])
+  @@index([eventId])
+}
+
+// External vendors an organizer coordinates for events (photographer, DJ,
+// florist, catering…). Owned per-tenant; linked to specific events via
+// EventVendor. Gated by the `hasVendors` feature flag (WEDDING profile default).
+// See MULTI_BUSINESS_ROADMAP.md Phase 5.
+model Vendor {
+  id           String  @id @default(uuid())
+  restaurantId String
+  name         String
+  category     String  @default("OTHER") // PHOTOGRAPHER, VIDEOGRAPHER, DJ, MUSIC, FLORIST, CATERING, DECOR, TRANSPORT, CAKE, OTHER
+  contactName  String?
+  phone        String?
+  email        String?
+  notes        String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  restaurant   Restaurant    @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  eventVendors EventVendor[]
+
+  @@index([restaurantId])
+}
+
+// A vendor booked for a specific event, with its own cost/status/role so the
+// same vendor can serve many events on different terms.
+model EventVendor {
+  id           String  @id @default(uuid())
+  restaurantId String
+  eventId      String
+  vendorId     String
+  role         String? // freeform label; falls back to the vendor's category
+  cost         Int? // minor units
+  status       String  @default("PENDING") // PENDING, CONFIRMED, CANCELED
+  notes        String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  restaurant Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  event      Event      @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  vendor     Vendor     @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+
+  @@unique([eventId, vendorId])
   @@index([restaurantId])
   @@index([eventId])
 }

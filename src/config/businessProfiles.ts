@@ -36,6 +36,7 @@ export interface FeatureProfile {
   hasEventPipeline: boolean;
   hasInstallmentPlans: boolean;
   hasGuestList: boolean;
+  hasVendors: boolean;
 }
 
 export const FEATURE_FLAG_KEYS: (keyof FeatureProfile)[] = [
@@ -49,13 +50,15 @@ export const FEATURE_FLAG_KEYS: (keyof FeatureProfile)[] = [
   'hasEventPipeline',
   'hasInstallmentPlans',
   'hasGuestList',
+  'hasVendors',
 ];
 
-// Non-wedding verticals share the same three wedding flags = off.
+// Non-wedding verticals share the same wedding/organizer flags = off.
 const NO_WEDDING = {
   hasEventPipeline: false,
   hasInstallmentPlans: false,
   hasGuestList: false,
+  hasVendors: false,
 } as const;
 
 export const FEATURE_PROFILES: Record<BusinessType, FeatureProfile> = {
@@ -120,6 +123,7 @@ export const FEATURE_PROFILES: Record<BusinessType, FeatureProfile> = {
     hasEventPipeline: true,
     hasInstallmentPlans: true,
     hasGuestList: true,
+    hasVendors: true,
   },
 };
 
