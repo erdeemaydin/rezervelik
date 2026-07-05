@@ -20,6 +20,7 @@ import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useTranslation } from "@/i18n/provider";
+import { useTerms } from "@/hooks/useTerms";
 import { useConfirm } from '@/components/ui/confirm-dialog';
 
 interface TableType {
@@ -63,6 +64,8 @@ interface FloorElement {
 
 export default function TablesPage() {
   const { t } = useTranslation();
+  const { term, businessType } = useTerms();
+  const isRestaurant = businessType === 'RESTAURANT';
   const confirm = useConfirm();
   const currentUser = useAuthStore(state => state.user);
   const hasEditPermission = currentUser?.role === 'SUPER_ADMIN' || currentUser?.role === 'ADMIN' || (currentUser?.permissions || '').includes('edit_floor_plan');
@@ -452,7 +455,7 @@ export default function TablesPage() {
       <div className="flex flex-col gap-4 h-full">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-xl font-bold text-slate-800">{t("tables.pageTitle")}</h1>
+            <h1 className="text-xl font-bold text-slate-800">{isRestaurant ? t("tables.pageTitle") : term('resourcePlural')}</h1>
             <p className="text-[10px] text-slate-400 uppercase tracking-[0.2em] font-black">{t("tables.pageSubtitle")}</p>
           </div>
           <div className="flex items-center gap-4">

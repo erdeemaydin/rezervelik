@@ -24,6 +24,7 @@ import api from '@/lib/api';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { useTranslation } from "@/i18n/provider";
+import { useTerms } from "@/hooks/useTerms";
 import { useConfirm } from '@/components/ui/confirm-dialog';
 import { statusStyle } from '@/lib/reservationStatus';
 import { StatusDots } from '@/components/dashboard/StatusDots';
@@ -52,6 +53,8 @@ const toLocalDateStr = (d: Date) =>
 
 export default function ReservationsPage() {
   const { t } = useTranslation();
+  const { term, businessType } = useTerms();
+  const isRestaurant = businessType === 'RESTAURANT';
   const confirm = useConfirm();
   const [reservations, setReservations] = useState<Reservation[]>([]);
   const [tables, setTables] = useState<any[]>([]);
@@ -416,7 +419,7 @@ export default function ReservationsPage() {
         {/* Header - Corporate Blue */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-black text-slate-800 tracking-tight">{t("reservations.dashboardTitle")}</h1>
+            <h1 className="text-2xl font-black text-slate-800 tracking-tight">{isRestaurant ? t("reservations.dashboardTitle") : term('bookingPlural')}</h1>
             <div className="flex items-center gap-2 mt-1">
                 <div className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
                 <p className="text-[10px] text-slate-400 font-black uppercase tracking-[0.2em]">{t("reservations.serviceControlUnit")}</p>

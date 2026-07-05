@@ -42,6 +42,8 @@ export default function TenantManagementPage() {
   const [settingsForm, setSettingsForm] = useState({
     isVipEnabled: true, isInternalNotesEnabled: true, isCategoriesEnabled: true,
     hasWaitTimeFeature: true, hasShiftFeature: true, hasMenuFeature: true, hasPaymentFeature: true,
+    // Organizer / wedding modules (default off; the WEDDING profile turns them on).
+    hasEventPipeline: false, hasInstallmentPlans: false, hasGuestList: false, hasVendors: false,
     businessType: 'RESTAURANT',
     layoutStyle: 'CLASSIC_LIST',
     // Root-admin-only controls: platform currency + 2FA capability + default language.
@@ -157,6 +159,10 @@ export default function TenantManagementPage() {
       hasShiftFeature: tenant.settings?.hasShiftFeature ?? true,
       hasMenuFeature: tenant.settings?.hasMenuFeature ?? true,
       hasPaymentFeature: tenant.settings?.hasPaymentFeature ?? true,
+      hasEventPipeline: tenant.settings?.hasEventPipeline ?? false,
+      hasInstallmentPlans: tenant.settings?.hasInstallmentPlans ?? false,
+      hasGuestList: tenant.settings?.hasGuestList ?? false,
+      hasVendors: tenant.settings?.hasVendors ?? false,
       currency: tenant.settings?.currency ?? 'TRY',
       twoFactorEnabled: tenant.settings?.twoFactorEnabled ?? false,
       defaultLanguage: tenant.settings?.defaultLanguage ?? 'tr',
@@ -589,6 +595,35 @@ export default function TenantManagementPage() {
                                     <p className="text-[9px] text-indigo-400 font-bold uppercase">Deposits & Payment</p>
                                 </div>
                                 <Checkbox checked={settingsForm.hasPaymentFeature} onCheckedChange={(c) => setSettingsForm({...settingsForm, hasPaymentFeature: !!c})} />
+                            </div>
+                            {/* Organizer / wedding modules — meaningful for the WEDDING vertical. */}
+                            <div className="flex items-center justify-between p-3 border border-slate-100 rounded-sm bg-amber-50/40">
+                                <div className="space-y-0.5">
+                                    <Label className="text-xs font-black uppercase text-amber-900">Event Pipeline</Label>
+                                    <p className="text-[9px] text-amber-500 font-bold uppercase">Lead → Confirmed</p>
+                                </div>
+                                <Checkbox checked={settingsForm.hasEventPipeline} onCheckedChange={(c) => setSettingsForm({...settingsForm, hasEventPipeline: !!c})} />
+                            </div>
+                            <div className="flex items-center justify-between p-3 border border-slate-100 rounded-sm bg-amber-50/40">
+                                <div className="space-y-0.5">
+                                    <Label className="text-xs font-black uppercase text-amber-900">Installment Plans</Label>
+                                    <p className="text-[9px] text-amber-500 font-bold uppercase">Kapora & Taksit</p>
+                                </div>
+                                <Checkbox checked={settingsForm.hasInstallmentPlans} onCheckedChange={(c) => setSettingsForm({...settingsForm, hasInstallmentPlans: !!c})} />
+                            </div>
+                            <div className="flex items-center justify-between p-3 border border-slate-100 rounded-sm bg-amber-50/40">
+                                <div className="space-y-0.5">
+                                    <Label className="text-xs font-black uppercase text-amber-900">Guest List & Seating</Label>
+                                    <p className="text-[9px] text-amber-500 font-bold uppercase">RSVP & Seating</p>
+                                </div>
+                                <Checkbox checked={settingsForm.hasGuestList} onCheckedChange={(c) => setSettingsForm({...settingsForm, hasGuestList: !!c})} />
+                            </div>
+                            <div className="flex items-center justify-between p-3 border border-slate-100 rounded-sm bg-amber-50/40">
+                                <div className="space-y-0.5">
+                                    <Label className="text-xs font-black uppercase text-amber-900">Vendor Coordination</Label>
+                                    <p className="text-[9px] text-amber-500 font-bold uppercase">Photographers, DJs…</p>
+                                </div>
+                                <Checkbox checked={settingsForm.hasVendors} onCheckedChange={(c) => setSettingsForm({...settingsForm, hasVendors: !!c})} />
                             </div>
                         </div>
 
