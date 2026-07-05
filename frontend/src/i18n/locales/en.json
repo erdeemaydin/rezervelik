@@ -50,7 +50,8 @@
     "zone": "Zone",
     "mainDiningRoom": "Main Dining Room",
     "logout": "Logout",
-    "userSettings": "User Settings"
+    "userSettings": "User Settings",
+    "auditLog": "Activity Log"
   },
   "timesheet": {
     "title": "Timesheet",
@@ -1405,5 +1406,19 @@
       "guestName": "Guest name",
       "quotedTotal": "Quoted Total (₺)"
     }
+  },
+  "audit": {
+    "title": "Activity Log",
+    "subtitle": "A record of activity across your account.",
+    "notEnabledTitle": "Activity log not available",
+    "notEnabledDesc": "The activity log has not been enabled for your account. Contact your platform administrator to request access.",
+    "colTime": "Timestamp",
+    "colActor": "Actor",
+    "colAction": "Action",
+    "colTarget": "Target",
+    "allCategories": "All Categories",
+    "empty": "No activity recorded yet.",
+    "loading": "Loading activity…",
+    "refresh": "Refresh"
   }
 }

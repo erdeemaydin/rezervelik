@@ -69,6 +69,7 @@ model Restaurant {
   events                Event[]
   paymentPlans          PaymentPlan[]
   guests                Guest[]
+  auditLogs             AuditLog[]
 }
 
 model FrontendCustomization {
@@ -179,8 +180,45 @@ model RestaurantSettings {
   // platform default.
   defaultLanguage   String  @default("tr")
 
+  // Whether the tenant's own admins/managers may view the activity audit log for
+  // their restaurant. Root/system-admin decides this per tenant; default off so
+  // the audit trail is a platform-admin tool unless explicitly shared.
+  showAuditLogToTenant Boolean @default(false)
+
   updatedAt  DateTime   @updatedAt
   restaurant Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+}
+
+// Immutable-by-convention activity trail. A null restaurantId marks a
+// platform-level (system-admin) action; a set restaurantId scopes the entry to a
+// single tenant so it can surface in that tenant's own audit view. Actor identity
+// is snapshotted (email/name/role) so the record survives user deletion.
+model AuditLog {
+  id           String   @id @default(uuid())
+  createdAt    DateTime @default(now())
+
+  // Who did it (snapshot — not a hard FK, so deleting the user keeps the record).
+  actorId      String?
+  actorEmail   String?
+  actorName    String?
+  actorRole    String?
+
+  // Scope: null = platform-level; otherwise the tenant the action belongs to.
+  restaurantId String?
+  restaurant   Restaurant? @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+
+  // What happened.
+  action       String  // e.g. LOGIN, TENANT_PROVISIONED, SETTINGS_UPDATED
+  category     String  // e.g. AUTH, TENANT, SETTINGS, RESERVATION, SYSTEM
+  targetType   String? // e.g. Restaurant, User, Reservation
+  targetId     String?
+  targetLabel  String? // human-readable name of the target
+  metadata     Json?   // arbitrary extra detail
+  ip           String?
+
+  @@index([restaurantId, createdAt])
+  @@index([category])
+  @@index([actorId])
 }
 
 model WaitTimeConfig {

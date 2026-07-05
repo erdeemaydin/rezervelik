@@ -10,6 +10,7 @@ import {
   isBusinessType,
 } from '../config/businessProfiles';
 import { generatePublicApiKey } from '../utils/publicApiKey';
+import { logAudit } from '../services/auditService';
 
 // POST /system/users/:userId/reset-link (SUPER_ADMIN only)
 // Mints a single-use password reset link for any user. The raw token is returned
@@ -26,6 +27,16 @@ export const createPasswordResetLink = async (req: Request, res: Response) => {
     await prisma.user.update({
       where: { id: user.id },
       data: { resetTokenHash: tokenHash, resetTokenExpiresAt: expiresAt }
+    });
+
+    logAudit({
+      req,
+      restaurantId: user.restaurantId,
+      category: 'SYSTEM',
+      action: 'PASSWORD_RESET_LINK_GENERATED',
+      targetType: 'User',
+      targetId: user.id,
+      targetLabel: user.email,
     });
 
     return successResponse(res, {
@@ -57,6 +68,16 @@ export const setUserOtp = async (req: Request, res: Response) => {
       data: required
         ? { otpRequired: true }
         : { otpRequired: false, otpSecret: null, otpConfirmedAt: null }
+    });
+
+    logAudit({
+      req,
+      restaurantId: user.restaurantId,
+      category: 'SYSTEM',
+      action: required ? 'TWO_FACTOR_ENABLED' : 'TWO_FACTOR_DISABLED',
+      targetType: 'User',
+      targetId: user.id,
+      targetLabel: user.email,
     });
 
     return successResponse(res, {
@@ -173,6 +194,17 @@ export const createTenant = async (req: Request, res: Response) => {
       return { restaurant, adminUser: user };
     });
 
+    logAudit({
+      req,
+      restaurantId: result.restaurant.id,
+      category: 'TENANT',
+      action: 'TENANT_PROVISIONED',
+      targetType: 'Restaurant',
+      targetId: result.restaurant.id,
+      targetLabel: result.restaurant.name,
+      metadata: { businessType, contactEmail },
+    });
+
     if (isInvite) {
       return successResponse(res, { ...result, setupLink: `/auth/setup/${setupToken}` }, undefined, 201);
     }
@@ -198,6 +230,17 @@ export const updateTenantSubscription = async (req: Request, res: Response) => {
       }
     });
 
+    logAudit({
+      req,
+      restaurantId: id,
+      category: 'SUBSCRIPTION',
+      action: 'SUBSCRIPTION_UPDATED',
+      targetType: 'Restaurant',
+      targetId: id,
+      targetLabel: updated.name,
+      metadata: { subscriptionPlan, subscriptionStatus },
+    });
+
     return successResponse(res, updated);
   } catch (error) {
     console.error('Update tenant subscription error:', error);
@@ -211,7 +254,8 @@ export const updateTenantSettings = async (req: Request, res: Response) => {
     const {
       currency,
       twoFactorEnabled,
-      defaultLanguage
+      defaultLanguage,
+      showAuditLogToTenant
     } = req.body;
 
     // When the SysAdmin switches the tenant's businessType, seed the vertical's
@@ -277,7 +321,8 @@ export const updateTenantSettings = async (req: Request, res: Response) => {
         // root-admin-only controls.
         ...(currency !== undefined ? { currency } : {}),
         ...(twoFactorEnabled !== undefined ? { twoFactorEnabled } : {}),
-        ...(defaultLanguage !== undefined ? { defaultLanguage } : {})
+        ...(defaultLanguage !== undefined ? { defaultLanguage } : {}),
+        ...(showAuditLogToTenant !== undefined ? { showAuditLogToTenant: Boolean(showAuditLogToTenant) } : {})
       }
     });
 
@@ -288,6 +333,19 @@ export const updateTenantSettings = async (req: Request, res: Response) => {
         create: { restaurantId: id, layoutStyle: req.body.layoutStyle }
       });
     }
+
+    // Scope this to the tenant so it also surfaces in that tenant's own audit view.
+    const tenant = await prisma.restaurant.findUnique({ where: { id }, select: { name: true } });
+    logAudit({
+      req,
+      restaurantId: id,
+      category: 'SETTINGS',
+      action: 'TENANT_SETTINGS_UPDATED',
+      targetType: 'Restaurant',
+      targetId: id,
+      targetLabel: tenant?.name,
+      metadata: { ...featureData, ...(req.body.layoutStyle ? { layoutStyle: req.body.layoutStyle } : {}) },
+    });
 
     return successResponse(res, updated);
   } catch (error) {
@@ -306,6 +364,17 @@ export const updateTenantUserPermissions = async (req: Request, res: Response) =
       data: {
         permissions: Array.isArray(permissions) ? permissions.join(',') : permissions
       }
+    });
+
+    logAudit({
+      req,
+      restaurantId: updatedUser.restaurantId,
+      category: 'PERMISSIONS',
+      action: 'PERMISSIONS_UPDATED',
+      targetType: 'User',
+      targetId: updatedUser.id,
+      targetLabel: updatedUser.email,
+      metadata: { permissions: updatedUser.permissions },
     });
 
     return successResponse(res, updatedUser);
@@ -384,6 +453,15 @@ export const createSystemAdmin = async (req: Request, res: Response) => {
       select: { id: true, email: true, firstName: true, lastName: true, role: true, createdAt: true }
     });
 
+    logAudit({
+      req,
+      category: 'SYSTEM',
+      action: 'SYSTEM_ADMIN_CREATED',
+      targetType: 'User',
+      targetId: user.id,
+      targetLabel: user.email,
+    });
+
     return successResponse(res, user, undefined, 201);
   } catch (error) {
     console.error('Create system admin error:', error);
@@ -416,7 +494,16 @@ export const updateGlobalSettings = async (req: Request, res: Response) => {
       update: { maintenanceMode, publicRegistrationEnabled, enforce2FAForAdmins, measurementSystem: normalizedSystem },
       create: { id: 'global_1', maintenanceMode, publicRegistrationEnabled, enforce2FAForAdmins, measurementSystem: normalizedSystem }
     });
-    
+
+    logAudit({
+      req,
+      category: 'SYSTEM',
+      action: 'GLOBAL_SETTINGS_UPDATED',
+      targetType: 'GlobalSettings',
+      targetId: 'global_1',
+      metadata: { maintenanceMode, publicRegistrationEnabled, enforce2FAForAdmins, measurementSystem: normalizedSystem },
+    });
+
     return successResponse(res, settings);
   } catch (error) {
     console.error('Update global settings error:', error);
@@ -481,6 +568,16 @@ export const impersonateTenant = async (req: Request, res: Response) => {
 
     // Generate a token for this user
     const token = generateToken(adminUser.id, adminUser.restaurantId, adminUser.role);
+
+    logAudit({
+      req,
+      restaurantId: id,
+      category: 'SYSTEM',
+      action: 'IMPERSONATION_STARTED',
+      targetType: 'User',
+      targetId: adminUser.id,
+      targetLabel: adminUser.email,
+    });
 
     return successResponse(res, {
       user: {

@@ -18,7 +18,8 @@ import {
   ChevronRight,
   Clock,
   Tablet,
-  PartyPopper
+  PartyPopper,
+  ScrollText
 } from 'lucide-react';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useFormatStore } from '@/store/useFormatStore';
@@ -68,6 +69,7 @@ const ROUTE_PERMS: { prefix: string; perm: string; exact?: boolean }[] = [
   { prefix: '/dashboard/staff', perm: 'manage_staff' },
   { prefix: '/dashboard/customization', perm: 'manage_settings' },
   { prefix: '/dashboard/settings', perm: 'manage_settings' },
+  { prefix: '/dashboard/audit', perm: 'manage_settings' },
 ];
 
 const requiredPermForPath = (path: string): string | undefined => {
@@ -158,6 +160,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
       { name: t('admin.staffMembers'), href: '/dashboard/staff', icon: Users, perm: 'manage_staff' },
       { name: t('admin.reviews'), href: '/dashboard/reviews', icon: MessageSquare, perm: 'view_reviews' },
       { name: t('admin.customization'), href: '/dashboard/customization', icon: Settings, perm: 'manage_settings' },
+      { name: t('admin.auditLog'), href: '/dashboard/audit', icon: ScrollText, perm: 'manage_settings', feature: 'showAuditLogToTenant' },
       { name: t('admin.settings'), href: '/dashboard/settings', icon: Settings, perm: 'manage_settings' },
     ]}
   ];

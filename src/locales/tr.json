@@ -3,6 +3,7 @@
     "restaurant_not_found": "Restoran bulunamadı",
     "not_found": "Bulunamadı",
     "unauthorized": "Yetkisiz erişim",
+    "forbidden": "Bu kaynağa erişiminiz yok",
     "validation_error": "Doğrulama hatası",
     "internal_error": "Sunucu hatası",
     "tenant_required": "X-Restaurant-ID başlığı gereklidir",

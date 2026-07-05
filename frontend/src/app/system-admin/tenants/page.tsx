@@ -45,7 +45,9 @@ export default function TenantManagementPage() {
     businessType: 'RESTAURANT',
     layoutStyle: 'CLASSIC_LIST',
     // Root-admin-only controls: platform currency + 2FA capability + default language.
-    currency: 'TRY', twoFactorEnabled: false, defaultLanguage: 'tr'
+    currency: 'TRY', twoFactorEnabled: false, defaultLanguage: 'tr',
+    // Whether this tenant's own admins may view their activity audit log.
+    showAuditLogToTenant: false
   });
   
   const [subscriptionForm, setSubscriptionForm] = useState({
@@ -162,6 +164,7 @@ export default function TenantManagementPage() {
       currency: tenant.settings?.currency ?? 'TRY',
       twoFactorEnabled: tenant.settings?.twoFactorEnabled ?? false,
       defaultLanguage: tenant.settings?.defaultLanguage ?? 'tr',
+      showAuditLogToTenant: tenant.settings?.showAuditLogToTenant ?? false,
       businessType: tenant.businessType || 'RESTAURANT',
       layoutStyle: tenant.customization?.layoutStyle || 'CLASSIC_LIST',
     });
@@ -553,6 +556,14 @@ export default function TenantManagementPage() {
                                     <p className="text-[9px] text-rose-400 font-bold uppercase">Let Tenant Require 2FA By Role</p>
                                 </div>
                                 <Checkbox checked={settingsForm.twoFactorEnabled} onCheckedChange={(c) => setSettingsForm({...settingsForm, twoFactorEnabled: !!c})} />
+                            </div>
+                            {/* Audit log visibility — let this tenant's admins see their own activity log. */}
+                            <div className="flex items-center justify-between p-3 border border-slate-100 rounded-sm bg-slate-50/40">
+                                <div className="space-y-0.5">
+                                    <Label className="text-xs font-black uppercase">Audit Log Visibility</Label>
+                                    <p className="text-[9px] text-slate-400 font-bold uppercase">Let Tenant Admins See Their Activity Log</p>
+                                </div>
+                                <Checkbox checked={settingsForm.showAuditLogToTenant} onCheckedChange={(c) => setSettingsForm({...settingsForm, showAuditLogToTenant: !!c})} />
                             </div>
                         </div>
 

@@ -5,6 +5,7 @@ import { generateToken, generateOtpChallengeToken, verifyOtpChallengeToken } fro
 import { successResponse, errorResponse } from '../utils/response';
 import { hashResetToken } from '../utils/resetToken';
 import { generateOtpSecret, verifyTotp, buildOtpAuthUrl } from '../utils/totp';
+import { logAudit } from '../services/auditService';
 
 // Whether a given user is required to complete 2FA at login. The requirement is
 // role-based per restaurant (root admin enables the capability; the tenant admin
@@ -145,6 +146,17 @@ export const login = async (req: Request, res: Response) => {
 
     console.log(`[Auth] Login successful: ${user.id} (${user.role})`);
     const token = generateToken(user.id, user.restaurantId, user.role);
+
+    logAudit({
+      req,
+      restaurantId: user.restaurantId,
+      actorId: user.id,
+      actorEmail: user.email,
+      actorName: `${user.firstName ?? ''} ${user.lastName ?? ''}`.trim() || null,
+      actorRole: user.role,
+      category: 'AUTH',
+      action: 'LOGIN',
+    });
 
     return successResponse(res, {
       user: {
