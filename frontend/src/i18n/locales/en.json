@@ -867,6 +867,7 @@
       "dishNamePlaceholder": "e.g. Truffle Risotto",
       "ingredients": "Description / Ingredients",
       "priceTry": "Price (TRY)",
+      "serviceDuration": "Duration (min)",
       "imageUpload": "Image Upload",
       "dietaryTags": "Dietary Tags",
       "dietaryTagsPlaceholder": "e.g. Vegan, Gluten-Free (Comma separated)",

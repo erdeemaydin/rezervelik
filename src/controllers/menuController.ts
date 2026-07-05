@@ -128,13 +128,14 @@ export const deleteCategory = async (req: Request, res: Response) => {
 export const createMenuItem = async (req: Request, res: Response) => {
   try {
     const { categoryId } = req.params;
-    const { name, description, price, imageUrl, isAvailable, order, dietaryTags, allergens, spiceLevel, ingredients, calories, containsAlcohol, containsPork } = req.body;
+    const { name, description, price, imageUrl, isAvailable, order, dietaryTags, allergens, spiceLevel, ingredients, calories, containsAlcohol, containsPork, durationMinutes } = req.body;
     const item = await prisma.menuItem.create({
-      data: { 
-        categoryId, name, description, price: parseFloat(price), 
+      data: {
+        categoryId, name, description, price: parseFloat(price),
         imageUrl, isAvailable, order: order || 0,
         dietaryTags, allergens, spiceLevel: spiceLevel ? parseInt(spiceLevel) : 0,
         ingredients, calories: calories ? parseInt(calories) : null,
+        durationMinutes: durationMinutes ? parseInt(durationMinutes) : null,
         containsAlcohol: containsAlcohol === true || containsAlcohol === 'true',
         containsPork: containsPork === true || containsPork === 'true'
       }
@@ -148,14 +149,15 @@ export const createMenuItem = async (req: Request, res: Response) => {
 export const updateMenuItem = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const { categoryId, name, description, price, imageUrl, isAvailable, order, dietaryTags, allergens, spiceLevel, ingredients, calories, containsAlcohol, containsPork } = req.body;
+    const { categoryId, name, description, price, imageUrl, isAvailable, order, dietaryTags, allergens, spiceLevel, ingredients, calories, containsAlcohol, containsPork, durationMinutes } = req.body;
     const item = await prisma.menuItem.update({
       where: { id },
-      data: { 
-        categoryId, name, description, price: price !== undefined ? parseFloat(price) : undefined, 
+      data: {
+        categoryId, name, description, price: price !== undefined ? parseFloat(price) : undefined,
         imageUrl, isAvailable, order,
         dietaryTags, allergens, spiceLevel: spiceLevel !== undefined ? parseInt(spiceLevel) : undefined,
         ingredients, calories: calories !== undefined ? (calories ? parseInt(calories) : null) : undefined,
+        durationMinutes: durationMinutes !== undefined ? (durationMinutes ? parseInt(durationMinutes) : null) : undefined,
         containsAlcohol: containsAlcohol !== undefined ? (containsAlcohol === true || containsAlcohol === 'true') : undefined,
         containsPork: containsPork !== undefined ? (containsPork === true || containsPork === 'true') : undefined
       }

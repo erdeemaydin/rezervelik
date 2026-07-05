@@ -64,7 +64,7 @@ export const createReservation = async (req: Request, res: Response) => {
   try {
     const restaurantId = req.restaurantId!;
     const {
-      tableId, categoryId, customerName, customerEmail, customerPhone,
+      tableId, categoryId, serviceId, customerName, customerEmail, customerPhone,
       guestCount, startTime, notes, internalNote, isVIP, overrideConflict
     } = req.body;
 
@@ -100,14 +100,31 @@ export const createReservation = async (req: Request, res: Response) => {
       return errorResponse(res, 'errors.validation_error', 400, { message: 'Reservations are currently disabled for this restaurant' });
     }
 
-    // Reservation window: how long a table is considered occupied by this booking.
+    // Reservation window: how long a resource is considered occupied by this booking.
     // Admin-configurable via Settings > Reservation Logic (defaultDurationMinutes), defaults to 90 minutes.
-    const durationMinutes = settings.defaultDurationMinutes || 90;
+    // Appointment verticals (SALON/CLINIC): if the booking references a service with
+    // an intrinsic durationMinutes, that overrides the tenant default. The service is
+    // validated to belong to this tenant (via its menu) before it's trusted/stored.
+    let durationMinutes = settings.defaultDurationMinutes || 90;
+    let finalServiceId: string | null = serviceId && serviceId !== 'none' ? serviceId : null;
+    if (finalServiceId) {
+      const service = await prisma.menuItem.findFirst({
+        where: { id: finalServiceId, category: { menu: { restaurantId } } },
+        select: { durationMinutes: true },
+      });
+      if (!service) {
+        finalServiceId = null; // unknown/foreign service → ignore rather than trust it
+      } else if (service.durationMinutes && service.durationMinutes > 0) {
+        durationMinutes = service.durationMinutes;
+      }
+    }
     const windowEnd = new Date(start.getTime() + durationMinutes * 60000);
 
     const staffInitiated = isStaffRequest(req);
 
-    const endTime: Date = settings.logic === 'DYNAMIC_DURATION'
+    // A service-driven booking always ends after its service length, regardless of
+    // the tenant's slot logic; otherwise keep the existing dynamic/fixed behavior.
+    const endTime: Date = (settings.logic === 'DYNAMIC_DURATION' || finalServiceId)
       ? windowEnd
       : new Date(start.getTime() + 120 * 60000);
 
@@ -177,6 +194,7 @@ export const createReservation = async (req: Request, res: Response) => {
             restaurantId,
             tableId: finalTableId,
             categoryId: categoryId === 'none' ? null : categoryId,
+            serviceId: finalServiceId,
             customerName,
             customerEmail,
             customerPhone,

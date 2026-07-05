@@ -134,16 +134,26 @@ mechanism that all Tier-1 verticals ride on.
 ### Phase 3 — Tier-1 verticals  (branch `feat/mbp-03-tier1-verticals`)
 Config + terminology packs + two small schema additions. Verticals: **Salon/Barber,
 Sports courts, Coworking, Clinic** (see §5 specs).
-- [ ] Add `durationMinutes Int?` to `MenuItem` (per-service duration; booking flow
-      reads it when set, else falls back to `RestaurantSettings.defaultDurationMinutes`)
-- [ ] Booking flow: when catalog item has `durationMinutes`, use it for the
-      resource-blocking window (extends `reservationController` conflict logic)
-- [ ] Option: allow a booking to target a **staff `User`** as the bookable resource
-      (salon/clinic) — model staff-as-resource or a `resourceUserId` on booking
-- [ ] Terminology + feature profiles for each Tier-1 vertical
-- [ ] SysAdmin: expose the new verticals in the `businessType` selector
-- [ ] Typecheck + tests + smoke; commit; merge to integration
-- **Resume marker:** _Phase 3 not started._
+- [x] Add `durationMinutes Int?` to `MenuItem` (per-service duration) + optional
+      `Reservation.serviceId` link to the service (migration
+      `20260705100000_add_service_duration`, additive)
+- [x] Booking flow: `createReservation` resolves the service (tenant-scoped via its
+      menu), and when it has `durationMinutes` uses it for the window/`endTime`
+      (both the conflict window and stored end). Foreign/unknown service → ignored.
+- [x] Backend: `menuController` create/update accept `durationMinutes`
+- [x] Frontend: Duration (min) field on the menu-item form
+      (`dashboard/menus`), bilingual key `menus.form.serviceDuration`
+- [x] Terminology + feature profiles for each Tier-1 vertical — already delivered in
+      Phase 1 (`terminology.ts` + `businessProfiles.ts` cover SALON/SPORTS/COWORKING/CLINIC)
+- [x] SysAdmin: verticals exposed in the `businessType` selector — done in Phase 1
+- [x] Typecheck (backend+frontend) + tests (26 passing, incl. new
+      `reservation-service-duration.test.ts`); commit; merge to integration
+- **DEFERRED to a later phase (documented):** staff-as-resource (booking a specific
+      `User`/practitioner rather than a physical resource). Bigger design change to
+      the booking/auto-assign logic; not needed for the court/room/chair verticals.
+      Tracked as a future item.
+- **Resume marker:** _Phase 3 DONE. Next: Phase 4 (wedding module) on branch
+  `feat/mbp-04-wedding-module`._
 
 ### Phase 4 — Wedding / organization module  (branch `feat/mbp-04-wedding-module`)
 The one vertical with genuinely new domain logic. New models isolated under a
@@ -248,5 +258,59 @@ model Guest {
 - Dashboard layout: no top header; account controls in sidebar; `lg` mobile breakpoint.
 - Frontend is Next.js 16 / React 19 — check `frontend/node_modules/next/dist/docs/`
   before relying on remembered APIs.
-```
-```
+
+## 8. Build log (what was actually shipped, per phase)
+
+Retrospective record of the concrete changes merged for each phase. Update this at
+the end of every phase.
+
+### Phase 0 — bootstrap (commit `f37e3e7`)
+- Integration branch `feat/multi-business-platform` off `develop`; this roadmap;
+  memory pointer `multi-business-platform-initiative`.
+
+### Phase 1 — vertical foundation (branch `feat/mbp-01-vertical-foundation`, merged `c887cac`)
+- **schema**: `Restaurant.businessType String @default("RESTAURANT")` (additive
+  migration `20260705000000_add_business_type`).
+- **backend**: `src/config/businessProfiles.ts` (BUSINESS_TYPES + per-vertical
+  default `FeatureProfile`); `systemController.createTenant` seeds the profile +
+  accepts `businessType`; `updateTenantSettings` applies profile on type switch
+  (explicit flags win) and updates `Restaurant.businessType`; `settingsController`
+  GET `/settings` now returns `businessType`.
+- **frontend**: `lib/terminology.ts` (businessType×locale label table, RESTAURANT
+  fallback) + `hooks/useTerms.ts` + `store/useTenantStore.ts`; `AdminLayout`
+  hydrates businessType from `/settings` and relabels sidebar nav for non-restaurant
+  tenants; SysAdmin tenant provision + entitlements dialogs get a Business Type
+  `<select>`.
+- **verification**: backend+frontend `tsc` clean; 23/23 tests.
+
+### Phase 2 — standardization rename (branch `feat/mbp-02-standardization-rename`, merged `5623be7`)
+- **schema**: `model Table → BookableResource` (`@@map("Table")`), `model TableType →
+  Zone` (`@@map("TableType")`); relation TYPES updated on `Restaurant`,
+  `Reservation`, `FloorElement`. **No data migration** — `db push` = "already in
+  sync". Relation/field names (`tableId`, `tableType`, `tables`, `tableTypes`)
+  deliberately KEPT → API shapes identical → **frontend untouched**.
+- **backend**: rewrote accessors `prisma.table→prisma.bookableResource`,
+  `prisma.tableType→prisma.zone` (+ `tx.`/`client.` aliases) across
+  `tableController`, `tableTypeController`, `floorElementController`,
+  `publicController`, `restaurantController`, `reservationController`,
+  `restaurantService`, `utils/reservationConflict`, `prisma/seed.ts`,
+  `scripts/demo-data.ts`.
+- **verification**: backend `tsc` clean; 23/23 tests against mapped tables.
+
+### Phase 3 — Tier-1 verticals (branch `feat/mbp-03-tier1-verticals`)
+- **schema**: `MenuItem.durationMinutes Int?` (per-service length) + `Reservation.serviceId
+  String?` with `service MenuItem?` relation and index; back-relation
+  `MenuItem.reservations` (additive migration `20260705100000_add_service_duration`;
+  `db push` = in sync, no data loss).
+- **backend**: `reservationController.createReservation` parses `serviceId`, looks up
+  the service scoped to the tenant (`category.menu.restaurantId`), uses its
+  `durationMinutes` for the conflict window + stored `endTime` when present, stores
+  `serviceId` (foreign/unknown → nulled, falls back to default). `menuController`
+  create/update accept and parse `durationMinutes`.
+- **frontend**: Duration (min) input on the menu-item form in `dashboard/menus/page.tsx`
+  (form state + edit-populate + reset + payload); bilingual key
+  `menus.form.serviceDuration` (en "Duration (min)" / tr "Süre (dk)").
+- **verification**: backend+frontend `tsc` clean; new `tests/api/reservation-service-duration.test.ts`
+  (3 cases: duration override, default fallback, foreign-tenant service rejected);
+  full suite **26/26**.
+- **deferred**: staff-as-resource (booking a specific practitioner) — future phase.

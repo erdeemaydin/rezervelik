@@ -367,6 +367,11 @@ model Reservation {
   restaurantId  String
   tableId       String?
   categoryId    String?
+  // Appointment verticals (SALON/CLINIC): the service/treatment this booking is
+  // for. When set and the service has durationMinutes, the booking window is
+  // derived from it instead of RestaurantSettings.defaultDurationMinutes. Optional
+  // and unused by restaurants.
+  serviceId     String?
   customerName  String
   customerEmail String?
   customerPhone String
@@ -384,12 +389,14 @@ model Reservation {
 
   table      BookableResource?    @relation(fields: [tableId], references: [id])
   category   ReservationCategory? @relation(fields: [categoryId], references: [id])
+  service    MenuItem?            @relation(fields: [serviceId], references: [id])
   restaurant Restaurant           @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
   payments   Payment[]
 
   @@index([restaurantId])
   @@index([tableId])
   @@index([categoryId])
+  @@index([serviceId])
   @@index([startTime])
 }
 
@@ -486,7 +493,11 @@ model MenuItem {
   dietaryTags String? // e.g., "Vegan,Gluten-Free"
   allergens   String? // e.g., "Nuts,Dairy"
   spiceLevel  Int          @default(0) // 0: none, 1: mild, 2: medium, 3: spicy
-  
+  // Appointment verticals: intrinsic service/treatment length in minutes. When set
+  // on the service a booking references (Reservation.serviceId), it drives the
+  // booking window instead of the tenant's default duration. Null for menu dishes.
+  durationMinutes Int?
+
   // Regulation Fields
   ingredients      String?
   calories         Int?
@@ -501,6 +512,7 @@ model MenuItem {
   modifiers  MenuItemModifier[]
   pairings   MenuItemPairing[]  @relation("ItemPairings")
   pairedWith MenuItemPairing[]  @relation("PairedItems")
+  reservations Reservation[]
 
   @@index([categoryId])
 }

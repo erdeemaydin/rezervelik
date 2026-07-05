@@ -39,6 +39,7 @@ interface MenuItem {
   spiceLevel: number;
   ingredients?: string | null;
   calories?: number | null;
+  durationMinutes?: number | null;
   containsAlcohol?: boolean;
   containsPork?: boolean;
   categoryId: string;
@@ -88,10 +89,10 @@ export default function MenuManagementPage() {
   // Forms
   const [menuForm, setMenuForm] = useState({ name: '', isActive: true, footnotes: '' });
   const [categoryForm, setCategoryForm] = useState({ menuId: '', name: '', description: '', imageUrl: '', parentId: 'none' });
-  const [itemForm, setItemForm] = useState({ 
-      categoryId: '', name: '', description: '', price: '', 
+  const [itemForm, setItemForm] = useState({
+      categoryId: '', name: '', description: '', price: '',
       imageUrl: '', dietaryTags: '', allergens: '', spiceLevel: '0',
-      ingredients: '', calories: '', containsAlcohol: false, containsPork: false
+      ingredients: '', calories: '', durationMinutes: '', containsAlcohol: false, containsPork: false
   });
   
   const fetchMenus = useCallback(async () => {
@@ -227,15 +228,16 @@ export default function MenuManagementPage() {
               imageUrl: editItem.imageUrl || '', dietaryTags: editItem.dietaryTags || '', 
               allergens: editItem.allergens || '', spiceLevel: editItem.spiceLevel?.toString() || '0',
               ingredients: editItem.ingredients || '', calories: editItem.calories?.toString() || '',
+              durationMinutes: editItem.durationMinutes?.toString() || '',
               containsAlcohol: editItem.containsAlcohol || false, containsPork: editItem.containsPork || false
           });
       } else {
           setIsEditMode(false);
           setEditId(null);
-          setItemForm({ 
-              categoryId, name: '', description: '', price: '', 
+          setItemForm({
+              categoryId, name: '', description: '', price: '',
               imageUrl: '', dietaryTags: '', allergens: '', spiceLevel: '0',
-              ingredients: '', calories: '', containsAlcohol: false, containsPork: false
+              ingredients: '', calories: '', durationMinutes: '', containsAlcohol: false, containsPork: false
           });
       }
       setIsItemDialogOpen(true);
@@ -607,6 +609,12 @@ export default function MenuManagementPage() {
                             <div className="grid gap-1.5">
                                 <Label className="text-[10px] font-black uppercase text-slate-400 ml-1">{t('menus.form.priceTry')}</Label>
                                 <Input type="number" step="0.01" required value={itemForm.price} onChange={e => setItemForm({...itemForm, price: e.target.value})} className="h-10 text-sm font-bold border-slate-200 rounded-sm font-mono" />
+                            </div>
+                            {/* Service/treatment duration — drives the booking window for
+                                appointment verticals (salon/clinic). Optional; blank for menu dishes. */}
+                            <div className="grid gap-1.5">
+                                <Label className="text-[10px] font-black uppercase text-slate-400 ml-1">{t('menus.form.serviceDuration')}</Label>
+                                <Input type="number" min="0" step="5" value={itemForm.durationMinutes} onChange={e => setItemForm({...itemForm, durationMinutes: e.target.value})} placeholder="—" className="h-10 text-sm font-bold border-slate-200 rounded-sm font-mono" />
                             </div>
                             <div className="grid gap-1.5">
                                 <Label className="text-[10px] font-black uppercase text-slate-400 ml-1">{t('menus.form.imageUpload')}</Label>
