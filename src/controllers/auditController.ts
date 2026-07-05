@@ -56,7 +56,13 @@ export const getTenantAuditLogs = async (req: Request, res: Response) => {
     const { category } = req.query;
     const limit = clampLimit(req.query.limit);
 
-    const where: Record<string, unknown> = { restaurantId };
+    const where: Record<string, unknown> = {
+      restaurantId,
+      OR: [
+        { actorRole: { not: 'SUPER_ADMIN' } },
+        { actorRole: null }
+      ]
+    };
     if (typeof category === 'string' && category) where.category = category;
 
     const logs = await prisma.auditLog.findMany({
