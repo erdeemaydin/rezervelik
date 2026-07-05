@@ -45,7 +45,7 @@ export const getDashboardStats = async (req: Request, res: Response) => {
       }
     });
     
-    const totalTables = await prisma.table.count({
+    const totalTables = await prisma.bookableResource.count({
       where: { restaurantId }
     });
 
@@ -84,7 +84,7 @@ export const getDashboardStats = async (req: Request, res: Response) => {
     // For simplicity, we just return it as is or rotate it
     
     // 5. Zone Popularity
-    const zoneStats = await prisma.tableType.findMany({
+    const zoneStats = await prisma.zone.findMany({
       where: { restaurantId },
       include: {
         _count: {
@@ -117,7 +117,7 @@ export const getDashboardStats = async (req: Request, res: Response) => {
     });
 
     // Map tableIds to TableTypes
-    const tables = await prisma.table.findMany({
+    const tables = await prisma.bookableResource.findMany({
       where: { restaurantId },
       include: { tableType: true }
     });

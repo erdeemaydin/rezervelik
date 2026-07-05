@@ -23,7 +23,7 @@ export const createFloorElement = async (req: Request, res: Response) => {
       return errorResponse(res, 'errors.validation_error', 400, { message: 'tableTypeId is required' });
     }
 
-    const typeExists = await prisma.tableType.findFirst({
+    const typeExists = await prisma.zone.findFirst({
       where: { id: tableTypeId, restaurantId }
     });
 
@@ -64,7 +64,7 @@ export const updateFloorElement = async (req: Request, res: Response) => {
     if (!existingElement) return errorResponse(res, 'errors.validation_error', 404, { message: 'Element not found' });
 
     if (tableTypeId) {
-      const typeExists = await prisma.tableType.findFirst({
+      const typeExists = await prisma.zone.findFirst({
         where: { id: tableTypeId, restaurantId }
       });
       if (!typeExists) return errorResponse(res, 'errors.validation_error', 400, { message: 'Invalid TableType zone' });

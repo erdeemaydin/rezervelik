@@ -5,7 +5,7 @@ import { successResponse, errorResponse } from '../utils/response';
 export const getTableTypes = async (req: Request, res: Response) => {
   try {
     const restaurantId = req.restaurantId!;
-    const tableTypes = await prisma.tableType.findMany({
+    const tableTypes = await prisma.zone.findMany({
       where: { restaurantId },
       include: { tables: true, children: true }
     });
@@ -25,11 +25,11 @@ export const createTableType = async (req: Request, res: Response) => {
     }
 
     if (parentId) {
-      const parentExists = await prisma.tableType.findFirst({ where: { id: parentId, restaurantId } });
+      const parentExists = await prisma.zone.findFirst({ where: { id: parentId, restaurantId } });
       if (!parentExists) return errorResponse(res, 'errors.validation_error', 400, { message: 'Invalid parent zone' });
     }
 
-    const tableType = await prisma.tableType.create({
+    const tableType = await prisma.zone.create({
       data: { name, description, parentId, restaurantId }
     });
 
@@ -45,7 +45,7 @@ export const updateTableType = async (req: Request, res: Response) => {
     const { id } = req.params;
     const { name, description, parentId } = req.body;
 
-    const existingType = await prisma.tableType.findFirst({
+    const existingType = await prisma.zone.findFirst({
       where: { id, restaurantId }
     });
 
@@ -53,7 +53,7 @@ export const updateTableType = async (req: Request, res: Response) => {
 
     if (parentId !== undefined && parentId !== null) {
       if (parentId === id) return errorResponse(res, 'errors.validation_error', 400, { message: 'Cannot be parent of itself' });
-      const parentExists = await prisma.tableType.findFirst({ where: { id: parentId, restaurantId } });
+      const parentExists = await prisma.zone.findFirst({ where: { id: parentId, restaurantId } });
       if (!parentExists) return errorResponse(res, 'errors.validation_error', 400, { message: 'Invalid parent zone' });
     }
 
@@ -62,7 +62,7 @@ export const updateTableType = async (req: Request, res: Response) => {
     if (description !== undefined) dataToUpdate.description = description;
     if (parentId !== undefined) dataToUpdate.parentId = parentId;
 
-    const tableType = await prisma.tableType.update({
+    const tableType = await prisma.zone.update({
       where: { id },
       data: dataToUpdate
     });
@@ -78,13 +78,13 @@ export const deleteTableType = async (req: Request, res: Response) => {
     const restaurantId = req.restaurantId!;
     const { id } = req.params;
 
-    const existingType = await prisma.tableType.findFirst({
+    const existingType = await prisma.zone.findFirst({
       where: { id, restaurantId }
     });
 
     if (!existingType) return errorResponse(res, 'errors.validation_error', 404, { message: 'TableType not found' });
 
-    await prisma.tableType.delete({ where: { id } });
+    await prisma.zone.delete({ where: { id } });
 
     return successResponse(res, { message: 'Deleted successfully' });
   } catch (error) {

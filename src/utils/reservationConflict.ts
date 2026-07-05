@@ -49,7 +49,7 @@ export async function findAvailableTable({
   restaurantId, partySize, start, end, tx,
 }: { restaurantId: string; partySize: number; start: Date; end: Date; tx?: Prisma.TransactionClient }) {
   const client = tx ?? prisma;
-  return client.table.findFirst({
+  return client.bookableResource.findFirst({
     where: {
       restaurantId,
       capacity: { gte: partySize },

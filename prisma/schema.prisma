@@ -33,8 +33,8 @@ model Restaurant {
   menus                 Menu[]
   reservations          Reservation[]
   settings              RestaurantSettings?
-  tables                Table[]
-  tableTypes            TableType[]
+  tables                BookableResource[]
+  tableTypes            Zone[]
   users                 User[]
   categories            ReservationCategory[]
   daySettings           DaySetting[]
@@ -265,25 +265,33 @@ model TimeEntry {
   @@index([userId])
 }
 
-model TableType {
+// Canonical name: Zone (a grouping of bookable resources — restaurant section,
+// salon station, sports area, clinic department, wedding venue area). Kept mapped
+// to the original "TableType" SQL table so no data migration is needed.
+model Zone {
   id           String  @id @default(uuid())
   restaurantId String
   name         String
   description  String?
 
   parentId String?
-  parent   TableType?  @relation("SubZones", fields: [parentId], references: [id])
-  children TableType[] @relation("SubZones")
+  parent   Zone?  @relation("SubZones", fields: [parentId], references: [id])
+  children Zone[] @relation("SubZones")
 
-  tables        Table[]
+  tables        BookableResource[]
   floorElements FloorElement[]
   restaurant    Restaurant     @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
 
   @@index([restaurantId])
   @@index([parentId])
+  @@map("TableType")
 }
 
-model Table {
+// Canonical name: BookableResource (the unit a booking reserves — restaurant table,
+// salon chair, sports court, coworking room, wedding hall). Kept mapped to the
+// original "Table" SQL table so no data migration is needed. Relation/field names
+// (tableTypeId, tableType, reservations) are retained to keep API shapes stable.
+model BookableResource {
   id           String  @id @default(uuid())
   restaurantId String
   tableTypeId  String
@@ -300,11 +308,12 @@ model Table {
   color     String? @default("#ffffff")
 
   reservations Reservation[]
-  tableType    TableType     @relation(fields: [tableTypeId], references: [id])
+  tableType    Zone          @relation(fields: [tableTypeId], references: [id])
   restaurant   Restaurant    @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
 
   @@index([restaurantId])
   @@index([tableTypeId])
+  @@map("Table")
 }
 
 model FloorElement {
@@ -319,7 +328,7 @@ model FloorElement {
   height       Float   @default(200)
   color        String? @default("#f8fafc")
 
-  tableType  TableType  @relation(fields: [tableTypeId], references: [id])
+  tableType  Zone       @relation(fields: [tableTypeId], references: [id])
   restaurant Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
 
   @@index([restaurantId])
@@ -373,7 +382,7 @@ model Reservation {
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
-  table      Table?               @relation(fields: [tableId], references: [id])
+  table      BookableResource?    @relation(fields: [tableId], references: [id])
   category   ReservationCategory? @relation(fields: [categoryId], references: [id])
   restaurant Restaurant           @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
   payments   Payment[]
