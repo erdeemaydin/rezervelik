@@ -281,6 +281,9 @@ model Guest {
 - Never show raw UUIDs in dashboard selects — map id → human name (§7 PROJECT_LOGIC).
 - Schema changes: `db push` + hand-authored migration, then `prisma:generate`
   (memory `prisma-migrate-broken-shadow-db`).
+- The Prisma client is generated (not committed — it's gitignored). `build`,
+  `typecheck`, and `postinstall` all run `prisma generate` first so a fresh
+  checkout/deploy can't compile against a stale client. Don't drop that step.
 - Base UI Select: root needs the items label map (memory `base-ui-select-value-items-map`).
 - Dashboard layout: no top header; account controls in sidebar; `lg` mobile breakpoint.
 - Frontend is Next.js 16 / React 19 — check `frontend/node_modules/next/dist/docs/`

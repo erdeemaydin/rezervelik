@@ -6,8 +6,9 @@
   "scripts": {
     "start": "node dist/server.js",
     "dev": "ts-node-dev --respawn --transpile-only src/server.ts",
-    "build": "tsc",
-    "typecheck": "tsc --noEmit",
+    "build": "prisma generate && tsc",
+    "postinstall": "prisma generate",
+    "typecheck": "prisma generate && tsc --noEmit",
     "test:setup-db": "node tests/setup/prepare-test-db.mjs",
     "test": "vitest run",
     "test:watch": "vitest",
