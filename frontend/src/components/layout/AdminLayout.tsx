@@ -18,7 +18,18 @@ import {
   ChevronRight,
   Clock,
   Tablet,
-  PartyPopper
+  PartyPopper,
+  Handshake,
+  Scissors,
+  Sparkles,
+  Trophy,
+  ClipboardList,
+  Building2,
+  DoorOpen,
+  Stethoscope,
+  HeartPulse,
+  Package,
+  Armchair
 } from 'lucide-react';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useFormatStore } from '@/store/useFormatStore';
@@ -49,6 +60,18 @@ interface NavSection {
   section: string;
   items: NavItem[];
 }
+
+// Per-vertical iconography so the shared dashboard chrome doesn't read as
+// restaurant-only for salons/clinics/etc. `brand` is the sidebar mark; `catalog`
+// and `resource` re-skin the menu/tables nav icons to the vertical's concept.
+const VERTICAL_ICONS: Record<string, { brand: any; catalog: any; resource: any }> = {
+  RESTAURANT: { brand: UtensilsCrossed, catalog: UtensilsCrossed, resource: Grid },
+  SALON: { brand: Scissors, catalog: Sparkles, resource: Armchair },
+  SPORTS: { brand: Trophy, catalog: ClipboardList, resource: Grid },
+  COWORKING: { brand: Building2, catalog: ClipboardList, resource: DoorOpen },
+  CLINIC: { brand: Stethoscope, catalog: HeartPulse, resource: DoorOpen },
+  WEDDING: { brand: PartyPopper, catalog: Package, resource: Building2 },
+};
 
 // Permission required to open each dashboard route. Enforced here so a page can't
 // be reached just by pasting its URL — the backend rejects the underlying data
@@ -91,6 +114,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
   // Only override the vertical-specific nav labels for non-restaurant tenants, so
   // existing restaurant dashboards render exactly as before.
   const isRestaurant = businessType === 'RESTAURANT';
+  const vIcon = VERTICAL_ICONS[businessType] || VERTICAL_ICONS.RESTAURANT;
 
   useEffect(() => {
     setIsMounted(true);
@@ -140,10 +164,11 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
     { section: t('admin.sectionOperations'), items: [
       { name: isRestaurant ? t('admin.reservations') : term('bookingPlural'), href: '/dashboard/reservations', icon: Calendar, badge: '12', perm: 'manage_reservations' },
       { name: t('events.navTitle'), href: '/dashboard/events', icon: PartyPopper, feature: 'hasEventPipeline' },
+      { name: t('vendors.navTitle'), href: '/dashboard/vendors', icon: Handshake, feature: 'hasVendors' },
       { name: t('admin.hostStand'), href: '/dashboard/host', icon: Tablet, badge: 'iPad', perm: 'manage_reservations' },
       { name: t('admin.calendar'), href: '/dashboard/calendar', icon: Calendar, badge: 'New', perm: 'manage_calendar' },
-      { name: isRestaurant ? t('admin.tablesAndFloor') : term('resourcePlural'), href: '/dashboard/tables', icon: Grid, perm: 'manage_tables' },
-      { name: isRestaurant ? t('admin.menuManagement') : term('catalog'), href: '/dashboard/menus', icon: UtensilsCrossed, perm: 'manage_menu', feature: 'hasMenuFeature' },
+      { name: isRestaurant ? t('admin.tablesAndFloor') : term('resourcePlural'), href: '/dashboard/tables', icon: vIcon.resource, perm: 'manage_tables' },
+      { name: isRestaurant ? t('admin.menuManagement') : term('catalog'), href: '/dashboard/menus', icon: vIcon.catalog, perm: 'manage_menu', feature: 'hasMenuFeature' },
       { name: t('admin.waitlist'), href: '/dashboard/wait-time', icon: Clock, badge: 'Live', perm: 'manage_settings', feature: 'hasWaitTimeFeature' },
       { name: t('admin.staffSchedule'), href: '/dashboard/scheduling', icon: Calendar, badge: 'New', feature: 'hasShiftFeature' },
     ]},
@@ -241,7 +266,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
             <>
               <div className="flex items-center gap-3 overflow-hidden">
                 <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center shrink-0">
-                  <UtensilsCrossed className="w-5 h-5 text-white" />
+                  <vIcon.brand className="w-5 h-5 text-white" />
                 </div>
                 <span className="font-black text-sm tracking-tight text-white uppercase whitespace-nowrap">
                   Reserve<span className="text-blue-500">Pro</span>
@@ -263,7 +288,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
               className="w-full flex items-center justify-center group"
             >
               <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center shrink-0 group-hover:hidden">
-                <UtensilsCrossed className="w-5 h-5 text-white" />
+                <vIcon.brand className="w-5 h-5 text-white" />
               </div>
               <ChevronRight className="w-6 h-6 text-blue-400 hidden group-hover:block" />
             </button>
