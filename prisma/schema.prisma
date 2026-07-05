@@ -46,6 +46,9 @@ model Restaurant {
   scheduledPriceUpdates ScheduledPriceUpdate[]
   payments              Payment[]
   timeEntries           TimeEntry[]
+  events                Event[]
+  paymentPlans          PaymentPlan[]
+  guests                Guest[]
 }
 
 model FrontendCustomization {
@@ -134,6 +137,12 @@ model RestaurantSettings {
   hasShiftFeature    Boolean @default(true)
   hasMenuFeature     Boolean @default(true)
   hasPaymentFeature  Boolean @default(true)
+
+  // Wedding/organization vertical capabilities (default off; SysAdmin enables via
+  // the WEDDING business profile). See MULTI_BUSINESS_ROADMAP.md Phase 4.
+  hasEventPipeline   Boolean @default(false) // Event sales pipeline (lead → confirmed)
+  hasInstallmentPlans Boolean @default(false) // kapora + taksit payment schedules
+  hasGuestList       Boolean @default(false) // guest list, RSVP, seating assignment
 
   // Privacy & Staff View Settings
   staffScheduleView String @default("OWN_ONLY") // "OWN_ONLY", "SHIFT_TEAM", "FULL_ROSTER"
@@ -235,6 +244,7 @@ model User {
   availabilities   EmployeeAvailability[]
   shiftAssignments ShiftAssignment[]
   timeEntries      TimeEntry[]
+  coordinatedEvents Event[]              @relation("EventCoordinator")
 
   @@index([restaurantId])
 }
@@ -308,6 +318,8 @@ model BookableResource {
   color     String? @default("#ffffff")
 
   reservations Reservation[]
+  events       Event[]       @relation("EventHall")
+  seatedGuests Guest[]       @relation("GuestSeat")
   tableType    Zone          @relation(fields: [tableTypeId], references: [id])
   restaurant   Restaurant    @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
 
@@ -513,6 +525,7 @@ model MenuItem {
   pairings   MenuItemPairing[]  @relation("ItemPairings")
   pairedWith MenuItemPairing[]  @relation("PairedItems")
   reservations Reservation[]
+  events       Event[]          @relation("EventPackage")
 
   @@index([categoryId])
 }
@@ -630,4 +643,103 @@ model GlobalSettings {
   // "US"     = United States style: MM/DD/YYYY dates + 12-hour clock (AM/PM).
   measurementSystem         String   @default("METRIC")
   updatedAt                 DateTime @updatedAt
+}
+
+// ---------------------------------------------------------------------------
+// Wedding / organization vertical (Phase 4). New domain isolated in these models.
+// An Event is a high-value single-date booking with a sales pipeline, an optional
+// per-person package, an installment payment plan (kapora + taksit), and a guest
+// list with RSVP + seating. See MULTI_BUSINESS_ROADMAP.md §6.
+// ---------------------------------------------------------------------------
+
+model Event {
+  id            String   @id @default(uuid())
+  restaurantId  String
+  resourceId    String? // the Hall (BookableResource) reserved for this date-slot
+  packageId     String? // per-person package (MenuItem/CatalogItem)
+  coordinatorId String? // assigned staff (User)
+
+  eventType   String  @default("WEDDING") // WEDDING, ENGAGEMENT, HENNA, CORPORATE
+  clientName  String
+  clientPhone String
+  clientEmail String?
+  eventDate   String // YYYY-MM-DD (single date-slot; availability via DaySetting-style)
+  slot        String? // e.g. "EVENING" / "AFTERNOON"
+  guestCount  Int     @default(0)
+  // Sales pipeline stage. Transitions validated in the controller.
+  stage       String  @default("LEAD") // LEAD, VISIT, QUOTE, CONTRACT, CONFIRMED, COMPLETED, CANCELED
+  quotedTotal Int? // minor units (kuruş)
+  notes       String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  restaurant  Restaurant        @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  resource    BookableResource? @relation("EventHall", fields: [resourceId], references: [id])
+  package     MenuItem?         @relation("EventPackage", fields: [packageId], references: [id])
+  coordinator User?             @relation("EventCoordinator", fields: [coordinatorId], references: [id])
+  paymentPlan PaymentPlan?
+  guests      Guest[]
+
+  @@index([restaurantId])
+  @@index([eventDate])
+  @@index([stage])
+}
+
+model PaymentPlan {
+  id           String @id @default(uuid())
+  restaurantId String
+  eventId      String @unique // one plan per event
+  totalAmount  Int    @default(0) // minor units
+  currency     String @default("TRY")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  restaurant   Restaurant           @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  event        Event                @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  installments PaymentInstallment[]
+
+  @@index([restaurantId])
+}
+
+model PaymentInstallment {
+  id        String    @id @default(uuid())
+  planId    String
+  label     String? // e.g. "Kapora", "1. Taksit"
+  dueDate   String // YYYY-MM-DD
+  amount    Int // minor units
+  status    String    @default("PENDING") // PENDING, PAID, OVERDUE
+  paidAt    DateTime?
+  paymentId String? // links to an existing Payment row when charged
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  plan PaymentPlan @relation(fields: [planId], references: [id], onDelete: Cascade)
+
+  @@index([planId])
+  @@index([status])
+}
+
+model Guest {
+  id           String  @id @default(uuid())
+  restaurantId String
+  eventId      String
+  resourceId   String? // seating: assigned guest table (BookableResource)
+  name         String
+  partySize    Int     @default(1)
+  rsvp         String  @default("PENDING") // PENDING, YES, NO, MAYBE
+  dietary      String?
+  note         String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  restaurant Restaurant        @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  event      Event             @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  resource   BookableResource? @relation("GuestSeat", fields: [resourceId], references: [id])
+
+  @@index([restaurantId])
+  @@index([eventId])
 }

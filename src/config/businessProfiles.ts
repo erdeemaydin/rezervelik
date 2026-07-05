@@ -32,6 +32,10 @@ export interface FeatureProfile {
   hasShiftFeature: boolean;
   hasMenuFeature: boolean;
   hasPaymentFeature: boolean;
+  // Wedding/organization capabilities (default off; only the WEDDING profile enables).
+  hasEventPipeline: boolean;
+  hasInstallmentPlans: boolean;
+  hasGuestList: boolean;
 }
 
 export const FEATURE_FLAG_KEYS: (keyof FeatureProfile)[] = [
@@ -42,7 +46,17 @@ export const FEATURE_FLAG_KEYS: (keyof FeatureProfile)[] = [
   'hasShiftFeature',
   'hasMenuFeature',
   'hasPaymentFeature',
+  'hasEventPipeline',
+  'hasInstallmentPlans',
+  'hasGuestList',
 ];
+
+// Non-wedding verticals share the same three wedding flags = off.
+const NO_WEDDING = {
+  hasEventPipeline: false,
+  hasInstallmentPlans: false,
+  hasGuestList: false,
+} as const;
 
 export const FEATURE_PROFILES: Record<BusinessType, FeatureProfile> = {
   RESTAURANT: {
@@ -53,6 +67,7 @@ export const FEATURE_PROFILES: Record<BusinessType, FeatureProfile> = {
     hasShiftFeature: true,
     hasMenuFeature: true,
     hasPaymentFeature: true,
+    ...NO_WEDDING,
   },
   SALON: {
     isVipEnabled: false,
@@ -62,6 +77,7 @@ export const FEATURE_PROFILES: Record<BusinessType, FeatureProfile> = {
     hasShiftFeature: true,
     hasMenuFeature: true, // services
     hasPaymentFeature: true,
+    ...NO_WEDDING,
   },
   SPORTS: {
     isVipEnabled: false,
@@ -71,6 +87,7 @@ export const FEATURE_PROFILES: Record<BusinessType, FeatureProfile> = {
     hasShiftFeature: true,
     hasMenuFeature: false,
     hasPaymentFeature: true, // deposits
+    ...NO_WEDDING,
   },
   COWORKING: {
     isVipEnabled: false,
@@ -80,6 +97,7 @@ export const FEATURE_PROFILES: Record<BusinessType, FeatureProfile> = {
     hasShiftFeature: false,
     hasMenuFeature: false,
     hasPaymentFeature: true,
+    ...NO_WEDDING,
   },
   CLINIC: {
     isVipEnabled: false,
@@ -89,6 +107,7 @@ export const FEATURE_PROFILES: Record<BusinessType, FeatureProfile> = {
     hasShiftFeature: true,
     hasMenuFeature: true, // services / treatments
     hasPaymentFeature: false,
+    ...NO_WEDDING,
   },
   WEDDING: {
     isVipEnabled: true, // VIP clients
@@ -98,6 +117,9 @@ export const FEATURE_PROFILES: Record<BusinessType, FeatureProfile> = {
     hasShiftFeature: true,
     hasMenuFeature: true, // packages
     hasPaymentFeature: true, // deposits + installments
+    hasEventPipeline: true,
+    hasInstallmentPlans: true,
+    hasGuestList: true,
   },
 };
 
