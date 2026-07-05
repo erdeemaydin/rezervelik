@@ -1,0 +1,257 @@
+'use client';
+
+import { useState, useEffect, useCallback } from 'react';
+import { useParams, useRouter } from 'next/navigation';
+import AdminLayout from '@/components/layout/AdminLayout';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Badge } from '@/components/ui/badge';
+import api from '@/lib/api';
+import { toast } from 'sonner';
+import { ArrowLeft, Plus, Trash2, Save, Users, Wallet, CheckCircle2 } from 'lucide-react';
+import { useTranslation } from '@/i18n/provider';
+
+const STAGES = ['LEAD', 'VISIT', 'QUOTE', 'CONTRACT', 'CONFIRMED', 'COMPLETED', 'CANCELED'];
+const EVENT_TYPES = ['WEDDING', 'ENGAGEMENT', 'HENNA', 'CORPORATE'];
+const RSVP = ['PENDING', 'YES', 'NO', 'MAYBE'];
+
+interface Installment { id: string; label: string | null; dueDate: string; amount: number; status: string; }
+interface Guest { id: string; name: string; partySize: number; rsvp: string; }
+
+export default function EventDetailPage() {
+  const { t } = useTranslation();
+  const router = useRouter();
+  const params = useParams();
+  const id = params?.id as string;
+
+  const [event, setEvent] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [form, setForm] = useState<any>(null);
+
+  const [guestForm, setGuestForm] = useState({ name: '', partySize: '1', rsvp: 'PENDING' });
+  const [instForm, setInstForm] = useState({ label: '', dueDate: '', amount: '' });
+  const [planTotal, setPlanTotal] = useState('');
+
+  const money = (minor: number | null | undefined) => (minor == null ? '—' : `₺${(minor / 100).toLocaleString('tr-TR')}`);
+  const selectClass = 'h-10 px-2 text-sm font-bold border border-slate-200 rounded-sm bg-white';
+
+  const load = useCallback(async () => {
+    try {
+      const res = await api.get(`/events/${id}`);
+      const ev = res.data.data;
+      setEvent(ev);
+      setForm({
+        clientName: ev.clientName, clientPhone: ev.clientPhone, clientEmail: ev.clientEmail || '',
+        eventType: ev.eventType, eventDate: ev.eventDate, slot: ev.slot || '',
+        guestCount: String(ev.guestCount), stage: ev.stage, notes: ev.notes || '',
+        quotedTotal: ev.quotedTotal != null ? String(ev.quotedTotal / 100) : '',
+      });
+      setPlanTotal(ev.paymentPlan?.totalAmount != null ? String(ev.paymentPlan.totalAmount / 100) : '');
+    } catch {
+      toast.error(t('events.loadError'));
+    } finally {
+      setLoading(false);
+    }
+  }, [id, t]);
+
+  useEffect(() => { if (id) load(); }, [id, load]);
+
+  const saveEvent = async () => {
+    try {
+      await api.put(`/events/${id}`, {
+        ...form,
+        guestCount: form.guestCount === '' ? 0 : parseInt(form.guestCount),
+        quotedTotal: form.quotedTotal === '' ? null : Math.round(parseFloat(form.quotedTotal) * 100),
+      });
+      toast.success(t('common.saved'));
+      load();
+    } catch { toast.error(t('events.saveError')); }
+  };
+
+  const setStage = async (stage: string) => {
+    setForm((f: any) => ({ ...f, stage }));
+    try { await api.put(`/events/${id}`, { stage }); toast.success(t('events.stageUpdated')); load(); }
+    catch { toast.error(t('events.saveError')); }
+  };
+
+  // --- Guests ---
+  const addGuest = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!guestForm.name) return;
+    try {
+      await api.post(`/events/${id}/guests`, guestForm);
+      setGuestForm({ name: '', partySize: '1', rsvp: 'PENDING' });
+      load();
+    } catch { toast.error(t('events.saveError')); }
+  };
+  const setGuestRsvp = async (guestId: string, rsvp: string) => {
+    try { await api.put(`/events/guests/${guestId}`, { rsvp }); load(); } catch { toast.error(t('events.saveError')); }
+  };
+  const delGuest = async (guestId: string) => {
+    try { await api.delete(`/events/guests/${guestId}`); load(); } catch { toast.error(t('events.saveError')); }
+  };
+
+  // --- Payment plan ---
+  const savePlanTotal = async () => {
+    try {
+      await api.put(`/events/${id}/payment-plan`, { totalAmount: planTotal === '' ? 0 : Math.round(parseFloat(planTotal) * 100) });
+      toast.success(t('common.saved')); load();
+    } catch { toast.error(t('events.saveError')); }
+  };
+  const addInstallment = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!instForm.dueDate || instForm.amount === '') return;
+    try {
+      await api.post(`/events/${id}/installments`, { label: instForm.label, dueDate: instForm.dueDate, amount: Math.round(parseFloat(instForm.amount) * 100) });
+      setInstForm({ label: '', dueDate: '', amount: '' });
+      load();
+    } catch { toast.error(t('events.saveError')); }
+  };
+  const toggleInstallmentPaid = async (inst: Installment) => {
+    try { await api.put(`/events/installments/${inst.id}`, { status: inst.status === 'PAID' ? 'PENDING' : 'PAID' }); load(); }
+    catch { toast.error(t('events.saveError')); }
+  };
+  const delInstallment = async (instId: string) => {
+    try { await api.delete(`/events/installments/${instId}`); load(); } catch { toast.error(t('events.saveError')); }
+  };
+
+  if (loading || !form) {
+    return <AdminLayout><div className="p-6 text-sm text-slate-400">{t('common.loading')}</div></AdminLayout>;
+  }
+
+  const installments: Installment[] = event?.paymentPlan?.installments || [];
+  const guests: Guest[] = event?.guests || [];
+  const paidSum = installments.filter(i => i.status === 'PAID').reduce((s, i) => s + i.amount, 0);
+  const rsvpYes = guests.filter(g => g.rsvp === 'YES').reduce((s, g) => s + g.partySize, 0);
+
+  return (
+    <AdminLayout>
+      <div className="p-4 sm:p-6 space-y-6 max-w-5xl">
+        <button onClick={() => router.push('/dashboard/events')} className="flex items-center gap-1.5 text-xs font-bold text-slate-400 hover:text-slate-700">
+          <ArrowLeft className="w-4 h-4" /> {t('events.backToBoard')}
+        </button>
+
+        <div className="flex items-center justify-between flex-wrap gap-3">
+          <div>
+            <h1 className="text-2xl font-black tracking-tight">{form.clientName}</h1>
+            <p className="text-xs text-slate-400 font-bold uppercase">{t(`events.types.${form.eventType}`)} · {form.eventDate}</p>
+          </div>
+          {/* Quick stage pipeline control */}
+          <div className="flex flex-wrap gap-1">
+            {STAGES.map(s => (
+              <button key={s} onClick={() => setStage(s)}
+                className={`text-[10px] font-black uppercase px-2 py-1 rounded-sm border ${form.stage === s ? 'bg-slate-900 text-white border-slate-900' : 'bg-white text-slate-500 border-slate-200 hover:border-slate-400'}`}>
+                {t(`events.stages.${s}`)}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Core details */}
+        <Card>
+          <CardHeader><CardTitle className="text-sm font-black uppercase">{t('events.detailsTitle')}</CardTitle></CardHeader>
+          <CardContent className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <Field label={t('events.form.clientName')}><Input value={form.clientName} onChange={e => setForm({ ...form, clientName: e.target.value })} className="h-10 text-sm font-bold" /></Field>
+            <Field label={t('events.form.clientPhone')}><Input value={form.clientPhone} onChange={e => setForm({ ...form, clientPhone: e.target.value })} className="h-10 text-sm font-bold" /></Field>
+            <Field label={t('events.form.clientEmail')}><Input value={form.clientEmail} onChange={e => setForm({ ...form, clientEmail: e.target.value })} className="h-10 text-sm font-bold" /></Field>
+            <Field label={t('events.form.eventType')}>
+              <select value={form.eventType} onChange={e => setForm({ ...form, eventType: e.target.value })} className={selectClass}>
+                {EVENT_TYPES.map(x => <option key={x} value={x}>{t(`events.types.${x}`)}</option>)}
+              </select>
+            </Field>
+            <Field label={t('events.form.date')}><Input type="date" value={form.eventDate} onChange={e => setForm({ ...form, eventDate: e.target.value })} className="h-10 text-sm font-bold" /></Field>
+            <Field label={t('events.form.slot')}><Input value={form.slot} onChange={e => setForm({ ...form, slot: e.target.value })} className="h-10 text-sm font-bold" /></Field>
+            <Field label={t('events.form.guestCount')}><Input type="number" min="0" value={form.guestCount} onChange={e => setForm({ ...form, guestCount: e.target.value })} className="h-10 text-sm font-bold font-mono" /></Field>
+            <Field label={t('events.form.quotedTotal')}><Input type="number" min="0" step="0.01" value={form.quotedTotal} onChange={e => setForm({ ...form, quotedTotal: e.target.value })} className="h-10 text-sm font-bold font-mono" /></Field>
+            <div className="sm:col-span-2">
+              <Field label={t('events.form.notes')}><Textarea value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} className="min-h-[60px] text-xs" /></Field>
+            </div>
+            <div className="sm:col-span-2 flex justify-end">
+              <Button onClick={saveEvent} className="bg-slate-900 hover:bg-slate-800"><Save className="w-4 h-4 mr-1.5" />{t('common.save')}</Button>
+            </div>
+          </CardContent>
+        </Card>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Guests */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-sm font-black uppercase flex items-center gap-2">
+                <Users className="w-4 h-4" />{t('events.guestsTitle')}
+                <Badge variant="outline" className="ml-auto text-[10px]">{t('events.rsvpConfirmed')}: {rsvpYes}</Badge>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <form onSubmit={addGuest} className="flex gap-2">
+                <Input value={guestForm.name} onChange={e => setGuestForm({ ...guestForm, name: e.target.value })} placeholder={t('events.form.guestName')} className="h-9 text-sm font-bold" />
+                <Input type="number" min="1" value={guestForm.partySize} onChange={e => setGuestForm({ ...guestForm, partySize: e.target.value })} className="h-9 w-16 text-sm font-bold font-mono" />
+                <Button type="submit" size="sm" className="h-9 shrink-0"><Plus className="w-4 h-4" /></Button>
+              </form>
+              <div className="space-y-1.5">
+                {guests.length === 0 && <p className="text-xs text-slate-400">{t('events.noGuests')}</p>}
+                {guests.map(g => (
+                  <div key={g.id} className="flex items-center gap-2 border border-slate-100 rounded-sm px-2 py-1.5">
+                    <span className="font-bold text-sm truncate flex-1">{g.name}</span>
+                    <span className="text-[10px] font-bold text-slate-400">×{g.partySize}</span>
+                    <select value={g.rsvp} onChange={e => setGuestRsvp(g.id, e.target.value)} className="h-7 text-[10px] font-bold border border-slate-200 rounded-sm bg-white">
+                      {RSVP.map(r => <option key={r} value={r}>{t(`events.rsvp.${r}`)}</option>)}
+                    </select>
+                    <button onClick={() => delGuest(g.id)} className="text-slate-300 hover:text-rose-500"><Trash2 className="w-3.5 h-3.5" /></button>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Payment plan */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-sm font-black uppercase flex items-center gap-2">
+                <Wallet className="w-4 h-4" />{t('events.paymentTitle')}
+                <span className="ml-auto text-[11px] font-bold text-emerald-600">{money(paidSum)} / {money(event?.paymentPlan?.totalAmount)}</span>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div className="flex gap-2 items-end">
+                <Field label={t('events.planTotal')}><Input type="number" min="0" step="0.01" value={planTotal} onChange={e => setPlanTotal(e.target.value)} className="h-9 text-sm font-bold font-mono" /></Field>
+                <Button onClick={savePlanTotal} size="sm" variant="outline" className="h-9">{t('common.save')}</Button>
+              </div>
+              <form onSubmit={addInstallment} className="grid grid-cols-[1fr_auto_auto] gap-2 items-center">
+                <Input value={instForm.label} onChange={e => setInstForm({ ...instForm, label: e.target.value })} placeholder={t('events.installmentLabel')} className="h-9 text-sm font-bold" />
+                <Input type="date" value={instForm.dueDate} onChange={e => setInstForm({ ...instForm, dueDate: e.target.value })} className="h-9 text-sm font-bold" />
+                <Input type="number" min="0" step="0.01" value={instForm.amount} onChange={e => setInstForm({ ...instForm, amount: e.target.value })} placeholder="₺" className="h-9 w-24 text-sm font-bold font-mono" />
+                <Button type="submit" size="sm" className="col-span-3 h-8"><Plus className="w-3.5 h-3.5 mr-1" />{t('events.addInstallment')}</Button>
+              </form>
+              <div className="space-y-1.5">
+                {installments.length === 0 && <p className="text-xs text-slate-400">{t('events.noInstallments')}</p>}
+                {installments.map(inst => (
+                  <div key={inst.id} className="flex items-center gap-2 border border-slate-100 rounded-sm px-2 py-1.5">
+                    <button onClick={() => toggleInstallmentPaid(inst)} title={t('events.markPaid')}>
+                      <CheckCircle2 className={`w-4 h-4 ${inst.status === 'PAID' ? 'text-emerald-500' : 'text-slate-300'}`} />
+                    </button>
+                    <span className="font-bold text-sm truncate flex-1">{inst.label || t('events.installment')}</span>
+                    <span className="text-[10px] font-bold text-slate-400">{inst.dueDate}</span>
+                    <span className="text-sm font-black font-mono">{money(inst.amount)}</span>
+                    <button onClick={() => delInstallment(inst.id)} className="text-slate-300 hover:text-rose-500"><Trash2 className="w-3.5 h-3.5" /></button>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    </AdminLayout>
+  );
+}
+
+function Field({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div className="grid gap-1.5">
+      <Label className="text-[10px] font-black uppercase text-slate-400">{label}</Label>
+      {children}
+    </div>
+  );
+}

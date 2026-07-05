@@ -181,15 +181,23 @@ wedding module. See §6 for schema. Split into **4a (backend, DONE)** and
       per-person pricing, foreign-package rejection, lazy plan + installment paidAt,
       guest RSVP, **tenant isolation**); full suite **33/33**. Commit; merge to integration.
 
-**Phase 4b — frontend (PENDING, next):**
-- [ ] Wedding dashboard route group reusing `AdminLayout`; pipeline board (events by
-      stage), event detail (package + guest list + payment-plan/installments), seating
-- [ ] Gate wedding nav items on `hasEventPipeline`/`hasGuestList`; add `manage_events`
-      to the permission catalog + wedding tenant provisioning
-- [ ] Bilingual (tr/en) strings for all new UI
-- **Resume marker:** _Phase 4a (backend) DONE and merged. Next: Phase 4b (wedding
-  dashboard frontend) on branch `feat/mbp-04-wedding-module` (continue) or a new
-  `feat/mbp-04b-wedding-frontend` subbranch._
+**Phase 4b — frontend (branch `feat/mbp-04b-wedding-frontend`, DONE):**
+- [x] `/dashboard/events` pipeline board (events grouped into the 7 stages, per-card
+      client/date/guests/quotedTotal/coordinator, create-event dialog)
+- [x] `/dashboard/events/[id]` detail: editable core fields + quick stage control,
+      guest list (add/RSVP/delete), payment plan (total + installments add/mark-paid/
+      delete, paid-vs-total summary)
+- [x] Nav item gated on `hasEventPipeline`; `manage_events` added to tenant provisioning
+- [x] Bilingual (tr/en) `events.*` + `common.loading/save/saved` i18n
+- [x] Verified: frontend `tsc` + `eslint` (0 errors) + `next build` (both routes
+      compile); backend tests still 33/33
+- **DEFERRED (Phase 4c/5 polish):** relational pickers on the detail page for
+      coordinator (staff) / hall (BookableResource) / package (MenuItem, drives
+      per-person pricing) and the visual seating chart (assign guests to floor-plan
+      resources). Backend already supports all of these; only the pick-from-list UI
+      is pending. `manage_events` in the granular permission-catalog UI.
+- **Resume marker:** _Phase 4 (a+b) DONE. Next: Phase 5 (organizer/vendor,
+  e-davetiye/RSVP microsite) — or Phase 4c relational pickers + seating if wanted._
 
 ### Phase 5 — Organizer, vendors, invitations, polish  (branch `feat/mbp-05-organizer-vendor`)
 - [ ] `Vendor` + `EventVendor` (photographer/DJ/florist coordination) — organizer model B
@@ -355,3 +363,21 @@ the end of every phase.
   rejection, installment paidAt); full suite **33/33**.
 - **pending (Phase 4b)**: the wedding dashboard frontend (pipeline board, event
   detail, guest list, payment plan) + nav gating + `manage_events` in provisioning.
+
+### Phase 4b — wedding module frontend (branch `feat/mbp-04b-wedding-frontend`)
+- **frontend**: `dashboard/events/page.tsx` — 7-stage pipeline board with create-event
+  dialog; `dashboard/events/[id]/page.tsx` — event detail with editable core fields,
+  quick stage control, guest list (add/RSVP/delete), and payment plan (total +
+  installments add/mark-paid/delete, paid-vs-total summary). Money shown in major
+  units (÷100), stored/sent in minor units. Native `<select>`s (option text, no raw
+  IDs). `AdminLayout` gains a `PartyPopper` "Events" nav item gated on
+  `hasEventPipeline`. `businessProfiles`-driven flags mean it's hidden for non-wedding
+  tenants.
+- **backend**: `manage_events` added to the default tenant-provisioning permission
+  string (ADMIN bypasses `requirePermission` anyway).
+- **i18n**: `events.*` namespace (stages/types/rsvp/form + page copy) and
+  `common.loading/save/saved` in both `en.json` and `tr.json`.
+- **verification**: frontend `tsc` clean; `eslint` 0 errors; `next build` compiles
+  `○ /dashboard/events` and `ƒ /dashboard/events/[id]`; backend suite 33/33.
+- **deferred (4c/5)**: relational pickers (coordinator/hall/package) + visual seating
+  chart — backend already supports them, only the list-picker UI is pending.

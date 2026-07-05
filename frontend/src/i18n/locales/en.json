@@ -1341,6 +1341,69 @@
     "confirm": "Confirm",
     "cancel": "Cancel",
     "delete": "Delete",
-    "deleteConfirm": "This action cannot be undone."
+    "deleteConfirm": "This action cannot be undone.",
+    "loading": "Loading…",
+    "save": "Save",
+    "saved": "Saved"
+  },
+  "events": {
+    "navTitle": "Events",
+    "title": "Events",
+    "subtitle": "Wedding & organization pipeline",
+    "new": "New Event",
+    "empty": "No events yet — create your first one.",
+    "loadError": "Failed to load events",
+    "saveError": "Could not save",
+    "missingFields": "Client name, phone and date are required",
+    "created": "Event created",
+    "guestsShort": "guests",
+    "backToBoard": "Back to board",
+    "stageUpdated": "Stage updated",
+    "detailsTitle": "Details",
+    "guestsTitle": "Guest List",
+    "rsvpConfirmed": "Confirmed",
+    "noGuests": "No guests yet",
+    "paymentTitle": "Payment Plan",
+    "planTotal": "Total",
+    "installmentLabel": "Label",
+    "addInstallment": "Add installment",
+    "noInstallments": "No installments yet",
+    "markPaid": "Toggle paid",
+    "installment": "Installment",
+    "stages": {
+      "LEAD": "Lead",
+      "VISIT": "Visit",
+      "QUOTE": "Quote",
+      "CONTRACT": "Contract",
+      "CONFIRMED": "Confirmed",
+      "COMPLETED": "Completed",
+      "CANCELED": "Canceled"
+    },
+    "types": {
+      "WEDDING": "Wedding",
+      "ENGAGEMENT": "Engagement",
+      "HENNA": "Henna",
+      "CORPORATE": "Corporate"
+    },
+    "rsvp": {
+      "PENDING": "Pending",
+      "YES": "Yes",
+      "NO": "No",
+      "MAYBE": "Maybe"
+    },
+    "form": {
+      "clientName": "Client Name",
+      "clientPhone": "Phone",
+      "clientEmail": "Email",
+      "eventType": "Type",
+      "stage": "Stage",
+      "date": "Date",
+      "slot": "Slot",
+      "slotPlaceholder": "Evening…",
+      "guestCount": "Guest Count",
+      "notes": "Notes",
+      "guestName": "Guest name",
+      "quotedTotal": "Quoted Total (₺)"
+    }
   }
 }

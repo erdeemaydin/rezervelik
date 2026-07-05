@@ -17,7 +17,8 @@ import {
   ChevronLeft,
   ChevronRight,
   Clock,
-  Tablet
+  Tablet,
+  PartyPopper
 } from 'lucide-react';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useFormatStore } from '@/store/useFormatStore';
@@ -138,6 +139,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
     ]},
     { section: t('admin.sectionOperations'), items: [
       { name: isRestaurant ? t('admin.reservations') : term('bookingPlural'), href: '/dashboard/reservations', icon: Calendar, badge: '12', perm: 'manage_reservations' },
+      { name: t('events.navTitle'), href: '/dashboard/events', icon: PartyPopper, feature: 'hasEventPipeline' },
       { name: t('admin.hostStand'), href: '/dashboard/host', icon: Tablet, badge: 'iPad', perm: 'manage_reservations' },
       { name: t('admin.calendar'), href: '/dashboard/calendar', icon: Calendar, badge: 'New', perm: 'manage_calendar' },
       { name: isRestaurant ? t('admin.tablesAndFloor') : term('resourcePlural'), href: '/dashboard/tables', icon: Grid, perm: 'manage_tables' },

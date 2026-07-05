@@ -1341,6 +1341,69 @@
     "confirm": "Onayla",
     "cancel": "İptal",
     "delete": "Sil",
-    "deleteConfirm": "Bu işlem geri alınamaz."
+    "deleteConfirm": "Bu işlem geri alınamaz.",
+    "loading": "Yükleniyor…",
+    "save": "Kaydet",
+    "saved": "Kaydedildi"
+  },
+  "events": {
+    "navTitle": "Organizasyonlar",
+    "title": "Organizasyonlar",
+    "subtitle": "Düğün & organizasyon süreci",
+    "new": "Yeni Organizasyon",
+    "empty": "Henüz organizasyon yok — ilkini oluşturun.",
+    "loadError": "Organizasyonlar yüklenemedi",
+    "saveError": "Kaydedilemedi",
+    "missingFields": "Müşteri adı, telefon ve tarih gereklidir",
+    "created": "Organizasyon oluşturuldu",
+    "guestsShort": "davetli",
+    "backToBoard": "Panoya dön",
+    "stageUpdated": "Aşama güncellendi",
+    "detailsTitle": "Detaylar",
+    "guestsTitle": "Davetli Listesi",
+    "rsvpConfirmed": "Onaylı",
+    "noGuests": "Henüz davetli yok",
+    "paymentTitle": "Ödeme Planı",
+    "planTotal": "Toplam",
+    "installmentLabel": "Etiket",
+    "addInstallment": "Taksit ekle",
+    "noInstallments": "Henüz taksit yok",
+    "markPaid": "Ödendi işaretle",
+    "installment": "Taksit",
+    "stages": {
+      "LEAD": "Aday",
+      "VISIT": "Ziyaret",
+      "QUOTE": "Teklif",
+      "CONTRACT": "Sözleşme",
+      "CONFIRMED": "Onaylandı",
+      "COMPLETED": "Tamamlandı",
+      "CANCELED": "İptal"
+    },
+    "types": {
+      "WEDDING": "Düğün",
+      "ENGAGEMENT": "Nişan",
+      "HENNA": "Kına",
+      "CORPORATE": "Kurumsal"
+    },
+    "rsvp": {
+      "PENDING": "Bekliyor",
+      "YES": "Evet",
+      "NO": "Hayır",
+      "MAYBE": "Belki"
+    },
+    "form": {
+      "clientName": "Müşteri Adı",
+      "clientPhone": "Telefon",
+      "clientEmail": "E-posta",
+      "eventType": "Tür",
+      "stage": "Aşama",
+      "date": "Tarih",
+      "slot": "Seans",
+      "slotPlaceholder": "Akşam…",
+      "guestCount": "Davetli Sayısı",
+      "notes": "Notlar",
+      "guestName": "Davetli adı",
+      "quotedTotal": "Teklif Tutarı (₺)"
+    }
   }
 }
