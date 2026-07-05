@@ -141,7 +141,7 @@ export const createReservation = async (req: Request, res: Response) => {
           if (availableTable) {
             finalTableId = availableTable.id;
           } else {
-            const anyTableFitsCapacity = await tx.table.findFirst({
+            const anyTableFitsCapacity = await tx.bookableResource.findFirst({
               where: { restaurantId, capacity: { gte: partySize } },
             });
             // No table can ever seat this party → hard reject.

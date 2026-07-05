@@ -212,12 +212,12 @@ async function main() {
   const noStaff = !!args['no-staff'];
 
   // Tables + categories: create a small demo set if the restaurant has none.
-  let tables = await prisma.table.findMany({ where: { restaurantId: restaurant.id }, select: { id: true, identifier: true, capacity: true } });
+  let tables = await prisma.bookableResource.findMany({ where: { restaurantId: restaurant.id }, select: { id: true, identifier: true, capacity: true } });
   if (tables.length === 0 && !dryRun) {
-    const zone = await prisma.tableType.create({ data: { restaurantId: restaurant.id, name: 'Salon', description: 'Demo zone' } });
+    const zone = await prisma.zone.create({ data: { restaurantId: restaurant.id, name: 'Salon', description: 'Demo zone' } });
     const specs = [['M1', 2], ['M2', 2], ['M3', 4], ['M4', 4], ['M5', 4], ['M6', 6], ['M7', 6], ['M8', 8]] as const;
-    await prisma.table.createMany({ data: specs.map(([identifier, capacity]) => ({ restaurantId: restaurant.id, tableTypeId: zone.id, identifier, capacity })) });
-    tables = await prisma.table.findMany({ where: { restaurantId: restaurant.id }, select: { id: true, identifier: true, capacity: true } });
+    await prisma.bookableResource.createMany({ data: specs.map(([identifier, capacity]) => ({ restaurantId: restaurant.id, tableTypeId: zone.id, identifier, capacity })) });
+    tables = await prisma.bookableResource.findMany({ where: { restaurantId: restaurant.id }, select: { id: true, identifier: true, capacity: true } });
     console.log(`  + created ${tables.length} demo tables (restaurant had none)`);
   }
 

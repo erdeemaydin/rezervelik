@@ -68,7 +68,7 @@ export const getDayStatus = async (req: Request, res: Response) => {
     });
 
     // Check if any table is available at all on that day (coarse check)
-    const tablesCount = await prisma.table.count({ where: { restaurantId: restaurant.id } });
+    const tablesCount = await prisma.bookableResource.count({ where: { restaurantId: restaurant.id } });
 
     return successResponse(res, {
       daySetting: daySetting ? {

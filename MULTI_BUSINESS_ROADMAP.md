@@ -111,17 +111,25 @@ mechanism that all Tier-1 verticals ride on.
   `feat/mbp-02-standardization-rename`._
 
 ### Phase 2 — Standardization rename  (branch `feat/mbp-02-standardization-rename`)
-- [ ] Rename Prisma models `Table→BookableResource`, `TableType→Zone` **with
-      `@@map` to old SQLite names** (no data migration). Rename relation fields too.
-- [ ] `prisma:generate`; fix all `prisma.table` / `prisma.tableType` call sites
-      (controllers: `tableController`, `tableTypeController`, `reservationController`,
-      `floorElementController`, `publicController`, `analyticsController`, …)
-- [ ] Rename frontend types/vars accordingly; keep public API field names stable OR
-      version them (decide before touching `publicController` response shapes)
-- [ ] Typecheck + full test suite green; commit; merge to integration
-- **Phase 2b (OPTIONAL, deferred):** `Restaurant→Business`, `Reservation→Booking`,
-      `restaurantId→businessId`, `X-Restaurant-ID` header alias. Only after 2 proves
-      the @@map approach. High blast radius — do as its own subbranch, all-or-nothing.
+- [x] Rename Prisma models `Table→BookableResource`, `TableType→Zone` **with
+      `@@map("Table")` / `@@map("TableType")`** — `db push` confirmed "already in
+      sync", i.e. **zero data migration**.
+- [x] Decision: **kept relation/field names** (`tableId`, `tableType`, `tables`,
+      `tableTypes`) unchanged → API response shapes identical → **frontend untouched**.
+      Only model accessors + relation TYPES changed.
+- [x] `prisma:generate`; rewrote all accessors (`prisma.table`→`prisma.bookableResource`,
+      `prisma.tableType`→`prisma.zone`, plus `tx.*`/`client.*` aliases) across
+      `tableController`, `tableTypeController`, `floorElementController`,
+      `publicController`, `restaurantController`, `reservationController`,
+      `restaurantService`, `utils/reservationConflict`, `prisma/seed.ts`,
+      `scripts/demo-data.ts`
+- [x] Backend typecheck clean; full test suite (23) green; commit; merge to integration
+- **Phase 2b (OPTIONAL, deferred):** deeper field renames — `Restaurant→Business`,
+      `Reservation→Booking`, `restaurantId→businessId`, `tableId→resourceId`,
+      `X-Restaurant-ID` header alias. High blast radius (changes API shapes +
+      frontend). Do as its own subbranch, all-or-nothing, only if wanted.
+- **Resume marker:** _Phase 2 DONE. Next: Phase 3 (Tier-1 verticals) on branch
+  `feat/mbp-03-tier1-verticals`._
 
 ### Phase 3 — Tier-1 verticals  (branch `feat/mbp-03-tier1-verticals`)
 Config + terminology packs + two small schema additions. Verticals: **Salon/Barber,
