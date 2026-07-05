@@ -4,6 +4,7 @@ import React, { useEffect, useState, useMemo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { TimeSelect } from '@/components/ui/time-select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Pencil, Trash2 } from 'lucide-react';
 import { Shift, ShiftDayRequirement, getShifts, createShift, updateShift, deleteShift } from '@/lib/api/scheduling';
@@ -103,18 +104,18 @@ export default function ShiftManager() {
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <label className="text-sm font-medium">{t('scheduling.shiftManager.startTime')}</label>
-              <Input
-                type="time"
+              <TimeSelect
+                className="w-full"
                 value={editingShift.startTime || ''}
-                onChange={(e) => setEditingShift({ ...editingShift, startTime: e.target.value })}
+                onChange={(v) => setEditingShift({ ...editingShift, startTime: v })}
               />
             </div>
             <div className="space-y-2">
               <label className="text-sm font-medium">{t('scheduling.shiftManager.endTime')}</label>
-              <Input
-                type="time"
+              <TimeSelect
+                className="w-full"
                 value={editingShift.endTime || ''}
-                onChange={(e) => setEditingShift({ ...editingShift, endTime: e.target.value })}
+                onChange={(v) => setEditingShift({ ...editingShift, endTime: v })}
               />
             </div>
           </div>

@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
+import { TimeSelect } from '@/components/ui/time-select';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
@@ -934,12 +935,10 @@ export default function HostConsolePage() {
                 {/* Time Selection */}
                 <div className="space-y-2">
                   <Label className="text-[10px] font-black uppercase text-slate-400 tracking-wider">{t("host.resTimeLabel")}</Label>
-                  <Input 
-                    type="time"
+                  <TimeSelect
                     value={resForm.selectedTime}
-                    onChange={(e) => setResForm({...resForm, selectedTime: e.target.value})}
-                    required
-                    className="h-12 font-bold text-slate-800 rounded-lg border-slate-200 bg-slate-50 focus:bg-white"
+                    onChange={(v) => setResForm({...resForm, selectedTime: v})}
+                    className="w-full h-12 font-bold text-slate-800 rounded-lg border-slate-200 bg-slate-50 focus:bg-white"
                   />
                 </div>
 

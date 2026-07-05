@@ -28,6 +28,26 @@ model Restaurant {
   stripeCustomerId   String?
   sysAdminNotes      String?
 
+  // --- Commercial add-on packages (set by SysAdmin, never by the tenant) ---
+  // See docs/packaging/ for the sales/positioning of these two packages.
+  //
+  // "Hosted Frontend" package: we host the tenant's public booking site on THEIR
+  // own domain (customDomain). When off, the tenant is expected to keep their own
+  // website and embed the reservation widget instead.
+  hasHostedFrontend      Boolean   @default(false)
+  // The customer's own domain (e.g. "reservations.lebistro.com"). DNS is pointed
+  // at us via CNAME; Caddy on-demand TLS issues the cert. Host-header routing maps
+  // this domain to /r/[slug] so the end customer never sees our subdomain.
+  customDomain           String?   @unique
+  customDomainVerifiedAt DateTime?
+  //
+  // "Reservation Widget" package: an embeddable booking module (JS embed + iframe,
+  // plus native SDKs) the tenant drops into their own existing website.
+  hasReservationWidget   Boolean   @default(false)
+  // Publishable key ("pk_live_...") that scopes public widget/SDK calls to this
+  // tenant WITHOUT exposing the internal restaurant UUID. Rotatable by the SysAdmin.
+  publicApiKey           String?   @unique
+
   createdAt             DateTime               @default(now())
   updatedAt             DateTime               @updatedAt
   menus                 Menu[]
