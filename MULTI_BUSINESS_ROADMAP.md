@@ -78,28 +78,37 @@ Legend: `[ ]` todo · `[~]` in progress · `[x]` done
 ### Phase 0 — Initiative bootstrap  `[x]`
 - [x] Create integration branch `feat/multi-business-platform` off `develop`
 - [x] Write this roadmap and commit it on the integration branch
-- [ ] Save a memory pointer so future sessions find this file
+- [x] Save a memory pointer so future sessions find this file
 
 ### Phase 1 — Vertical foundation  (branch `feat/mbp-01-vertical-foundation`)
 Purely **additive**, zero impact on existing restaurant tenants. Establishes the
 mechanism that all Tier-1 verticals ride on.
-- [ ] Add `businessType String @default("RESTAURANT")` to `Restaurant` in `schema.prisma`
-- [ ] Apply via `prisma db push` + hand-authored migration file (NOT `migrate dev` —
-      shadow DB is broken here; see memory `prisma-migrate-broken-shadow-db`)
-- [ ] `npm run prisma:generate`
-- [ ] Backend: expose `businessType` in tenant read APIs (system + tenant self) and
-      accept it on `createTenant` / tenant-settings update in `systemController.ts`
-- [ ] Backend: **feature-profile map** — `businessType → default feature flags`;
-      apply defaults when a tenant's `businessType` is set (in `systemController`)
-- [ ] Frontend: **terminology system** — a `terms.<businessType>.<concept>` structure
-      in `i18n/locales/{en,tr}.json` + a `useTerms()` hook resolving labels from the
-      logged-in tenant's `businessType`
-- [ ] Frontend: convert the **highest-visibility** surfaces first (dashboard sidebar
-      nav labels + page titles) to `useTerms()`; leave deep conversion incremental
-- [ ] SysAdmin UI: `businessType` selector on tenant provision/edit (like `layoutStyle`)
-- [ ] Typecheck (`npm run typecheck` + `frontend` `npm run lint`), smoke, commit,
+- [x] Add `businessType String @default("RESTAURANT")` to `Restaurant` in `schema.prisma`
+- [x] Apply via `prisma db push` + hand-authored migration
+      (`prisma/migrations/20260705000000_add_business_type`)
+- [x] `npm run prisma:generate`
+- [x] Backend: expose `businessType` in tenant read APIs (`/settings` GET carries it;
+      `getRestaurant` already returns all scalars) and accept it on `createTenant` /
+      `updateTenantSettings` in `systemController.ts`
+- [x] Backend: **feature-profile map** (`src/config/businessProfiles.ts`) —
+      `businessType → default feature flags`; applied on create and on type switch
+      (explicit flags in the request win over the profile)
+- [x] Frontend: **terminology system** — implemented as a typed TS module
+      (`frontend/src/lib/terminology.ts`, keyed by businessType×locale) rather than
+      JSON, to keep locale files clean. `useTerms()` hook (`src/hooks/useTerms.ts`)
+      resolves labels from `useTenantStore.businessType` (hydrated in AdminLayout
+      from `/settings`).
+- [x] Frontend: converted dashboard **sidebar nav** labels (Reservations/Tables/Menu)
+      to `useTerms()` for non-restaurant tenants (restaurant wording unchanged)
+- [ ] Frontend: deep terminology conversion of page titles/headings/buttons across
+      dashboard pages — **incremental, ongoing** (do opportunistically per page)
+- [x] SysAdmin UI: `businessType` selector on tenant provision + entitlements dialogs
+- [x] Typecheck (backend + frontend `tsc`) + full test suite (23 passing); commit;
       merge into integration branch
-- **Resume marker:** _Phase 1 not started._
+- **Resume marker:** _Phase 1 core DONE. Only remaining item is the incremental
+  page-by-page terminology conversion (safe to interleave with later phases). Next
+  major work: Phase 2 (standardization rename) on branch
+  `feat/mbp-02-standardization-rename`._
 
 ### Phase 2 — Standardization rename  (branch `feat/mbp-02-standardization-rename`)
 - [ ] Rename Prisma models `Table→BookableResource`, `TableType→Zone` **with

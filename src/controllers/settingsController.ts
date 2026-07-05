@@ -12,9 +12,16 @@ export const getSettings = async (req: Request, res: Response) => {
     // system admin (GlobalSettings). Surface it here so the tenant dashboard can
     // render dates/times consistently without needing SUPER_ADMIN access.
     const global = await prisma.globalSettings.findUnique({ where: { id: 'global_1' } });
+    // businessType lives on Restaurant (set by the SysAdmin); surface it here so the
+    // dashboard can pick per-vertical terminology labels without a SUPER_ADMIN call.
+    const restaurant = await prisma.restaurant.findUnique({
+      where: { id: restaurantId },
+      select: { businessType: true },
+    });
     return successResponse(res, {
       ...settings,
       measurementSystem: global?.measurementSystem || 'METRIC',
+      businessType: restaurant?.businessType || 'RESTAURANT',
     });
   } catch (error) {
     return errorResponse(res, 'errors.internal_error', 500);

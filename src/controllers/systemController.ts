@@ -3,6 +3,12 @@ import bcrypt from 'bcrypt';
 import prisma from '../config/prisma';
 import { successResponse, errorResponse } from '../utils/response';
 import { generateResetToken, RESET_TOKEN_TTL_MS } from '../utils/resetToken';
+import {
+  DEFAULT_BUSINESS_TYPE,
+  FEATURE_FLAG_KEYS,
+  getFeatureProfile,
+  isBusinessType,
+} from '../config/businessProfiles';
 
 // POST /system/users/:userId/reset-link (SUPER_ADMIN only)
 // Mints a single-use password reset link for any user. The raw token is returned
@@ -98,6 +104,12 @@ export const createTenant = async (req: Request, res: Response) => {
       return errorResponse(res, 'errors.validation_error', 400, { message: 'Required fields missing' });
     }
 
+    // Vertical/business type drives terminology + the default feature profile.
+    const businessType = isBusinessType(req.body.businessType)
+      ? req.body.businessType
+      : DEFAULT_BUSINESS_TYPE;
+    const featureProfile = getFeatureProfile(businessType);
+
     const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-');
     const existingUser = await prisma.user.findUnique({ where: { email: contactEmail } });
 
@@ -130,11 +142,12 @@ export const createTenant = async (req: Request, res: Response) => {
           name,
           slug: `${slug}-${Date.now()}`,
           contactEmail,
+          businessType,
           subscriptionPlan: 'TRIAL',
           subscriptionStatus: 'ACTIVE',
           subscriptionEndsAt,
           settings: {
-            create: {}
+            create: { ...featureProfile }
           },
           customization: {
             create: {}
@@ -195,28 +208,37 @@ export const updateTenantSettings = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const {
-      isVipEnabled,
-      isInternalNotesEnabled,
-      isCategoriesEnabled,
-      hasWaitTimeFeature,
-      hasShiftFeature,
-      hasMenuFeature,
-      hasPaymentFeature,
       currency,
       twoFactorEnabled,
       defaultLanguage
     } = req.body;
 
+    // When the SysAdmin switches the tenant's businessType, seed the vertical's
+    // default feature profile — but any flag explicitly present in this request
+    // wins over the profile default.
+    const businessTypeProvided = isBusinessType(req.body.businessType);
+    const profile = businessTypeProvided ? getFeatureProfile(req.body.businessType) : null;
+
+    const featureData: Record<string, boolean> = {};
+    for (const key of FEATURE_FLAG_KEYS) {
+      if (req.body[key] !== undefined) {
+        featureData[key] = Boolean(req.body[key]);
+      } else if (profile) {
+        featureData[key] = profile[key];
+      }
+    }
+
+    if (businessTypeProvided) {
+      await prisma.restaurant.update({
+        where: { id },
+        data: { businessType: req.body.businessType }
+      });
+    }
+
     const updated = await prisma.restaurantSettings.update({
       where: { restaurantId: id },
       data: {
-        isVipEnabled,
-        isInternalNotesEnabled,
-        isCategoriesEnabled,
-        hasWaitTimeFeature,
-        hasShiftFeature,
-        hasMenuFeature,
-        hasPaymentFeature,
+        ...featureData,
         // Currency, the 2FA capability flag and the default language are
         // root-admin-only controls.
         ...(currency !== undefined ? { currency } : {}),

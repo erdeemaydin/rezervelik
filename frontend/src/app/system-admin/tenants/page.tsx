@@ -33,7 +33,8 @@ export default function TenantManagementPage() {
   const [searchQuery, setSearchQuery] = useState('');
 
   const [formData, setFormData] = useState({
-    name: '', contactEmail: '', adminFirstName: '', adminLastName: '', adminPassword: ''
+    name: '', contactEmail: '', adminFirstName: '', adminLastName: '', adminPassword: '',
+    businessType: 'RESTAURANT'
   });
   
   const [inviteLink, setInviteLink] = useState<string | null>(null);
@@ -41,6 +42,7 @@ export default function TenantManagementPage() {
   const [settingsForm, setSettingsForm] = useState({
     isVipEnabled: true, isInternalNotesEnabled: true, isCategoriesEnabled: true,
     hasWaitTimeFeature: true, hasShiftFeature: true, hasMenuFeature: true, hasPaymentFeature: true,
+    businessType: 'RESTAURANT',
     layoutStyle: 'CLASSIC_LIST',
     // Root-admin-only controls: platform currency + 2FA capability + default language.
     currency: 'TRY', twoFactorEnabled: false, defaultLanguage: 'tr'
@@ -129,7 +131,7 @@ export default function TenantManagementPage() {
       }
       
       fetchTenants();
-      setFormData({ name: '', contactEmail: '', adminFirstName: '', adminLastName: '', adminPassword: '' });
+      setFormData({ name: '', contactEmail: '', adminFirstName: '', adminLastName: '', adminPassword: '', businessType: 'RESTAURANT' });
     } catch (err: any) { toast.error('Provisioning failed'); }
   };
 
@@ -158,6 +160,7 @@ export default function TenantManagementPage() {
       currency: tenant.settings?.currency ?? 'TRY',
       twoFactorEnabled: tenant.settings?.twoFactorEnabled ?? false,
       defaultLanguage: tenant.settings?.defaultLanguage ?? 'tr',
+      businessType: tenant.businessType || 'RESTAURANT',
       layoutStyle: tenant.customization?.layoutStyle || 'CLASSIC_LIST',
     });
     
@@ -333,6 +336,21 @@ export default function TenantManagementPage() {
                         <Label className="text-[10px] font-black uppercase text-slate-400 ml-1">Initial Password (Optional)</Label>
                         <Input type="password" value={formData.adminPassword} onChange={e => setFormData({...formData, adminPassword: e.target.value})} placeholder="Leave blank to generate invite link" className="h-10 text-sm font-bold border-slate-200 rounded-sm" />
                     </div>
+                    <div className="grid gap-1.5">
+                        <Label className="text-[10px] font-black uppercase text-slate-400 ml-1">Business Type</Label>
+                        <select
+                          value={formData.businessType}
+                          onChange={e => setFormData({...formData, businessType: e.target.value})}
+                          className="h-10 px-2 text-sm font-bold border border-slate-200 rounded-sm bg-white"
+                        >
+                          <option value="RESTAURANT">Restaurant</option>
+                          <option value="SALON">Salon / Barber</option>
+                          <option value="SPORTS">Sports / Courts</option>
+                          <option value="COWORKING">Coworking</option>
+                          <option value="CLINIC">Clinic</option>
+                          <option value="WEDDING">Wedding / Events</option>
+                        </select>
+                    </div>
                 </div>
                 {inviteLink && (
                   <div className="px-6 pb-4">
@@ -424,6 +442,30 @@ export default function TenantManagementPage() {
                                   value={subscriptionForm.sysAdminNotes}
                                   onChange={e => setSubscriptionForm({...subscriptionForm, sysAdminNotes: e.target.value})}
                                 />
+                            </div>
+                        </div>
+
+                        <div className="space-y-4">
+                            <div className="flex items-center gap-2 mb-2">
+                                <Label className="text-xs font-black uppercase text-slate-800 tracking-tight">Business Vertical</Label>
+                            </div>
+                            <div className="flex items-center justify-between p-3 border border-slate-100 rounded-sm">
+                                <div className="space-y-0.5">
+                                    <Label className="text-xs font-black uppercase">Business Type</Label>
+                                    <p className="text-[9px] text-slate-400 font-bold uppercase">Terminology & default features</p>
+                                </div>
+                                <select
+                                  className="h-8 px-2 text-xs font-bold border border-slate-200 rounded-sm bg-slate-50"
+                                  value={settingsForm.businessType}
+                                  onChange={e => setSettingsForm({...settingsForm, businessType: e.target.value})}
+                                >
+                                  <option value="RESTAURANT">Restaurant</option>
+                                  <option value="SALON">Salon / Barber</option>
+                                  <option value="SPORTS">Sports / Courts</option>
+                                  <option value="COWORKING">Coworking</option>
+                                  <option value="CLINIC">Clinic</option>
+                                  <option value="WEDDING">Wedding / Events</option>
+                                </select>
                             </div>
                         </div>
 
