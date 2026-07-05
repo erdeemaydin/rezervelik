@@ -17,4 +17,7 @@ router.get('/stats', authMiddleware, requireAnalytics, restaurantController.getD
 router.get('/analytics', authMiddleware, requireAnalytics, analyticsController.getAnalytics);
 router.get('/today', authMiddleware, requireAnalytics, analyticsController.getTodayStats);
 
+// Widget configuration (for package B)
+router.get('/widget-snippets', authMiddleware, restaurantController.getWidgetSnippets);
+
 export default router;
