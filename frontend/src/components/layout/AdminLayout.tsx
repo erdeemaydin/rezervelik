@@ -21,6 +21,8 @@ import {
 } from 'lucide-react';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useFormatStore } from '@/store/useFormatStore';
+import { useTenantStore } from '@/store/useTenantStore';
+import { useTerms } from '@/hooks/useTerms';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -84,6 +86,10 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
   const [isMounted, setIsMounted] = useState(false);
   const [tenantSettings, setTenantSettings] = useState<any>(null);
   const { t, setLocale } = useTranslation();
+  const { term, businessType } = useTerms();
+  // Only override the vertical-specific nav labels for non-restaurant tenants, so
+  // existing restaurant dashboards render exactly as before.
+  const isRestaurant = businessType === 'RESTAURANT';
 
   useEffect(() => {
     setIsMounted(true);
@@ -99,6 +105,9 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
           setTenantSettings(res.data.data);
           // Hydrate the platform-wide date/time convention for the whole dashboard.
           useFormatStore.getState().setSystem(res.data.data?.measurementSystem || 'METRIC');
+          // Hydrate the tenant's vertical so terminology labels (useTerms) render
+          // per business type across the dashboard.
+          useTenantStore.getState().setBusinessType(res.data.data?.businessType || 'RESTAURANT');
           // Apply the tenant's default UI language (set by the root admin) for users
           // who haven't explicitly picked one. Only a deliberate LanguageSwitcher
           // choice sets NEXT_LOCALE_EXPLICIT — the plain NEXT_LOCALE cookie is
@@ -128,11 +137,11 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
       { name: t('admin.analytics'), href: '/dashboard/analytics', icon: BarChart3, badge: 'New', perm: 'view_analytics' },
     ]},
     { section: t('admin.sectionOperations'), items: [
-      { name: t('admin.reservations'), href: '/dashboard/reservations', icon: Calendar, badge: '12', perm: 'manage_reservations' },
+      { name: isRestaurant ? t('admin.reservations') : term('bookingPlural'), href: '/dashboard/reservations', icon: Calendar, badge: '12', perm: 'manage_reservations' },
       { name: t('admin.hostStand'), href: '/dashboard/host', icon: Tablet, badge: 'iPad', perm: 'manage_reservations' },
       { name: t('admin.calendar'), href: '/dashboard/calendar', icon: Calendar, badge: 'New', perm: 'manage_calendar' },
-      { name: t('admin.tablesAndFloor'), href: '/dashboard/tables', icon: Grid, perm: 'manage_tables' },
-      { name: t('admin.menuManagement'), href: '/dashboard/menus', icon: UtensilsCrossed, perm: 'manage_menu', feature: 'hasMenuFeature' },
+      { name: isRestaurant ? t('admin.tablesAndFloor') : term('resourcePlural'), href: '/dashboard/tables', icon: Grid, perm: 'manage_tables' },
+      { name: isRestaurant ? t('admin.menuManagement') : term('catalog'), href: '/dashboard/menus', icon: UtensilsCrossed, perm: 'manage_menu', feature: 'hasMenuFeature' },
       { name: t('admin.waitlist'), href: '/dashboard/wait-time', icon: Clock, badge: 'Live', perm: 'manage_settings', feature: 'hasWaitTimeFeature' },
       { name: t('admin.staffSchedule'), href: '/dashboard/scheduling', icon: Calendar, badge: 'New', feature: 'hasShiftFeature' },
     ]},

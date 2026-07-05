@@ -16,6 +16,11 @@ model Restaurant {
   logoUrl      String?
   isActive     Boolean @default(true)
 
+  // Vertical / business type. Drives per-tenant terminology labels and default
+  // feature profile. Set by the SysAdmin (like layoutStyle), never by the tenant.
+  // RESTAURANT, SALON, SPORTS, COWORKING, CLINIC, WEDDING. See MULTI_BUSINESS_ROADMAP.md.
+  businessType String  @default("RESTAURANT")
+
   // Subscription & Billing
   subscriptionPlan   String    @default("TRIAL") // TRIAL, BASIC, PRO, PREMIUM
   subscriptionStatus String    @default("ACTIVE") // ACTIVE, PAST_DUE, CANCELED
