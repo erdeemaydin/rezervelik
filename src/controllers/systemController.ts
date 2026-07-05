@@ -162,7 +162,7 @@ export const createTenant = async (req: Request, res: Response) => {
           firstName: adminFirstName,
           lastName: adminLastName,
           role: 'ADMIN',
-          permissions: 'manage_reservations,manage_tables,manage_menu,manage_calendar,manage_staff,manage_settings',
+          permissions: 'manage_reservations,manage_tables,manage_menu,manage_calendar,manage_staff,manage_settings,manage_events',
           restaurantId: restaurant.id,
           setupToken,
           setupTokenExpiresAt
