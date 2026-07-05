@@ -248,5 +248,44 @@ model Guest {
 - Dashboard layout: no top header; account controls in sidebar; `lg` mobile breakpoint.
 - Frontend is Next.js 16 / React 19 — check `frontend/node_modules/next/dist/docs/`
   before relying on remembered APIs.
-```
-```
+
+## 8. Build log (what was actually shipped, per phase)
+
+Retrospective record of the concrete changes merged for each phase. Update this at
+the end of every phase.
+
+### Phase 0 — bootstrap (commit `f37e3e7`)
+- Integration branch `feat/multi-business-platform` off `develop`; this roadmap;
+  memory pointer `multi-business-platform-initiative`.
+
+### Phase 1 — vertical foundation (branch `feat/mbp-01-vertical-foundation`, merged `c887cac`)
+- **schema**: `Restaurant.businessType String @default("RESTAURANT")` (additive
+  migration `20260705000000_add_business_type`).
+- **backend**: `src/config/businessProfiles.ts` (BUSINESS_TYPES + per-vertical
+  default `FeatureProfile`); `systemController.createTenant` seeds the profile +
+  accepts `businessType`; `updateTenantSettings` applies profile on type switch
+  (explicit flags win) and updates `Restaurant.businessType`; `settingsController`
+  GET `/settings` now returns `businessType`.
+- **frontend**: `lib/terminology.ts` (businessType×locale label table, RESTAURANT
+  fallback) + `hooks/useTerms.ts` + `store/useTenantStore.ts`; `AdminLayout`
+  hydrates businessType from `/settings` and relabels sidebar nav for non-restaurant
+  tenants; SysAdmin tenant provision + entitlements dialogs get a Business Type
+  `<select>`.
+- **verification**: backend+frontend `tsc` clean; 23/23 tests.
+
+### Phase 2 — standardization rename (branch `feat/mbp-02-standardization-rename`, merged `5623be7`)
+- **schema**: `model Table → BookableResource` (`@@map("Table")`), `model TableType →
+  Zone` (`@@map("TableType")`); relation TYPES updated on `Restaurant`,
+  `Reservation`, `FloorElement`. **No data migration** — `db push` = "already in
+  sync". Relation/field names (`tableId`, `tableType`, `tables`, `tableTypes`)
+  deliberately KEPT → API shapes identical → **frontend untouched**.
+- **backend**: rewrote accessors `prisma.table→prisma.bookableResource`,
+  `prisma.tableType→prisma.zone` (+ `tx.`/`client.` aliases) across
+  `tableController`, `tableTypeController`, `floorElementController`,
+  `publicController`, `restaurantController`, `reservationController`,
+  `restaurantService`, `utils/reservationConflict`, `prisma/seed.ts`,
+  `scripts/demo-data.ts`.
+- **verification**: backend `tsc` clean; 23/23 tests against mapped tables.
+
+### Phase 3 — Tier-1 verticals (branch `feat/mbp-03-tier1-verticals`)
+- _in progress — see checkboxes in §4._
