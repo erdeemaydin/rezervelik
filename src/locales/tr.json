@@ -1,6 +1,7 @@
 {
   "errors": {
     "restaurant_not_found": "Restoran bulunamadı",
+    "not_found": "Bulunamadı",
     "unauthorized": "Yetkisiz erişim",
     "validation_error": "Doğrulama hatası",
     "internal_error": "Sunucu hatası",

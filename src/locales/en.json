@@ -1,6 +1,7 @@
 {
   "errors": {
     "restaurant_not_found": "Restaurant not found",
+    "not_found": "Not found",
     "unauthorized": "Unauthorized access",
     "validation_error": "Validation error",
     "internal_error": "Internal server error",

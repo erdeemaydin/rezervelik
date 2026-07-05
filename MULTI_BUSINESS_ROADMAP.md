@@ -157,20 +157,39 @@ Sports courts, Coworking, Clinic** (see §5 specs).
 
 ### Phase 4 — Wedding / organization module  (branch `feat/mbp-04-wedding-module`)
 The one vertical with genuinely new domain logic. New models isolated under a
-wedding module. See §6 for schema.
-- [ ] `Event` entity (or `Booking` lifecycle extension): client/couple, eventType,
-      eventDate, slot, hall (`BookableResource`), guestCount, package, **pipeline
-      stage** (LEAD→VISIT→QUOTE→CONTRACT→CONFIRMED→COMPLETED→CANCELED), coordinator
-- [ ] `PaymentPlan` + `PaymentInstallment` (kapora + taksit); each installment links
-      to the existing `Payment` row when charged
-- [ ] `Guest` list + RSVP (LCV) + seating assignment onto floor-plan `BookableResource`
-- [ ] New feature flags: `hasEventPipeline`, `hasInstallmentPlans`, `hasGuestList`
-- [ ] Wedding dashboard route group `(wedding)` reusing `AdminLayout`; pipeline board,
-      package builder (reuses catalog), payment-plan view, seating/guest list
-- [ ] Per-person pricing: total = guestCount × package price + fixed extras
-- [ ] Wedding terminology + feature profile
-- [ ] Typecheck + tests; commit; merge to integration
-- **Resume marker:** _Phase 4 not started._
+wedding module. See §6 for schema. Split into **4a (backend, DONE)** and
+**4b (frontend, PENDING)**.
+
+**Phase 4a — backend + data model (DONE):**
+- [x] `Event` model: client, eventType (WEDDING/ENGAGEMENT/HENNA/CORPORATE),
+      eventDate, slot, hall (`resourceId`→BookableResource), guestCount, package
+      (`packageId`→MenuItem), **pipeline stage**
+      (LEAD→VISIT→QUOTE→CONTRACT→CONFIRMED→COMPLETED→CANCELED, validated), coordinator
+- [x] `PaymentPlan` (one per event) + `PaymentInstallment` (kapora + taksit; status
+      PENDING/PAID/OVERDUE; `paymentId` slot to link an existing `Payment` when charged;
+      paidAt auto-stamped on PAID)
+- [x] `Guest` list + RSVP (PENDING/YES/NO/MAYBE) + seating (`resourceId`→BookableResource)
+- [x] New feature flags `hasEventPipeline`/`hasInstallmentPlans`/`hasGuestList`
+      (default off; WEDDING profile enables them) wired through `businessProfiles.ts`
+- [x] Per-person pricing: `quotedTotal` derived = round(package.price×100) × guestCount
+      when no explicit total given
+- [x] `eventController.ts` (+ tenant-scoped ownership guards for hall/package/
+      coordinator/guest-seat) + `eventRoutes.ts` mounted at `/api/events`
+      (`tenantMiddleware`; reads = any authed user, mutations = `manage_events`, ADMIN bypasses)
+- [x] Wedding terminology + feature profile — terminology from Phase 1; profile flags here
+- [x] Typecheck clean; `tests/api/wedding.test.ts` (7 cases: stage validation,
+      per-person pricing, foreign-package rejection, lazy plan + installment paidAt,
+      guest RSVP, **tenant isolation**); full suite **33/33**. Commit; merge to integration.
+
+**Phase 4b — frontend (PENDING, next):**
+- [ ] Wedding dashboard route group reusing `AdminLayout`; pipeline board (events by
+      stage), event detail (package + guest list + payment-plan/installments), seating
+- [ ] Gate wedding nav items on `hasEventPipeline`/`hasGuestList`; add `manage_events`
+      to the permission catalog + wedding tenant provisioning
+- [ ] Bilingual (tr/en) strings for all new UI
+- **Resume marker:** _Phase 4a (backend) DONE and merged. Next: Phase 4b (wedding
+  dashboard frontend) on branch `feat/mbp-04-wedding-module` (continue) or a new
+  `feat/mbp-04b-wedding-frontend` subbranch._
 
 ### Phase 5 — Organizer, vendors, invitations, polish  (branch `feat/mbp-05-organizer-vendor`)
 - [ ] `Vendor` + `EventVendor` (photographer/DJ/florist coordination) — organizer model B
@@ -314,3 +333,25 @@ the end of every phase.
   (3 cases: duration override, default fallback, foreign-tenant service rejected);
   full suite **26/26**.
 - **deferred**: staff-as-resource (booking a specific practitioner) — future phase.
+
+### Phase 4a — wedding module backend (branch `feat/mbp-04-wedding-module`)
+- **schema** (additive migration `20260705200000_add_wedding_module`; `db push` in
+  sync): 4 new models — `Event` (pipeline, client, eventDate/slot, guestCount,
+  quotedTotal; relations to hall/package/coordinator via `EventHall`/`EventPackage`/
+  `EventCoordinator`), `PaymentPlan` (1:1 with event), `PaymentInstallment`
+  (label/dueDate/amount/status/paidAt/paymentId), `Guest` (RSVP + seating via
+  `GuestSeat`). Back-relations added to `Restaurant`, `User`, `BookableResource`,
+  `MenuItem`. 3 new `RestaurantSettings` flags (default false).
+- **backend**: `businessProfiles.ts` extended (3 flags; `NO_WEDDING` spread for
+  non-wedding verticals, all true for WEDDING). `eventController.ts` — events CRUD
+  with stage/eventType validation + per-person `quotedTotal` derivation; payment
+  plan upsert + installment add/update/delete (lazy plan create, paidAt auto-stamp);
+  guest CRUD with RSVP. All tenant-scoped; hall/package/coordinator/seat references
+  validated to belong to the tenant (foreign → nulled). `eventRoutes.ts` at
+  `/api/events` (reads any authed user; mutations `manage_events`). i18n
+  `errors.not_found` added (en/tr).
+- **verification**: backend `tsc` clean; `tests/api/wedding.test.ts` (7 cases incl.
+  tenant isolation, pipeline validation, per-person pricing, foreign-package
+  rejection, installment paidAt); full suite **33/33**.
+- **pending (Phase 4b)**: the wedding dashboard frontend (pipeline board, event
+  detail, guest list, payment plan) + nav gating + `manage_events` in provisioning.
