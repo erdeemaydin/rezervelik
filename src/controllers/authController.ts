@@ -45,6 +45,11 @@ export const register = async (req: Request, res: Response) => {
     // Generate a slug from restaurant name
     const slug = restaurantName.toLowerCase().replace(/[^a-z0-9]+/g, '-');
 
+    const existingRestaurant = await prisma.restaurant.findUnique({ where: { slug } });
+    if (existingRestaurant) {
+      return errorResponse(res, 'errors.validation_error', 400, { message: 'Restaurant name is already taken' });
+    }
+
     const hashedPassword = await bcrypt.hash(password, 10);
 
     // Create Restaurant and Admin User in a transaction
@@ -52,7 +57,7 @@ export const register = async (req: Request, res: Response) => {
       const restaurant = await prisma.restaurant.create({
         data: {
           name: restaurantName,
-          slug: `${slug}-${Date.now()}`, // Ensure uniqueness
+          slug,
           contactEmail: email,
           settings: {
             create: {}

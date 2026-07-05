@@ -133,6 +133,12 @@ export const createTenant = async (req: Request, res: Response) => {
     const featureProfile = getFeatureProfile(businessType);
 
     const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+    
+    const existingRestaurant = await prisma.restaurant.findUnique({ where: { slug } });
+    if (existingRestaurant) {
+      return errorResponse(res, 'errors.validation_error', 400, { message: 'Tenant name is already taken' });
+    }
+
     const existingUser = await prisma.user.findUnique({ where: { email: contactEmail } });
 
     if (existingUser) {
@@ -162,7 +168,7 @@ export const createTenant = async (req: Request, res: Response) => {
       const restaurant = await prisma.restaurant.create({
         data: {
           name,
-          slug: `${slug}-${Date.now()}`,
+          slug,
           contactEmail,
           businessType,
           subscriptionPlan: 'TRIAL',

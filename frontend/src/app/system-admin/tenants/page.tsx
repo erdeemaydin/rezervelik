@@ -273,7 +273,7 @@ export default function TenantManagementPage() {
                         </div>
                         <div>
                             <div className="font-bold text-slate-900 text-xs uppercase tracking-tight">{tenant.name}</div>
-                            <div className="text-[9px] text-slate-400 font-mono">{tenant.slug}.reservue.com</div>
+                            <div className="text-[9px] text-slate-400 font-mono">{tenant.slug}.your-domain.com</div>
                         </div>
                       </div>
                     </TableCell>
@@ -396,7 +396,7 @@ export default function TenantManagementPage() {
                     <div className="bg-slate-900 px-6 py-4 text-white rounded-t-lg">
                         <DialogHeader>
                             <DialogTitle className="text-sm font-bold uppercase tracking-widest">Entitlements</DialogTitle>
-                            <p className="text-[11px] text-slate-400 font-medium normal-case tracking-normal">{selectedTenant?.name} · {selectedTenant?.slug}.reservue.com</p>
+                            <p className="text-[11px] text-slate-400 font-medium normal-case tracking-normal">{selectedTenant?.name} · {selectedTenant?.slug}.your-domain.com</p>
                         </DialogHeader>
                     </div>
                     <div className="p-6 space-y-6 bg-white max-h-[82vh] overflow-y-auto">
