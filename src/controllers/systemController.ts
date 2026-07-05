@@ -9,6 +9,7 @@ import {
   getFeatureProfile,
   isBusinessType,
 } from '../config/businessProfiles';
+import { generatePublicApiKey } from '../utils/publicApiKey';
 
 // POST /system/users/:userId/reset-link (SUPER_ADMIN only)
 // Mints a single-use password reset link for any user. The raw token is returned
@@ -162,7 +163,7 @@ export const createTenant = async (req: Request, res: Response) => {
           firstName: adminFirstName,
           lastName: adminLastName,
           role: 'ADMIN',
-          permissions: 'manage_reservations,manage_tables,manage_menu,manage_calendar,manage_staff,manage_settings,manage_events',
+          permissions: 'manage_reservations,manage_tables,edit_floor_plan,manage_menu,manage_calendar,manage_staff,manage_settings,manage_events',
           restaurantId: restaurant.id,
           setupToken,
           setupTokenExpiresAt
@@ -228,11 +229,44 @@ export const updateTenantSettings = async (req: Request, res: Response) => {
       }
     }
 
-    if (businessTypeProvided) {
-      await prisma.restaurant.update({
+    // Commercial add-on packages + custom domain (SysAdmin-only). Booleans for the
+    // two packages, the tenant's custom domain, and publishable-key rotation.
+    const {
+      hasHostedFrontend,
+      hasReservationWidget,
+      customDomain,
+      rotatePublicApiKey,
+    } = req.body;
+
+    const restaurantData: Record<string, unknown> = {};
+    if (businessTypeProvided) restaurantData.businessType = req.body.businessType;
+    if (hasHostedFrontend !== undefined) restaurantData.hasHostedFrontend = Boolean(hasHostedFrontend);
+    if (hasReservationWidget !== undefined) restaurantData.hasReservationWidget = Boolean(hasReservationWidget);
+
+    // Normalize a custom domain to a bare, lowercase host (strip scheme, path,
+    // trailing slash). Changing it invalidates any prior verification.
+    if (customDomain !== undefined) {
+      const normalized = typeof customDomain === 'string' && customDomain.trim()
+        ? customDomain.trim().toLowerCase().replace(/^https?:\/\//, '').replace(/\/.*$/, '')
+        : null;
+      restaurantData.customDomain = normalized;
+      restaurantData.customDomainVerifiedAt = null;
+    }
+
+    // Mint a publishable key when the widget is switched on and none exists yet,
+    // or whenever the SysAdmin explicitly asks to rotate it.
+    if (rotatePublicApiKey === true) {
+      restaurantData.publicApiKey = generatePublicApiKey();
+    } else if (Boolean(hasReservationWidget) === true) {
+      const existing = await prisma.restaurant.findUnique({
         where: { id },
-        data: { businessType: req.body.businessType }
+        select: { publicApiKey: true },
       });
+      if (!existing?.publicApiKey) restaurantData.publicApiKey = generatePublicApiKey();
+    }
+
+    if (Object.keys(restaurantData).length > 0) {
+      await prisma.restaurant.update({ where: { id }, data: restaurantData });
     }
 
     const updated = await prisma.restaurantSettings.update({
@@ -312,6 +346,47 @@ export const createSuperAdmin = async (req: Request, res: Response) => {
     return successResponse(res, user, undefined, 201);
   } catch (error) {
     console.error('Create super admin error:', error);
+    return errorResponse(res, 'errors.internal_error', 500);
+  }
+};
+
+// POST /system/admins (SUPER_ADMIN only)
+// Add another platform administrator from within the console. Unlike
+// createSuperAdmin (the token-gated bootstrap for the very first admin), this is
+// already behind authMiddleware + roleMiddleware(['SUPER_ADMIN']) in the router,
+// so no setup token is required.
+export const createSystemAdmin = async (req: Request, res: Response) => {
+  try {
+    const { email, password, firstName, lastName } = req.body;
+
+    if (!email || !password || !firstName || !lastName) {
+      return errorResponse(res, 'errors.validation_error', 400, { message: 'Required fields missing' });
+    }
+    if (typeof password !== 'string' || password.length < 8) {
+      return errorResponse(res, 'errors.validation_error', 400, { message: 'Password must be at least 8 characters' });
+    }
+
+    const existingUser = await prisma.user.findUnique({ where: { email } });
+    if (existingUser) {
+      return errorResponse(res, 'errors.validation_error', 400, { message: 'Email already exists' });
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+    const user = await prisma.user.create({
+      data: {
+        email,
+        passwordHash: hashedPassword,
+        firstName,
+        lastName,
+        role: 'SUPER_ADMIN'
+        // restaurantId remains null — platform-level admin, not tenant-scoped
+      },
+      select: { id: true, email: true, firstName: true, lastName: true, role: true, createdAt: true }
+    });
+
+    return successResponse(res, user, undefined, 201);
+  } catch (error) {
+    console.error('Create system admin error:', error);
     return errorResponse(res, 'errors.internal_error', 500);
   }
 };

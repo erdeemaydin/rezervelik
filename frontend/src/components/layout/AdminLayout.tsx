@@ -86,6 +86,11 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
   const [tenantSettings, setTenantSettings] = useState<any>(null);
+  // Whether the /settings response has come back yet. Until it has, we don't know
+  // which feature modules the tenant is entitled to, so feature-gated nav items
+  // stay hidden rather than flashing in and then disappearing (e.g. Payments
+  // showing for a split second right after the sysadmin revoked it).
+  const [settingsLoaded, setSettingsLoaded] = useState(false);
   const { t, setLocale } = useTranslation();
   const { term, businessType } = useTerms();
   // Only override the vertical-specific nav labels for non-restaurant tenants, so
@@ -119,7 +124,8 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
           if (def && !explicit && Cookies.get('NEXT_LOCALE') !== def) {
             setLocale(def);
           }
-        }).catch(err => console.error('Failed to fetch settings:', err));
+        }).catch(err => console.error('Failed to fetch settings:', err))
+          .finally(() => setSettingsLoaded(true));
       });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -172,7 +178,10 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
 
   const hasFeature = (feature?: string) => {
     if (!feature) return true;
-    if (!tenantSettings) return true; // Show by default until loaded
+    // Hide feature-gated items until we actually know the tenant's entitlements,
+    // so a revoked module can never flash into view on first paint.
+    if (!settingsLoaded) return false;
+    if (!tenantSettings) return true; // settings failed to load → fail open
     return tenantSettings[feature] !== false;
   };
 

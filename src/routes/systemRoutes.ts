@@ -23,6 +23,7 @@ router.get('/settings/global', systemController.getGlobalSettings);
 router.put('/settings/global', systemController.updateGlobalSettings);
 
 router.get('/admins', systemController.getSystemAdmins);
+router.post('/admins', systemController.createSystemAdmin);
 router.get('/metrics', systemController.getSystemMetrics);
 
 router.post('/tenants/:id/impersonate', systemController.impersonateTenant);

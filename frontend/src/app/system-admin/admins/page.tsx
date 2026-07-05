@@ -7,7 +7,8 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { ShieldCheck, KeyRound, Copy } from 'lucide-react';
+import { Label } from '@/components/ui/label';
+import { ShieldCheck, KeyRound, Copy, Plus } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import api from '@/lib/api';
 import { toast } from 'sonner';
@@ -20,6 +21,32 @@ export default function SystemAdminsPage() {
   const [resetTarget, setResetTarget] = useState<string>('');
   const [resetExpiryMins, setResetExpiryMins] = useState<number | null>(null);
   const [resetLoadingId, setResetLoadingId] = useState<string | null>(null);
+
+  // Add-administrator dialog state.
+  const [addOpen, setAddOpen] = useState(false);
+  const [addSaving, setAddSaving] = useState(false);
+  const [addForm, setAddForm] = useState({ firstName: '', lastName: '', email: '', password: '' });
+
+  const handleCreateAdmin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (addSaving) return;
+    if (addForm.password.length < 8) {
+      toast.error('Password must be at least 8 characters');
+      return;
+    }
+    try {
+      setAddSaving(true);
+      const res = await api.post('/system/admins', addForm);
+      setAdmins((prev) => [...prev, res.data.data]);
+      toast.success('Administrator added');
+      setAddOpen(false);
+      setAddForm({ firstName: '', lastName: '', email: '', password: '' });
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || 'Failed to add administrator');
+    } finally {
+      setAddSaving(false);
+    }
+  };
 
   const handleGenerateReset = async (admin: any) => {
     try {
@@ -58,7 +85,9 @@ export default function SystemAdminsPage() {
             <h1 className="text-2xl font-bold text-slate-800">Super Admins</h1>
             <p className="text-xs text-slate-500 font-medium">Manage platform administrators and their access levels.</p>
           </div>
-          <Button className="bg-emerald-600 hover:bg-emerald-700 text-xs font-bold shadow-sm">Add Administrator</Button>
+          <Button onClick={() => setAddOpen(true)} className="bg-emerald-600 hover:bg-emerald-700 text-xs font-bold shadow-sm">
+            <Plus className="w-3.5 h-3.5 mr-1.5" /> Add Administrator
+          </Button>
         </div>
 
         <Card className="border-slate-200 shadow-sm bg-white overflow-hidden">
@@ -106,6 +135,47 @@ export default function SystemAdminsPage() {
           </CardContent>
         </Card>
       </div>
+
+      <Dialog open={addOpen} onOpenChange={(o) => { if (!addSaving) setAddOpen(o); }}>
+        <DialogContent maxWidth="sm:max-w-md" className="p-6">
+          <form onSubmit={handleCreateAdmin}>
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2 text-base font-bold">
+                <ShieldCheck className="w-4 h-4 text-emerald-600" /> Add Administrator
+              </DialogTitle>
+              <DialogDescription className="text-xs">
+                Create a new platform-level administrator with full <span className="font-bold text-slate-700">SUPER_ADMIN</span> access.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="grid gap-4 mt-4">
+              <div className="grid grid-cols-2 gap-3">
+                <div className="grid gap-1.5">
+                  <Label className="text-[10px] font-black uppercase text-slate-400">First Name</Label>
+                  <Input required value={addForm.firstName} onChange={(e) => setAddForm({ ...addForm, firstName: e.target.value })} className="h-9 text-sm" />
+                </div>
+                <div className="grid gap-1.5">
+                  <Label className="text-[10px] font-black uppercase text-slate-400">Last Name</Label>
+                  <Input required value={addForm.lastName} onChange={(e) => setAddForm({ ...addForm, lastName: e.target.value })} className="h-9 text-sm" />
+                </div>
+              </div>
+              <div className="grid gap-1.5">
+                <Label className="text-[10px] font-black uppercase text-slate-400">Email</Label>
+                <Input required type="email" value={addForm.email} onChange={(e) => setAddForm({ ...addForm, email: e.target.value })} className="h-9 text-sm" />
+              </div>
+              <div className="grid gap-1.5">
+                <Label className="text-[10px] font-black uppercase text-slate-400">Password</Label>
+                <Input required type="password" minLength={8} value={addForm.password} onChange={(e) => setAddForm({ ...addForm, password: e.target.value })} placeholder="At least 8 characters" className="h-9 text-sm" />
+              </div>
+            </div>
+            <div className="mt-6 flex justify-end gap-2">
+              <Button type="button" variant="ghost" disabled={addSaving} onClick={() => setAddOpen(false)} className="h-9 text-xs font-bold text-slate-400">Cancel</Button>
+              <Button type="submit" disabled={addSaving} className="h-9 bg-emerald-600 hover:bg-emerald-700 text-xs font-bold px-6 disabled:opacity-60">
+                {addSaving ? 'Adding…' : 'Add Administrator'}
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={resetOpen} onOpenChange={setResetOpen}>
         <DialogContent maxWidth="sm:max-w-md" className="p-6">
