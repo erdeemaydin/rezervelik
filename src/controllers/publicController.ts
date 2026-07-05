@@ -296,10 +296,10 @@ export const submitInvitationRsvp = async (req: Request, res: Response) => {
 
     const size = partySize ? Math.max(1, parseInt(partySize)) : 1;
     // Deduplicate on the responder's name so a repeat RSVP updates, not stacks.
-    const existing = await prisma.guest.findFirst({
-      where: { eventId: event.id, name: { equals: name, mode: 'insensitive' } },
-      select: { id: true },
-    });
+    // Compared in JS (case-insensitive) to stay portable across SQLite/Postgres.
+    const norm = (s: string) => s.trim().toLowerCase();
+    const existing = (await prisma.guest.findMany({ where: { eventId: event.id }, select: { id: true, name: true } }))
+      .find(g => norm(g.name) === norm(name));
 
     if (existing) {
       await prisma.guest.update({

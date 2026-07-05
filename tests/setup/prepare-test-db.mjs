@@ -17,6 +17,11 @@ for (const f of [testDbPath, `${testDbPath}-journal`]) {
 }
 
 let schema = fs.readFileSync(schemaPath, 'utf8');
+// Production runs on PostgreSQL, but the test suite uses a disposable local
+// SQLite file (no server needed, runs serially). Rewrite the datasource in the
+// temp schema so `db push` targets DATABASE_URL as SQLite. Handles both the
+// legacy `url = "file:…"` form and the current `provider = "postgresql"` one.
+schema = schema.replace(/provider\s*=\s*"postgresql"/, 'provider = "sqlite"');
 schema = schema.replace(/url\s*=\s*"file:[^"]*"/, 'url = env("DATABASE_URL")');
 fs.writeFileSync(tmpSchemaPath, schema);
 
@@ -26,6 +31,11 @@ try {
     stdio: 'inherit',
     env,
   });
+  // The committed schema is PostgreSQL, so the default client can't talk to the
+  // SQLite test file. Generate a SQLite-flavoured client for the test run. Dev/
+  // build/typecheck re-run `prisma generate` against the real schema, restoring
+  // the PostgreSQL client afterwards.
+  execSync(`npx prisma generate --schema "${tmpSchemaPath}"`, { stdio: 'inherit', env });
 } finally {
   try { fs.unlinkSync(tmpSchemaPath); } catch { /* ignore */ }
 }
