@@ -19,7 +19,7 @@ npm run build             # compile TypeScript to dist/
 npm start                 # run compiled server (dist/server.js)
 npm run prisma:generate   # regenerate Prisma client after schema changes
 npm run prisma:migrate    # create/apply a dev migration
-npm run prisma:studio     # open Prisma Studio GUI on the SQLite db
+npm run prisma:studio     # open Prisma Studio GUI on the Postgres db
 ```
 There is no lint or test script for the backend and no test framework is configured.
 
@@ -33,8 +33,9 @@ npm run lint    # eslint
 No test framework is configured for the frontend either.
 
 ### Database
-- SQLite, file at `prisma/dev.db` (gitignored). Schema: `prisma/schema.prisma`. Seed script: `prisma/seed.ts`.
-- After editing `schema.prisma`, run `npm run prisma:migrate` then `npm run prisma:generate` from the repo root.
+- **PostgreSQL** everywhere — production, local dev, and tests (same engine, no SQLite anywhere). `DATABASE_URL` (in `.env`) points at your Postgres. Schema: `prisma/schema.prisma`. Seed script: `prisma/seed.ts`.
+- Migrations are a single clean Postgres baseline under `prisma/migrations/` (`migration_lock.toml` = `postgresql`). After editing `schema.prisma`, run `npm run prisma:migrate` (creates + applies a dev migration) then `npm run prisma:generate` from the repo root. Deploys apply migrations with `prisma migrate deploy` (see `docs/DATABASE_RUNBOOK.md`).
+- **Tests run on real Postgres.** `npm run test:setup-db` provisions an isolated test database — it starts a throwaway Postgres container (Podman/Docker) on port 5433 automatically, or uses `TEST_DATABASE_URL` if set (CI provides a service container). No local Postgres install required.
 
 ## Architecture
 
@@ -79,7 +80,7 @@ Per `PROJECT_LOGIC.md` §7, dropdowns/selects in the admin dashboard must never 
 
 ## Environment
 
-Backend expects a `.env` at the repo root (gitignored, no `.env.example` present) with at least a Prisma `DATABASE_URL` override if not using the default SQLite path, `JWT_SECRET`, and `SETUP_SECRET_TOKEN` (required to bootstrap the first `SUPER_ADMIN` via `POST /api/system/setup-super-admin`; also gates whether `publicRegistrationEnabled` matters). Frontend reads `NEXT_PUBLIC_API_URL` (falls back to `http://<host>:3000/api`).
+Backend expects a `.env` at the repo root (gitignored; copy from `.env.example`) with a PostgreSQL `DATABASE_URL`, `JWT_SECRET`, and `SETUP_SECRET_TOKEN` (required to bootstrap the first `SUPER_ADMIN` via `POST /api/system/setup-super-admin`; also gates whether `publicRegistrationEnabled` matters). Frontend reads `NEXT_PUBLIC_API_URL` (falls back to `http://<host>:3000/api`).
 
 ## Notes for this Next.js version
 

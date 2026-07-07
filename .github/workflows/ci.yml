@@ -11,6 +11,25 @@ jobs:
   backend:
     name: Backend (unit + API integration)
     runs-on: ubuntu-latest
+    # Tests run on real PostgreSQL (same engine as production). GitHub provides it
+    # as a service container; the harness sees TEST_DATABASE_URL and just resets +
+    # migrates it (no local container management needed here).
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: dining_test
+        ports:
+          - 5433:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      TEST_DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5433/dining_test?schema=public
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4

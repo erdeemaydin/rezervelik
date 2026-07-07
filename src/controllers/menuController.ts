@@ -115,8 +115,7 @@ export const updateCategory = async (req: Request, res: Response) => {
 export const deleteCategory = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    // Prisma cascading might need to handle children, or we manual delete
-    // For sqlite, let's just use Prisma's delete
+    // Children cascade via the schema's onDelete rules.
     await prisma.menuCategory.delete({ where: { id } });
     return successResponse(res, null, 'Category deleted');
   } catch (error) {

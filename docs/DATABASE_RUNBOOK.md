@@ -37,7 +37,7 @@ pm2 restart dining-api
 
 | Thing | Value |
 |---|---|
-| Engine | **PostgreSQL** (production). SQLite is used **only** for the automated test suite (`prisma/test.db`, disposable) — never for real data. |
+| Engine | **PostgreSQL** everywhere — production, local dev, and the test suite (tests use a disposable throwaway Postgres, not the real DB). No SQLite anywhere. |
 | Server | `deploy@your-server-ip` |
 | App directory | `~/dining-reservation` |
 | DB name / user | `dining` / `dining_app` on `localhost:5432` |
@@ -137,27 +137,25 @@ recovery floor.
 
 ### "Can't see tenants" / API 500 with `P2022: column ... does not exist`
 **Cause:** code was deployed that expects a DB column/table that was never
-applied — i.e. the schema push was skipped during deploy. (This is the exact
-failure we hit adding the vendors/e-davetiye feature: `RestaurantSettings.hasVendors`.)
+applied — the deploy's `prisma migrate deploy` step was skipped. (This is the
+exact failure we hit adding the vendors/e-davetiye feature:
+`RestaurantSettings.hasVendors`.)
 
 **Diagnose:**
 ```bash
 pm2 logs dining-api --lines 40 --nostream --err   # look for P2022 + the column name
 ```
-**Fix — see exactly what's missing, then apply it (additive, safe):**
+**Fix — apply the pending migrations, then restart:**
 ```bash
 cd ~/dining-reservation
-export U=$(grep -E '^DATABASE_URL=' .env | sed -E 's/^DATABASE_URL="?//; s/"?$//; s/\?schema=public//')
-
-# 1. Review the drift (read-only — prints the SQL, applies nothing):
-npx prisma migrate diff --from-url "$U" --to-schema-datamodel prisma/schema.prisma --script
-
-# 2. If it's purely additive (ADD COLUMN / CREATE TABLE / CREATE INDEX — no DROP):
-npx prisma db push --skip-generate --accept-data-loss   # "data-loss" flag is only
-#   required to add a UNIQUE index; on a fresh all-NULL column it cannot collide.
-
-# 3. Restart:
+npx prisma migrate deploy         # applies any committed migrations not yet in the DB
 pm2 restart dining-api
+```
+If migrations are somehow out of sync with the DB, review the drift first
+(read-only — prints SQL, applies nothing):
+```bash
+export U=$(grep -E '^DATABASE_URL=' .env | sed -E 's/^DATABASE_URL="?//; s/"?$//; s/\?schema=public//')
+npx prisma migrate diff --from-url "$U" --to-schema-datamodel prisma/schema.prisma --script
 ```
 
 ### API won't start / keeps restarting
@@ -178,10 +176,10 @@ pm2 restart dining-api
 
 ## 6. Safe deploy procedure (prevents §5's first failure)
 
-Schema currently reaches production via **`prisma db push`** (not `migrate deploy`
-— the repo's migration history predates the Postgres switch; `migration_lock.toml`
-still says `sqlite`). Until that's reworked, **every deploy that changes
-`schema.prisma` must push the schema**, in this order:
+Schema reaches production via **`prisma migrate deploy`** — it applies any
+committed migrations the DB hasn't seen yet, tracked in `_prisma_migrations`, so
+code can never ship ahead of the schema (the §5 outage). **Every deploy runs it**,
+in this order:
 
 ```bash
 cd ~/dining-reservation
@@ -190,8 +188,8 @@ git pull
 # 1. Back up first
 scripts/db-backup.sh
 
-# 2. Apply schema drift to the DB (review first if unsure — see §5)
-npx prisma db push --skip-generate --accept-data-loss
+# 2. Apply any new migrations (safe: only applies what's committed + pending)
+npx prisma migrate deploy
 
 # 3. Rebuild
 npm run build                 # backend: prisma generate + tsc
@@ -206,6 +204,11 @@ export U=$(grep -E '^DATABASE_URL=' .env | sed -E 's/^DATABASE_URL="?//; s/"?$//
 psql "$U" -tAc 'SELECT count(*) FROM "Restaurant";'   # tenants come back
 pm2 logs dining-api --lines 20 --nostream --err       # no new P2022 errors
 ```
+
+> **Creating a schema change** (dev): edit `prisma/schema.prisma`, then
+> `npm run prisma:migrate` (`prisma migrate dev --name <change>`) to generate +
+> apply a migration locally. Commit the new folder under `prisma/migrations/`.
+> The deploy above (`migrate deploy`) applies it on the server.
 
 > The failure class in §5 happens when step 2 is skipped. Never ship code that
 > references new columns without pushing the schema in the same deploy.
