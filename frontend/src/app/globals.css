@@ -117,3 +117,149 @@
     @apply rounded-xl border border-slate-200/60 bg-white shadow-sm transition-all;
   }
 }
+
+/* =====================================================================
+   Admin dashboard color themes
+   ---------------------------------------------------------------------
+   Applied by setting `data-admin-theme="<id>"` on the layout root. Each
+   theme defines an accent ramp + sidebar/background; the block below then
+   remaps every hardcoded `blue-*` utility the dashboard uses to those
+   variables, so switching the attribute reskins all pages without editing
+   them. `default` maps back to the original blue, so it is a visual no-op.
+   Ids here must match frontend/src/lib/themes.ts + the backend whitelist.
+   These rules are intentionally unlayered so they win over Tailwind's
+   layered utilities.
+   ===================================================================== */
+
+[data-admin-theme] {
+  /* Fallback = original blue, so an unknown value never breaks the accent. */
+  --admin-accent: #2563eb;
+  --admin-accent-hover: #1d4ed8;
+  --admin-accent-strong: #1e40af;
+  --admin-accent-mid: #3b82f6;
+  --admin-accent-tint: #eff6ff;
+  --admin-accent-tint-2: #dbeafe;
+  --admin-accent-tint-3: #bfdbfe;
+  --admin-sidebar: #0f172a;
+  --admin-bg: #f8fafc;
+}
+
+[data-admin-theme="terracotta"] {
+  --admin-accent: #c2410c;
+  --admin-accent-hover: #9a3412;
+  --admin-accent-strong: #7c2d12;
+  --admin-accent-mid: #ea580c;
+  --admin-accent-tint: #fff7ed;
+  --admin-accent-tint-2: #ffedd5;
+  --admin-accent-tint-3: #fed7aa;
+  --admin-sidebar: #292524;
+  --admin-bg: #faf7f2;
+}
+
+[data-admin-theme="forest"] {
+  --admin-accent: #15803d;
+  --admin-accent-hover: #166534;
+  --admin-accent-strong: #14532d;
+  --admin-accent-mid: #16a34a;
+  --admin-accent-tint: #f0fdf4;
+  --admin-accent-tint-2: #dcfce7;
+  --admin-accent-tint-3: #bbf7d0;
+  --admin-sidebar: #1c1917;
+  --admin-bg: #f5f5f4;
+}
+
+[data-admin-theme="burgundy"] {
+  --admin-accent: #9f1239;
+  --admin-accent-hover: #881337;
+  --admin-accent-strong: #881337;
+  --admin-accent-mid: #be123c;
+  --admin-accent-tint: #fff1f2;
+  --admin-accent-tint-2: #ffe4e6;
+  --admin-accent-tint-3: #fecdd3;
+  --admin-sidebar: #1c1917;
+  --admin-bg: #f7f5f4;
+}
+
+[data-admin-theme="amber"] {
+  --admin-accent: #b45309;
+  --admin-accent-hover: #92400e;
+  --admin-accent-strong: #78350f;
+  --admin-accent-mid: #d97706;
+  --admin-accent-tint: #fffbeb;
+  --admin-accent-tint-2: #fef3c7;
+  --admin-accent-tint-3: #fde68a;
+  --admin-sidebar: #1c1917;
+  --admin-bg: #faf9f7;
+}
+
+/* --- Remap hardcoded blue utilities to the active theme accent --- */
+
+/* Backgrounds */
+[data-admin-theme] .bg-blue-600 { background-color: var(--admin-accent) !important; }
+[data-admin-theme] .bg-blue-500 { background-color: var(--admin-accent-mid) !important; }
+[data-admin-theme] .bg-blue-700,
+[data-admin-theme] .hover\:bg-blue-700:hover { background-color: var(--admin-accent-hover) !important; }
+[data-admin-theme] .bg-blue-900 { background-color: var(--admin-accent-strong) !important; }
+[data-admin-theme] .bg-blue-50,
+[data-admin-theme] .bg-blue-50\/50,
+[data-admin-theme] .bg-blue-50\/30,
+[data-admin-theme] .bg-blue-50\/20,
+[data-admin-theme] .hover\:bg-blue-50:hover { background-color: var(--admin-accent-tint) !important; }
+[data-admin-theme] .bg-blue-100,
+[data-admin-theme] .hover\:bg-blue-100:hover,
+[data-admin-theme] .group:hover .group-hover\:bg-blue-100 { background-color: var(--admin-accent-tint-2) !important; }
+[data-admin-theme] .hover\:bg-blue-200\/80:hover { background-color: var(--admin-accent-tint-3) !important; }
+[data-admin-theme] .bg-blue-600\/10 { background-color: color-mix(in oklab, var(--admin-accent) 10%, transparent) !important; }
+
+/* Text */
+[data-admin-theme] .text-blue-600,
+[data-admin-theme] .hover\:text-blue-600:hover { color: var(--admin-accent) !important; }
+[data-admin-theme] .text-blue-500,
+[data-admin-theme] .text-blue-400 { color: var(--admin-accent-mid) !important; }
+[data-admin-theme] .text-blue-700,
+[data-admin-theme] .hover\:text-blue-700:hover { color: var(--admin-accent-hover) !important; }
+[data-admin-theme] .text-blue-800 { color: var(--admin-accent-strong) !important; }
+
+/* Borders */
+[data-admin-theme] .border-blue-200 { border-color: var(--admin-accent-tint-3) !important; }
+[data-admin-theme] .border-blue-100,
+[data-admin-theme] .border-blue-100\/50 { border-color: var(--admin-accent-tint-2) !important; }
+[data-admin-theme] .border-blue-500,
+[data-admin-theme] .border-blue-600,
+[data-admin-theme] .focus\:border-blue-500:focus { border-color: var(--admin-accent) !important; }
+[data-admin-theme] .border-blue-400,
+[data-admin-theme] .hover\:border-blue-400:hover,
+[data-admin-theme] .focus\:border-blue-400:focus,
+[data-admin-theme] .focus\:border-blue-300:focus { border-color: var(--admin-accent-mid) !important; }
+[data-admin-theme] .border-blue-800 { border-color: var(--admin-accent-strong) !important; }
+
+/* Focus rings */
+[data-admin-theme] .focus-visible\:ring-blue-500:focus-visible,
+[data-admin-theme] .focus\:ring-blue-500\/5:focus,
+[data-admin-theme] .focus\:ring-blue-500\/10:focus { --tw-ring-color: var(--admin-accent) !important; }
+
+/* Colored shadows */
+[data-admin-theme] .shadow-blue-600\/10 { --tw-shadow-color: color-mix(in oklab, var(--admin-accent) 10%, transparent) !important; }
+[data-admin-theme] .shadow-blue-600\/20 { --tw-shadow-color: color-mix(in oklab, var(--admin-accent) 20%, transparent) !important; }
+[data-admin-theme] .shadow-blue-600\/30 { --tw-shadow-color: color-mix(in oklab, var(--admin-accent) 30%, transparent) !important; }
+
+/* Readability: bump the smallest micro-label sizes a step (safe on light+dark). */
+[data-admin-theme] .text-\[9px\] { font-size: 10px !important; }
+[data-admin-theme] .text-\[10px\] { font-size: 11px !important; }
+
+/* --- System-admin surface: its accent is emerald, not blue. Remap emerald to
+   the theme accent, scoped to `.admin-surface-system` ONLY, so the tenant
+   dashboard's emerald "success" states (confirmed, online dot) stay green. --- */
+.admin-surface-system .bg-emerald-600 { background-color: var(--admin-accent) !important; }
+.admin-surface-system .hover\:bg-emerald-700:hover { background-color: var(--admin-accent-hover) !important; }
+.admin-surface-system .bg-emerald-900 { background-color: var(--admin-accent-strong) !important; }
+.admin-surface-system .bg-emerald-50,
+.admin-surface-system .bg-emerald-50\/30 { background-color: var(--admin-accent-tint) !important; }
+.admin-surface-system .bg-emerald-500\/20 { background-color: color-mix(in oklab, var(--admin-accent) 20%, transparent) !important; }
+.admin-surface-system .text-emerald-600,
+.admin-surface-system .hover\:text-emerald-600:hover { color: var(--admin-accent) !important; }
+.admin-surface-system .text-emerald-500,
+.admin-surface-system .text-emerald-400 { color: var(--admin-accent-mid) !important; }
+.admin-surface-system .text-emerald-700 { color: var(--admin-accent-hover) !important; }
+.admin-surface-system .border-emerald-200 { border-color: var(--admin-accent-tint-3) !important; }
+.admin-surface-system .border-emerald-100 { border-color: var(--admin-accent-tint-2) !important; }

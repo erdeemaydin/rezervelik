@@ -10,11 +10,13 @@ import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import api from '@/lib/api';
 import { toast } from 'sonner';
-import { Save, Calendar, Clock, CreditCard, ArrowLeft, CalendarClock, AlertCircle, Check, Timer, ShieldCheck } from 'lucide-react';
+import { Save, Calendar, Clock, CreditCard, ArrowLeft, CalendarClock, AlertCircle, Check, Timer, ShieldCheck, Palette } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { PasswordConfirmDialog } from '@/components/auth/PasswordConfirmDialog';
 import { useTranslation } from "@/i18n/provider";
+import { ADMIN_THEMES } from '@/lib/themes';
+import Cookies from 'js-cookie';
 
 interface RestaurantSettings {
     isReservationEnabled: boolean;
@@ -33,6 +35,7 @@ interface RestaurantSettings {
     closingHour: number;
     twoFactorEnabled: boolean;
     twoFactorRoles: string;
+    dashboardTheme: string;
 }
 
 // Common IANA timezones offered in the settings picker.
@@ -74,7 +77,8 @@ export default function SettingsPage() {
         openingHour: 10,
         closingHour: 23,
         twoFactorEnabled: false,
-        twoFactorRoles: ''
+        twoFactorRoles: '',
+        dashboardTheme: 'default'
     });
 
     const fetchSettings = useCallback(async () => {
@@ -100,7 +104,8 @@ export default function SettingsPage() {
                     openingHour: data.openingHour ?? 10,
                     closingHour: data.closingHour ?? 23,
                     twoFactorEnabled: data.twoFactorEnabled ?? false,
-                    twoFactorRoles: data.twoFactorRoles ?? ''
+                    twoFactorRoles: data.twoFactorRoles ?? '',
+                    dashboardTheme: data.dashboardTheme ?? 'default'
                 });
             }
         } catch (error) {
@@ -114,10 +119,30 @@ export default function SettingsPage() {
         fetchSettings();
     }, [fetchSettings]);
 
+    // Live theme preview: reskin the surrounding AdminLayout the instant the admin
+    // picks a theme, before saving. AdminLayout renders `[data-admin-theme]` on its
+    // root; we retarget it here so the whole dashboard chrome updates immediately.
+    useEffect(() => {
+        if (typeof document === 'undefined') return;
+        document
+            .querySelectorAll('[data-admin-theme]')
+            .forEach((el) => el.setAttribute('data-admin-theme', settings.dashboardTheme || 'default'));
+    }, [settings.dashboardTheme]);
+
     const handleSave = async () => {
         try {
             setLoading(true);
             await api.put('/settings', settings);
+            // Keep the per-tenant settings cache in sync so the theme (and other
+            // settings) survive a refresh/navigation before AdminLayout refetches.
+            try {
+                const rid = Cookies.get('restaurantId');
+                if (rid) {
+                    const key = `tenantSettingsCache:${rid}`;
+                    const cached = JSON.parse(localStorage.getItem(key) || 'null') || {};
+                    localStorage.setItem(key, JSON.stringify({ ...cached, ...settings }));
+                }
+            } catch { /* cache is best-effort */ }
             toast.success(t("settings.updatedSuccessfully"));
         } catch (error) {
             toast.error(t("settings.failedSave"));
@@ -230,6 +255,46 @@ export default function SettingsPage() {
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    {/* Appearance / Theme */}
+                    <Card className="rounded-xl border-slate-200 shadow-sm overflow-hidden bg-white md:col-span-2">
+                        <CardHeader className="p-6 bg-slate-50/50 border-b border-slate-100 flex flex-row items-center gap-4">
+                            <div className="p-3 bg-blue-100 rounded-lg text-blue-600"><Palette className="w-6 h-6" /></div>
+                            <div>
+                                <CardTitle className="text-lg font-black uppercase tracking-tight">{t("settings.appearance")}</CardTitle>
+                                <CardDescription className="text-sm">{t("settings.appearanceDesc")}</CardDescription>
+                            </div>
+                        </CardHeader>
+                        <CardContent className="p-6">
+                            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+                                {ADMIN_THEMES.map((th) => {
+                                    const active = settings.dashboardTheme === th.id;
+                                    return (
+                                        <button
+                                            key={th.id}
+                                            type="button"
+                                            onClick={() => setSettings(prev => ({ ...prev, dashboardTheme: th.id }))}
+                                            className={`relative flex flex-col items-stretch gap-2 rounded-lg border-2 p-2.5 text-left transition-all ${active ? 'border-slate-800 shadow-sm' : 'border-slate-200 hover:border-slate-300'}`}
+                                            aria-pressed={active}
+                                        >
+                                            {/* Palette preview: sidebar rail + surface + accent dot */}
+                                            <div className="flex h-12 overflow-hidden rounded-md border border-slate-200">
+                                                <span className="w-1/4" style={{ backgroundColor: th.swatch.sidebar }} />
+                                                <span className="flex flex-1 items-center justify-center" style={{ backgroundColor: th.swatch.bg }}>
+                                                    <span className="h-4 w-4 rounded-full" style={{ backgroundColor: th.swatch.accent }} />
+                                                </span>
+                                            </div>
+                                            <span className="flex items-center justify-between">
+                                                <span className="text-[11px] font-black uppercase tracking-tight text-slate-700">{t(th.labelKey)}</span>
+                                                {active && <Check className="h-3.5 w-3.5 text-slate-800" />}
+                                            </span>
+                                        </button>
+                                    );
+                                })}
+                            </div>
+                            <p className="mt-3 text-[11px] text-slate-500 leading-relaxed">{t("settings.appearanceHint")}</p>
+                        </CardContent>
+                    </Card>
+
                     {/* Scheduling System */}
                     <Card className="rounded-xl border-slate-200 shadow-sm overflow-hidden bg-white md:col-span-2">
                         <CardHeader className="p-6 bg-slate-50/50 border-b border-slate-100 flex flex-row items-center gap-4">

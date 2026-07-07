@@ -46,7 +46,8 @@ export const updateSettings = async (req: Request, res: Response) => {
       openingHour,
       closingHour,
       defaultBreakMinutes,
-      twoFactorRoles
+      twoFactorRoles,
+      dashboardTheme
     } = req.body;
     // Note: `currency` is intentionally NOT read here — it is a root-admin-only
     // (system) setting. Tenant admins can view it but cannot change it.
@@ -65,6 +66,15 @@ export const updateSettings = async (req: Request, res: Response) => {
         twoFactorRolesUpdate = roles;
       }
     }
+
+    // Whitelist of selectable admin dashboard themes (must match the ids in
+    // frontend/src/lib/themes.ts). Reject anything else so a bad value can't reach
+    // the client and break theme lookup.
+    const ALLOWED_THEMES = ['default', 'terracotta', 'forest', 'burgundy', 'amber'];
+    const themeUpdate =
+      dashboardTheme !== undefined && ALLOWED_THEMES.includes(dashboardTheme)
+        ? dashboardTheme
+        : undefined;
 
     // Clamp the service window to valid whole hours (0-23), opening strictly before closing.
     const clampHour = (v: any, fallback: number) => {
@@ -89,7 +99,8 @@ export const updateSettings = async (req: Request, res: Response) => {
         openingHour: openingHour != null ? clampHour(openingHour, 10) : undefined,
         closingHour: closingHour != null ? clampHour(closingHour, 23) : undefined,
         defaultBreakMinutes: defaultBreakMinutes != null ? Math.max(0, parseInt(defaultBreakMinutes) || 0) : undefined,
-        ...(twoFactorRolesUpdate !== undefined ? { twoFactorRoles: twoFactorRolesUpdate } : {})
+        ...(twoFactorRolesUpdate !== undefined ? { twoFactorRoles: twoFactorRolesUpdate } : {}),
+        ...(themeUpdate !== undefined ? { dashboardTheme: themeUpdate } : {})
       }
     });
 

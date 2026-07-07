@@ -8,13 +8,18 @@ import { Button } from '@/components/ui/button';
 import { useState, useEffect } from 'react';
 import api from '@/lib/api';
 import { toast } from 'sonner';
+import { Palette, Check } from 'lucide-react';
+import { ADMIN_THEMES } from '@/lib/themes';
+import { useTranslation } from '@/i18n/provider';
 
 export default function SystemSettingsPage() {
+  const { t } = useTranslation();
   const [settings, setSettings] = useState({
     maintenanceMode: false,
     publicRegistrationEnabled: true,
     enforce2FAForAdmins: true,
-    measurementSystem: 'METRIC' as 'METRIC' | 'US'
+    measurementSystem: 'METRIC' as 'METRIC' | 'US',
+    dashboardTheme: 'default'
   });
   const [loading, setLoading] = useState(false);
 
@@ -23,7 +28,7 @@ export default function SystemSettingsPage() {
       try {
         const res = await api.get('/system/settings/global');
         if (res.data.data) {
-          setSettings(res.data.data);
+          setSettings({ dashboardTheme: 'default', ...res.data.data });
         }
       } catch (err) {
         toast.error('Failed to load global settings');
@@ -32,10 +37,20 @@ export default function SystemSettingsPage() {
     fetchSettings();
   }, []);
 
+  // Live-preview the system-admin surface theme as it's picked.
+  useEffect(() => {
+    if (typeof document === 'undefined') return;
+    document
+      .querySelectorAll('[data-admin-theme]')
+      .forEach((el) => el.setAttribute('data-admin-theme', settings.dashboardTheme || 'default'));
+  }, [settings.dashboardTheme]);
+
   const handleSave = async () => {
     try {
       setLoading(true);
       await api.put('/system/settings/global', settings);
+      // Cache so the surface theme survives a refresh before the layout refetches.
+      try { localStorage.setItem('systemDashboardTheme', settings.dashboardTheme || 'default'); } catch { /* best-effort */ }
       toast.success('Global settings updated successfully');
     } catch (err) {
       toast.error('Failed to update global settings');
@@ -110,13 +125,51 @@ export default function SystemSettingsPage() {
               </div>
             </div>
 
-            <div className="pt-4 flex justify-end">
-              <Button onClick={handleSave} disabled={loading} className="bg-emerald-600 hover:bg-emerald-700 text-xs font-bold px-8">
-                {loading ? 'Saving...' : 'Save Configuration'}
-              </Button>
+          </CardContent>
+        </Card>
+
+        <Card className="border-slate-200 shadow-sm bg-white">
+          <CardHeader className="border-b border-slate-100 bg-slate-50/50 p-4 flex flex-row items-center gap-3">
+            <div className="p-2 bg-emerald-50 rounded-md text-emerald-600"><Palette className="w-5 h-5" /></div>
+            <div>
+              <CardTitle className="text-sm font-bold uppercase tracking-widest text-slate-700">Console Appearance</CardTitle>
+              <CardDescription className="text-xs">Color theme for this system-admin console. Tenant dashboards are themed separately by each restaurant.</CardDescription>
+            </div>
+          </CardHeader>
+          <CardContent className="p-6">
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+              {ADMIN_THEMES.map((th) => {
+                const active = settings.dashboardTheme === th.id;
+                return (
+                  <button
+                    key={th.id}
+                    type="button"
+                    onClick={() => setSettings({ ...settings, dashboardTheme: th.id })}
+                    className={`relative flex flex-col items-stretch gap-2 rounded-lg border-2 p-2.5 text-left transition-all ${active ? 'border-slate-800 shadow-sm' : 'border-slate-200 hover:border-slate-300'}`}
+                    aria-pressed={active}
+                  >
+                    <div className="flex h-12 overflow-hidden rounded-md border border-slate-200">
+                      <span className="w-1/4" style={{ backgroundColor: th.swatch.sidebar }} />
+                      <span className="flex flex-1 items-center justify-center" style={{ backgroundColor: th.swatch.bg }}>
+                        <span className="h-4 w-4 rounded-full" style={{ backgroundColor: th.swatch.accent }} />
+                      </span>
+                    </div>
+                    <span className="flex items-center justify-between">
+                      <span className="text-[11px] font-black uppercase tracking-tight text-slate-700">{t(th.labelKey)}</span>
+                      {active && <Check className="h-3.5 w-3.5 text-slate-800" />}
+                    </span>
+                  </button>
+                );
+              })}
             </div>
           </CardContent>
         </Card>
+
+        <div className="flex justify-end">
+          <Button onClick={handleSave} disabled={loading} className="bg-emerald-600 hover:bg-emerald-700 text-xs font-bold px-8">
+            {loading ? 'Saving...' : 'Save Configuration'}
+          </Button>
+        </div>
       </div>
     </SystemAdminLayout>
   );

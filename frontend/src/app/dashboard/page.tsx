@@ -45,7 +45,7 @@ export default function DashboardPage() {
         setData(response.data.data);
       } catch (error) {
         console.error('Failed to fetch stats:', error);
-        toast.error('Failed to load dashboard statistics');
+        toast.error(t('dashboard.loadFailed'));
       } finally {
         setLoading(false);
       }

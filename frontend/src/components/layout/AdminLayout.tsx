@@ -39,8 +39,8 @@ import { useTerms } from '@/hooks/useTerms';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Badge } from '@/components/ui/badge';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
+import { normalizeTheme } from '@/lib/themes';
 import { useTranslation } from '@/i18n/provider';
 import Cookies from 'js-cookie';
 
@@ -52,10 +52,24 @@ interface NavItem {
   name: string;
   href: string;
   icon: any;
-  badge?: string;
   perm?: string;
   feature?: string;
 }
+
+// Read the last cached /settings response for the current tenant. Used to seed
+// state synchronously on first render so feature-gated nav items (Menu, Waitlist,
+// Staff Schedule…) don't flash out and re-appear on every refresh/navigation
+// while the network /settings request is in flight.
+const readTenantSettingsCache = (): any => {
+  if (typeof window === 'undefined') return null;
+  try {
+    const rid = Cookies.get('restaurantId');
+    if (!rid) return null;
+    return JSON.parse(localStorage.getItem(`tenantSettingsCache:${rid}`) || 'null');
+  } catch {
+    return null;
+  }
+};
 
 interface NavSection {
   section: string;
@@ -110,18 +124,22 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
   const { user, logout, isAuthenticated } = useAuthStore();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
-  const [tenantSettings, setTenantSettings] = useState<any>(null);
-  // Whether the /settings response has come back yet. Until it has, we don't know
-  // which feature modules the tenant is entitled to, so feature-gated nav items
-  // stay hidden rather than flashing in and then disappearing (e.g. Payments
-  // showing for a split second right after the sysadmin revoked it).
-  const [settingsLoaded, setSettingsLoaded] = useState(false);
+  // Seed from the per-tenant cache synchronously so the correct set of nav items
+  // is present on the very first paint (no flash-out on refresh/navigation).
+  const [tenantSettings, setTenantSettings] = useState<any>(() => readTenantSettingsCache());
+  // Whether we know the tenant's entitlements yet. True immediately when a cache
+  // hit seeded tenantSettings; otherwise it flips once the /settings response
+  // lands. Until then, feature-gated nav items stay hidden rather than flashing.
+  const [settingsLoaded, setSettingsLoaded] = useState(() => readTenantSettingsCache() != null);
   const { t, setLocale } = useTranslation();
   const { term, businessType } = useTerms();
   // Only override the vertical-specific nav labels for non-restaurant tenants, so
   // existing restaurant dashboards render exactly as before.
   const isRestaurant = businessType === 'RESTAURANT';
   const vIcon = VERTICAL_ICONS[businessType] || VERTICAL_ICONS.RESTAURANT;
+  // Per-tenant dashboard color theme. Seeded from cache so it applies on first
+  // paint; all of this tenant's staff share it since it comes from RestaurantSettings.
+  const theme = normalizeTheme(tenantSettings?.dashboardTheme);
 
   useEffect(() => {
     setIsMounted(true);
@@ -130,20 +148,11 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
       setIsSidebarOpen(true);
     }
 
-    // Optimistically hydrate feature flags + vertical from the last /settings
-    // response cached for THIS tenant, so nav items render correctly on refresh
-    // instead of flashing out while the network request is in flight. The cache
-    // is keyed by restaurantId so a different tenant/login never sees stale nav.
-    const rid = Cookies.get('restaurantId');
-    if (rid) {
-      try {
-        const cached = JSON.parse(localStorage.getItem(`tenantSettingsCache:${rid}`) || 'null');
-        if (cached) {
-          setTenantSettings(cached);
-          setSettingsLoaded(true);
-          useTenantStore.getState().setBusinessType(cached.businessType || 'RESTAURANT');
-        }
-      } catch { /* ignore malformed cache */ }
+    // tenantSettings is already seeded from the per-tenant cache synchronously via
+    // the useState initializers, so feature-gated nav items are correct on first
+    // paint. Hydrate the vertical store from that cached value for terminology.
+    if (tenantSettings) {
+      useTenantStore.getState().setBusinessType(tenantSettings.businessType || 'RESTAURANT');
     }
 
     if (isAuthenticated) {
@@ -187,18 +196,18 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
   const navigation: NavSection[] = [
     { section: t('systemAdmin.globalOverview') || 'Overview', items: [
       { name: t('admin.dashboard'), href: '/dashboard', icon: LayoutDashboard, perm: 'view_analytics' },
-      { name: t('admin.analytics'), href: '/dashboard/analytics', icon: BarChart3, badge: 'New', perm: 'view_analytics' },
+      { name: t('admin.analytics'), href: '/dashboard/analytics', icon: BarChart3, perm: 'view_analytics' },
     ]},
     { section: t('admin.sectionOperations'), items: [
-      { name: isRestaurant ? t('admin.reservations') : term('bookingPlural'), href: '/dashboard/reservations', icon: Calendar, badge: '12', perm: 'manage_reservations' },
+      { name: isRestaurant ? t('admin.reservations') : term('bookingPlural'), href: '/dashboard/reservations', icon: Calendar, perm: 'manage_reservations' },
       { name: t('events.navTitle'), href: '/dashboard/events', icon: PartyPopper, feature: 'hasEventPipeline' },
       { name: t('vendors.navTitle'), href: '/dashboard/vendors', icon: Handshake, feature: 'hasVendors' },
-      { name: t('admin.hostStand'), href: '/dashboard/host', icon: Tablet, badge: 'iPad', perm: 'manage_reservations' },
-      { name: t('admin.calendar'), href: '/dashboard/calendar', icon: Calendar, badge: 'New', perm: 'manage_calendar' },
+      { name: t('admin.hostStand'), href: '/dashboard/host', icon: Tablet, perm: 'manage_reservations' },
+      { name: t('admin.calendar'), href: '/dashboard/calendar', icon: Calendar, perm: 'manage_calendar' },
       { name: isRestaurant ? t('admin.tablesAndFloor') : term('resourcePlural'), href: '/dashboard/tables', icon: vIcon.resource, perm: 'manage_tables' },
       { name: isRestaurant ? t('admin.menuManagement') : term('catalog'), href: '/dashboard/menus', icon: vIcon.catalog, perm: 'manage_menu', feature: 'hasMenuFeature' },
-      { name: t('admin.waitlist'), href: '/dashboard/wait-time', icon: Clock, badge: 'Live', perm: 'manage_settings', feature: 'hasWaitTimeFeature' },
-      { name: t('admin.staffSchedule'), href: '/dashboard/scheduling', icon: Calendar, badge: 'New', feature: 'hasShiftFeature' },
+      { name: t('admin.waitlist'), href: '/dashboard/wait-time', icon: Clock, perm: 'manage_settings', feature: 'hasWaitTimeFeature' },
+      { name: t('admin.staffSchedule'), href: '/dashboard/scheduling', icon: Calendar, feature: 'hasShiftFeature' },
     ]},
     { section: t('admin.sectionAdministration'), items: [
       { name: t('admin.payments'), href: '/dashboard/payments', icon: CreditCard, feature: 'hasPaymentFeature', perm: 'view_payments' },
@@ -270,7 +279,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
   const routeAuthorized = !routeRequiredPerm || hasPermission(routeRequiredPerm);
 
   return (
-    <div className="flex min-h-screen bg-[#f8fafc]">
+    <div data-admin-theme={theme} className="flex min-h-screen bg-[var(--admin-bg)]">
       {/* Mobile/tablet overlay — clicking anywhere off the sidebar closes it. */}
       {isSidebarOpen && (
         <div
@@ -295,7 +304,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
           layout push); at lg+ it collapses to a 16-unit icon rail as before. */}
       <aside
         className={cn(
-          "bg-[#0f172a] text-slate-300 transition-all duration-300 ease-in-out flex flex-col z-50 shadow-xl fixed lg:sticky top-0 h-screen",
+          "bg-[var(--admin-sidebar)] text-slate-300 transition-all duration-300 ease-in-out flex flex-col z-50 shadow-xl fixed lg:sticky top-0 h-screen",
           isSidebarOpen ? "w-64 translate-x-0" : "w-64 -translate-x-full lg:w-16 lg:translate-x-0"
         )}
       >
@@ -379,14 +388,6 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
                               )} />
                               {isSidebarOpen && <span>{item.name}</span>}
                             </div>
-                            {isSidebarOpen && item.badge && (
-                              <Badge className={cn(
-                                "h-5 px-1.5 text-[9px] font-black uppercase tracking-wider",
-                                isActive ? "bg-white text-blue-600" : "bg-blue-600/10 text-blue-500"
-                              )}>
-                                {item.badge}
-                              </Badge>
-                            )}
                           </Link>
                         </li>
                       );

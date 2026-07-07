@@ -159,7 +159,8 @@
     "reservationsArrivingToday": "reservations arriving today",
     "noMoreReservations": "No more upcoming reservations for today.",
     "today": "Today",
-    "now": "Now"
+    "now": "Now",
+    "loadFailed": "Failed to load dashboard statistics"
   },
   "analytics": {
     "fetchError": "Failed to load analytics data",
@@ -288,14 +289,34 @@
   },
   "reviews": {
     "title": "Reviews & Feedback",
-    "subtitle": "Monitor and respond to customer feedback.",
+    "subtitle": "Your live Google reviews.",
     "enableAutoReply": "Enable Auto-Reply AI",
     "averageRating": "Average Rating",
     "basedOn": "Based on 1,284 reviews",
     "replied": "Replied",
     "writeResponse": "Write a response...",
     "aiDraft": "AI Draft",
-    "postReply": "Post Reply"
+    "postReply": "Post Reply",
+    "basedOnCount": "Based on {{count}} Google reviews",
+    "connectTitle": "Connect your Google reviews",
+    "connectDesc": "Paste your restaurant's Google Maps link to show your real Google reviews here.",
+    "mapsLinkLabel": "Google Maps link",
+    "mapsLinkPlaceholder": "https://maps.app.goo.gl/…  or  https://maps.google.com/…",
+    "save": "Save",
+    "saving": "Saving…",
+    "saved": "Review source saved.",
+    "saveFailed": "Couldn't save the link.",
+    "loadFailed": "Couldn't load reviews.",
+    "invalidLink": "We couldn't find a Google place in that link. Paste the link from your Google Maps listing.",
+    "changeLink": "Change link",
+    "openInGoogle": "View on Google",
+    "refresh": "Refresh",
+    "apiKeyMissingTitle": "Google API key not configured",
+    "apiKeyMissingDesc": "The link is saved, but the server needs a Google Places API key to fetch reviews. Ask your administrator to set GOOGLE_PLACES_API_KEY.",
+    "googleErrorTitle": "Google couldn't return reviews",
+    "noReviews": "No Google reviews yet.",
+    "replyComingSoon": "Replying to reviews is coming soon.",
+    "fromGoogle": "Reviews from Google"
   },
   "scheduling": {
     "title": "Scheduling System",
@@ -1133,7 +1154,10 @@
       "MANAGER": "Manager",
       "HOST": "Host",
       "STAFF": "Staff"
-    }
+    },
+    "appearance": "Appearance",
+    "appearanceDesc": "Choose the dashboard color theme for your whole team.",
+    "appearanceHint": "Everyone on your team sees this theme. Changes apply after you save."
   },
   "waitTime": {
     "error": {
@@ -1490,5 +1514,34 @@
     "empty": "No activity recorded yet.",
     "loading": "Loading activity…",
     "refresh": "Refresh"
+  },
+  "themes": {
+    "default": "Classic Blue",
+    "terracotta": "Terracotta",
+    "forest": "Forest",
+    "burgundy": "Burgundy",
+    "amber": "Amber"
+  },
+  "auth": {
+    "resetTitle": "Reset Your Password",
+    "resetSubtitle": "Choose a new, secure password for your account.",
+    "verifyingLink": "Verifying link…",
+    "linkInvalid": "This reset link is invalid or has expired.",
+    "linkInvalidHelp": "Ask a system administrator to generate a new one.",
+    "backToSignIn": "Back to Sign In",
+    "newPassword": "New Password",
+    "confirmPassword": "Confirm Password",
+    "updating": "Updating…",
+    "updatePassword": "Update Password",
+    "passwordsDontMatch": "Passwords do not match",
+    "passwordTooShort": "Password must be at least 8 characters long",
+    "passwordUpdated": "Password updated. Please sign in with your new password.",
+    "resetFailed": "Failed to reset password. The link may be expired.",
+    "setupTitle": "Setup Your Account",
+    "setupSubtitle": "Create a secure password to access your restaurant dashboard.",
+    "settingUp": "Setting up…",
+    "completeSetup": "Complete Setup",
+    "setupComplete": "Account setup complete!",
+    "setupFailed": "Failed to complete setup. The link may be expired."
   }
 }

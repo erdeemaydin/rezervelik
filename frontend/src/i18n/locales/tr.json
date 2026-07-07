@@ -159,7 +159,8 @@
     "reservationsArrivingToday": "rezervasyon o gün geliyor",
     "noMoreReservations": "O gün için başka yaklaşan rezervasyon yok.",
     "today": "Bugün",
-    "now": "Şimdi"
+    "now": "Şimdi",
+    "loadFailed": "Pano istatistikleri yüklenemedi"
   },
   "analytics": {
     "fetchError": "Analiz verileri yüklenemedi",
@@ -288,14 +289,34 @@
   },
   "reviews": {
     "title": "Değerlendirmeler ve Geri Bildirim",
-    "subtitle": "Müşteri geri bildirimlerini izleyin ve yanıtlayın.",
+    "subtitle": "Canlı Google değerlendirmeleriniz.",
     "enableAutoReply": "Yapay Zeka Otomatik Yanıtını Etkinleştir",
     "averageRating": "Ortalama Puan",
     "basedOn": "1.284 değerlendirmeye göre",
     "replied": "Yanıtlandı",
     "writeResponse": "Bir yanıt yazın...",
     "aiDraft": "Yapay Zeka Taslağı",
-    "postReply": "Yanıt Gönder"
+    "postReply": "Yanıt Gönder",
+    "basedOnCount": "{{count}} Google değerlendirmesine göre",
+    "connectTitle": "Google değerlendirmelerinizi bağlayın",
+    "connectDesc": "Gerçek Google değerlendirmelerinizi burada göstermek için restoranınızın Google Haritalar bağlantısını yapıştırın.",
+    "mapsLinkLabel": "Google Haritalar bağlantısı",
+    "mapsLinkPlaceholder": "https://maps.app.goo.gl/…  veya  https://maps.google.com/…",
+    "save": "Kaydet",
+    "saving": "Kaydediliyor…",
+    "saved": "Değerlendirme kaynağı kaydedildi.",
+    "saveFailed": "Bağlantı kaydedilemedi.",
+    "loadFailed": "Değerlendirmeler yüklenemedi.",
+    "invalidLink": "Bu bağlantıda bir Google konumu bulamadık. Lütfen Google Haritalar kaydınızdaki bağlantıyı yapıştırın.",
+    "changeLink": "Bağlantıyı değiştir",
+    "openInGoogle": "Google'da görüntüle",
+    "refresh": "Yenile",
+    "apiKeyMissingTitle": "Google API anahtarı yapılandırılmamış",
+    "apiKeyMissingDesc": "Bağlantı kaydedildi, ancak sunucunun değerlendirmeleri getirmek için bir Google Places API anahtarına ihtiyacı var. Yöneticinizden GOOGLE_PLACES_API_KEY değerini ayarlamasını isteyin.",
+    "googleErrorTitle": "Google değerlendirmeleri döndüremedi",
+    "noReviews": "Henüz Google değerlendirmesi yok.",
+    "replyComingSoon": "Değerlendirmelere yanıt verme özelliği yakında geliyor.",
+    "fromGoogle": "Google'dan değerlendirmeler"
   },
   "scheduling": {
     "title": "Planlama Sistemi",
@@ -1133,7 +1154,10 @@
       "MANAGER": "Müdür",
       "HOST": "Karşılama",
       "STAFF": "Personel"
-    }
+    },
+    "appearance": "Görünüm",
+    "appearanceDesc": "Tüm ekibiniz için pano renk temasını seçin.",
+    "appearanceHint": "Ekibinizdeki herkes bu temayı görür. Değişiklikler kaydettikten sonra uygulanır."
   },
   "waitTime": {
     "error": {
@@ -1490,5 +1514,34 @@
     "empty": "Henüz kayıtlı etkinlik yok.",
     "loading": "Etkinlikler yükleniyor…",
     "refresh": "Yenile"
+  },
+  "themes": {
+    "default": "Klasik Mavi",
+    "terracotta": "Terrakota",
+    "forest": "Orman",
+    "burgundy": "Bordo",
+    "amber": "Kehribar"
+  },
+  "auth": {
+    "resetTitle": "Şifrenizi Sıfırlayın",
+    "resetSubtitle": "Hesabınız için yeni ve güvenli bir şifre seçin.",
+    "verifyingLink": "Bağlantı doğrulanıyor…",
+    "linkInvalid": "Bu sıfırlama bağlantısı geçersiz veya süresi dolmuş.",
+    "linkInvalidHelp": "Yeni bir tane oluşturması için bir sistem yöneticisine başvurun.",
+    "backToSignIn": "Girişe Dön",
+    "newPassword": "Yeni Şifre",
+    "confirmPassword": "Şifreyi Onayla",
+    "updating": "Güncelleniyor…",
+    "updatePassword": "Şifreyi Güncelle",
+    "passwordsDontMatch": "Şifreler eşleşmiyor",
+    "passwordTooShort": "Şifre en az 8 karakter olmalıdır",
+    "passwordUpdated": "Şifre güncellendi. Lütfen yeni şifrenizle giriş yapın.",
+    "resetFailed": "Şifre sıfırlanamadı. Bağlantının süresi dolmuş olabilir.",
+    "setupTitle": "Hesabınızı Kurun",
+    "setupSubtitle": "Restoran panonuza erişmek için güvenli bir şifre oluşturun.",
+    "settingUp": "Kuruluyor…",
+    "completeSetup": "Kurulumu Tamamla",
+    "setupComplete": "Hesap kurulumu tamamlandı!",
+    "setupFailed": "Kurulum tamamlanamadı. Bağlantının süresi dolmuş olabilir."
   }
 }

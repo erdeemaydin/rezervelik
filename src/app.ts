@@ -26,6 +26,7 @@ import uploadRoutes from './routes/uploadRoutes';
 import paymentRoutes from './routes/paymentRoutes';
 import timeEntryRoutes from './routes/timeEntryRoutes';
 import auditRoutes from './routes/auditRoutes';
+import reviewRoutes from './routes/reviewRoutes';
 import path from 'path';
 
 const app = express();
@@ -72,6 +73,7 @@ app.use('/api/wait-time', tenantMiddleware, waitTimeRoutes);
 app.use('/api/customization', tenantMiddleware, customizationRoutes);
 app.use('/api/payments', tenantMiddleware, paymentRoutes);
 app.use('/api/audit', tenantMiddleware, auditRoutes);
+app.use('/api/reviews', tenantMiddleware, reviewRoutes);
 app.use('/api/uploads', tenantMiddleware, uploadRoutes);
 
 export default app;

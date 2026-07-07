@@ -17,17 +17,25 @@ import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
+import { normalizeTheme } from '@/lib/themes';
 import { useTranslation } from '@/i18n/provider';
 
 interface SystemAdminLayoutProps {
   children: ReactNode;
 }
 
+// Cache key for the system-admin surface theme, so it applies on first paint
+// (no default→chosen flash) before the /system/settings/global request returns.
+const SYSTEM_THEME_CACHE = 'systemDashboardTheme';
+
 export default function SystemAdminLayout({ children }: SystemAdminLayoutProps) {
   const pathname = usePathname();
   const router = useRouter();
   const { user, logout } = useAuthStore();
   const [mounted, setMounted] = useState(false);
+  const [theme, setTheme] = useState<string>(() =>
+    typeof window === 'undefined' ? 'default' : normalizeTheme(localStorage.getItem(SYSTEM_THEME_CACHE))
+  );
   const { t } = useTranslation();
 
   useEffect(() => {
@@ -42,10 +50,22 @@ export default function SystemAdminLayout({ children }: SystemAdminLayoutProps) 
     }
   }, [user, router]);
 
+  // Load the system-admin surface theme (set by the root admin in Global Settings).
+  useEffect(() => {
+    if (!user || user.role !== 'SUPER_ADMIN') return;
+    import('@/lib/api').then(({ default: api }) => {
+      api.get('/system/settings/global').then((res) => {
+        const th = normalizeTheme(res.data?.data?.dashboardTheme);
+        setTheme(th);
+        try { localStorage.setItem(SYSTEM_THEME_CACHE, th); } catch { /* best-effort */ }
+      }).catch(() => { /* keep cached/default theme on failure */ });
+    });
+  }, [user]);
+
   const navigation = [
     { section: t('systemAdmin.globalOverview'), items: [
       { name: t('systemAdmin.systemMetrics'), href: '/system-admin/dashboard', icon: BarChart3 },
-      { name: t('systemAdmin.tenantManagement'), href: '/system-admin/tenants', icon: Building2, badge: t('systemAdmin.active') },
+      { name: t('systemAdmin.tenantManagement'), href: '/system-admin/tenants', icon: Building2 },
     ]},
     { section: t('systemAdmin.userControl'), items: [
       { name: t('systemAdmin.superAdmins'), href: '/system-admin/admins', icon: ShieldCheck },
@@ -62,9 +82,9 @@ export default function SystemAdminLayout({ children }: SystemAdminLayoutProps) 
   };
 
   return (
-    <div className="flex h-screen bg-[#f1f5f9] font-sans">
-      <aside className="w-64 bg-[#0f172a] text-slate-300 flex flex-col shadow-2xl z-10">
-        <div className="h-16 flex items-center px-6 bg-[#020617] border-b border-slate-800">
+    <div data-admin-theme={theme} className="admin-surface-system flex h-screen bg-[var(--admin-bg)] font-sans">
+      <aside className="w-64 bg-[var(--admin-sidebar)] text-slate-300 flex flex-col shadow-2xl z-10">
+        <div className="h-16 flex items-center px-6 bg-black/20 border-b border-slate-800">
           <div className="w-7 h-7 bg-emerald-600 rounded-sm flex items-center justify-center mr-3 shadow-md">
             <span className="text-white font-bold text-lg leading-none">S</span>
           </div>
@@ -106,7 +126,6 @@ export default function SystemAdminLayout({ children }: SystemAdminLayoutProps) 
                             <item.icon className={cn('mr-3 h-4 w-4', isActive ? 'text-white' : 'text-slate-500')} />
                             {item.name}
                           </div>
-                          {item.badge && <Badge className="bg-emerald-500/20 text-emerald-400 border-0 text-[9px] px-1 rounded-sm font-black">{item.badge}</Badge>}
                         </Link>
                       </li>
                     );
@@ -117,7 +136,7 @@ export default function SystemAdminLayout({ children }: SystemAdminLayoutProps) 
           </nav>
         </div>
 
-        <div className="p-4 bg-[#020617] border-t border-slate-800">
+        <div className="p-4 bg-black/20 border-t border-slate-800">
           <Button variant="ghost" className="w-full justify-start text-slate-500 hover:text-white hover:bg-red-500/10" onClick={handleLogout}>
             <LogOut className="mr-3 h-5 w-5" /> {t('systemAdmin.logoutSystem')}
           </Button>

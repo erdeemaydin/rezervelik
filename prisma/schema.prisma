@@ -188,6 +188,20 @@ model RestaurantSettings {
   // the audit trail is a platform-admin tool unless explicitly shared.
   showAuditLogToTenant Boolean @default(false)
 
+  // Admin dashboard color theme for this tenant. Chosen by the tenant admin (or
+  // the root admin per tenant); ALL of the tenant's staff inherit it since they
+  // all read the same RestaurantSettings. One of the ids in
+  // frontend/src/lib/themes.ts (e.g. "default", "terracotta", "forest",
+  // "burgundy", "amber").
+  dashboardTheme String @default("default")
+
+  // Google Business Profile link for surfacing real Google reviews on the
+  // dashboard Reviews page. The tenant pastes their Google Maps place URL
+  // (googleMapsUrl); the backend resolves a Place ID (googlePlaceId) from it for
+  // the Places Details API. Replying to reviews (Google OAuth) is a later phase.
+  googleMapsUrl  String?
+  googlePlaceId  String?
+
   updatedAt  DateTime   @updatedAt
   restaurant Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
 }
@@ -703,6 +717,9 @@ model GlobalSettings {
   // "METRIC" = European/Turkish style: DD/MM/YYYY dates + 24-hour clock.
   // "US"     = United States style: MM/DD/YYYY dates + 12-hour clock (AM/PM).
   measurementSystem         String   @default("METRIC")
+  // Color theme for the system-admin (root) surface itself. Same theme ids as the
+  // tenant dashboard (frontend/src/lib/themes.ts). Set by the root system admin.
+  dashboardTheme            String   @default("default")
   updatedAt                 DateTime @updatedAt
 }
 

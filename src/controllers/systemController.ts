@@ -490,15 +490,23 @@ export const getGlobalSettings = async (req: Request, res: Response) => {
 
 export const updateGlobalSettings = async (req: Request, res: Response) => {
   try {
-    const { maintenanceMode, publicRegistrationEnabled, enforce2FAForAdmins, measurementSystem } = req.body;
+    const { maintenanceMode, publicRegistrationEnabled, enforce2FAForAdmins, measurementSystem, dashboardTheme } = req.body;
 
     // Only accept the two supported conventions; anything else falls back to METRIC.
     const normalizedSystem = measurementSystem === 'US' ? 'US' : 'METRIC';
 
+    // Theme for the system-admin surface. Whitelist to the ids in
+    // frontend/src/lib/themes.ts; ignore an unknown value rather than persisting it.
+    const ALLOWED_THEMES = ['default', 'terracotta', 'forest', 'burgundy', 'amber'];
+    const themeUpdate =
+      dashboardTheme !== undefined && ALLOWED_THEMES.includes(dashboardTheme)
+        ? { dashboardTheme }
+        : {};
+
     const settings = await prisma.globalSettings.upsert({
       where: { id: 'global_1' },
-      update: { maintenanceMode, publicRegistrationEnabled, enforce2FAForAdmins, measurementSystem: normalizedSystem },
-      create: { id: 'global_1', maintenanceMode, publicRegistrationEnabled, enforce2FAForAdmins, measurementSystem: normalizedSystem }
+      update: { maintenanceMode, publicRegistrationEnabled, enforce2FAForAdmins, measurementSystem: normalizedSystem, ...themeUpdate },
+      create: { id: 'global_1', maintenanceMode, publicRegistrationEnabled, enforce2FAForAdmins, measurementSystem: normalizedSystem, ...themeUpdate }
     });
 
     logAudit({
@@ -507,7 +515,7 @@ export const updateGlobalSettings = async (req: Request, res: Response) => {
       action: 'GLOBAL_SETTINGS_UPDATED',
       targetType: 'GlobalSettings',
       targetId: 'global_1',
-      metadata: { maintenanceMode, publicRegistrationEnabled, enforce2FAForAdmins, measurementSystem: normalizedSystem },
+      metadata: { maintenanceMode, publicRegistrationEnabled, enforce2FAForAdmins, measurementSystem: normalizedSystem, ...themeUpdate },
     });
 
     return successResponse(res, settings);
