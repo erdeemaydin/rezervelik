@@ -191,20 +191,36 @@ wedding module. See §6 for schema. Split into **4a (backend, DONE)** and
 - [x] Bilingual (tr/en) `events.*` + `common.loading/save/saved` i18n
 - [x] Verified: frontend `tsc` + `eslint` (0 errors) + `next build` (both routes
       compile); backend tests still 33/33
-- **DEFERRED (Phase 4c/5 polish):** relational pickers on the detail page for
-      coordinator (staff) / hall (BookableResource) / package (MenuItem, drives
-      per-person pricing) and the visual seating chart (assign guests to floor-plan
-      resources). Backend already supports all of these; only the pick-from-list UI
-      is pending. `manage_events` in the granular permission-catalog UI.
-- **Resume marker:** _Phase 4 (a+b) DONE. Next: Phase 5 (organizer/vendor,
-  e-davetiye/RSVP microsite) — or Phase 4c relational pickers + seating if wanted._
+**Phase 4c — relational pickers + seating (branch `feat/mbp-05-organizer-vendor`, DONE):**
+- [x] Relational pickers on `/dashboard/events/[id]`: coordinator (staff), hall
+      (BookableResource), package (MenuItem — drives per-person pricing) — all show
+      human-readable names, never raw UUIDs; empty selection sends `'none'`
+- [x] Live quote preview (`package.price × 100 × guestCount`) beside the package picker
+- [x] Visual seating board: unseated bucket + per-resource cards with capacity/over
+      indicators; assign guests to floor-plan resources from the detail page
+- **Resume marker:** _Phase 4c DONE (folded into the Phase 5 branch)._
 
-### Phase 5 — Organizer, vendors, invitations, polish  (branch `feat/mbp-05-organizer-vendor`)
-- [ ] `Vendor` + `EventVendor` (photographer/DJ/florist coordination) — organizer model B
-- [ ] e-davetiye / RSVP microsite reusing public `/r/[slug]` infra
-- [ ] Quotes/proposals + contract document attach
-- [ ] Full i18n sweep (TR/EN) for all new strings; docs update (`PROJECT_LOGIC.md`)
-- [ ] Regression pass across all verticals; merge integration → `develop`
+### Phase 5 — Organizer, vendors, invitations, polish  (branch `feat/mbp-05-organizer-vendor`, DONE)
+- [x] `Vendor` + `EventVendor` (photographer/DJ/florist coordination) — organizer model B;
+      tenant-scoped CRUD (`vendorController.ts`/`/api/vendors`), per-event link with
+      role/cost/status, foreign+duplicate rejection; `/dashboard/vendors` + event-detail section
+- [x] e-davetiye / RSVP microsite: public `/r/[slug]/invite/[token]` rich invitation
+      (hero, event details, venue/map, RSVP form) fed by a per-event `publicToken`
+      (mint/rotate via `generateInvitation`); display-safe public payload (no financials);
+      public RSVP dedupes guests by case-insensitive name, stamps `respondedAt`
+- [x] Quotes/proposals + contract tracking: `contractUrl`, `contractSignedAt`,
+      `proposalSentAt`, `venueName`/`venueAddress`/`invitationMessage` on `Event`;
+      mark-signed / mark-proposal-sent toggles on the detail page
+- [x] New feature flag `hasVendors` (default off; WEDDING profile on) wired through
+      `businessProfiles.ts` + sysadmin tenant entitlements UI
+- [x] Vertical-specialized nav/titles: `AdminLayout` icons + page H1s use terminology
+      per `businessType` (de-restaurant-ified) instead of hardcoded restaurant labels
+- [x] Full i18n sweep (TR/EN): `events.*` (seating/vendors/contract/invitation) +
+      `vendors.*` namespace added to both `en.json`/`tr.json`
+- [x] Regression pass: portable SQLite test harness (Postgres→SQLite swap + client gen);
+      `tests/api/organizer.test.ts` (7 cases: vendor CRUD, invalid category, tenant
+      isolation, event-vendor foreign+duplicate rejection, invitation token +
+      display-safe payload, public RSVP dedup, unknown-token 404); full suite **40/40**
 
 ## 5. Tier-1 vertical specs
 
@@ -384,3 +400,34 @@ the end of every phase.
   `○ /dashboard/events` and `ƒ /dashboard/events/[id]`; backend suite 33/33.
 - **deferred (4c/5)**: relational pickers (coordinator/hall/package) + visual seating
   chart — backend already supports them, only the list-picker UI is pending.
+
+### Phase 4c + 5 — organizer, vendors, invitations, polish (branch `feat/mbp-05-organizer-vendor`)
+Phase 4c (deferred pickers/seating) was folded into the Phase 5 branch and shipped together.
+- **schema/migration** (`20260708000000_add_organizer_vendor`): new `Vendor`
+  (tenant-scoped, `category` default `OTHER`, contact fields) + `EventVendor`
+  (`@@unique([eventId, vendorId])`, `role`/`cost`/`status`); `Event` gains
+  `contractUrl`/`contractSignedAt`/`proposalSentAt`/`publicToken @unique`/
+  `invitationMessage`/`venueName`/`venueAddress`; `RestaurantSettings.hasVendors`
+  (default false); `Guest.respondedAt`. Postgres DDL (separate `ADD CONSTRAINT` FKs).
+- **backend**: `vendorController.ts` (CRUD, `_count.eventVendors`) + `/api/vendors`
+  (reads any authed user, mutations `manage_events`). `eventController.ts` gains
+  event-vendor link CRUD (tenant-scoped ownership guards, foreign+duplicate rejection),
+  `generateInvitation` (mint/rotate `publicToken` via `crypto.randomBytes(24)`), and
+  contract/venue/message fields on update. `publicController.ts`:
+  `getInvitation` (display-safe — no financials) + `submitInvitationRsvp` (portable
+  JS case-insensitive guest dedup, stamps `respondedAt`); mounted on `/api/public`.
+- **feature flag**: `hasVendors` added to `FeatureProfile`/`FEATURE_FLAG_KEYS`
+  (WEDDING on, others off) — flows automatically through provisioning + settings.
+- **frontend**: `dashboard/events/[id]` — relational pickers (coordinator/hall/package,
+  names only), live quote preview, seating board (unseated bucket + per-resource
+  capacity/over cards), vendors section, contract toggles, invitation link generator.
+  New `dashboard/vendors` category-filtered CRUD. Public `r/[slug]/invite/[token]`
+  rich e-davetiye (warm serif microsite, tenant accent color, RSVP + thank-you state,
+  Google Maps link). `AdminLayout` per-`businessType` `VERTICAL_ICONS` + `hasVendors`
+  nav item; `tables`/`reservations` H1s use terminology (de-restaurant-ified).
+  Sysadmin tenant entitlements gains 4 event/vendor checkboxes.
+- **i18n**: `events.*` (seating/vendors/contract/invitation) + full `vendors.*`
+  namespace in both `en.json`/`tr.json`.
+- **verification**: portable test harness (`prepare-test-db.mjs` Postgres→SQLite swap
+  + SQLite client generation); `tests/api/organizer.test.ts` (7 cases); full suite
+  **40/40**. PostgreSQL client restored after the run.
