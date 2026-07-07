@@ -47,7 +47,9 @@ export default function TenantManagementPage() {
     businessType: 'RESTAURANT',
     layoutStyle: 'CLASSIC_LIST',
     // Root-admin-only controls: platform currency + 2FA capability + default language.
-    currency: 'TRY', twoFactorEnabled: false, defaultLanguage: 'tr'
+    currency: 'TRY', twoFactorEnabled: false, defaultLanguage: 'tr',
+    // Whether this tenant's own admins may view their activity audit log.
+    showAuditLogToTenant: false
   });
   
   const [subscriptionForm, setSubscriptionForm] = useState({
@@ -107,13 +109,15 @@ export default function TenantManagementPage() {
 
   useEffect(() => { fetchTenants(); }, []);
 
-  const fetchTenants = async () => {
+  const fetchTenants = async (): Promise<any[]> => {
     try {
       setLoading(true);
       const res = await api.get('/system/tenants');
       setTenants(res.data.data);
+      return res.data.data as any[];
     } catch (error) {
       console.error('Failed to fetch tenants:', error);
+      return [];
     } finally { setLoading(false); }
   };
 
@@ -166,6 +170,7 @@ export default function TenantManagementPage() {
       currency: tenant.settings?.currency ?? 'TRY',
       twoFactorEnabled: tenant.settings?.twoFactorEnabled ?? false,
       defaultLanguage: tenant.settings?.defaultLanguage ?? 'tr',
+      showAuditLogToTenant: tenant.settings?.showAuditLogToTenant ?? false,
       businessType: tenant.businessType || 'RESTAURANT',
       layoutStyle: tenant.customization?.layoutStyle || 'CLASSIC_LIST',
     });
@@ -193,23 +198,36 @@ export default function TenantManagementPage() {
       setAdminPermissions(newPerms);
   };
 
+  const [saving, setSaving] = useState(false);
+
   const handleUpdateSettings = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (saving) return; // guard against a double-submit racing the refetch
+    setSaving(true);
     try {
-      await api.put(`/system/tenants/${selectedTenant.id}/settings`, settingsForm);
-      await api.put(`/system/tenants/${selectedTenant.id}/subscription`, subscriptionForm);
-      
+      const tenantId = selectedTenant.id;
+      // Persist all three concerns for this tenant. Each awaits the previous so a
+      // single "Commit" reliably lands every change in one click.
+      await api.put(`/system/tenants/${tenantId}/settings`, settingsForm);
+      await api.put(`/system/tenants/${tenantId}/subscription`, subscriptionForm);
+
       const adminUser = selectedTenant.users?.find((u: any) => u.role === 'ADMIN');
       if (adminUser) {
           await api.put(`/system/users/${adminUser.id}/permissions`, {
               permissions: Array.from(adminPermissions)
           });
       }
-      
+
       toast.success('Entitlements updated');
+      // Await the refetch and re-point selectedTenant at the fresh row so that
+      // reopening the dialog never shows pre-save values (the reason it used to
+      // look like a change needed committing twice).
+      const fresh = await fetchTenants();
+      const updatedTenant = fresh.find((tt) => tt.id === tenantId);
+      if (updatedTenant) setSelectedTenant(updatedTenant);
       setIsSettingsOpen(false);
-      fetchTenants();
     } catch (err) { toast.error('Update failed'); }
+    finally { setSaving(false); }
   };
 
   const filteredTenants = tenants.filter(t => t.name.toLowerCase().includes(searchQuery.toLowerCase()) || t.slug.toLowerCase().includes(searchQuery.toLowerCase()));
@@ -261,7 +279,7 @@ export default function TenantManagementPage() {
                         </div>
                         <div>
                             <div className="font-bold text-slate-900 text-xs uppercase tracking-tight">{tenant.name}</div>
-                            <div className="text-[9px] text-slate-400 font-mono">{tenant.slug}.reservue.com</div>
+                            <div className="text-[9px] text-slate-400 font-mono">{tenant.slug}.your-domain.com</div>
                         </div>
                       </div>
                     </TableCell>
@@ -379,19 +397,20 @@ export default function TenantManagementPage() {
 
         {/* Entitlements Dialog */}
         <Dialog open={isSettingsOpen} onOpenChange={setIsSettingsOpen}>
-            <DialogContent maxWidth="sm:max-w-2xl" className="p-0 rounded-md border-0 shadow-2xl">
+            <DialogContent maxWidth="sm:max-w-4xl" className="p-0 rounded-lg border-0 shadow-2xl">
                 <form onSubmit={handleUpdateSettings}>
-                    <div className="bg-slate-900 p-4 text-white">
+                    <div className="bg-slate-900 px-6 py-4 text-white rounded-t-lg">
                         <DialogHeader>
-                            <DialogTitle className="text-sm font-bold uppercase tracking-widest">Entitlements: {selectedTenant?.name}</DialogTitle>
+                            <DialogTitle className="text-sm font-bold uppercase tracking-widest">Entitlements</DialogTitle>
+                            <p className="text-[11px] text-slate-400 font-medium normal-case tracking-normal">{selectedTenant?.name} · {selectedTenant?.slug}.your-domain.com</p>
                         </DialogHeader>
                     </div>
-                    <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-8 bg-white max-h-[80vh] overflow-y-auto">
-                        <div className="col-span-1 md:col-span-2 border-b border-slate-100 pb-6 mb-2">
+                    <div className="p-6 space-y-6 bg-white max-h-[82vh] overflow-y-auto">
+                        <div className="border-b border-slate-200 pb-6">
                             <div className="flex items-center gap-2 mb-4">
                                 <Label className="text-xs font-black uppercase text-slate-800 tracking-tight">Subscription Management</Label>
                             </div>
-                            <div className="grid grid-cols-3 gap-4">
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                                 <div className="space-y-1.5">
                                     <Label className="text-[10px] font-black uppercase text-slate-400">Plan Tier</Label>
                                     <select 
@@ -451,6 +470,9 @@ export default function TenantManagementPage() {
                             </div>
                         </div>
 
+                        {/* Configuration (left) + Feature flags (right) — two balanced columns */}
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-8 gap-y-6 border-b border-slate-200 pb-6">
+                          <div className="space-y-6">
                         <div className="space-y-4">
                             <div className="flex items-center gap-2 mb-2">
                                 <Label className="text-xs font-black uppercase text-slate-800 tracking-tight">Business Vertical</Label>
@@ -541,7 +563,17 @@ export default function TenantManagementPage() {
                                 </div>
                                 <Checkbox checked={settingsForm.twoFactorEnabled} onCheckedChange={(c) => setSettingsForm({...settingsForm, twoFactorEnabled: !!c})} />
                             </div>
+                            {/* Audit log visibility — let this tenant's admins see their own activity log. */}
+                            <div className="flex items-center justify-between p-3 border border-slate-100 rounded-sm bg-slate-50/40">
+                                <div className="space-y-0.5">
+                                    <Label className="text-xs font-black uppercase">Audit Log Visibility</Label>
+                                    <p className="text-[9px] text-slate-400 font-bold uppercase">Let Tenant Admins See Their Activity Log</p>
+                                </div>
+                                <Checkbox checked={settingsForm.showAuditLogToTenant} onCheckedChange={(c) => setSettingsForm({...settingsForm, showAuditLogToTenant: !!c})} />
+                            </div>
                         </div>
+
+                          </div>{/* end left configuration column */}
 
                         <div className="space-y-4">
                             <div className="flex items-center gap-2 mb-2">
@@ -627,12 +659,15 @@ export default function TenantManagementPage() {
                             </div>
                         </div>
 
-                        <div className="space-y-4 border-l border-slate-100 pl-6">
-                            <div className="flex items-center gap-2 mb-2">
+                        </div>{/* end configuration / feature-flags grid */}
+
+                        {/* Tenant admin permissions — full width */}
+                        <div className="space-y-4">
+                            <div className="flex items-center gap-2 mb-1">
                                 <ShieldCheck className="w-4 h-4 text-emerald-500" />
                                 <Label className="text-xs font-black uppercase text-slate-800 tracking-tight">Tenant Admin Permissions</Label>
                             </div>
-                            <div className="grid gap-2">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
                                 {AVAILABLE_PERMISSIONS.map(perm => (
                                     <div key={perm.id} className={cn("flex items-center justify-between p-2.5 border rounded-sm transition-all", adminPermissions.has(perm.id) ? "border-emerald-200 bg-emerald-50/30" : "border-slate-100 bg-slate-50/50")}>
                                         <div className={cn("text-[10px] font-black uppercase tracking-tight", adminPermissions.has(perm.id) ? "text-emerald-700" : "text-slate-600")}>{perm.label}</div>
@@ -645,8 +680,8 @@ export default function TenantManagementPage() {
                                 const adminUser = selectedTenant?.users?.find((u: any) => u.role === 'ADMIN');
                                 if (!adminUser) return null;
                                 return (
-                                  <>
-                                    <div className="pt-4 mt-2 border-t border-slate-100 space-y-2">
+                                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-6 mt-2 border-t border-slate-200">
+                                    <div className="p-4 border border-slate-200 rounded-md space-y-2">
                                         <div className="flex items-center justify-between">
                                             <div className="flex items-center gap-2">
                                                 <ShieldCheck className="w-4 h-4 text-emerald-500" />
@@ -661,7 +696,7 @@ export default function TenantManagementPage() {
                                                 : <span className="text-amber-600 font-bold"> Awaiting setup at next sign-in.</span>)}
                                         </p>
                                     </div>
-                                    <div className="pt-4 mt-2 border-t border-slate-100 space-y-2">
+                                    <div className="p-4 border border-slate-200 rounded-md space-y-2">
                                         <div className="flex items-center gap-2">
                                             <KeyRound className="w-4 h-4 text-amber-500" />
                                             <Label className="text-xs font-black uppercase text-slate-800 tracking-tight">Password Reset</Label>
@@ -687,14 +722,14 @@ export default function TenantManagementPage() {
                                             </Button>
                                         )}
                                     </div>
-                                  </>
+                                  </div>
                                 );
                             })()}
                         </div>
                     </div>
                     <div className="p-4 bg-slate-50 border-t border-slate-100 flex justify-end gap-2">
-                        <Button type="button" variant="ghost" onClick={() => setIsSettingsOpen(false)} className="h-9 text-xs font-bold text-slate-400">CANCEL</Button>
-                        <Button type="submit" className="h-9 bg-slate-900 text-white text-xs font-black uppercase px-6 rounded-sm">COMMIT ENTITLEMENTS</Button>
+                        <Button type="button" variant="ghost" disabled={saving} onClick={() => setIsSettingsOpen(false)} className="h-9 text-xs font-bold text-slate-400">CANCEL</Button>
+                        <Button type="submit" disabled={saving} className="h-9 bg-slate-900 hover:bg-slate-800 text-white text-xs font-black uppercase px-6 rounded-sm disabled:opacity-60">{saving ? 'COMMITTING…' : 'COMMIT ENTITLEMENTS'}</Button>
                     </div>
                 </form>
             </DialogContent>

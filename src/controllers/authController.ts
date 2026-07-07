@@ -5,6 +5,7 @@ import { generateToken, generateOtpChallengeToken, verifyOtpChallengeToken } fro
 import { successResponse, errorResponse } from '../utils/response';
 import { hashResetToken } from '../utils/resetToken';
 import { generateOtpSecret, verifyTotp, buildOtpAuthUrl } from '../utils/totp';
+import { logAudit } from '../services/auditService';
 
 // Whether a given user is required to complete 2FA at login. The requirement is
 // role-based per restaurant (root admin enables the capability; the tenant admin
@@ -44,6 +45,11 @@ export const register = async (req: Request, res: Response) => {
     // Generate a slug from restaurant name
     const slug = restaurantName.toLowerCase().replace(/[^a-z0-9]+/g, '-');
 
+    const existingRestaurant = await prisma.restaurant.findUnique({ where: { slug } });
+    if (existingRestaurant) {
+      return errorResponse(res, 'errors.validation_error', 400, { message: 'Restaurant name is already taken' });
+    }
+
     const hashedPassword = await bcrypt.hash(password, 10);
 
     // Create Restaurant and Admin User in a transaction
@@ -51,7 +57,7 @@ export const register = async (req: Request, res: Response) => {
       const restaurant = await prisma.restaurant.create({
         data: {
           name: restaurantName,
-          slug: `${slug}-${Date.now()}`, // Ensure uniqueness
+          slug,
           contactEmail: email,
           settings: {
             create: {}
@@ -145,6 +151,17 @@ export const login = async (req: Request, res: Response) => {
 
     console.log(`[Auth] Login successful: ${user.id} (${user.role})`);
     const token = generateToken(user.id, user.restaurantId, user.role);
+
+    logAudit({
+      req,
+      restaurantId: user.restaurantId,
+      actorId: user.id,
+      actorEmail: user.email,
+      actorName: `${user.firstName ?? ''} ${user.lastName ?? ''}`.trim() || null,
+      actorRole: user.role,
+      category: 'AUTH',
+      action: 'LOGIN',
+    });
 
     return successResponse(res, {
       user: {

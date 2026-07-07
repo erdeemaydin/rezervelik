@@ -5,6 +5,7 @@ import { verifyToken } from '../utils/jwt';
 import { createPaymentForReservation } from '../services/paymentService';
 import { sendPaymentRequest } from '../services/notificationService';
 import { findTableConflict, findAvailableTable, BLOCKING_STATUSES } from '../utils/reservationConflict';
+import { logAudit } from '../services/auditService';
 
 const isStaffRequest = (req: Request): boolean => {
   const authHeader = req.headers.authorization;
@@ -220,6 +221,17 @@ export const createReservation = async (req: Request, res: Response) => {
       }
       throw txErr;
     }
+
+    logAudit({
+      req,
+      restaurantId,
+      category: 'RESERVATION',
+      action: 'RESERVATION_CREATED',
+      targetType: 'Reservation',
+      targetId: reservation.id,
+      targetLabel: reservation.customerName,
+      metadata: { guestCount: reservation.guestCount, startTime: reservation.startTime, status: reservation.status },
+    });
 
     if (requiresInstantPayment) {
       const pay = await createPaymentForReservation(reservation, settings);
@@ -439,6 +451,17 @@ export const updateReservationStatus = async (req: Request, res: Response) => {
     const updated = await prisma.reservation.update({
       where: { id },
       data: { status, tableId }
+    });
+
+    logAudit({
+      req,
+      restaurantId,
+      category: 'RESERVATION',
+      action: 'RESERVATION_STATUS_CHANGED',
+      targetType: 'Reservation',
+      targetId: updated.id,
+      targetLabel: updated.customerName,
+      metadata: { from: existingRes.status, to: updated.status },
     });
 
     return successResponse(res, updated);

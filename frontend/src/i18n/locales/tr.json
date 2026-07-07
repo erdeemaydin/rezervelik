@@ -50,7 +50,8 @@
     "zone": "Bölge",
     "mainDiningRoom": "Ana Yemek Salonu",
     "logout": "Çıkış Yap",
-    "userSettings": "Kullanıcı Ayarları"
+    "userSettings": "Kullanıcı Ayarları",
+    "auditLog": "Etkinlik Kaydı"
   },
   "timesheet": {
     "title": "Mesai Takibi",
@@ -1473,5 +1474,19 @@
       "OTHER": "Diğer"
     },
     "eventsWord": "etkinlik"
+  },
+  "audit": {
+    "title": "Etkinlik Kaydı",
+    "subtitle": "Hesabınızdaki etkinliklerin kaydı.",
+    "notEnabledTitle": "Etkinlik kaydı kullanılamıyor",
+    "notEnabledDesc": "Etkinlik kaydı hesabınız için etkinleştirilmemiş. Erişim talep etmek için platform yöneticinizle iletişime geçin.",
+    "colTime": "Zaman",
+    "colActor": "Kullanıcı",
+    "colAction": "İşlem",
+    "colTarget": "Hedef",
+    "allCategories": "Tüm Kategoriler",
+    "empty": "Henüz kayıtlı etkinlik yok.",
+    "loading": "Etkinlikler yükleniyor…",
+    "refresh": "Yenile"
   }
 }

@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import * as systemController from '../controllers/systemController';
+import * as auditController from '../controllers/auditController';
 import { authMiddleware, roleMiddleware } from '../middlewares/auth';
 
 const router = Router();
@@ -23,7 +24,9 @@ router.get('/settings/global', systemController.getGlobalSettings);
 router.put('/settings/global', systemController.updateGlobalSettings);
 
 router.get('/admins', systemController.getSystemAdmins);
+router.post('/admins', systemController.createSystemAdmin);
 router.get('/metrics', systemController.getSystemMetrics);
+router.get('/audit', auditController.getSystemAuditLogs);
 
 router.post('/tenants/:id/impersonate', systemController.impersonateTenant);
 

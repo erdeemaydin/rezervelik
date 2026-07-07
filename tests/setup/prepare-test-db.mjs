@@ -23,6 +23,10 @@ let schema = fs.readFileSync(schemaPath, 'utf8');
 // legacy `url = "file:…"` form and the current `provider = "postgresql"` one.
 schema = schema.replace(/provider\s*=\s*"postgresql"/, 'provider = "sqlite"');
 schema = schema.replace(/url\s*=\s*"file:[^"]*"/, 'url = env("DATABASE_URL")');
+// SQLite has no native Json type; map Json fields to String for the test schema.
+// Only AuditLog.metadata uses it, and audit writes swallow errors, so tests that
+// don't assert on audit metadata are unaffected. Production stays Json on Postgres.
+schema = schema.replace(/\bJson\b/g, 'String');
 fs.writeFileSync(tmpSchemaPath, schema);
 
 const env = { ...process.env, DATABASE_URL: `file:${testDbPath}` };

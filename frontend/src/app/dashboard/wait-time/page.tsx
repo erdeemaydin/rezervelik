@@ -5,6 +5,7 @@ import AdminLayout from '@/components/layout/AdminLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { TimeSelect } from '@/components/ui/time-select';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -462,7 +463,7 @@ export default function WaitlistPage() {
                         <div className="grid grid-cols-2 gap-4">
                             <div className="grid gap-1.5">
                                 <Label className="text-[10px] font-black uppercase text-slate-400">{t("waitTime.modal.offerTime")}</Label>
-                                <Input required type="time" value={offerForm.offeredTime} onChange={e => setOfferForm({...offerForm, offeredTime: e.target.value})} className="h-9 text-sm font-bold" />
+                                <TimeSelect value={offerForm.offeredTime} onChange={v => setOfferForm({...offerForm, offeredTime: v})} className="w-full h-9 text-sm font-bold" />
                             </div>
                             <div className="grid gap-1.5">
                                 <Label className="text-[10px] font-black uppercase text-slate-400">{t("waitTime.modal.expiresIn")}</Label>

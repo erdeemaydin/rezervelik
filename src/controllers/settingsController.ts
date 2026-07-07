@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import prisma from '../config/prisma';
 import { successResponse, errorResponse } from '../utils/response';
+import { logAudit } from '../services/auditService';
 
 export const getSettings = async (req: Request, res: Response) => {
   try {
@@ -90,6 +91,15 @@ export const updateSettings = async (req: Request, res: Response) => {
         defaultBreakMinutes: defaultBreakMinutes != null ? Math.max(0, parseInt(defaultBreakMinutes) || 0) : undefined,
         ...(twoFactorRolesUpdate !== undefined ? { twoFactorRoles: twoFactorRolesUpdate } : {})
       }
+    });
+
+    logAudit({
+      req,
+      restaurantId,
+      category: 'SETTINGS',
+      action: 'RESTAURANT_SETTINGS_UPDATED',
+      targetType: 'RestaurantSettings',
+      targetId: settings.id,
     });
 
     return successResponse(res, settings);

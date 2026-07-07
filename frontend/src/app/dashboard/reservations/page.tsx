@@ -16,6 +16,7 @@ import {
   Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter 
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
+import { TimeSelect } from '@/components/ui/time-select';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -260,7 +261,10 @@ export default function ReservationsPage() {
         toast.success(t("reservations.statusUpdated"));
       }
       fetchData();
-    } catch (err) { toast.error(t("reservations.updateFailed")); }
+    } catch (err: any) { 
+      const backendMsg = err.response?.data?.details?.message || err.response?.data?.error;
+      toast.error(backendMsg || t("reservations.updateFailed")); 
+    }
   };
 
   const [paymentInfo, setPaymentInfo] = useState<{ url: string; code: string; amount: number; currency: string } | null>(null);
@@ -367,7 +371,8 @@ export default function ReservationsPage() {
         setShowConflictWarning(true);
         return;
       }
-      toast.error(err.response?.data?.error || t("reservations.failedToSave"));
+      const backendMsg = err.response?.data?.details?.message || err.response?.data?.error;
+      toast.error(backendMsg || t("reservations.failedToSave"));
     }
   };
 
@@ -739,7 +744,7 @@ export default function ReservationsPage() {
                   </div>
                   <div className="grid gap-2">
                     <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest">{t("reservations.arrivalTime")}</Label>
-                    <Input type="time" value={selectedTime} onChange={e => setSelectedTime(e.target.value)} className="h-12 text-sm font-bold border-slate-200 focus:border-blue-500 rounded-sm" />
+                    <TimeSelect value={selectedTime} onChange={setSelectedTime} className="w-full h-12 text-sm font-bold border-slate-200 focus:border-blue-500 rounded-sm" />
                   </div>
                   <div className="grid gap-2">
                     <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest">{t("reservations.tableLocation")}</Label>

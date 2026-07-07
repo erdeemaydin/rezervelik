@@ -170,3 +170,85 @@ export const getDashboardStats = async (req: Request, res: Response) => {
     return errorResponse(res, 'errors.internal_error', 500);
   }
 };
+
+export const getWidgetSnippets = async (req: Request, res: Response) => {
+  try {
+    const restaurantId = req.restaurantId!;
+    const restaurant = await prisma.restaurant.findUnique({
+      where: { id: restaurantId },
+      select: { slug: true, publicApiKey: true, hasReservationWidget: true }
+    });
+
+    if (!restaurant) {
+      return errorResponse(res, 'errors.restaurant_not_found', 404);
+    }
+
+    if (!restaurant.hasReservationWidget) {
+      return errorResponse(res, 'errors.forbidden', 403);
+    }
+
+    const { slug, publicApiKey } = restaurant;
+    const key = publicApiKey || 'pk_live_YOUR_API_KEY';
+
+    const htmlSnippet = `<div id="resv-widget" data-key="${key}" data-slug="${slug}"></div>\n<script src="https://api.yourdomain.com/widget/embed.js" async></script>`;
+
+    const reactSnippet = `import { useEffect } from 'react';
+
+export default function ReservationWidget() {
+  useEffect(() => {
+    const script = document.createElement('script');
+    script.src = 'https://api.yourdomain.com/widget/embed.js';
+    script.async = true;
+    document.body.appendChild(script);
+    return () => { document.body.removeChild(script); };
+  }, []);
+
+  return <div id="resv-widget" data-key="${key}" data-slug="${slug}"></div>;
+}`;
+
+    const vueSnippet = `<template>
+  <div id="resv-widget" data-key="${key}" data-slug="${slug}"></div>
+</template>
+
+<script>
+export default {
+  name: 'ReservationWidget',
+  mounted() {
+    const script = document.createElement('script');
+    script.src = 'https://api.yourdomain.com/widget/embed.js';
+    script.async = true;
+    document.body.appendChild(script);
+  }
+}
+</script>`;
+
+    const phpSnippet = `<?php
+// Simply echo this where you want the widget to appear in your PHP template
+echo '<div id="resv-widget" data-key="${key}" data-slug="${slug}"></div>';
+echo '<script src="https://api.yourdomain.com/widget/embed.js" async></script>';
+?>`;
+
+    const wordpressSnippet = `// Add this to your functions.php or a custom plugin
+function my_restaurant_reservation_widget() {
+    return '<div id="resv-widget" data-key="${key}" data-slug="${slug}"></div>' .
+           '<script src="https://api.yourdomain.com/widget/embed.js" async></script>';
+}
+add_shortcode('restaurant_reservation', 'my_restaurant_reservation_widget');
+
+// Then use the shortcode [restaurant_reservation] in your pages or posts`;
+
+    return successResponse(res, {
+      snippets: [
+        { language: 'HTML / JS', code: htmlSnippet },
+        { language: 'React', code: reactSnippet },
+        { language: 'Vue', code: vueSnippet },
+        { language: 'PHP', code: phpSnippet },
+        { language: 'WordPress', code: wordpressSnippet },
+      ]
+    });
+
+  } catch (error) {
+    console.error('Get widget snippets error:', error);
+    return errorResponse(res, 'errors.internal_error', 500);
+  }
+};

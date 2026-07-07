@@ -9,6 +9,8 @@ import {
   getFeatureProfile,
   isBusinessType,
 } from '../config/businessProfiles';
+import { generatePublicApiKey } from '../utils/publicApiKey';
+import { logAudit } from '../services/auditService';
 
 // POST /system/users/:userId/reset-link (SUPER_ADMIN only)
 // Mints a single-use password reset link for any user. The raw token is returned
@@ -25,6 +27,16 @@ export const createPasswordResetLink = async (req: Request, res: Response) => {
     await prisma.user.update({
       where: { id: user.id },
       data: { resetTokenHash: tokenHash, resetTokenExpiresAt: expiresAt }
+    });
+
+    logAudit({
+      req,
+      restaurantId: user.restaurantId,
+      category: 'SYSTEM',
+      action: 'PASSWORD_RESET_LINK_GENERATED',
+      targetType: 'User',
+      targetId: user.id,
+      targetLabel: user.email,
     });
 
     return successResponse(res, {
@@ -56,6 +68,16 @@ export const setUserOtp = async (req: Request, res: Response) => {
       data: required
         ? { otpRequired: true }
         : { otpRequired: false, otpSecret: null, otpConfirmedAt: null }
+    });
+
+    logAudit({
+      req,
+      restaurantId: user.restaurantId,
+      category: 'SYSTEM',
+      action: required ? 'TWO_FACTOR_ENABLED' : 'TWO_FACTOR_DISABLED',
+      targetType: 'User',
+      targetId: user.id,
+      targetLabel: user.email,
     });
 
     return successResponse(res, {
@@ -111,6 +133,12 @@ export const createTenant = async (req: Request, res: Response) => {
     const featureProfile = getFeatureProfile(businessType);
 
     const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+    
+    const existingRestaurant = await prisma.restaurant.findUnique({ where: { slug } });
+    if (existingRestaurant) {
+      return errorResponse(res, 'errors.validation_error', 400, { message: 'Tenant name is already taken' });
+    }
+
     const existingUser = await prisma.user.findUnique({ where: { email: contactEmail } });
 
     if (existingUser) {
@@ -140,7 +168,7 @@ export const createTenant = async (req: Request, res: Response) => {
       const restaurant = await prisma.restaurant.create({
         data: {
           name,
-          slug: `${slug}-${Date.now()}`,
+          slug,
           contactEmail,
           businessType,
           subscriptionPlan: 'TRIAL',
@@ -162,7 +190,7 @@ export const createTenant = async (req: Request, res: Response) => {
           firstName: adminFirstName,
           lastName: adminLastName,
           role: 'ADMIN',
-          permissions: 'manage_reservations,manage_tables,manage_menu,manage_calendar,manage_staff,manage_settings,manage_events',
+          permissions: 'manage_reservations,manage_tables,edit_floor_plan,manage_menu,manage_calendar,manage_staff,manage_settings,manage_events',
           restaurantId: restaurant.id,
           setupToken,
           setupTokenExpiresAt
@@ -170,6 +198,17 @@ export const createTenant = async (req: Request, res: Response) => {
       });
 
       return { restaurant, adminUser: user };
+    });
+
+    logAudit({
+      req,
+      restaurantId: result.restaurant.id,
+      category: 'TENANT',
+      action: 'TENANT_PROVISIONED',
+      targetType: 'Restaurant',
+      targetId: result.restaurant.id,
+      targetLabel: result.restaurant.name,
+      metadata: { businessType, contactEmail },
     });
 
     if (isInvite) {
@@ -197,6 +236,17 @@ export const updateTenantSubscription = async (req: Request, res: Response) => {
       }
     });
 
+    logAudit({
+      req,
+      restaurantId: id,
+      category: 'SUBSCRIPTION',
+      action: 'SUBSCRIPTION_UPDATED',
+      targetType: 'Restaurant',
+      targetId: id,
+      targetLabel: updated.name,
+      metadata: { subscriptionPlan, subscriptionStatus },
+    });
+
     return successResponse(res, updated);
   } catch (error) {
     console.error('Update tenant subscription error:', error);
@@ -210,7 +260,8 @@ export const updateTenantSettings = async (req: Request, res: Response) => {
     const {
       currency,
       twoFactorEnabled,
-      defaultLanguage
+      defaultLanguage,
+      showAuditLogToTenant
     } = req.body;
 
     // When the SysAdmin switches the tenant's businessType, seed the vertical's
@@ -228,11 +279,44 @@ export const updateTenantSettings = async (req: Request, res: Response) => {
       }
     }
 
-    if (businessTypeProvided) {
-      await prisma.restaurant.update({
+    // Commercial add-on packages + custom domain (SysAdmin-only). Booleans for the
+    // two packages, the tenant's custom domain, and publishable-key rotation.
+    const {
+      hasHostedFrontend,
+      hasReservationWidget,
+      customDomain,
+      rotatePublicApiKey,
+    } = req.body;
+
+    const restaurantData: Record<string, unknown> = {};
+    if (businessTypeProvided) restaurantData.businessType = req.body.businessType;
+    if (hasHostedFrontend !== undefined) restaurantData.hasHostedFrontend = Boolean(hasHostedFrontend);
+    if (hasReservationWidget !== undefined) restaurantData.hasReservationWidget = Boolean(hasReservationWidget);
+
+    // Normalize a custom domain to a bare, lowercase host (strip scheme, path,
+    // trailing slash). Changing it invalidates any prior verification.
+    if (customDomain !== undefined) {
+      const normalized = typeof customDomain === 'string' && customDomain.trim()
+        ? customDomain.trim().toLowerCase().replace(/^https?:\/\//, '').replace(/\/.*$/, '')
+        : null;
+      restaurantData.customDomain = normalized;
+      restaurantData.customDomainVerifiedAt = null;
+    }
+
+    // Mint a publishable key when the widget is switched on and none exists yet,
+    // or whenever the SysAdmin explicitly asks to rotate it.
+    if (rotatePublicApiKey === true) {
+      restaurantData.publicApiKey = generatePublicApiKey();
+    } else if (Boolean(hasReservationWidget) === true) {
+      const existing = await prisma.restaurant.findUnique({
         where: { id },
-        data: { businessType: req.body.businessType }
+        select: { publicApiKey: true },
       });
+      if (!existing?.publicApiKey) restaurantData.publicApiKey = generatePublicApiKey();
+    }
+
+    if (Object.keys(restaurantData).length > 0) {
+      await prisma.restaurant.update({ where: { id }, data: restaurantData });
     }
 
     const updated = await prisma.restaurantSettings.update({
@@ -243,7 +327,8 @@ export const updateTenantSettings = async (req: Request, res: Response) => {
         // root-admin-only controls.
         ...(currency !== undefined ? { currency } : {}),
         ...(twoFactorEnabled !== undefined ? { twoFactorEnabled } : {}),
-        ...(defaultLanguage !== undefined ? { defaultLanguage } : {})
+        ...(defaultLanguage !== undefined ? { defaultLanguage } : {}),
+        ...(showAuditLogToTenant !== undefined ? { showAuditLogToTenant: Boolean(showAuditLogToTenant) } : {})
       }
     });
 
@@ -254,6 +339,19 @@ export const updateTenantSettings = async (req: Request, res: Response) => {
         create: { restaurantId: id, layoutStyle: req.body.layoutStyle }
       });
     }
+
+    // Scope this to the tenant so it also surfaces in that tenant's own audit view.
+    const tenant = await prisma.restaurant.findUnique({ where: { id }, select: { name: true } });
+    logAudit({
+      req,
+      restaurantId: id,
+      category: 'SETTINGS',
+      action: 'TENANT_SETTINGS_UPDATED',
+      targetType: 'Restaurant',
+      targetId: id,
+      targetLabel: tenant?.name,
+      metadata: { ...featureData, ...(req.body.layoutStyle ? { layoutStyle: req.body.layoutStyle } : {}) },
+    });
 
     return successResponse(res, updated);
   } catch (error) {
@@ -272,6 +370,17 @@ export const updateTenantUserPermissions = async (req: Request, res: Response) =
       data: {
         permissions: Array.isArray(permissions) ? permissions.join(',') : permissions
       }
+    });
+
+    logAudit({
+      req,
+      restaurantId: updatedUser.restaurantId,
+      category: 'PERMISSIONS',
+      action: 'PERMISSIONS_UPDATED',
+      targetType: 'User',
+      targetId: updatedUser.id,
+      targetLabel: updatedUser.email,
+      metadata: { permissions: updatedUser.permissions },
     });
 
     return successResponse(res, updatedUser);
@@ -316,6 +425,56 @@ export const createSuperAdmin = async (req: Request, res: Response) => {
   }
 };
 
+// POST /system/admins (SUPER_ADMIN only)
+// Add another platform administrator from within the console. Unlike
+// createSuperAdmin (the token-gated bootstrap for the very first admin), this is
+// already behind authMiddleware + roleMiddleware(['SUPER_ADMIN']) in the router,
+// so no setup token is required.
+export const createSystemAdmin = async (req: Request, res: Response) => {
+  try {
+    const { email, password, firstName, lastName } = req.body;
+
+    if (!email || !password || !firstName || !lastName) {
+      return errorResponse(res, 'errors.validation_error', 400, { message: 'Required fields missing' });
+    }
+    if (typeof password !== 'string' || password.length < 8) {
+      return errorResponse(res, 'errors.validation_error', 400, { message: 'Password must be at least 8 characters' });
+    }
+
+    const existingUser = await prisma.user.findUnique({ where: { email } });
+    if (existingUser) {
+      return errorResponse(res, 'errors.validation_error', 400, { message: 'Email already exists' });
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+    const user = await prisma.user.create({
+      data: {
+        email,
+        passwordHash: hashedPassword,
+        firstName,
+        lastName,
+        role: 'SUPER_ADMIN'
+        // restaurantId remains null — platform-level admin, not tenant-scoped
+      },
+      select: { id: true, email: true, firstName: true, lastName: true, role: true, createdAt: true }
+    });
+
+    logAudit({
+      req,
+      category: 'SYSTEM',
+      action: 'SYSTEM_ADMIN_CREATED',
+      targetType: 'User',
+      targetId: user.id,
+      targetLabel: user.email,
+    });
+
+    return successResponse(res, user, undefined, 201);
+  } catch (error) {
+    console.error('Create system admin error:', error);
+    return errorResponse(res, 'errors.internal_error', 500);
+  }
+};
+
 export const getGlobalSettings = async (req: Request, res: Response) => {
   try {
     let settings = await prisma.globalSettings.findUnique({ where: { id: 'global_1' } });
@@ -341,7 +500,16 @@ export const updateGlobalSettings = async (req: Request, res: Response) => {
       update: { maintenanceMode, publicRegistrationEnabled, enforce2FAForAdmins, measurementSystem: normalizedSystem },
       create: { id: 'global_1', maintenanceMode, publicRegistrationEnabled, enforce2FAForAdmins, measurementSystem: normalizedSystem }
     });
-    
+
+    logAudit({
+      req,
+      category: 'SYSTEM',
+      action: 'GLOBAL_SETTINGS_UPDATED',
+      targetType: 'GlobalSettings',
+      targetId: 'global_1',
+      metadata: { maintenanceMode, publicRegistrationEnabled, enforce2FAForAdmins, measurementSystem: normalizedSystem },
+    });
+
     return successResponse(res, settings);
   } catch (error) {
     console.error('Update global settings error:', error);
@@ -406,6 +574,16 @@ export const impersonateTenant = async (req: Request, res: Response) => {
 
     // Generate a token for this user
     const token = generateToken(adminUser.id, adminUser.restaurantId, adminUser.role);
+
+    logAudit({
+      req,
+      restaurantId: id,
+      category: 'SYSTEM',
+      action: 'IMPERSONATION_STARTED',
+      targetType: 'User',
+      targetId: adminUser.id,
+      targetLabel: adminUser.email,
+    });
 
     return successResponse(res, {
       user: {
