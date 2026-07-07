@@ -97,6 +97,8 @@ export default function ReservationsPage() {
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
   };
   const [timelineDate, setTimelineDate] = useState(todayLocalDate());
+  // Zone/section filter for the timeline (default: all zones).
+  const [timelineZoneId, setTimelineZoneId] = useState<string>('all');
   // Configurable displayed time window for the timeline (persisted per browser).
   const [timelineStartHour, setTimelineStartHour] = useState(9);
   const [timelineEndHour, setTimelineEndHour] = useState(24);
@@ -112,6 +114,21 @@ export default function ReservationsPage() {
   useEffect(() => {
     try { localStorage.setItem('timelineHours', JSON.stringify({ start: timelineStartHour, end: timelineEndHour })); } catch {}
   }, [timelineStartHour, timelineEndHour]);
+  // Distinct zones present among the loaded tables, for the timeline zone filter.
+  const timelineZones = useMemo(() => {
+    const seen = new Map<string, { id: string; name: string }>();
+    for (const tb of tables) {
+      if (tb.tableType?.id && !seen.has(tb.tableType.id)) {
+        seen.set(tb.tableType.id, { id: tb.tableType.id, name: tb.tableType.name });
+      }
+    }
+    return Array.from(seen.values());
+  }, [tables]);
+  // Rows shown on the timeline, narrowed to the selected zone (default: all).
+  const timelineTables = useMemo(
+    () => (timelineZoneId === 'all' ? tables : tables.filter(tb => tb.tableTypeId === timelineZoneId)),
+    [tables, timelineZoneId]
+  );
   const timelineDateRef = useRef<HTMLInputElement>(null);
   const timelineScrollRef = useRef<HTMLDivElement>(null);
   const shiftTimelineDate = (days: number) => {
@@ -470,6 +487,18 @@ export default function ReservationsPage() {
                     <Button variant="ghost" size="icon" onClick={() => shiftTimelineDate(1)} className="h-8 w-8 text-slate-500"><ChevronRight className="w-4 h-4" /></Button>
                   </div>
                   <div className="flex items-center gap-2">
+                    {timelineZones.length > 0 && (
+                      <div className="flex items-center gap-1.5 bg-slate-100/50 p-1 rounded-md border border-slate-200/60">
+                        <span className="text-[9px] font-black uppercase text-slate-400 pl-1.5">{t("reservations.zone")}</span>
+                        <Select value={timelineZoneId} onValueChange={(v) => { if (v) setTimelineZoneId(v); }}>
+                          <SelectTrigger className="h-7 min-w-[96px] text-[10px] font-black rounded-sm border-slate-200 focus:ring-0 shadow-none"><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="all" className="text-xs">{t("reservations.allZones")}</SelectItem>
+                            {timelineZones.map(z => <SelectItem key={z.id} value={z.id} className="text-xs">{z.name}</SelectItem>)}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    )}
                     <div className="flex items-center gap-1.5 bg-slate-100/50 p-1 rounded-md border border-slate-200/60">
                       <span className="text-[9px] font-black uppercase text-slate-400 pl-1.5">{t("reservations.displayHours")}</span>
                       <Select value={String(timelineStartHour)} onValueChange={(v) => { if (!v) return; const h = parseInt(v); setTimelineStartHour(h); if (h >= timelineEndHour) setTimelineEndHour(Math.min(24, h + 1)); }}>
@@ -557,7 +586,7 @@ export default function ReservationsPage() {
           <CardContent className="p-0">
             {activeTab === 'timeline' ? (
               <ReservationTimeline
-                tables={tables}
+                tables={timelineTables}
                 reservations={reservations}
                 timelineDate={timelineDate}
                 scrollRef={timelineScrollRef}

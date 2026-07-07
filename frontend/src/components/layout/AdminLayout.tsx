@@ -130,11 +130,31 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
       setIsSidebarOpen(true);
     }
 
+    // Optimistically hydrate feature flags + vertical from the last /settings
+    // response cached for THIS tenant, so nav items render correctly on refresh
+    // instead of flashing out while the network request is in flight. The cache
+    // is keyed by restaurantId so a different tenant/login never sees stale nav.
+    const rid = Cookies.get('restaurantId');
+    if (rid) {
+      try {
+        const cached = JSON.parse(localStorage.getItem(`tenantSettingsCache:${rid}`) || 'null');
+        if (cached) {
+          setTenantSettings(cached);
+          setSettingsLoaded(true);
+          useTenantStore.getState().setBusinessType(cached.businessType || 'RESTAURANT');
+        }
+      } catch { /* ignore malformed cache */ }
+    }
+
     if (isAuthenticated) {
       // Fetch tenant settings to check feature flags
       import('@/lib/api').then(({ default: api }) => {
         api.get('/settings').then((res) => {
           setTenantSettings(res.data.data);
+          try {
+            const id = Cookies.get('restaurantId');
+            if (id) localStorage.setItem(`tenantSettingsCache:${id}`, JSON.stringify(res.data.data));
+          } catch { /* quota/serialization — non-fatal */ }
           // Hydrate the platform-wide date/time convention for the whole dashboard.
           useFormatStore.getState().setSystem(res.data.data?.measurementSystem || 'METRIC');
           // Hydrate the tenant's vertical so terminology labels (useTerms) render
@@ -204,13 +224,21 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
     return user.permissions.includes(perm);
   };
 
+  // Opt-in modules are OFF unless the SysAdmin explicitly enabled them, so they
+  // never leak into a vertical that shouldn't have them (e.g. wedding Events /
+  // Vendors showing on a RESTAURANT). Every other flag is a legacy default-ON
+  // feature that only hides when explicitly false, so a failed /settings request
+  // doesn't strip a restaurant's core modules.
+  const OPT_IN_FEATURES = ['hasEventPipeline', 'hasVendors', 'hasInstallmentPlans', 'hasGuestList', 'showAuditLogToTenant'];
   const hasFeature = (feature?: string) => {
     if (!feature) return true;
     // Hide feature-gated items until we actually know the tenant's entitlements,
     // so a revoked module can never flash into view on first paint.
     if (!settingsLoaded) return false;
-    if (!tenantSettings) return true; // settings failed to load → fail open
-    return tenantSettings[feature] !== false;
+    const optIn = OPT_IN_FEATURES.includes(feature);
+    // settings failed to load → keep default-ON modules, keep opt-in ones hidden.
+    if (!tenantSettings) return !optIn;
+    return optIn ? tenantSettings[feature] === true : tenantSettings[feature] !== false;
   };
 
   // Route-level authorization: if the current page needs a permission the user

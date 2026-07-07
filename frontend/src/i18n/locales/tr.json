@@ -723,6 +723,8 @@
     "overCapacityHint": "Kişi sayısı bu masanın kapasitesinden fazla",
     "overCapacityDialog": "Kişi sayısı masa kapasitesini aşıyor",
     "displayHours": "Saat aralığı",
+    "zone": "Bölüm",
+    "allZones": "Tüm bölümler",
     "paymentRequested": "Kapora ödemesi talep edildi",
     "paymentRequestedTitle": "Kapora Ödemesi Talep Edildi",
     "paymentRequestedDesc": "Misafire güvenli ödeme bağlantısı içeren bir SMS/e-posta gönderildi. Aşağıdaki bağlantıyı veya kodu da paylaşabilirsiniz.",

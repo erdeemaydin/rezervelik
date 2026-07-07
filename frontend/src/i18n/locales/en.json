@@ -723,6 +723,8 @@
     "overCapacityHint": "Party is larger than this table's capacity",
     "overCapacityDialog": "Party exceeds table capacity",
     "displayHours": "Hours",
+    "zone": "Zone",
+    "allZones": "All zones",
     "paymentRequested": "Deposit payment requested",
     "paymentRequestedTitle": "Deposit Payment Requested",
     "paymentRequestedDesc": "An SMS/e-mail with a secure payment link was sent to the guest. You can also share the link or code below.",
