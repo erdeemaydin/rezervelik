@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import Link from 'next/link';
-import AdminLayout from '@/components/layout/AdminLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -153,7 +152,7 @@ export default function BulkPricesPage() {
   };
 
   return (
-    <AdminLayout>
+    <>
       <div className="flex flex-col gap-6 max-w-5xl mx-auto pb-28">
         <div className="flex items-center gap-4">
           <Link href="/dashboard/menus">
@@ -284,6 +283,6 @@ export default function BulkPricesPage() {
             : <><Save className="w-4 h-4 mr-2" /> {scheduleEnabled ? t('menus.bulkEditor.schedule') : t('menus.bulkEditor.save')}</>}
         </Button>
       </div>
-    </AdminLayout>
+    </>
   );
 }

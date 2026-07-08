@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import AdminLayout from '@/components/layout/AdminLayout';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -188,7 +187,7 @@ export default function StaffManagementPage() {
   );
 
   return (
-    <AdminLayout>
+    <>
       <div className="flex flex-col gap-4">
         {/* Header */}
         <div className="flex items-center justify-between">
@@ -381,6 +380,6 @@ export default function StaffManagementPage() {
             </DialogContent>
         </Dialog>
       </div>
-    </AdminLayout>
+    </>
   );
 }

@@ -1,6 +1,5 @@
 'use client';
 
-import SystemAdminLayout from '@/components/layout/SystemAdminLayout';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
@@ -59,7 +58,7 @@ export default function SystemSettingsPage() {
     }
   };
   return (
-    <SystemAdminLayout>
+    <>
       <div className="flex flex-col gap-6 max-w-4xl">
         <div>
           <h1 className="text-2xl font-bold text-slate-800">Global Settings</h1>
@@ -171,6 +170,6 @@ export default function SystemSettingsPage() {
           </Button>
         </div>
       </div>
-    </SystemAdminLayout>
+    </>
   );
 }

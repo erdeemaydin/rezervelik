@@ -1,6 +1,5 @@
 'use client';
 
-import SystemAdminLayout from '@/components/layout/SystemAdminLayout';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
@@ -78,7 +77,7 @@ export default function SystemAdminsPage() {
   }, []);
 
   return (
-    <SystemAdminLayout>
+    <>
       <div className="flex flex-col gap-6">
         <div className="flex justify-between items-center">
           <div>
@@ -198,6 +197,6 @@ export default function SystemAdminsPage() {
           </p>
         </DialogContent>
       </Dialog>
-    </SystemAdminLayout>
+    </>
   );
 }

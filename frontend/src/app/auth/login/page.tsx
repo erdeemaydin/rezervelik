@@ -7,8 +7,10 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { useAuthStore } from '@/store/useAuthStore';
 import api from '@/lib/api';
+import { getApiErrorMessage } from '@/lib/apiError';
 import { QRCodeSVG } from 'qrcode.react';
-import { ShieldCheck } from 'lucide-react';
+import { ShieldCheck, UtensilsCrossed } from 'lucide-react';
+import { useTranslation } from '@/i18n/provider';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -17,15 +19,18 @@ import {
   FormField,
   FormItem,
   FormLabel,
-  FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { PasswordInput } from '@/components/auth/PasswordInput';
+import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 
+// Login only requires a non-empty password — the account may predate the current
+// password policy (legacy/weak passwords are still valid and must sign in). The
+// policy is enforced only when a password is *set* (setup/reset/change).
 const formSchema = z.object({
-  email: z.string().email('Invalid email address'),
-  password: z.string().min(6, 'Password must be at least 6 characters'),
+  email: z.string().email('auth.emailInvalid'),
+  password: z.string().min(1, 'auth.passwordRequired'),
 });
 
 interface OtpChallenge {
@@ -37,6 +42,7 @@ interface OtpChallenge {
 
 export default function LoginPage() {
   const router = useRouter();
+  const { t } = useTranslation();
   const login = useAuthStore((state) => state.login);
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
   const currentUser = useAuthStore((state) => state.user);
@@ -84,7 +90,7 @@ export default function LoginPage() {
         finishLogin(data.token, data.user);
       }
     } catch (err: any) {
-      setError(err.response?.data?.error || 'An error occurred during login');
+      setError(getApiErrorMessage(err, t('auth.loginError')));
     }
   }
 
@@ -97,95 +103,211 @@ export default function LoginPage() {
       const res = await api.post('/auth/login/otp', { otpToken: challenge.otpToken, code: otpCode });
       finishLogin(res.data.data.token, res.data.data.user);
     } catch (err: any) {
-      setError(err.response?.data?.message || err.response?.data?.error || 'Invalid or expired code');
+      setError(getApiErrorMessage(err, t('auth.invalidCode')));
     } finally {
       setOtpBusy(false);
     }
   }
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gray-50">
-      <Card className="w-full max-w-md">
-        {!challenge ? (
-          <>
-            <CardHeader className="space-y-1 text-center">
-              <CardTitle className="text-2xl font-bold">Sign in</CardTitle>
-              <CardDescription>Enter your email and password to access your dashboard</CardDescription>
-            </CardHeader>
-            <CardContent>
+    <div className="min-h-screen w-full lg:grid lg:grid-cols-[1.05fr_1fr] bg-stone-50">
+      {/* Brand panel — warm hospitality gradient. Hidden on small screens. */}
+      <aside className="relative hidden lg:flex flex-col justify-between overflow-hidden bg-gradient-to-br from-amber-700 via-orange-800 to-rose-900 p-12 text-amber-50">
+        <div
+          aria-hidden
+          className="pointer-events-none absolute -right-24 -top-24 h-96 w-96 rounded-full bg-amber-400/20 blur-3xl"
+        />
+        <div
+          aria-hidden
+          className="pointer-events-none absolute -left-20 bottom-0 h-80 w-80 rounded-full bg-rose-500/20 blur-3xl"
+        />
+        <div className="relative flex items-center gap-3">
+          <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-amber-50/15 ring-1 ring-amber-50/25 backdrop-blur">
+            <UtensilsCrossed className="h-6 w-6" />
+          </div>
+          <span className="text-xl font-black tracking-tight">
+            Reserve<span className="text-amber-300">Pro</span>
+          </span>
+        </div>
+        <div className="relative max-w-md">
+          <h1 className="text-4xl font-black leading-tight tracking-tight">
+            {t('auth.signInTitle')}
+          </h1>
+          <p className="mt-4 text-base leading-relaxed text-amber-100/85">
+            {t('auth.brandTagline')}
+          </p>
+        </div>
+        <div className="relative text-xs font-medium text-amber-100/60">
+          © {new Date().getFullYear()} ReservePro
+        </div>
+      </aside>
+
+      {/* Form panel */}
+      <main className="flex min-h-screen flex-col items-center justify-center px-5 py-10 sm:px-8">
+        <div className="absolute right-4 top-4">
+          <LanguageSwitcher />
+        </div>
+
+        <div className="w-full max-w-sm">
+          {/* Compact brand mark for mobile (brand panel is hidden there). */}
+          <div className="mb-8 flex items-center gap-2.5 lg:hidden">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-amber-600 to-rose-800 text-white">
+              <UtensilsCrossed className="h-5 w-5" />
+            </div>
+            <span className="text-lg font-black tracking-tight text-stone-800">
+              Reserve<span className="text-amber-700">Pro</span>
+            </span>
+          </div>
+
+          {!challenge ? (
+            <>
+              <div className="mb-6 space-y-1">
+                <h2 className="text-2xl font-black tracking-tight text-stone-900">{t('auth.signInTitle')}</h2>
+                <p className="text-sm text-stone-500">{t('auth.signInSubtitle')}</p>
+              </div>
+
               <Form {...form}>
-                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-                  <FormField control={form.control} name="email" render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Email</FormLabel>
-                      <FormControl><Input placeholder="admin@restaurant.com" {...field} /></FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )} />
-                  <FormField control={form.control} name="password" render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Password</FormLabel>
-                      <FormControl><Input type="password" placeholder="••••••••" {...field} /></FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )} />
-                  {error && <p className="text-sm text-red-500 text-center font-medium">{error}</p>}
-                  <Button type="submit" className="w-full">Sign In</Button>
+                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4" noValidate>
+                  <FormField
+                    control={form.control}
+                    name="email"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-stone-700">{t('auth.emailLabel')}</FormLabel>
+                        <FormControl>
+                          <Input
+                            {...field}
+                            type="email"
+                            inputMode="email"
+                            autoComplete="email"
+                            autoCapitalize="none"
+                            autoCorrect="off"
+                            spellCheck={false}
+                            autoFocus
+                            placeholder={t('auth.emailPlaceholder')}
+                            className="h-11"
+                          />
+                        </FormControl>
+                        {form.formState.errors.email?.message && (
+                          <p className="text-sm font-medium text-destructive">
+                            {t(form.formState.errors.email.message)}
+                          </p>
+                        )}
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="password"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-stone-700">{t('auth.passwordLabel')}</FormLabel>
+                        <FormControl>
+                          <PasswordInput
+                            {...field}
+                            autoComplete="current-password"
+                            placeholder="••••••••"
+                            className="h-11"
+                            showLabel={t('auth.showPassword')}
+                            hideLabel={t('auth.hidePassword')}
+                          />
+                        </FormControl>
+                        {form.formState.errors.password?.message && (
+                          <p className="text-sm font-medium text-destructive">
+                            {t(form.formState.errors.password.message)}
+                          </p>
+                        )}
+                      </FormItem>
+                    )}
+                  />
+
+                  {error && (
+                    <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2.5 text-sm font-medium text-red-700">
+                      {error}
+                    </div>
+                  )}
+
+                  <Button
+                    type="submit"
+                    disabled={form.formState.isSubmitting}
+                    className="h-11 w-full bg-stone-900 text-sm font-bold tracking-wide hover:bg-stone-800"
+                  >
+                    {form.formState.isSubmitting ? t('auth.signingIn') : t('auth.signInButton')}
+                  </Button>
                 </form>
               </Form>
-            </CardContent>
-          </>
-        ) : (
-          <>
-            <CardHeader className="space-y-1 text-center">
-              <div className="mx-auto mb-1 flex h-11 w-11 items-center justify-center rounded-full bg-emerald-100 text-emerald-600">
-                <ShieldCheck className="h-6 w-6" />
+            </>
+          ) : (
+            <>
+              <div className="mb-6 text-center">
+                <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-emerald-100 text-emerald-600">
+                  <ShieldCheck className="h-6 w-6" />
+                </div>
+                <h2 className="text-2xl font-black tracking-tight text-stone-900">{t('auth.twoFactorTitle')}</h2>
+                <p className="mt-1 text-sm text-stone-500">
+                  {challenge.setupRequired ? t('auth.twoFactorSetupDesc') : t('auth.twoFactorDesc')}
+                </p>
               </div>
-              <CardTitle className="text-2xl font-bold">Two-Factor Verification</CardTitle>
-              <CardDescription>
-                {challenge.setupRequired
-                  ? 'Your administrator requires 2FA. Scan the QR code with an authenticator app, then enter the 6-digit code.'
-                  : 'Enter the 6-digit code from your authenticator app.'}
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
+
               <form onSubmit={submitOtp} className="space-y-4">
                 {challenge.setupRequired && challenge.otpauthUrl && (
                   <div className="flex flex-col items-center gap-3">
-                    <div className="p-3 bg-white border border-slate-200 rounded-lg shadow-sm">
+                    <div className="rounded-lg border border-stone-200 bg-white p-3 shadow-sm">
                       <QRCodeSVG value={challenge.otpauthUrl} size={160} />
                     </div>
                     {challenge.otpSecret && (
                       <div className="w-full text-center">
-                        <Label className="text-[10px] font-black uppercase tracking-wider text-slate-400">Manual key</Label>
-                        <code className="block text-xs font-mono bg-slate-50 border border-slate-200 rounded px-3 py-2 mt-1 break-all">{challenge.otpSecret}</code>
+                        <Label className="text-[10px] font-black uppercase tracking-wider text-stone-400">
+                          {t('auth.manualKey')}
+                        </Label>
+                        <code className="mt-1 block break-all rounded border border-stone-200 bg-stone-50 px-3 py-2 font-mono text-xs">
+                          {challenge.otpSecret}
+                        </code>
                       </div>
                     )}
                   </div>
                 )}
                 <div className="space-y-2">
-                  <Label className="text-xs font-bold text-slate-700 uppercase">Verification Code</Label>
+                  <Label className="text-xs font-bold uppercase text-stone-700">{t('auth.verificationCode')}</Label>
                   <Input
                     value={otpCode}
                     onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
                     inputMode="numeric"
+                    autoComplete="one-time-code"
                     autoFocus
                     placeholder="123456"
-                    className="h-12 text-xl font-black tracking-[0.4em] text-center"
+                    className="h-12 text-center text-xl font-black tracking-[0.4em]"
                   />
                 </div>
-                {error && <p className="text-sm text-red-500 text-center font-medium">{error}</p>}
-                <Button type="submit" disabled={otpBusy || otpCode.length !== 6} className="w-full">
-                  {otpBusy ? 'Verifying…' : 'Verify & Sign In'}
+                {error && (
+                  <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2.5 text-sm font-medium text-red-700">
+                    {error}
+                  </div>
+                )}
+                <Button
+                  type="submit"
+                  disabled={otpBusy || otpCode.length !== 6}
+                  className="h-11 w-full bg-stone-900 font-bold hover:bg-stone-800"
+                >
+                  {otpBusy ? t('auth.verifying') : t('auth.verifyAndSignIn')}
                 </Button>
-                <Button type="button" variant="ghost" onClick={() => { setChallenge(null); setOtpCode(''); setError(''); }} className="w-full text-xs text-slate-500">
-                  Back to sign in
+                <Button
+                  type="button"
+                  variant="ghost"
+                  onClick={() => {
+                    setChallenge(null);
+                    setOtpCode('');
+                    setError('');
+                  }}
+                  className="w-full text-xs text-stone-500"
+                >
+                  {t('auth.backToSignIn')}
                 </Button>
               </form>
-            </CardContent>
-          </>
-        )}
-      </Card>
+            </>
+          )}
+        </div>
+      </main>
     </div>
   );
 }

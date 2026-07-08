@@ -1,6 +1,5 @@
 'use client';
 
-import SystemAdminLayout from '@/components/layout/SystemAdminLayout';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { BarChart3, Building2, Users, Database } from 'lucide-react';
 import { useState, useEffect } from 'react';
@@ -21,7 +20,7 @@ export default function SystemAdminDashboard() {
     fetchMetrics();
   }, []);
   return (
-    <SystemAdminLayout>
+    <>
       <div className="flex flex-col gap-6">
         <div>
           <h1 className="text-2xl font-bold text-slate-800">System Metrics</h1>
@@ -99,6 +98,6 @@ export default function SystemAdminDashboard() {
           </CardContent>
         </Card>
       </div>
-    </SystemAdminLayout>
+    </>
   );
 }

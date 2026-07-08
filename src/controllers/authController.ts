@@ -6,6 +6,13 @@ import { successResponse, errorResponse } from '../utils/response';
 import { hashResetToken } from '../utils/resetToken';
 import { generateOtpSecret, verifyTotp, buildOtpAuthUrl } from '../utils/totp';
 import { logAudit } from '../services/auditService';
+import { validatePassword } from '../utils/passwordPolicy';
+
+// Normalize an email for storage/lookup: trim + lowercase. Emails are
+// case-insensitive in practice, and mobile keyboards (iOS especially)
+// auto-capitalize the first letter — without this, a phone typing
+// "Admin@x.com" would never match the stored "admin@x.com".
+const normalizeEmail = (email: string) => email.trim().toLowerCase();
 
 // Whether a given user is required to complete 2FA at login. The requirement is
 // role-based per restaurant (root admin enables the capability; the tenant admin
@@ -32,14 +39,22 @@ export const register = async (req: Request, res: Response) => {
       return errorResponse(res, 'errors.validation_error', 400, { message: 'All fields are required' });
     }
 
-    const existingUser = await prisma.user.findUnique({ where: { email } });
+    const policy = validatePassword(password);
+    if (!policy.valid) {
+      return errorResponse(res, 'errors.password_policy', 400, { failed: policy.failed });
+    }
+
+    const normalizedEmail = normalizeEmail(email);
+    const existingUser = await prisma.user.findFirst({
+      where: { email: { equals: normalizedEmail, mode: 'insensitive' } },
+    });
     if (existingUser) {
-      return errorResponse(res, 'errors.validation_error', 400, { message: 'Email already in use' });
+      return errorResponse(res, 'errors.email_in_use', 400);
     }
 
     const globalSettings = await prisma.globalSettings.findUnique({ where: { id: 'global_1' } });
     if (globalSettings && globalSettings.publicRegistrationEnabled === false) {
-      return errorResponse(res, 'errors.unauthorized', 403, { message: 'Public registration is currently disabled' });
+      return errorResponse(res, 'errors.registration_disabled', 403);
     }
 
     // Generate a slug from restaurant name
@@ -58,7 +73,7 @@ export const register = async (req: Request, res: Response) => {
         data: {
           name: restaurantName,
           slug,
-          contactEmail: email,
+          contactEmail: normalizedEmail,
           settings: {
             create: {}
           }
@@ -67,7 +82,7 @@ export const register = async (req: Request, res: Response) => {
 
       const user = await prisma.user.create({
         data: {
-          email,
+          email: normalizedEmail,
           passwordHash: hashedPassword,
           firstName,
           lastName,
@@ -107,21 +122,25 @@ export const login = async (req: Request, res: Response) => {
     console.log(`[Auth] Login attempt: ${email}`);
 
     if (!email || !password) {
-      return errorResponse(res, 'errors.validation_error', 400, { message: 'Email and password are required' });
+      return errorResponse(res, 'errors.email_password_required', 400);
     }
 
-    const user = await prisma.user.findUnique({ where: { email } });
+    // Case-insensitive lookup so mobile keyboards that auto-capitalize the email
+    // (and any historic mixed-case stored address) still resolve to the account.
+    const user = await prisma.user.findFirst({
+      where: { email: { equals: normalizeEmail(email), mode: 'insensitive' } },
+    });
 
     if (!user) {
       console.log(`[Auth] User not found: ${email}`);
-      return errorResponse(res, 'errors.unauthorized', 401, { message: 'Invalid credentials' });
+      return errorResponse(res, 'errors.invalid_credentials', 401);
     }
 
     const isValidPassword = await bcrypt.compare(password, user.passwordHash);
 
     if (!isValidPassword) {
       console.log(`[Auth] Invalid password for: ${email}`);
-      return errorResponse(res, 'errors.unauthorized', 401, { message: 'Invalid credentials' });
+      return errorResponse(res, 'errors.invalid_credentials', 401);
     }
 
     // Two-factor gate: if this user's role requires OTP for their restaurant, the
@@ -252,8 +271,9 @@ export const changePassword = async (req: Request, res: Response) => {
     if (!currentPassword || !newPassword) {
       return errorResponse(res, 'errors.validation_error', 400, { message: 'Current and new password are required' });
     }
-    if (typeof newPassword !== 'string' || newPassword.length < 8) {
-      return errorResponse(res, 'errors.validation_error', 400, { message: 'New password must be at least 8 characters long' });
+    const policy = validatePassword(newPassword);
+    if (!policy.valid) {
+      return errorResponse(res, 'errors.password_policy', 400, { failed: policy.failed });
     }
 
     const user = await prisma.user.findUnique({ where: { id: userId } });
@@ -261,7 +281,7 @@ export const changePassword = async (req: Request, res: Response) => {
 
     const valid = await bcrypt.compare(currentPassword, user.passwordHash);
     if (!valid) {
-      return errorResponse(res, 'errors.validation_error', 400, { message: 'Current password is incorrect' });
+      return errorResponse(res, 'errors.current_password_incorrect', 400);
     }
 
     const hashedPassword = await bcrypt.hash(newPassword, 10);
@@ -367,11 +387,15 @@ export const completeSetup = async (req: Request, res: Response) => {
     if (!token || !password) {
       return errorResponse(res, 'errors.validation_error', 400, { message: 'Token and password required' });
     }
+    const policy = validatePassword(password);
+    if (!policy.valid) {
+      return errorResponse(res, 'errors.password_policy', 400, { failed: policy.failed });
+    }
 
     const user = await prisma.user.findUnique({ where: { setupToken: token } });
-    
+
     if (!user || !user.setupTokenExpiresAt || new Date() > user.setupTokenExpiresAt) {
-      return errorResponse(res, 'errors.validation_error', 400, { message: 'Invalid or expired setup token' });
+      return errorResponse(res, 'errors.setup_link_invalid', 400);
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
@@ -416,7 +440,7 @@ export const validateResetToken = async (req: Request, res: Response) => {
     const user = await prisma.user.findUnique({ where: { resetTokenHash: hashResetToken(token) } });
 
     if (!user || !user.resetTokenExpiresAt || new Date() > user.resetTokenExpiresAt) {
-      return errorResponse(res, 'errors.validation_error', 400, { message: 'Invalid or expired reset link' });
+      return errorResponse(res, 'errors.reset_link_invalid', 400);
     }
 
     return successResponse(res, { valid: true, email: user.email });
@@ -434,14 +458,15 @@ export const resetPassword = async (req: Request, res: Response) => {
     if (!token || !password) {
       return errorResponse(res, 'errors.validation_error', 400, { message: 'Token and password required' });
     }
-    if (typeof password !== 'string' || password.length < 8) {
-      return errorResponse(res, 'errors.validation_error', 400, { message: 'Password must be at least 8 characters long' });
+    const policy = validatePassword(password);
+    if (!policy.valid) {
+      return errorResponse(res, 'errors.password_policy', 400, { failed: policy.failed });
     }
 
     const user = await prisma.user.findUnique({ where: { resetTokenHash: hashResetToken(token) } });
 
     if (!user || !user.resetTokenExpiresAt || new Date() > user.resetTokenExpiresAt) {
-      return errorResponse(res, 'errors.validation_error', 400, { message: 'Invalid or expired reset link' });
+      return errorResponse(res, 'errors.reset_link_invalid', 400);
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);

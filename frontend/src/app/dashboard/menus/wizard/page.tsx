@@ -2,7 +2,6 @@
 
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import AdminLayout from '@/components/layout/AdminLayout';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -110,7 +109,7 @@ export default function MenuWizardPage() {
   };
 
   return (
-    <AdminLayout>
+    <>
       <div className="max-w-4xl mx-auto pb-12">
         <div className="flex items-center gap-4 mb-8">
           <Button variant="ghost" size="icon" onClick={() => router.back()}><ArrowLeft className="w-5 h-5" /></Button>
@@ -233,6 +232,6 @@ export default function MenuWizardPage() {
         )}
 
       </div>
-    </AdminLayout>
+    </>
   );
 }

@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import AdminLayout from '@/components/layout/AdminLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -451,7 +450,7 @@ export default function TablesPage() {
   const zoneTables = selectedZoneId === 'all' ? tables : tables.filter(t => t.tableType?.id === selectedZoneId);
 
   return (
-    <AdminLayout>
+    <>
       <div className="flex flex-col gap-4 h-full">
         <div className="flex items-center justify-between">
           <div>
@@ -907,6 +906,6 @@ export default function TablesPage() {
         </Dialog>
 
       </div>
-    </AdminLayout>
+    </>
   );
 }

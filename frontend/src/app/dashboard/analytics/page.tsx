@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import AdminLayout from '@/components/layout/AdminLayout';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
@@ -105,14 +104,14 @@ export default function AnalyticsPage() {
 
   if (loading && !data) {
     return (
-      <AdminLayout>
+      <>
         <div className="flex h-[70vh] items-center justify-center">
           <div className="flex flex-col items-center gap-4">
             <Loader2 className="h-10 w-10 animate-spin text-blue-600" />
             <p className="text-slate-500 font-medium">{t("analytics.loading")}</p>
           </div>
         </div>
-      </AdminLayout>
+      </>
     );
   }
 
@@ -131,7 +130,7 @@ export default function AnalyticsPage() {
   const dayLabels = Array.from({ length: 7 }, (_, i) => dayFmt.format(new Date(Date.UTC(2024, 0, 7 + i)))); // 2024-01-07 is a Sunday
 
   return (
-    <AdminLayout>
+    <>
       <div className="flex flex-col gap-6 pb-8 animate-in fade-in duration-500">
         
         {/* Header & Period Selector */}
@@ -456,6 +455,6 @@ export default function AnalyticsPage() {
         </div>
 
       </div>
-    </AdminLayout>
+    </>
   );
 }

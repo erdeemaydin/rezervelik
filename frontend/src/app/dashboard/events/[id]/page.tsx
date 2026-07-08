@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import AdminLayout from '@/components/layout/AdminLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -204,7 +203,7 @@ export default function EventDetailPage() {
   };
 
   if (loading || !form) {
-    return <AdminLayout><div className="p-6 text-sm text-slate-400">{t('common.loading')}</div></AdminLayout>;
+    return <><div className="p-6 text-sm text-slate-400">{t('common.loading')}</div></>;
   }
 
   const installments: Installment[] = event?.paymentPlan?.installments || [];
@@ -219,7 +218,7 @@ export default function EventDetailPage() {
   const quotePreview = selectedPkg && guestCountNum > 0 ? Math.round(selectedPkg.price * 100) * guestCountNum : null;
 
   return (
-    <AdminLayout>
+    <>
       <div className="p-4 sm:p-6 space-y-6 max-w-5xl">
         <button onClick={() => router.push('/dashboard/events')} className="flex items-center gap-1.5 text-xs font-bold text-slate-400 hover:text-slate-700">
           <ArrowLeft className="w-4 h-4" /> {t('events.backToBoard')}
@@ -478,7 +477,7 @@ export default function EventDetailPage() {
           </Card>
         </div>
       </div>
-    </AdminLayout>
+    </>
   );
 }
 

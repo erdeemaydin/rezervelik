@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import AdminLayout from '@/components/layout/AdminLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -87,7 +86,7 @@ export default function EventsPage() {
   const selectClass = 'h-10 px-2 text-sm font-bold border border-slate-200 rounded-sm bg-white w-full';
 
   return (
-    <AdminLayout>
+    <>
       <div className="p-4 sm:p-6 space-y-6">
         <div className="flex items-center justify-between flex-wrap gap-3">
           <div>
@@ -203,6 +202,6 @@ export default function EventsPage() {
           </form>
         </DialogContent>
       </Dialog>
-    </AdminLayout>
+    </>
   );
 }

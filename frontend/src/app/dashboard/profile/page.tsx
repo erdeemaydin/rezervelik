@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import AdminLayout from '@/components/layout/AdminLayout';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -12,6 +11,10 @@ import { QRCodeSVG } from 'qrcode.react';
 import api from '@/lib/api';
 import { toast } from 'sonner';
 import { useTranslation } from '@/i18n/provider';
+import { PasswordInput } from '@/components/auth/PasswordInput';
+import { PasswordStrength } from '@/components/auth/PasswordStrength';
+import { evaluatePassword } from '@/lib/passwordPolicy';
+import { getApiErrorMessage } from '@/lib/apiError';
 
 interface MeProfile {
   id: string; email: string; firstName: string; lastName: string; role: string;
@@ -44,17 +47,20 @@ export default function ProfilePage() {
 
   useEffect(() => { fetchMe(); }, []);
 
+  const pwValid = evaluatePassword(newPassword).valid;
+  const pwMatches = newPassword.length > 0 && newPassword === confirmPassword;
+
   const handleChangePassword = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!pwValid) { toast.error(t('auth.passwordPolicyUnmet')); return; }
     if (newPassword !== confirmPassword) { toast.error(t('profile.passwordsMismatch')); return; }
-    if (newPassword.length < 8) { toast.error(t('profile.passwordTooShort')); return; }
     try {
       setSavingPw(true);
       await api.post('/auth/change-password', { currentPassword, newPassword });
       toast.success(t('profile.passwordChanged'));
       setCurrentPassword(''); setNewPassword(''); setConfirmPassword('');
     } catch (err: any) {
-      toast.error(err.response?.data?.message || t('profile.passwordChangeFailed'));
+      toast.error(getApiErrorMessage(err, t('profile.passwordChangeFailed')));
     } finally { setSavingPw(false); }
   };
 
@@ -82,7 +88,7 @@ export default function ProfilePage() {
   };
 
   return (
-    <AdminLayout>
+    <>
       <div className="flex flex-col gap-6 max-w-3xl">
         <div>
           <h1 className="text-2xl font-black text-slate-800 tracking-tight">{t('profile.title')}</h1>
@@ -114,17 +120,21 @@ export default function ProfilePage() {
             <form onSubmit={handleChangePassword} className="space-y-4 max-w-md">
               <div className="grid gap-2">
                 <Label className="text-xs font-black uppercase tracking-wider text-slate-500">{t('profile.currentPassword')}</Label>
-                <Input type="password" required value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)} className="h-11" placeholder="••••••••" />
+                <PasswordInput required value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)} autoComplete="current-password" className="h-11" placeholder="••••••••" showLabel={t('auth.showPassword')} hideLabel={t('auth.hidePassword')} />
               </div>
               <div className="grid gap-2">
                 <Label className="text-xs font-black uppercase tracking-wider text-slate-500">{t('profile.newPassword')}</Label>
-                <Input type="password" required value={newPassword} onChange={(e) => setNewPassword(e.target.value)} className="h-11" placeholder="••••••••" />
+                <PasswordInput required value={newPassword} onChange={(e) => setNewPassword(e.target.value)} autoComplete="new-password" className="h-11" placeholder="••••••••" showLabel={t('auth.showPassword')} hideLabel={t('auth.hidePassword')} />
+                <PasswordStrength password={newPassword} className="pt-1" />
               </div>
               <div className="grid gap-2">
                 <Label className="text-xs font-black uppercase tracking-wider text-slate-500">{t('profile.confirmNewPassword')}</Label>
-                <Input type="password" required value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} className="h-11" placeholder="••••••••" />
+                <PasswordInput required value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} autoComplete="new-password" className="h-11" placeholder="••••••••" showLabel={t('auth.showPassword')} hideLabel={t('auth.hidePassword')} />
+                {confirmPassword.length > 0 && !pwMatches && (
+                  <p className="text-xs font-medium text-red-600">{t('profile.passwordsMismatch')}</p>
+                )}
               </div>
-              <Button type="submit" disabled={savingPw} className="h-11 bg-slate-900 hover:bg-slate-800 text-white text-xs font-black uppercase px-8 rounded-md">
+              <Button type="submit" disabled={savingPw || !pwValid || !pwMatches} className="h-11 bg-slate-900 hover:bg-slate-800 text-white text-xs font-black uppercase px-8 rounded-md">
                 {savingPw ? t('profile.saving') : t('profile.updatePassword')}
               </Button>
             </form>
@@ -194,6 +204,6 @@ export default function ProfilePage() {
           </CardContent>
         </Card>
       </div>
-    </AdminLayout>
+    </>
   );
 }

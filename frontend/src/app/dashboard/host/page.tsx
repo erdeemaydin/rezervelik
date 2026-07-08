@@ -2,7 +2,6 @@
 
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useTranslation } from "@/i18n/provider";
-import AdminLayout from '@/components/layout/AdminLayout';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -386,7 +385,7 @@ export default function HostConsolePage() {
   };
 
   return (
-    <AdminLayout>
+    <>
       <div className="flex flex-col gap-2 sm:gap-3 max-w-7xl mx-auto h-[calc(100dvh-84px)] lg:h-[calc(100vh-120px)]">
 
         {/* Main Header / iPad Top Panel */}
@@ -1128,6 +1127,6 @@ export default function HostConsolePage() {
         </DialogContent>
       </Dialog>
 
-    </AdminLayout>
+    </>
   );
 }

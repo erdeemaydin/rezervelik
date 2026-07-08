@@ -1,6 +1,5 @@
 'use client';
 
-import AdminLayout from '@/components/layout/AdminLayout';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Star, Loader2, MapPin, ExternalLink, RefreshCw, AlertCircle, KeyRound } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -135,7 +134,7 @@ export default function ReviewsPage() {
   );
 
   return (
-    <AdminLayout>
+    <>
       <div className="flex flex-col gap-6 max-w-5xl">
         <Header />
 
@@ -221,6 +220,6 @@ export default function ReviewsPage() {
           </div>
         )}
       </div>
-    </AdminLayout>
+    </>
   );
 }

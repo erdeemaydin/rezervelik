@@ -1,8 +1,9 @@
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
-import i18next from './config/i18n';
+import i18next, { resolveLanguage } from './config/i18n';
 import { tenantMiddleware } from './middlewares/tenant';
+import { errorHandler, notFoundHandler } from './middlewares/errorHandler';
 
 import restaurantRoutes from './routes/restaurantRoutes';
 import authRoutes from './routes/authRoutes';
@@ -39,10 +40,15 @@ app.use(express.json());
 // Serve static uploads
 app.use(express.static(path.join(__dirname, '../public')));
 
-// Localization middleware to set language based on header or query
+// Localization middleware. Attach a per-request, fixed-language translator
+// (`req.t`) instead of mutating i18next's global language — the old
+// `changeLanguage()` approach was racy under concurrency (one request could
+// answer in another's language). Response helpers and the error handler read
+// this `req.t` so every message is localized to the caller that made the request.
 app.use((req, res, next) => {
-  const lang = req.headers['accept-language'] || 'en';
-  i18next.changeLanguage(lang as string);
+  const lang = resolveLanguage(req.headers['accept-language'] as string | undefined);
+  (req as any).language = lang;
+  (req as any).t = i18next.getFixedT(lang);
   next();
 });
 
@@ -75,5 +81,11 @@ app.use('/api/payments', tenantMiddleware, paymentRoutes);
 app.use('/api/audit', tenantMiddleware, auditRoutes);
 app.use('/api/reviews', tenantMiddleware, reviewRoutes);
 app.use('/api/uploads', tenantMiddleware, uploadRoutes);
+
+// Unknown /api path → standard JSON 404 (not Express's HTML default).
+app.use('/api', notFoundHandler);
+
+// Central error handler — must be last so it catches everything above.
+app.use(errorHandler);
 
 export default app;

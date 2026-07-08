@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react';
 import { useTranslation } from "@/i18n/provider";
-import AdminLayout from '@/components/layout/AdminLayout';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -232,7 +231,7 @@ export default function CalendarSettingsPage() {
   };
 
   return (
-    <AdminLayout>
+    <>
       <div className="flex flex-col gap-6">
         <div className="flex flex-col md:flex-row justify-between md:items-start gap-4">
           <div>
@@ -395,6 +394,6 @@ export default function CalendarSettingsPage() {
             </div>
         </div>
       </div>
-    </AdminLayout>
+    </>
   );
 }

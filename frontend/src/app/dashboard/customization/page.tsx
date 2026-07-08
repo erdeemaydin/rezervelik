@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from "@/i18n/provider";
-import AdminLayout from '@/components/layout/AdminLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -92,16 +91,16 @@ export default function CustomizationPage() {
 
     if (fetching) {
         return (
-            <AdminLayout>
+            <>
                 <div className="flex items-center justify-center h-[60vh]">
                     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
                 </div>
-            </AdminLayout>
+            </>
         );
     }
 
     return (
-        <AdminLayout>
+        <>
             <div className="flex flex-col gap-6 max-w-5xl mx-auto pb-12">
                 <div className="flex items-center justify-between">
                     <div>
@@ -307,6 +306,6 @@ export default function CustomizationPage() {
                     </div>
                 </div>
             </div>
-        </AdminLayout>
+        </>
     );
 }

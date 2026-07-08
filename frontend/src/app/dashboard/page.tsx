@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import AdminLayout from '@/components/layout/AdminLayout';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Users, Calendar, Clock, Activity, Loader2, CheckCircle2, Clock3, XCircle, AlertCircle } from 'lucide-react';
 import {
@@ -60,14 +59,14 @@ export default function DashboardPage() {
 
   if (loading && !data) {
     return (
-      <AdminLayout>
+      <>
         <div className="flex h-[70vh] items-center justify-center">
           <div className="flex flex-col items-center gap-4">
             <Loader2 className="h-10 w-10 animate-spin text-blue-600" />
             <p className="text-slate-500 font-medium">{t('dashboard.loading')}</p>
           </div>
         </div>
-      </AdminLayout>
+      </>
     );
   }
 
@@ -77,7 +76,7 @@ export default function DashboardPage() {
   const currentHour = isViewingToday ? new Date().getHours() : -1;
 
   return (
-    <AdminLayout>
+    <>
       <div className="space-y-8 animate-in fade-in duration-500 pb-8">
 
         {/* Page Header */}
@@ -269,6 +268,6 @@ export default function DashboardPage() {
         </div>
 
       </div>
-    </AdminLayout>
+    </>
   );
 }

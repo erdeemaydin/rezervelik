@@ -1,6 +1,5 @@
 'use client';
 
-import AdminLayout from '@/components/layout/AdminLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
@@ -62,7 +61,7 @@ export default function TenantAuditPage() {
 
   if (forbidden) {
     return (
-      <AdminLayout>
+      <>
         <div className="flex items-center justify-center h-[60vh]">
           <div className="text-center max-w-md space-y-3">
             <div className="w-14 h-14 rounded-full bg-amber-50 border border-amber-100 flex items-center justify-center mx-auto text-amber-500">
@@ -72,12 +71,12 @@ export default function TenantAuditPage() {
             <p className="text-sm text-slate-500 leading-relaxed">{t('audit.notEnabledDesc')}</p>
           </div>
         </div>
-      </AdminLayout>
+      </>
     );
   }
 
   return (
-    <AdminLayout>
+    <>
       <div className="flex flex-col gap-6">
         <div className="flex items-start justify-between">
           <div>
@@ -150,6 +149,6 @@ export default function TenantAuditPage() {
           </CardContent>
         </Card>
       </div>
-    </AdminLayout>
+    </>
   );
 }

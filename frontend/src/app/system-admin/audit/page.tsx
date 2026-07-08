@@ -1,6 +1,5 @@
 'use client';
 
-import SystemAdminLayout from '@/components/layout/SystemAdminLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
@@ -66,7 +65,7 @@ export default function SystemAuditPage() {
   useEffect(() => { fetchLogs(); }, [fetchLogs]);
 
   return (
-    <SystemAdminLayout>
+    <>
       <div className="flex flex-col gap-6">
         <div className="flex items-start justify-between">
           <div>
@@ -161,6 +160,6 @@ export default function SystemAuditPage() {
           </CardContent>
         </Card>
       </div>
-    </SystemAdminLayout>
+    </>
   );
 }

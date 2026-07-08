@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import AdminLayout from '@/components/layout/AdminLayout';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -69,7 +68,7 @@ export default function VendorsPage() {
   const shown = filter ? vendors.filter(v => v.category === filter) : vendors;
 
   return (
-    <AdminLayout>
+    <>
       <div className="p-4 sm:p-6 space-y-6 max-w-5xl">
         <div className="flex items-center justify-between flex-wrap gap-3">
           <div>
@@ -153,6 +152,6 @@ export default function VendorsPage() {
           </form>
         </DialogContent>
       </Dialog>
-    </AdminLayout>
+    </>
   );
 }

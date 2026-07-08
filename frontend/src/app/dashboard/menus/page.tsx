@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import AdminLayout from '@/components/layout/AdminLayout';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -406,7 +405,7 @@ export default function MenuManagementPage() {
   };
 
   return (
-    <AdminLayout>
+    <>
       <div className="flex flex-col gap-4">
         {/* Header - High Density Corporate */}
         <div className="flex items-center justify-between">
@@ -692,6 +691,6 @@ export default function MenuManagementPage() {
             isDangerous={true}
         />
       </div>
-    </AdminLayout>
+    </>
   );
 }

@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
-import AdminLayout from '@/components/layout/AdminLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -436,7 +435,7 @@ export default function ReservationsPage() {
   };
 
   return (
-    <AdminLayout>
+    <>
       <div className="flex flex-col gap-4">
         {/* Header - Corporate Blue */}
         <div className="flex items-center justify-between">
@@ -885,7 +884,7 @@ export default function ReservationsPage() {
           </DialogContent>
         </Dialog>
       </div>
-    </AdminLayout>
+    </>
   );
 }
 

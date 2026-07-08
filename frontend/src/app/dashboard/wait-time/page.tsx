@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import AdminLayout from '@/components/layout/AdminLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -163,16 +162,16 @@ export default function WaitlistPage() {
 
     if (fetching) {
         return (
-            <AdminLayout>
+            <>
                 <div className="flex items-center justify-center h-[60vh]">
                     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
                 </div>
-            </AdminLayout>
+            </>
         );
     }
 
     return (
-        <AdminLayout>
+        <>
             <div className="flex flex-col gap-6 max-w-6xl mx-auto pb-12">
                 <div className="flex items-center justify-between">
                     <div className="flex items-center gap-4">
@@ -481,6 +480,6 @@ export default function WaitlistPage() {
                 </DialogContent>
             </Dialog>
 
-        </AdminLayout>
+        </>
     );
 }

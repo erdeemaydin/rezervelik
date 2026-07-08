@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import AdminLayout from '@/components/layout/AdminLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -122,12 +121,30 @@ export default function SettingsPage() {
     // Live theme preview: reskin the surrounding AdminLayout the instant the admin
     // picks a theme, before saving. AdminLayout renders `[data-admin-theme]` on its
     // root; we retarget it here so the whole dashboard chrome updates immediately.
+    // AdminLayout is now a persistent parent layout (it doesn't remount on
+    // navigation), so if the admin previews a theme and leaves without saving we
+    // must restore the saved theme on unmount — otherwise the preview would stick.
     useEffect(() => {
         if (typeof document === 'undefined') return;
         document
             .querySelectorAll('[data-admin-theme]')
             .forEach((el) => el.setAttribute('data-admin-theme', settings.dashboardTheme || 'default'));
     }, [settings.dashboardTheme]);
+
+    useEffect(() => {
+        return () => {
+            if (typeof document === 'undefined') return;
+            let saved = 'default';
+            try {
+                const rid = Cookies.get('restaurantId');
+                const cached = rid && JSON.parse(localStorage.getItem(`tenantSettingsCache:${rid}`) || 'null');
+                if (cached?.dashboardTheme) saved = cached.dashboardTheme;
+            } catch { /* fall back to default */ }
+            document
+                .querySelectorAll('[data-admin-theme]')
+                .forEach((el) => el.setAttribute('data-admin-theme', saved));
+        };
+    }, []);
 
     const handleSave = async () => {
         try {
@@ -228,16 +245,16 @@ export default function SettingsPage() {
 
     if (fetching) {
         return (
-            <AdminLayout>
+            <>
                 <div className="flex items-center justify-center h-[60vh]">
                     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
                 </div>
-            </AdminLayout>
+            </>
         );
     }
 
     return (
-        <AdminLayout>
+        <>
             <div className="flex flex-col gap-6 max-w-4xl mx-auto pb-12">
                 <div className="flex items-center justify-between">
                     <div className="flex items-center gap-4">
@@ -598,6 +615,6 @@ export default function SettingsPage() {
                 actionLabel={t("settings.updateCalendar")}
                 isDangerous={true}
             />
-        </AdminLayout>
+        </>
     );
 }
