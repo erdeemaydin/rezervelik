@@ -91,7 +91,7 @@ export default function SystemAdminLayout({ children }: SystemAdminLayoutProps) 
   };
 
   return (
-    <div data-admin-theme={theme} className="admin-surface-system flex h-screen bg-[var(--admin-bg)] font-sans">
+    <div data-admin-theme={theme} className="admin-surface-system flex h-dvh bg-[var(--admin-bg)] font-sans">
       {/* Mobile/tablet overlay — clicking off the sidebar closes it. */}
       {isSidebarOpen && (
         <div
@@ -113,7 +113,9 @@ export default function SystemAdminLayout({ children }: SystemAdminLayoutProps) 
 
       <aside
         className={cn(
-          "w-64 bg-[var(--admin-sidebar)] text-slate-300 flex flex-col shadow-2xl z-50 transition-transform duration-300 ease-in-out fixed lg:static top-0 h-screen",
+          // h-dvh, not h-screen: 100vh reaches behind iOS Safari's bottom toolbar,
+          // hiding the logout button under Safari's chrome. dvh = visible height.
+          "w-64 bg-[var(--admin-sidebar)] text-slate-300 flex flex-col shadow-2xl z-50 transition-transform duration-300 ease-in-out fixed lg:static top-0 h-dvh",
           isSidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
         )}
       >

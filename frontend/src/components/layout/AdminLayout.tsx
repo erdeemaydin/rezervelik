@@ -284,7 +284,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
   const routeAuthorized = !routeRequiredPerm || hasPermission(routeRequiredPerm);
 
   return (
-    <div data-admin-theme={theme} className="flex min-h-screen bg-[var(--admin-bg)]">
+    <div data-admin-theme={theme} className="flex min-h-dvh bg-[var(--admin-bg)]">
       {/* Mobile/tablet overlay — clicking anywhere off the sidebar closes it. */}
       {isSidebarOpen && (
         <div
@@ -309,7 +309,11 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
           layout push); at lg+ it collapses to a 16-unit icon rail as before. */}
       <aside
         className={cn(
-          "bg-[var(--admin-sidebar)] text-slate-300 transition-all duration-300 ease-in-out flex flex-col z-50 shadow-xl fixed lg:sticky top-0 h-screen",
+          // h-dvh (dynamic viewport height), not h-screen/100vh: on iOS Safari
+          // 100vh extends behind the browser's bottom toolbar, hiding the sidebar
+          // footer (logout/language) under Safari's own buttons so they can't be
+          // tapped. dvh is the actually-visible height, keeping the footer reachable.
+          "bg-[var(--admin-sidebar)] text-slate-300 transition-all duration-300 ease-in-out flex flex-col z-50 shadow-xl fixed lg:sticky top-0 h-dvh",
           isSidebarOpen ? "w-64 translate-x-0" : "w-64 -translate-x-full lg:w-16 lg:translate-x-0"
         )}
       >
