@@ -9,6 +9,7 @@
     "tenant_required": "X-Restaurant-ID header is required",
     "table_conflict": "This table is already reserved for an overlapping time",
     "fully_booked": "All tables are booked for this date and time. Please join the waitlist or pick another time.",
+    "maintenance": "The platform is temporarily down for maintenance. Please try again shortly.",
     "route_not_found": "The requested resource was not found.",
     "invalid_json": "The request body is not valid JSON.",
     "invalid_credentials": "Invalid email or password.",

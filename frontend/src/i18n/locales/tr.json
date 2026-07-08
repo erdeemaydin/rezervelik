@@ -1576,5 +1576,10 @@
     "invalidCode": "Geçersiz veya süresi dolmuş kod.",
     "emailInvalid": "Lütfen geçerli bir e-posta adresi girin.",
     "passwordRequired": "Lütfen şifrenizi girin."
+  },
+  "maintenance": {
+    "title": "Bakım çalışması",
+    "message": "Planlı bir bakım çalışması yapıyoruz, kısa süre içinde geri döneceğiz. Sabrınız için teşekkürler.",
+    "retry": "Tekrar dene"
   }
 }

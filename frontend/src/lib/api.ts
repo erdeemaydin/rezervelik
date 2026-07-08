@@ -44,6 +44,22 @@ api.interceptors.response.use(
         window.location.href = '/auth/login';
       }
     }
+
+    // Platform in maintenance mode: the backend 503s tenant/public traffic (but
+    // never SUPER_ADMIN or /auth·/system). Send those users to the maintenance
+    // screen. The system-admin console and auth pages are exempt so the root
+    // admin can still sign in and toggle maintenance back off.
+    if (
+      error.response?.status === 503 &&
+      error.response?.data?.code === 'errors.maintenance' &&
+      typeof window !== 'undefined'
+    ) {
+      const p = window.location.pathname;
+      if (!p.startsWith('/maintenance') && !p.startsWith('/system-admin') && !p.startsWith('/auth')) {
+        window.location.href = '/maintenance';
+      }
+    }
+
     return Promise.reject(error);
   }
 );

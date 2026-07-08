@@ -268,7 +268,7 @@ export default function TenantManagementPage() {
               </TableHeader>
               <TableBody>
                 {loading ? (
-                    <TableRow><TableCell colSpan={4} className="h-32 text-center text-[10px] font-black text-slate-400 uppercase tracking-widest">Querying Tenants...</TableCell></TableRow>
+                    <TableRow><TableCell colSpan={5} className="h-32 text-center text-[10px] font-black text-slate-400 uppercase tracking-widest">Querying Tenants...</TableCell></TableRow>
                 ) : filteredTenants.map(tenant => (
                   <TableRow key={tenant.id} className="h-12 hover:bg-slate-50/50 border-b border-slate-100">
                     <TableCell className="px-4">
@@ -276,9 +276,25 @@ export default function TenantManagementPage() {
                         <div className="w-8 h-8 rounded bg-emerald-50 flex items-center justify-center text-emerald-600 border border-emerald-100">
                             <Building2 className="w-4 h-4" />
                         </div>
-                        <div>
-                            <div className="font-bold text-slate-900 text-xs uppercase tracking-tight">{tenant.name}</div>
-                            <div className="text-[9px] text-slate-400 font-mono">{tenant.slug}.your-domain.com</div>
+                        <div className="min-w-0">
+                            <div className="font-bold text-slate-900 text-xs uppercase tracking-tight truncate">{tenant.name}</div>
+                            <div className="text-[9px] text-slate-400 font-mono truncate">{tenant.slug}.your-domain.com</div>
+                            {(() => {
+                              const adminUser = tenant.users?.find((u: any) => u.role === 'ADMIN');
+                              const email = adminUser?.email || tenant.contactEmail;
+                              const adminName = adminUser ? `${adminUser.firstName ?? ''} ${adminUser.lastName ?? ''}`.trim() : '';
+                              if (!email) return null;
+                              return (
+                                <a
+                                  href={`mailto:${email}`}
+                                  title={adminName ? `${adminName} · ${email}` : email}
+                                  className="mt-0.5 flex items-center gap-1 text-[10px] text-slate-500 hover:text-emerald-600 truncate"
+                                >
+                                  <Mail className="w-3 h-3 shrink-0" />
+                                  <span className="truncate">{email}</span>
+                                </a>
+                              );
+                            })()}
                         </div>
                       </div>
                     </TableCell>

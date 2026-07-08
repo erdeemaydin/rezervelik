@@ -15,7 +15,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { PasswordConfirmDialog } from '@/components/auth/PasswordConfirmDialog';
 import { useTranslation } from "@/i18n/provider";
 import { ADMIN_THEMES } from '@/lib/themes';
-import Cookies from 'js-cookie';
+import { readAuth } from '@/lib/authStorage';
 
 interface RestaurantSettings {
     isReservationEnabled: boolean;
@@ -136,7 +136,7 @@ export default function SettingsPage() {
             if (typeof document === 'undefined') return;
             let saved = 'default';
             try {
-                const rid = Cookies.get('restaurantId');
+                const rid = readAuth('restaurantId');
                 const cached = rid && JSON.parse(localStorage.getItem(`tenantSettingsCache:${rid}`) || 'null');
                 if (cached?.dashboardTheme) saved = cached.dashboardTheme;
             } catch { /* fall back to default */ }
@@ -153,7 +153,7 @@ export default function SettingsPage() {
             // Keep the per-tenant settings cache in sync so the theme (and other
             // settings) survive a refresh/navigation before AdminLayout refetches.
             try {
-                const rid = Cookies.get('restaurantId');
+                const rid = readAuth('restaurantId');
                 if (rid) {
                     const key = `tenantSettingsCache:${rid}`;
                     const cached = JSON.parse(localStorage.getItem(key) || 'null') || {};

@@ -1576,5 +1576,10 @@
     "invalidCode": "Invalid or expired code.",
     "emailInvalid": "Please enter a valid email address.",
     "passwordRequired": "Please enter your password."
+  },
+  "maintenance": {
+    "title": "Down for maintenance",
+    "message": "We are performing scheduled maintenance and will be back shortly. Thank you for your patience.",
+    "retry": "Try again"
   }
 }

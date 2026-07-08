@@ -10,6 +10,7 @@ import {
   isBusinessType,
 } from '../config/businessProfiles';
 import { generatePublicApiKey } from '../utils/publicApiKey';
+import { bustMaintenanceCache } from '../middlewares/maintenance';
 import { logAudit } from '../services/auditService';
 
 // POST /system/users/:userId/reset-link (SUPER_ADMIN only)
@@ -508,6 +509,10 @@ export const updateGlobalSettings = async (req: Request, res: Response) => {
       update: { maintenanceMode, publicRegistrationEnabled, enforce2FAForAdmins, measurementSystem: normalizedSystem, ...themeUpdate },
       create: { id: 'global_1', maintenanceMode, publicRegistrationEnabled, enforce2FAForAdmins, measurementSystem: normalizedSystem, ...themeUpdate }
     });
+
+    // Drop the maintenance-flag cache so the toggle takes effect immediately
+    // instead of after the cache TTL.
+    bustMaintenanceCache();
 
     logAudit({
       req,

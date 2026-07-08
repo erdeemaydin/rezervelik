@@ -42,6 +42,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import { normalizeTheme } from '@/lib/themes';
 import { useTranslation } from '@/i18n/provider';
+import { readAuth } from '@/lib/authStorage';
 import Cookies from 'js-cookie';
 
 interface AdminLayoutProps {
@@ -63,7 +64,11 @@ interface NavItem {
 const readTenantSettingsCache = (): any => {
   if (typeof window === 'undefined') return null;
   try {
-    const rid = Cookies.get('restaurantId');
+    // restaurantId lives in localStorage (authStorage), NOT a cookie — reading it
+    // via Cookies.get() always returned undefined, so this cache never hit and the
+    // dashboard fell back to the default (blue) theme on every hard refresh until
+    // /settings returned. readAuth() checks the in-memory/localStorage layers.
+    const rid = readAuth('restaurantId');
     if (!rid) return null;
     return JSON.parse(localStorage.getItem(`tenantSettingsCache:${rid}`) || 'null');
   } catch {
@@ -161,7 +166,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
         api.get('/settings').then((res) => {
           setTenantSettings(res.data.data);
           try {
-            const id = Cookies.get('restaurantId');
+            const id = readAuth('restaurantId');
             if (id) localStorage.setItem(`tenantSettingsCache:${id}`, JSON.stringify(res.data.data));
           } catch { /* quota/serialization — non-fatal */ }
           // Hydrate the platform-wide date/time convention for the whole dashboard.

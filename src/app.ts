@@ -4,6 +4,7 @@ import helmet from 'helmet';
 import i18next, { resolveLanguage } from './config/i18n';
 import { tenantMiddleware } from './middlewares/tenant';
 import { errorHandler, notFoundHandler } from './middlewares/errorHandler';
+import { maintenanceMiddleware } from './middlewares/maintenance';
 
 import restaurantRoutes from './routes/restaurantRoutes';
 import authRoutes from './routes/authRoutes';
@@ -55,6 +56,14 @@ app.use((req, res, next) => {
 // Health check
 app.get('/health', (req, res) => {
   res.json({ status: 'ok' });
+});
+
+// Maintenance gate — when enabled, turns away tenant + public API traffic with a
+// 503. Exempts /auth (so admins can still sign in) and /system (so a SUPER_ADMIN
+// can toggle it back off); the guard itself also always lets SUPER_ADMIN through.
+app.use('/api', (req, res, next) => {
+  if (req.path.startsWith('/auth') || req.path.startsWith('/system')) return next();
+  return maintenanceMiddleware(req, res, next);
 });
 
 // API Routes
