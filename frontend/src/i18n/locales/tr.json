@@ -1580,6 +1580,8 @@
   "maintenance": {
     "title": "Bakım çalışması",
     "message": "Planlı bir bakım çalışması yapıyoruz, kısa süre içinde geri döneceğiz. Sabrınız için teşekkürler.",
-    "retry": "Tekrar dene"
+    "retry": "Tekrar dene",
+    "adminSignIn": "Yönetici girişi",
+    "adminSignInHint": "Platform yöneticileri bakım sırasında da giriş yapabilir."
   }
 }

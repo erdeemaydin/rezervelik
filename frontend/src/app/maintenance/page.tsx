@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { Wrench } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useTranslation } from '@/i18n/provider';
+import { clearAuth } from '@/lib/authStorage';
 
 // Shown when the platform is in maintenance mode. The API returns 503 with code
 // `errors.maintenance`; the axios interceptor (lib/api.ts) redirects tenant/public
@@ -28,6 +29,21 @@ export default function MaintenancePage() {
         >
           {t('maintenance.retry')}
         </Button>
+
+        {/* Escape hatch: a tenant admin who lands here can get stuck because the
+            dashboard (with its logout button) is 503'd. Clearing the session and
+            going to /auth/login — which stays reachable during maintenance — lets
+            the platform (root) admin sign in and toggle maintenance back off. */}
+        <div className="mt-8 border-t border-stone-200 pt-6">
+          <button
+            type="button"
+            onClick={() => { clearAuth(); window.location.href = '/auth/login'; }}
+            className="text-sm font-bold text-stone-700 underline underline-offset-4 hover:text-stone-900"
+          >
+            {t('maintenance.adminSignIn')}
+          </button>
+          <p className="mt-2 text-xs text-stone-400">{t('maintenance.adminSignInHint')}</p>
+        </div>
       </div>
     </div>
   );

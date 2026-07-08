@@ -46,26 +46,15 @@ export const updateSettings = async (req: Request, res: Response) => {
       openingHour,
       closingHour,
       defaultBreakMinutes,
-      twoFactorRoles,
       dashboardTheme
     } = req.body;
     // Note: `currency` is intentionally NOT read here — it is a root-admin-only
     // (system) setting. Tenant admins can view it but cannot change it.
-
-    // The set of roles that must use 2FA is only meaningful when the root admin
-    // has enabled the 2FA capability for this restaurant. Guard against a tenant
-    // turning it on for themselves by checking the current capability flag.
-    let twoFactorRolesUpdate: any = undefined;
-    if (twoFactorRoles !== undefined) {
-      const current = await prisma.restaurantSettings.findUnique({
-        where: { restaurantId },
-        select: { twoFactorEnabled: true }
-      });
-      if (current?.twoFactorEnabled) {
-        const roles = Array.isArray(twoFactorRoles) ? twoFactorRoles.join(',') : String(twoFactorRoles || '');
-        twoFactorRolesUpdate = roles;
-      }
-    }
+    //
+    // 2FA (`twoFactorEnabled` + `twoFactorRoles`) is likewise root-admin-only —
+    // it is set exclusively via the system-admin per-tenant settings endpoint, so
+    // it is deliberately NOT read from this tenant-facing request. A tenant admin
+    // can neither enable/disable 2FA nor choose which roles it applies to.
 
     // Whitelist of selectable admin dashboard themes (must match the ids in
     // frontend/src/lib/themes.ts). Reject anything else so a bad value can't reach
@@ -99,7 +88,6 @@ export const updateSettings = async (req: Request, res: Response) => {
         openingHour: openingHour != null ? clampHour(openingHour, 10) : undefined,
         closingHour: closingHour != null ? clampHour(closingHour, 23) : undefined,
         defaultBreakMinutes: defaultBreakMinutes != null ? Math.max(0, parseInt(defaultBreakMinutes) || 0) : undefined,
-        ...(twoFactorRolesUpdate !== undefined ? { twoFactorRoles: twoFactorRolesUpdate } : {}),
         ...(themeUpdate !== undefined ? { dashboardTheme: themeUpdate } : {})
       }
     });

@@ -136,6 +136,13 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
   // hit seeded tenantSettings; otherwise it flips once the /settings response
   // lands. Until then, feature-gated nav items stay hidden rather than flashing.
   const [settingsLoaded, setSettingsLoaded] = useState(() => readTenantSettingsCache() != null);
+  // Whether we've confirmed *this session* that the platform is reachable and not
+  // in maintenance. Unlike settingsLoaded, this is NEVER seeded from cache — the
+  // dashboard chrome stays behind a splash until a live /settings request returns,
+  // so a hard refresh during maintenance shows the splash → maintenance page and
+  // never flashes the (wrong-theme) dashboard first. Fails open on transient
+  // errors so a backend hiccup can't trap staff on the splash.
+  const [verifiedLive, setVerifiedLive] = useState(false);
   const { t, setLocale } = useTranslation();
   const { term, businessType } = useTerms();
   // Only override the vertical-specific nav labels for non-restaurant tenants, so
@@ -184,7 +191,18 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
           if (def && !explicit && Cookies.get('NEXT_LOCALE') !== def) {
             setLocale(def);
           }
-        }).catch(err => console.error('Failed to fetch settings:', err))
+          // Platform confirmed reachable & not in maintenance → reveal the dashboard.
+          setVerifiedLive(true);
+        }).catch(err => {
+          // In maintenance the response interceptor (lib/api.ts) redirects to
+          // /maintenance; leave verifiedLive false so the splash stays up and the
+          // dashboard is never revealed. Any other failure fails open.
+          const code = err?.response?.data?.code;
+          if (!(err?.response?.status === 503 && code === 'errors.maintenance')) {
+            setVerifiedLive(true);
+          }
+          console.error('Failed to fetch settings:', err);
+        })
           .finally(() => setSettingsLoaded(true));
       });
     }
@@ -277,6 +295,18 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
 
   if (!isMounted) return null; // Avoid hydration mismatch
   if (!isAuthenticated) return null; // Wait for redirect
+
+  // Hold the dashboard behind a neutral, themed splash until we've confirmed the
+  // platform is live (see verifiedLive). This is what stops the wrong-theme /
+  // maintenance flash on a hard refresh: nothing tenant-facing renders until the
+  // live /settings request resolves (success → dashboard; maintenance → redirect).
+  if (!verifiedLive) {
+    return (
+      <div data-admin-theme={theme} className="flex min-h-dvh items-center justify-center bg-[var(--admin-bg)]">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-slate-400" />
+      </div>
+    );
+  }
 
   // Don't mount the page (and let it fire its data request → 403) if the user
   // isn't allowed here; the effect above redirects them. Show chrome + spinner.

@@ -46,7 +46,7 @@ export default function TenantManagementPage() {
     businessType: 'RESTAURANT',
     layoutStyle: 'CLASSIC_LIST',
     // Root-admin-only controls: platform currency + 2FA capability + default language.
-    currency: 'TRY', twoFactorEnabled: false, defaultLanguage: 'tr',
+    currency: 'TRY', twoFactorEnabled: false, twoFactorRoles: '', defaultLanguage: 'tr',
     // Whether this tenant's own admins may view their activity audit log.
     showAuditLogToTenant: false
   });
@@ -168,6 +168,7 @@ export default function TenantManagementPage() {
       hasVendors: tenant.settings?.hasVendors ?? false,
       currency: tenant.settings?.currency ?? 'TRY',
       twoFactorEnabled: tenant.settings?.twoFactorEnabled ?? false,
+      twoFactorRoles: tenant.settings?.twoFactorRoles ?? '',
       defaultLanguage: tenant.settings?.defaultLanguage ?? 'tr',
       showAuditLogToTenant: tenant.settings?.showAuditLogToTenant ?? false,
       businessType: tenant.businessType || 'RESTAURANT',
@@ -570,13 +571,47 @@ export default function TenantManagementPage() {
                                   <option value="en">English (EN)</option>
                                 </select>
                             </div>
-                            {/* 2FA capability — when on, the tenant admin can require 2FA by role. */}
-                            <div className="flex items-center justify-between p-3 border border-slate-100 rounded-sm bg-rose-50/30">
-                                <div className="space-y-0.5">
-                                    <Label className="text-xs font-black uppercase text-rose-900">Two-Factor Capability</Label>
-                                    <p className="text-[9px] text-rose-400 font-bold uppercase">Let Tenant Require 2FA By Role</p>
+                            {/* 2FA — root-admin-only. The SysAdmin both enables 2FA and
+                                picks which roles must use it; tenant admins have no 2FA
+                                controls of their own. */}
+                            <div className="p-3 border border-slate-100 rounded-sm bg-rose-50/30 space-y-3">
+                                <div className="flex items-center justify-between">
+                                    <div className="space-y-0.5">
+                                        <Label className="text-xs font-black uppercase text-rose-900">Two-Factor Authentication</Label>
+                                        <p className="text-[9px] text-rose-400 font-bold uppercase">Require 2FA For Selected Roles</p>
+                                    </div>
+                                    <Checkbox
+                                        checked={settingsForm.twoFactorEnabled}
+                                        onCheckedChange={(c) => setSettingsForm({
+                                            ...settingsForm,
+                                            twoFactorEnabled: !!c,
+                                            // Clearing the capability clears the role list too.
+                                            twoFactorRoles: c ? settingsForm.twoFactorRoles : '',
+                                        })}
+                                    />
                                 </div>
-                                <Checkbox checked={settingsForm.twoFactorEnabled} onCheckedChange={(c) => setSettingsForm({...settingsForm, twoFactorEnabled: !!c})} />
+                                {settingsForm.twoFactorEnabled && (
+                                    <div className="grid grid-cols-4 gap-1.5 pt-1">
+                                        {['ADMIN', 'MANAGER', 'HOST', 'STAFF'].map(role => {
+                                            const list = settingsForm.twoFactorRoles ? settingsForm.twoFactorRoles.split(',').filter(Boolean) : [];
+                                            const active = list.includes(role);
+                                            return (
+                                                <button
+                                                    key={role}
+                                                    type="button"
+                                                    onClick={() => {
+                                                        const set = new Set(list);
+                                                        if (set.has(role)) set.delete(role); else set.add(role);
+                                                        setSettingsForm({ ...settingsForm, twoFactorRoles: Array.from(set).join(',') });
+                                                    }}
+                                                    className={`px-1.5 py-1.5 rounded-sm border text-[10px] font-black uppercase tracking-tight transition-all ${active ? 'border-rose-500 bg-rose-500 text-white' : 'border-slate-200 bg-white text-slate-500 hover:border-rose-300'}`}
+                                                >
+                                                    {role}
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
+                                )}
                             </div>
                             {/* Audit log visibility — let this tenant's admins see their own activity log. */}
                             <div className="flex items-center justify-between p-3 border border-slate-100 rounded-sm bg-slate-50/40">

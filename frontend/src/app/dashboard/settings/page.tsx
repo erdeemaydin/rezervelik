@@ -9,7 +9,7 @@ import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import api from '@/lib/api';
 import { toast } from 'sonner';
-import { Save, Calendar, Clock, CreditCard, ArrowLeft, CalendarClock, AlertCircle, Check, Timer, ShieldCheck, Palette } from 'lucide-react';
+import { Save, Calendar, Clock, CreditCard, ArrowLeft, CalendarClock, AlertCircle, Check, Timer, Palette } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { PasswordConfirmDialog } from '@/components/auth/PasswordConfirmDialog';
@@ -166,15 +166,6 @@ export default function SettingsPage() {
         } finally {
             setLoading(false);
         }
-    };
-
-    // Roles the tenant admin requires 2FA for (only editable when the root admin
-    // has enabled the 2FA capability for this restaurant).
-    const twoFactorRoleList = settings.twoFactorRoles ? settings.twoFactorRoles.split(',').filter(Boolean) : [];
-    const toggleTwoFactorRole = (role: string) => {
-        const set = new Set(twoFactorRoleList);
-        if (set.has(role)) set.delete(role); else set.add(role);
-        setSettings(prev => ({ ...prev, twoFactorRoles: Array.from(set).join(',') }));
     };
 
     const [futureModeAction, setFutureModeAction] = useState<string | null>(null);
@@ -501,40 +492,12 @@ export default function SettingsPage() {
                         </CardContent>
                     </Card>
 
-                    {/* Two-Factor Authentication — only shown when the root admin has
-                        enabled the capability for this restaurant. */}
-                    {settings.twoFactorEnabled && (
-                    <Card className="rounded-xl border-slate-200 shadow-sm overflow-hidden bg-white md:col-span-2">
-                        <CardHeader className="p-6 bg-slate-50/50 border-b border-slate-100 flex flex-row items-center gap-4">
-                            <div className="p-3 bg-rose-100 rounded-lg text-rose-600"><ShieldCheck className="w-6 h-6" /></div>
-                            <div>
-                                <CardTitle className="text-lg font-black uppercase tracking-tight">{t("settings.twoFactorTitle")}</CardTitle>
-                                <CardDescription className="text-sm">{t("settings.twoFactorDesc")}</CardDescription>
-                            </div>
-                        </CardHeader>
-                        <CardContent className="p-6 space-y-4">
-                            <p className="text-[11px] text-slate-500 leading-relaxed">{t("settings.twoFactorRolesHint")}</p>
-                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                                {['ADMIN', 'MANAGER', 'HOST', 'STAFF'].map(role => {
-                                    const active = twoFactorRoleList.includes(role);
-                                    return (
-                                        <button
-                                            key={role}
-                                            type="button"
-                                            onClick={() => toggleTwoFactorRole(role)}
-                                            className={`flex items-center justify-between gap-2 p-4 border-2 rounded-md transition-all ${active ? 'border-rose-500 bg-rose-50/60' : 'border-slate-100 hover:border-slate-300'}`}
-                                        >
-                                            <span className="font-black text-sm text-slate-800">{t(`settings.role.${role}`)}</span>
-                                            <span className={`w-4 h-4 rounded-sm border flex items-center justify-center ${active ? 'bg-rose-500 border-rose-500' : 'border-slate-300'}`}>
-                                                {active && <Check className="w-3 h-3 text-white" />}
-                                            </span>
-                                        </button>
-                                    );
-                                })}
-                            </div>
-                        </CardContent>
-                    </Card>
-                    )}
+                    {/* Two-factor authentication is configured by the platform (root)
+                        admin only — see the system-admin per-tenant settings. Tenant
+                        admins can neither enable/disable it nor pick which roles it
+                        applies to, so no 2FA control is rendered here. When 2FA is
+                        required for a user's role, they enroll their authenticator
+                        from their own profile page. */}
 
                     {/* Calendar Master Customization */}
                     <Card className="rounded-xl border-slate-200 shadow-sm overflow-hidden bg-white md:col-span-2">

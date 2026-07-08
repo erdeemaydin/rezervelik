@@ -1580,6 +1580,8 @@
   "maintenance": {
     "title": "Down for maintenance",
     "message": "We are performing scheduled maintenance and will be back shortly. Thank you for your patience.",
-    "retry": "Try again"
+    "retry": "Try again",
+    "adminSignIn": "Administrator sign-in",
+    "adminSignInHint": "Platform administrators can still sign in during maintenance."
   }
 }

@@ -9,7 +9,7 @@ import { useAuthStore } from '@/store/useAuthStore';
 import api from '@/lib/api';
 import { getApiErrorMessage } from '@/lib/apiError';
 import { QRCodeSVG } from 'qrcode.react';
-import { ShieldCheck, UtensilsCrossed } from 'lucide-react';
+import { ShieldCheck, UtensilsCrossed, Loader2 } from 'lucide-react';
 import { useTranslation } from '@/i18n/provider';
 
 import { Button } from '@/components/ui/button';
@@ -47,6 +47,12 @@ export default function LoginPage() {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
   const currentUser = useAuthStore((state) => state.user);
   const [error, setError] = useState('');
+  // Covers the gap between a successful login and the route actually changing:
+  // react-hook-form's isSubmitting flips back to false the moment onSubmit
+  // returns, but the navigation to /dashboard hasn't painted yet — without this
+  // the button would go idle for ~1–2s and the user is left wondering if it
+  // worked. A full-screen overlay makes the transition unmistakably "in progress".
+  const [redirecting, setRedirecting] = useState(false);
 
   // Server-side proxy no longer bounces logged-in users off /auth/login (token
   // is in localStorage, not a readable cookie) — do it on the client instead.
@@ -67,6 +73,7 @@ export default function LoginPage() {
   });
 
   const finishLogin = (token: string, user: any) => {
+    setRedirecting(true);
     login(token, user);
     if (user.role === 'SUPER_ADMIN') router.push('/system-admin/tenants');
     else router.push('/dashboard');
@@ -111,6 +118,16 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen w-full lg:grid lg:grid-cols-[1.05fr_1fr] bg-stone-50">
+      {/* Post-login transition veil — keeps a clear "signing you in…" state on
+          screen until the dashboard route paints, so the wait never looks frozen. */}
+      {redirecting && (
+        <div className="fixed inset-0 z-50 flex flex-col items-center justify-center gap-4 bg-stone-50/90 backdrop-blur-sm">
+          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-amber-600 to-rose-800 text-white shadow-lg">
+            <Loader2 className="h-6 w-6 animate-spin" />
+          </div>
+          <p className="text-sm font-bold text-stone-600">{t('auth.signingIn')}</p>
+        </div>
+      )}
       {/* Brand panel — warm hospitality gradient. Hidden on small screens. */}
       <aside className="relative hidden lg:flex flex-col justify-between overflow-hidden bg-gradient-to-br from-amber-700 via-orange-800 to-rose-900 p-12 text-amber-50">
         <div
@@ -229,10 +246,13 @@ export default function LoginPage() {
 
                   <Button
                     type="submit"
-                    disabled={form.formState.isSubmitting}
+                    disabled={form.formState.isSubmitting || redirecting}
                     className="h-11 w-full bg-stone-900 text-sm font-bold tracking-wide hover:bg-stone-800"
                   >
-                    {form.formState.isSubmitting ? t('auth.signingIn') : t('auth.signInButton')}
+                    {(form.formState.isSubmitting || redirecting) && (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    )}
+                    {form.formState.isSubmitting || redirecting ? t('auth.signingIn') : t('auth.signInButton')}
                   </Button>
                 </form>
               </Form>
@@ -286,10 +306,11 @@ export default function LoginPage() {
                 )}
                 <Button
                   type="submit"
-                  disabled={otpBusy || otpCode.length !== 6}
+                  disabled={otpBusy || redirecting || otpCode.length !== 6}
                   className="h-11 w-full bg-stone-900 font-bold hover:bg-stone-800"
                 >
-                  {otpBusy ? t('auth.verifying') : t('auth.verifyAndSignIn')}
+                  {(otpBusy || redirecting) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  {otpBusy || redirecting ? t('auth.verifying') : t('auth.verifyAndSignIn')}
                 </Button>
                 <Button
                   type="button"

@@ -261,9 +261,23 @@ export const updateTenantSettings = async (req: Request, res: Response) => {
     const {
       currency,
       twoFactorEnabled,
+      twoFactorRoles,
       defaultLanguage,
       showAuditLogToTenant
     } = req.body;
+
+    // 2FA is a root-admin-only control: the SysAdmin decides both whether the
+    // tenant uses 2FA (`twoFactorEnabled`) and which roles it applies to
+    // (`twoFactorRoles`). Normalize the roles to a comma-separated string; when
+    // 2FA is switched off, clear the role list so a later re-enable starts clean.
+    let twoFactorRolesUpdate: string | undefined;
+    if (twoFactorEnabled === false) {
+      twoFactorRolesUpdate = '';
+    } else if (twoFactorRoles !== undefined) {
+      twoFactorRolesUpdate = Array.isArray(twoFactorRoles)
+        ? twoFactorRoles.join(',')
+        : String(twoFactorRoles || '');
+    }
 
     // When the SysAdmin switches the tenant's businessType, seed the vertical's
     // default feature profile — but any flag explicitly present in this request
@@ -328,6 +342,7 @@ export const updateTenantSettings = async (req: Request, res: Response) => {
         // root-admin-only controls.
         ...(currency !== undefined ? { currency } : {}),
         ...(twoFactorEnabled !== undefined ? { twoFactorEnabled } : {}),
+        ...(twoFactorRolesUpdate !== undefined ? { twoFactorRoles: twoFactorRolesUpdate } : {}),
         ...(defaultLanguage !== undefined ? { defaultLanguage } : {}),
         ...(showAuditLogToTenant !== undefined ? { showAuditLogToTenant: Boolean(showAuditLogToTenant) } : {})
       }
