@@ -9,6 +9,7 @@ import api from '@/lib/api';
 import { toast } from 'sonner';
 import { Palette, Check } from 'lucide-react';
 import { ADMIN_THEMES } from '@/lib/themes';
+import { useAdminThemeStore } from '@/store/useAdminThemeStore';
 import { useTranslation } from '@/i18n/provider';
 
 export default function SystemSettingsPage() {
@@ -36,13 +37,16 @@ export default function SystemSettingsPage() {
     fetchSettings();
   }, []);
 
-  // Live-preview the system-admin surface theme as it's picked.
+  // Live preview goes through the shared theme store (see the swatch onClick), which
+  // reskins the persistent SystemAdminLayout via React. On leaving, restore the
+  // saved theme from cache — after a save it holds the new value (sticks); on a
+  // cancelled preview it holds the old value (discarded).
   useEffect(() => {
-    if (typeof document === 'undefined') return;
-    document
-      .querySelectorAll('[data-admin-theme]')
-      .forEach((el) => el.setAttribute('data-admin-theme', settings.dashboardTheme || 'default'));
-  }, [settings.dashboardTheme]);
+    return () => {
+      if (typeof window === 'undefined') return;
+      useAdminThemeStore.getState().setTheme(localStorage.getItem('systemDashboardTheme'));
+    };
+  }, []);
 
   const handleSave = async () => {
     try {
@@ -143,7 +147,7 @@ export default function SystemSettingsPage() {
                   <button
                     key={th.id}
                     type="button"
-                    onClick={() => setSettings({ ...settings, dashboardTheme: th.id })}
+                    onClick={() => { setSettings({ ...settings, dashboardTheme: th.id }); useAdminThemeStore.getState().setTheme(th.id); }}
                     className={`relative flex flex-col items-stretch gap-2 rounded-lg border-2 p-2.5 text-left transition-all ${active ? 'border-slate-800 shadow-sm' : 'border-slate-200 hover:border-slate-300'}`}
                     aria-pressed={active}
                   >

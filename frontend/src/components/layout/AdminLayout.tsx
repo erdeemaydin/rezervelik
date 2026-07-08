@@ -35,12 +35,12 @@ import {
 import { useAuthStore } from '@/store/useAuthStore';
 import { useFormatStore } from '@/store/useFormatStore';
 import { useTenantStore } from '@/store/useTenantStore';
+import { useAdminThemeStore } from '@/store/useAdminThemeStore';
 import { useTerms } from '@/hooks/useTerms';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
-import { normalizeTheme } from '@/lib/themes';
 import { useTranslation } from '@/i18n/provider';
 import { readAuth } from '@/lib/authStorage';
 import Cookies from 'js-cookie';
@@ -149,9 +149,14 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
   // existing restaurant dashboards render exactly as before.
   const isRestaurant = businessType === 'RESTAURANT';
   const vIcon = VERTICAL_ICONS[businessType] || VERTICAL_ICONS.RESTAURANT;
-  // Per-tenant dashboard color theme. Seeded from cache so it applies on first
-  // paint; all of this tenant's staff share it since it comes from RestaurantSettings.
-  const theme = normalizeTheme(tenantSettings?.dashboardTheme);
+  // Per-tenant dashboard color theme. The shared store is the single source of
+  // truth (seeded from cache so it applies on first paint); it comes from
+  // RestaurantSettings so all of this tenant's staff share it. Reading it from the
+  // store — instead of deriving it from local state — is what lets the settings
+  // page's live preview and save reskin this persistent layout without a refetch,
+  // and stops the theme from reverting to blue on navigation.
+  const theme = useAdminThemeStore((s) => s.theme);
+  const setAdminTheme = useAdminThemeStore((s) => s.setTheme);
 
   useEffect(() => {
     setIsMounted(true);
@@ -165,6 +170,9 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
     // paint. Hydrate the vertical store from that cached value for terminology.
     if (tenantSettings) {
       useTenantStore.getState().setBusinessType(tenantSettings.businessType || 'RESTAURANT');
+      // Re-seed the theme store from the cached value in case this layout mounted
+      // (e.g. after an SPA login) before the store's own cache read had a tenant.
+      setAdminTheme(tenantSettings.dashboardTheme);
     }
 
     if (isAuthenticated) {
@@ -172,6 +180,9 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
       import('@/lib/api').then(({ default: api }) => {
         api.get('/settings').then((res) => {
           setTenantSettings(res.data.data);
+          // Authoritative theme from the server → update the shared store so the
+          // whole dashboard reskins immediately (and correctly on refresh).
+          setAdminTheme(res.data.data?.dashboardTheme);
           try {
             const id = readAuth('restaurantId');
             if (id) localStorage.setItem(`tenantSettingsCache:${id}`, JSON.stringify(res.data.data));

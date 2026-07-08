@@ -16,6 +16,7 @@ import { PasswordConfirmDialog } from '@/components/auth/PasswordConfirmDialog';
 import { useTranslation } from "@/i18n/provider";
 import { ADMIN_THEMES } from '@/lib/themes';
 import { readAuth } from '@/lib/authStorage';
+import { useAdminThemeStore, readCachedTenantTheme } from '@/store/useAdminThemeStore';
 
 interface RestaurantSettings {
     isReservationEnabled: boolean;
@@ -118,32 +119,14 @@ export default function SettingsPage() {
         fetchSettings();
     }, [fetchSettings]);
 
-    // Live theme preview: reskin the surrounding AdminLayout the instant the admin
-    // picks a theme, before saving. AdminLayout renders `[data-admin-theme]` on its
-    // root; we retarget it here so the whole dashboard chrome updates immediately.
-    // AdminLayout is now a persistent parent layout (it doesn't remount on
-    // navigation), so if the admin previews a theme and leaves without saving we
-    // must restore the saved theme on unmount — otherwise the preview would stick.
+    // Live theme preview goes through the shared theme store (see the theme swatch
+    // onClick below): setting it reskins the persistent AdminLayout via React — no
+    // imperative DOM writes, so nothing can desync. When leaving this page, restore
+    // the saved theme from cache: after a save the cache holds the newly-saved theme
+    // (so it sticks everywhere), and on a cancelled preview it holds the old one
+    // (so the preview is discarded).
     useEffect(() => {
-        if (typeof document === 'undefined') return;
-        document
-            .querySelectorAll('[data-admin-theme]')
-            .forEach((el) => el.setAttribute('data-admin-theme', settings.dashboardTheme || 'default'));
-    }, [settings.dashboardTheme]);
-
-    useEffect(() => {
-        return () => {
-            if (typeof document === 'undefined') return;
-            let saved = 'default';
-            try {
-                const rid = readAuth('restaurantId');
-                const cached = rid && JSON.parse(localStorage.getItem(`tenantSettingsCache:${rid}`) || 'null');
-                if (cached?.dashboardTheme) saved = cached.dashboardTheme;
-            } catch { /* fall back to default */ }
-            document
-                .querySelectorAll('[data-admin-theme]')
-                .forEach((el) => el.setAttribute('data-admin-theme', saved));
-        };
+        return () => { useAdminThemeStore.getState().setTheme(readCachedTenantTheme()); };
     }, []);
 
     const handleSave = async () => {
@@ -280,7 +263,7 @@ export default function SettingsPage() {
                                         <button
                                             key={th.id}
                                             type="button"
-                                            onClick={() => setSettings(prev => ({ ...prev, dashboardTheme: th.id }))}
+                                            onClick={() => { setSettings(prev => ({ ...prev, dashboardTheme: th.id })); useAdminThemeStore.getState().setTheme(th.id); }}
                                             className={`relative flex flex-col items-stretch gap-2 rounded-lg border-2 p-2.5 text-left transition-all ${active ? 'border-slate-800 shadow-sm' : 'border-slate-200 hover:border-slate-300'}`}
                                             aria-pressed={active}
                                         >

@@ -15,6 +15,7 @@ import {
   X
 } from 'lucide-react';
 import { useAuthStore } from '@/store/useAuthStore';
+import { useAdminThemeStore } from '@/store/useAdminThemeStore';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
@@ -38,9 +39,11 @@ export default function SystemAdminLayout({ children }: SystemAdminLayoutProps) 
   // Below lg the sidebar is an off-canvas overlay (closed by default); at lg+ it's
   // a fixed rail that's always shown.
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [theme, setTheme] = useState<string>(() =>
-    typeof window === 'undefined' ? 'default' : normalizeTheme(localStorage.getItem(SYSTEM_THEME_CACHE))
-  );
+  // Shared theme store is the single source of truth (see useAdminThemeStore) so
+  // the system settings page's live preview / save reskins this persistent layout
+  // via React, with no imperative DOM writes that could desync back to blue.
+  const theme = useAdminThemeStore((s) => s.theme);
+  const setAdminTheme = useAdminThemeStore((s) => s.setTheme);
   const { t } = useTranslation();
 
   useEffect(() => {
@@ -62,13 +65,18 @@ export default function SystemAdminLayout({ children }: SystemAdminLayoutProps) 
   // Load the system-admin surface theme (set by the root admin in Global Settings).
   useEffect(() => {
     if (!user || user.role !== 'SUPER_ADMIN') return;
+    // Seed from this surface's cache first (the shared store may still hold a
+    // previous tenant session's theme after an SPA login), then correct from the
+    // server response.
+    setAdminTheme(localStorage.getItem(SYSTEM_THEME_CACHE));
     import('@/lib/api').then(({ default: api }) => {
       api.get('/system/settings/global').then((res) => {
         const th = normalizeTheme(res.data?.data?.dashboardTheme);
-        setTheme(th);
+        setAdminTheme(th);
         try { localStorage.setItem(SYSTEM_THEME_CACHE, th); } catch { /* best-effort */ }
       }).catch(() => { /* keep cached/default theme on failure */ });
     });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
 
   const navigation = [
