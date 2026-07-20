@@ -11,6 +11,7 @@
  *   npm run demo -- --restaurant gourmet-bistro --date 2026-07-10 --dry-run # print, don't write
  *   npm run demo -- --restaurant gourmet-bistro --date 2026-07-10 --staff 12   # personnel count (default 8)
  *   npm run demo -- --restaurant gourmet-bistro --date 2026-07-10 --no-staff   # reservations only
+ *   npm run demo -- --restaurant gourmet-bistro --date 2026-07-10 --waitlist 5 # add 5 waitlist entries per day
  *   npm run demo -- --list                                                  # list restaurants and exit
  *
  * It also creates PERSONNEL: demo staff (MANAGER/HOST/STAFF), shifts, shift
@@ -210,6 +211,7 @@ async function main() {
   const dryRun = !!args['dry-run'];
   const staffCount = args.staff !== undefined ? Number(args.staff) : 8;
   const noStaff = !!args['no-staff'];
+  const waitlistCount = args.waitlist !== undefined ? Number(args.waitlist) : 0;
 
   // Tables + categories: create a small demo set if the restaurant has none.
   let tables = await prisma.bookableResource.findMany({ where: { restaurantId: restaurant.id }, select: { id: true, identifier: true, capacity: true } });
@@ -242,12 +244,20 @@ async function main() {
         where: { restaurantId: restaurant.id, startTime: { gte: rangeStart, lte: rangeEnd }, internalNote: { startsWith: DEMO_TAG } },
       });
       console.log(`  − cleared ${del.count} existing demo reservations in range`);
+      
+      const delWaitlist = await prisma.waitlistEntry.deleteMany({
+        where: { restaurantId: restaurant.id, targetDate: { in: days }, notes: { startsWith: DEMO_TAG } },
+      });
+      console.log(`  − cleared ${delWaitlist.count} existing demo waitlist entries in range`);
     }
   }
 
   const now = Date.now();
+  const todayISO = new Date(now).toISOString().slice(0, 10);
   const rows: any[] = [];
+  const waitlistRows: any[] = [];
   const summary: Record<string, number> = {};
+  const waitlistSummary: Record<string, number> = {};
 
   for (const day of days) {
     const [y, mo, d] = day.split('-').map(Number);
@@ -291,6 +301,36 @@ async function main() {
         internalNote: `${DEMO_TAG} generated`,
       });
       summary[status] = (summary[status] || 0) + 1;
+    }
+
+    // Generate waitlist entries
+    for (let i = 0; i < waitlistCount; i++) {
+      const guestCount = weighted<number>([[2, 5], [3, 3], [4, 4], [5, 2], [6, 2], [1, 1], [Math.min(8, maxParty), 1]].map(([g, w]) => [Math.min(g, maxParty), w]) as [number, number][]);
+      
+      const hour = openHour + rand(Math.max(1, closeHour - openHour));
+      const minute = pick([0, 15, 30, 45]);
+      const joinedAt = zonedDate(y, mo, d, hour, minute, tz);
+      
+      let status: string;
+      const joinedMs = joinedAt.getTime();
+      if (joinedMs > now) {
+        status = 'WAITING'; // future entries
+      } else {
+        status = weighted([['WAITING', 5], ['SEATED', 3], ['NOTIFIED', 1], ['CANCELED', 1]]);
+      }
+
+      waitlistRows.push({
+        restaurantId: restaurant.id,
+        customerName: randomName(),
+        customerPhone: randomPhone(),
+        partySize: guestCount,
+        quotedWaitTime: rand(45) + 15, // 15 to 60 mins
+        status,
+        notes: `${DEMO_TAG} generated`,
+        targetDate: day === todayISO ? null : day,
+        joinedAt,
+      });
+      waitlistSummary[status] = (waitlistSummary[status] || 0) + 1;
     }
   }
 
@@ -338,7 +378,16 @@ async function main() {
 
   // ---------- write ----------
   if (!dryRun) {
+    if (waitlistRows.length) {
+      await prisma.waitTimeConfig.upsert({
+        where: { restaurantId: restaurant.id },
+        update: { isWaitlistOpen: true, isWaitTimeEnabled: true },
+        create: { restaurantId: restaurant.id, isWaitlistOpen: true, isWaitTimeEnabled: true },
+      });
+    }
+
     await prisma.reservation.createMany({ data: rows });
+    if (waitlistRows.length) await prisma.waitlistEntry.createMany({ data: waitlistRows });
     if (!noStaff) {
       const ids = staffInfo.staff.map((s) => s.id);
       // Scheduling has unique constraints, so replace the demo rows for these staff
@@ -360,6 +409,11 @@ async function main() {
 
   console.log(`\nReservations: ${rows.length}`);
   for (const [s, n] of Object.entries(summary).sort((a, b) => b[1] - a[1])) console.log(`   ${s.padEnd(10)} ${n}`);
+
+  if (waitlistRows.length > 0) {
+    console.log(`\nWaitlist Entries: ${waitlistRows.length}`);
+    for (const [s, n] of Object.entries(waitlistSummary).sort((a, b) => b[1] - a[1])) console.log(`   ${s.padEnd(10)} ${n}`);
+  }
 
   if (!noStaff) {
     console.log(`\nPersonnel: ${staffInfo.staff.length} staff (${staffInfo.created} new, ${staffInfo.reused} reused) · demo login password: password123`);
