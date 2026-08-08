@@ -59,6 +59,11 @@
     "userSettings": "Kullanıcı Ayarları",
     "auditLog": "Etkinlik Kaydı"
   },
+  "commandPalette": {
+    "title": "Sayfaya git",
+    "placeholder": "Sayfa ara... (Ctrl+K)",
+    "noResults": "Eşleşen sayfa yok"
+  },
   "timesheet": {
     "title": "Mesai Takibi",
     "subtitle": "Gerçek giriş/çıkış ve mola saatlerinizi girin; çalışma saatleri bunlardan hesaplanır.",

@@ -44,6 +44,7 @@ import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import { useTranslation } from '@/i18n/provider';
 import { readAuth } from '@/lib/authStorage';
 import Cookies from 'js-cookie';
+import { CommandPalette } from '@/components/layout/CommandPalette';
 
 interface AdminLayoutProps {
   children: ReactNode;
@@ -332,8 +333,18 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
   const routeRequiredPerm = requiredPermForPath(pathname);
   const routeAuthorized = !routeRequiredPerm || hasPermission(routeRequiredPerm);
 
+  // Same section/permission/feature filtering the sidebar applies, flattened
+  // into one searchable list for the command palette (Cmd/Ctrl+K).
+  const paletteItems = navigation.flatMap(group =>
+    group.items
+      .filter(item => hasPermission(item.perm) && hasFeature(item.feature))
+      .map(item => ({ name: item.name, href: item.href, icon: item.icon, section: group.section }))
+  );
+
   return (
     <div data-admin-theme={theme} className="flex min-h-dvh bg-[var(--admin-bg)]">
+      <CommandPalette items={paletteItems} />
+
       {/* Mobile/tablet overlay — clicking anywhere off the sidebar closes it. */}
       {isSidebarOpen && (
         <div

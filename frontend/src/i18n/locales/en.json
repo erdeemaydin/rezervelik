@@ -59,6 +59,11 @@
     "userSettings": "User Settings",
     "auditLog": "Activity Log"
   },
+  "commandPalette": {
+    "title": "Jump to page",
+    "placeholder": "Search pages... (Ctrl+K)",
+    "noResults": "No matching pages"
+  },
   "timesheet": {
     "title": "Timesheet",
     "subtitle": "Log your actual check-in/out and breaks; hours are calculated from these.",
