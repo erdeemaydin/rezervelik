@@ -299,7 +299,7 @@ export default function ShiftAssigner({ viewMode = 'MONTHLY' }: { viewMode?: 'WE
     loadData();
   }, [loadData]);
 
-  const handleAssign = async (shiftId: string, userId: string, date: string) => {
+  const handleAssign = async (shiftId: string, userId: string, date: string, force: boolean = false) => {
     // Prevent duplicate assignment in the UI first
     if (assignments.some(a => a.shiftId === shiftId && a.userId === userId && a.date === date)) {
       toast.warning(t('scheduling.assigner.alreadyAssigned'));
@@ -307,10 +307,28 @@ export default function ShiftAssigner({ viewMode = 'MONTHLY' }: { viewMode?: 'WE
     }
 
     try {
-      const newAssignment = await assignShift({ shiftId, userId, date });
+      const newAssignment = await assignShift({ shiftId, userId, date, force });
       toast.success(t('scheduling.assigner.assigned'));
       setAssignments(prev => [...prev, { ...newAssignment, user: staff.find(s => s.id === userId) }]);
     } catch (error: any) {
+      // The server now authoritatively enforces DOUBLE_SHIFT/CONSECUTIVE_REST/
+      // UNAVAILABLE (previously these were only ever computed client-side for
+      // display). Offer the same "assign anyway" override the UI already offers
+      // for the unavailable-staff case, driven by what the server actually found.
+      const violations = error.response?.data?.details?.violations as { type: string; message: string }[] | undefined;
+      if (error.response?.status === 409 && violations?.length && !force) {
+        const staffMember = staff.find(s => s.id === userId);
+        const ok = await confirm({
+          title: t('scheduling.assigner.forceTitle'),
+          description: violations.map(v => v.message).join(' '),
+          tone: 'danger',
+          confirmText: t('scheduling.assigner.forceConfirm'),
+        });
+        if (ok) {
+          await handleAssign(shiftId, userId, date, true);
+        }
+        return;
+      }
       toast.error(error.response?.data?.message || t('scheduling.assigner.assignFailed'));
     }
   };
@@ -1178,7 +1196,7 @@ export default function ShiftAssigner({ viewMode = 'MONTHLY' }: { viewMode?: 'WE
                                                                 confirmText: t('scheduling.assigner.forceConfirm'),
                                                               });
                                                               if (ok) {
-                                                                handleAssign(shift.id, s.id, day.dateString);
+                                                                handleAssign(shift.id, s.id, day.dateString, true);
                                                                 setOpenPopoverCellId(null);
                                                               }
                                                             }}

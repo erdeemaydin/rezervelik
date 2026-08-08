@@ -1,7 +1,80 @@
 import { Request, Response } from 'express';
+import { Prisma } from '@prisma/client';
 import prisma from '../config/prisma';
 import { successResponse, errorResponse } from '../utils/response';
 import { sendShiftPlan } from '../services/notificationService';
+
+const addDays = (dateStr: string, delta: number): string => {
+  const d = new Date(`${dateStr}T00:00:00Z`);
+  d.setUTCDate(d.getUTCDate() + delta);
+  return d.toISOString().slice(0, 10);
+};
+
+// A shift's occupied window on a given date, promoted to the next calendar day if
+// endTime <= startTime (an overnight shift, e.g. 22:00-06:00).
+const shiftWindow = (date: string, startTime: string, endTime: string) => {
+  const start = new Date(`${date}T${startTime}:00`);
+  let end = new Date(`${date}T${endTime}:00`);
+  if (end.getTime() <= start.getTime()) end = new Date(end.getTime() + 24 * 60 * 60 * 1000);
+  return { start, end };
+};
+
+export type ScheduleViolationType = 'DOUBLE_SHIFT' | 'CONSECUTIVE_REST' | 'UNAVAILABLE';
+export interface ScheduleViolation { type: ScheduleViolationType; message: string }
+
+/**
+ * Authoritative, server-side version of the three hard rules the assigner UI has
+ * always computed only for display (ShiftAssigner.tsx's assignmentWarnings memo):
+ * DOUBLE_SHIFT (two shifts same day), CONSECUTIVE_REST (<11h between shifts, per
+ * PROJECT_LOGIC.md §10), and UNAVAILABLE (staff explicitly marked not available for
+ * this shift/date). The UI never sent these as a block — any direct API call could
+ * silently create an assignment that violates all three. This mirrors that same
+ * algorithm so the two stay in agreement.
+ */
+async function findAssignShiftViolations({
+  restaurantId, shiftId, userId, date, tx,
+}: { restaurantId: string; shiftId: string; userId: string; date: string; tx: Prisma.TransactionClient }): Promise<ScheduleViolation[]> {
+  const shift = await tx.shift.findFirst({ where: { id: shiftId, restaurantId } });
+  if (!shift) return [];
+
+  const violations: ScheduleViolation[] = [];
+
+  const availability = await tx.employeeAvailability.findUnique({
+    where: { userId_shiftId_date: { userId, shiftId, date } },
+  });
+  if (availability && !availability.isAvailable) {
+    violations.push({ type: 'UNAVAILABLE', message: 'Staff marked this day/shift as Unavailable.' });
+  }
+
+  // Only the day before/after can affect the 11h rest window around this shift.
+  const neighbors = await tx.shiftAssignment.findMany({
+    where: { userId, shift: { restaurantId }, date: { in: [addDays(date, -1), date, addDays(date, 1)] } },
+    include: { shift: true },
+  });
+
+  if (neighbors.some(a => a.date === date && a.shiftId !== shiftId)) {
+    violations.push({ type: 'DOUBLE_SHIFT', message: 'Staff already has another shift assigned that day.' });
+  }
+
+  const candidate = shiftWindow(date, shift.startTime, shift.endTime);
+  for (const a of neighbors) {
+    if (a.date === date) continue; // same-day handled as DOUBLE_SHIFT above
+    const w = shiftWindow(a.date, a.shift.startTime, a.shift.endTime);
+    const gapMs = w.start.getTime() >= candidate.end.getTime()
+      ? w.start.getTime() - candidate.end.getTime()
+      : candidate.start.getTime() - w.end.getTime();
+    const gapHours = gapMs / (1000 * 60 * 60);
+    if (gapHours >= 0 && gapHours < 11) {
+      violations.push({
+        type: 'CONSECUTIVE_REST',
+        message: `Only ${Math.round(gapHours * 10) / 10}h off between shifts (minimum 11h required).`,
+      });
+      break;
+    }
+  }
+
+  return violations;
+}
 
 // Grace window before the published plan is actually sent to staff over WhatsApp
 // (#7.4) — lets the admin catch mistakes. In-process timer: fine for a single
@@ -406,7 +479,7 @@ export const unpublishAssignments = async (req: Request, res: Response) => {
 export const assignShift = async (req: Request, res: Response) => {
   try {
     const restaurantId = req.restaurantId!;
-    const { shiftId, userId, date } = req.body;
+    const { shiftId, userId, date, force } = req.body;
 
     if (!shiftId || !userId || !date) {
       return errorResponse(res, 'errors.validation_error', 400, { message: 'Missing required fields' });
@@ -419,13 +492,23 @@ export const assignShift = async (req: Request, res: Response) => {
     const user = await prisma.user.findFirst({ where: { id: userId, restaurantId } });
     if (!user) return errorResponse(res, 'errors.not_found', 404, { message: 'User not found' });
 
-    const assignment = await prisma.shiftAssignment.create({
-      data: {
-        shiftId,
-        userId,
-        date
+    // Check-then-write inside a transaction so two concurrent assignments for the
+    // same person can't both pass the violation check and both land.
+    let assignment;
+    try {
+      assignment = await prisma.$transaction(async (tx) => {
+        const violations = await findAssignShiftViolations({ restaurantId, shiftId, userId, date, tx });
+        if (violations.length > 0 && !force) {
+          throw Object.assign(new Error('SCHEDULE_VIOLATION'), { code: 'SCHEDULE_VIOLATION', violations });
+        }
+        return tx.shiftAssignment.create({ data: { shiftId, userId, date } });
+      });
+    } catch (txErr: any) {
+      if (txErr?.code === 'SCHEDULE_VIOLATION') {
+        return errorResponse(res, 'errors.schedule_violation', 409, { code: 'SCHEDULE_VIOLATION', violations: txErr.violations });
       }
-    });
+      throw txErr;
+    }
 
     return successResponse(res, assignment, 'Shift assigned successfully', 201);
   } catch (error: any) {
