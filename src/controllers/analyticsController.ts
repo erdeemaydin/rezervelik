@@ -1,6 +1,37 @@
 import { Request, Response } from 'express';
 import prisma from '../config/prisma';
 import { successResponse, errorResponse } from '../utils/response';
+import { restaurantDateStr } from '../utils/reservationConflict';
+
+// Hour (0-23) and day-of-week (0=Sun..6=Sat) of `date` as seen in the restaurant's
+// own timezone, not the server's. Reservation timestamps are stored as absolute
+// instants (UTC internally); reading them back with .getHours()/.getDay() reflects
+// wherever this Node process happens to run, which on a UTC-deployed server for an
+// Istanbul (UTC+3) tenant shifts every bucket by ~3 hours — an 8pm dinner shows up
+// at hour 17, and a day can straddle two server-local dates.
+function restaurantHourAndDay(date: Date, timezone?: string): { hour: number; dayOfWeek: number } {
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone: timezone || 'Europe/Istanbul',
+    hour: 'numeric', hourCycle: 'h23', weekday: 'short',
+  }).formatToParts(date);
+  const hour = parseInt(parts.find(p => p.type === 'hour')!.value, 10);
+  const weekdayShort = parts.find(p => p.type === 'weekday')!.value;
+  const dayOfWeek = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].indexOf(weekdayShort);
+  return { hour, dayOfWeek };
+}
+
+// The UTC instant corresponding to local midnight of `dateStr` (YYYY-MM-DD) in the
+// given timezone. Standard cross-environment-safe technique: format the same guess
+// instant through both the target zone and UTC, take the wall-clock difference (the
+// zone's offset at that instant), and shift the guess back by it.
+function restaurantMidnightUTC(dateStr: string, timezone?: string): Date {
+  const tz = timezone || 'Europe/Istanbul';
+  const guess = new Date(`${dateStr}T00:00:00Z`);
+  const asZoned = new Date(guess.toLocaleString('en-US', { timeZone: tz }));
+  const asUTC = new Date(guess.toLocaleString('en-US', { timeZone: 'UTC' }));
+  const offsetMs = asZoned.getTime() - asUTC.getTime();
+  return new Date(guess.getTime() - offsetMs);
+}
 
 /**
  * GET /analytics?period=30
@@ -119,16 +150,17 @@ export const getAnalytics = async (req: Request, res: Response) => {
           : 0;
 
     // ─── 4. Daily Trend ───
+    // Bucketed by the restaurant's own calendar day, not the server's/UTC's — see
+    // restaurantDateStr's doc comment.
     const dailyMap = new Map<string, { reservations: number; guests: number }>();
 
     // Initialize all days in the period
     for (let d = new Date(periodStart); d <= now; d = new Date(d.getTime() + 24 * 60 * 60 * 1000)) {
-      const dateStr = d.toISOString().split('T')[0];
-      dailyMap.set(dateStr, { reservations: 0, guests: 0 });
+      dailyMap.set(restaurantDateStr(d, settings?.timezone), { reservations: 0, guests: 0 });
     }
 
     currentReservations.forEach((r) => {
-      const dateStr = r.startTime.toISOString().split('T')[0];
+      const dateStr = restaurantDateStr(r.startTime, settings?.timezone);
       const entry = dailyMap.get(dateStr);
       if (entry) {
         entry.reservations += 1;
@@ -143,11 +175,12 @@ export const getAnalytics = async (req: Request, res: Response) => {
     }));
 
     // ─── 5. Peak Hours Heatmap ───
+    // dayOfWeek/hour resolved in the restaurant's own timezone — see
+    // restaurantHourAndDay's doc comment.
     const peakHoursMap = new Map<string, number>();
 
     currentReservations.forEach((r) => {
-      const dayOfWeek = r.startTime.getDay();
-      const hour = r.startTime.getHours();
+      const { dayOfWeek, hour } = restaurantHourAndDay(r.startTime, settings?.timezone);
       const key = `${dayOfWeek}-${hour}`;
       peakHoursMap.set(key, (peakHoursMap.get(key) || 0) + 1);
     });
@@ -337,15 +370,17 @@ export const getTodayStats = async (req: Request, res: Response) => {
   try {
     const restaurantId = req.restaurantId!;
     const now = new Date();
+    const settings = await prisma.restaurantSettings.findUnique({ where: { restaurantId }, select: { timezone: true } });
 
-    // Optional ?date=YYYY-MM-DD to view another day's stats (#2.1). Defaults to today.
-    const dateStr = req.query.date as string | undefined;
-    const anchor = dateStr && !isNaN(new Date(dateStr).getTime()) ? new Date(`${dateStr}T00:00:00`) : now;
-    const todayStart = new Date(anchor.getFullYear(), anchor.getMonth(), anchor.getDate());
+    // Optional ?date=YYYY-MM-DD to view another day's stats (#2.1). Defaults to
+    // today. "Today" and the day boundaries below are resolved in the restaurant's
+    // own timezone, not the server's — see restaurantMidnightUTC's doc comment.
+    const requestedDateStr = req.query.date as string | undefined;
+    const todaysDateStr = restaurantDateStr(now, settings?.timezone);
+    const effectiveDateStr = requestedDateStr && !isNaN(new Date(requestedDateStr).getTime()) ? requestedDateStr : todaysDateStr;
+    const todayStart = restaurantMidnightUTC(effectiveDateStr, settings?.timezone);
     const todayEnd = new Date(todayStart.getTime() + 24 * 60 * 60 * 1000);
-    const isToday = todayStart.getFullYear() === now.getFullYear()
-      && todayStart.getMonth() === now.getMonth()
-      && todayStart.getDate() === now.getDate();
+    const isToday = effectiveDateStr === todaysDateStr;
 
     // Fetch all of today's reservations in one query
     const todayReservations = await prisma.reservation.findMany({
@@ -390,7 +425,7 @@ export const getTodayStats = async (req: Request, res: Response) => {
     const hourMap = new Map<number, number>();
 
     todayReservations.forEach((r) => {
-      const hour = r.startTime.getHours();
+      const { hour } = restaurantHourAndDay(r.startTime, settings?.timezone);
       hourMap.set(hour, (hourMap.get(hour) || 0) + 1);
     });
 
@@ -411,7 +446,7 @@ export const getTodayStats = async (req: Request, res: Response) => {
         : 0;
 
     return successResponse(res, {
-      date: todayStart.toISOString().split('T')[0],
+      date: effectiveDateStr,
       isToday,
       todayReservations: todayReservationsCount,
       todayGuests,
