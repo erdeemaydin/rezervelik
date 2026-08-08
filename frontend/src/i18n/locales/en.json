@@ -1064,6 +1064,12 @@
     "cancel": "Cancel"
   },
   "settings": {
+    "tabs": {
+      "reservations": "Reservations",
+      "scheduling": "Scheduling",
+      "payments": "Payments",
+      "appearance": "Appearance"
+    },
     "failedLoad": "Failed to load settings",
     "updatedSuccessfully": "Settings updated successfully",
     "failedSave": "Failed to save settings",

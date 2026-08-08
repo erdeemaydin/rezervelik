@@ -1064,6 +1064,12 @@
     "cancel": "İptal"
   },
   "settings": {
+    "tabs": {
+      "reservations": "Rezervasyonlar",
+      "scheduling": "Planlama",
+      "payments": "Ödemeler",
+      "appearance": "Görünüm"
+    },
     "failedLoad": "Ayarlar yüklenemedi",
     "updatedSuccessfully": "Ayarlar başarıyla güncellendi",
     "failedSave": "Ayarlar kaydedilemedi",
