@@ -4,7 +4,7 @@ import { successResponse, errorResponse } from '../utils/response';
 import { verifyToken } from '../utils/jwt';
 import { createPaymentForReservation } from '../services/paymentService';
 import { sendPaymentRequest } from '../services/notificationService';
-import { findTableConflict, findAvailableTable, BLOCKING_STATUSES } from '../utils/reservationConflict';
+import { findTableConflict, findAvailableTable, BLOCKING_STATUSES, restaurantDateStr, clearFullyBookedIfSet } from '../utils/reservationConflict';
 import { logAudit } from '../services/auditService';
 
 const isStaffRequest = (req: Request): boolean => {
@@ -80,13 +80,7 @@ export const createReservation = async (req: Request, res: Response) => {
       where: { restaurantId }
     });
 
-    // The reservation's calendar day is resolved in the restaurant's own timezone
-    // (not UTC), so a booking near midnight lands on the day the guest actually
-    // picked and lines up with the DaySetting the admin blocked for that date.
-    const dateStr = new Intl.DateTimeFormat('en-CA', {
-      timeZone: settings?.timezone || 'Europe/Istanbul',
-      year: 'numeric', month: '2-digit', day: '2-digit'
-    }).format(start);
+    const dateStr = restaurantDateStr(start, settings?.timezone);
 
     // Check DaySetting
     const daySetting = await prisma.daySetting.findUnique({
@@ -271,39 +265,72 @@ export const updateReservation = async (req: Request, res: Response) => {
     const start = new Date(startTime);
 
     const settings = await prisma.restaurantSettings.findUnique({ where: { restaurantId } });
-    const durationMinutes = settings?.defaultDurationMinutes || 90;
-    // Keep endTime in sync with the (possibly changed) start time so the timeline
-    // and conflict checks reflect the real occupied window instead of a stale value.
-    const windowEnd = new Date(start.getTime() + durationMinutes * 60000);
 
-    if (finalTableId) {
-      const isTableOccupied = await findTableConflict({
-        restaurantId, tableId: finalTableId, start, end: windowEnd, excludeReservationId: id,
+    // Mirror createReservation's window logic: a service-linked booking keeps its
+    // service's duration; otherwise DYNAMIC_DURATION uses the tenant default and
+    // everything else (FIXED_TIME_SLOT/MANUAL_AVAILABILITY) keeps the flat 2h slot.
+    // The edit form doesn't let staff change the linked service, so we reuse
+    // whatever service was resolved (and tenant-validated) at creation time.
+    let durationMinutes = settings?.defaultDurationMinutes || 90;
+    if (existingRes.serviceId) {
+      const service = await prisma.menuItem.findUnique({
+        where: { id: existingRes.serviceId },
+        select: { durationMinutes: true },
       });
-      // This route is staff-only (authMiddleware + manage_reservations), so an explicit
-      // overrideConflict from the confirmed warning dialog is enough to proceed.
-      if (isTableOccupied && !overrideConflict) {
-        return errorResponse(res, 'errors.table_conflict', 409, { code: 'TABLE_CONFLICT' });
+      if (service?.durationMinutes && service.durationMinutes > 0) {
+        durationMinutes = service.durationMinutes;
       }
     }
+    const windowEnd = new Date(start.getTime() + durationMinutes * 60000);
+    const endTime: Date = (settings?.logic === 'DYNAMIC_DURATION' || existingRes.serviceId)
+      ? windowEnd
+      : new Date(start.getTime() + 120 * 60000);
 
-    const updated = await prisma.reservation.update({
-      where: { id },
-      data: {
-        tableId: finalTableId,
-        categoryId: categoryId === 'none' ? null : categoryId,
-        customerName,
-        customerEmail,
-        customerPhone,
-        guestCount: parseInt(guestCount),
-        startTime: start,
-        endTime: windowEnd,
-        notes,
-        internalNote,
-        isVIP: !!isVIP,
-        status
+    // Conflict-check + write happen inside one transaction so two concurrent edits
+    // (or an edit racing a new booking) can't both pass the availability check and
+    // land on the same table — the same race createReservation already guards against.
+    let updated;
+    try {
+      updated = await prisma.$transaction(async (tx) => {
+        if (finalTableId) {
+          const isTableOccupied = await findTableConflict({
+            restaurantId, tableId: finalTableId, start, end: endTime, excludeReservationId: id, tx,
+          });
+          // This route is staff-only (authMiddleware + manage_reservations), so an explicit
+          // overrideConflict from the confirmed warning dialog is enough to proceed.
+          if (isTableOccupied && !overrideConflict) {
+            throw Object.assign(new Error('TABLE_CONFLICT'), { code: 'TABLE_CONFLICT' });
+          }
+        }
+
+        return tx.reservation.update({
+          where: { id },
+          data: {
+            tableId: finalTableId,
+            categoryId: categoryId === 'none' ? null : categoryId,
+            customerName,
+            customerEmail,
+            customerPhone,
+            guestCount: parseInt(guestCount),
+            startTime: start,
+            endTime,
+            notes,
+            internalNote,
+            isVIP: !!isVIP,
+            status
+          }
+        });
+      });
+    } catch (txErr: any) {
+      if (txErr?.code === 'TABLE_CONFLICT') {
+        return errorResponse(res, 'errors.table_conflict', 409, { code: 'TABLE_CONFLICT' });
       }
-    });
+      throw txErr;
+    }
+
+    // The edit may have moved the reservation off its original table/day/status —
+    // let the next booking attempt re-derive whether that original day is still full.
+    await clearFullyBookedIfSet({ restaurantId, dateStr: restaurantDateStr(existingRes.startTime, settings?.timezone) });
 
     return successResponse(res, updated);
   } catch (error) {
@@ -326,6 +353,11 @@ export const deleteReservation = async (req: Request, res: Response) => {
     await prisma.reservation.delete({
       where: { id }
     });
+
+    // Deleting a reservation frees whatever table it held — the day may no longer
+    // actually be fully booked, so let the next booking attempt re-derive that.
+    const settings = await prisma.restaurantSettings.findUnique({ where: { restaurantId }, select: { timezone: true } });
+    await clearFullyBookedIfSet({ restaurantId, dateStr: restaurantDateStr(existingRes.startTime, settings?.timezone) });
 
     return successResponse(res, null, 'Reservation deleted');
   } catch (error) {
@@ -364,20 +396,35 @@ export const updateReservationSchedule = async (req: Request, res: Response) => 
       end = new Date(start.getTime() + (settings?.defaultDurationMinutes || 90) * 60000);
     }
 
-    if (finalTableId) {
-      const conflict = await findTableConflict({
-        restaurantId, tableId: finalTableId, start, end, excludeReservationId: id,
+    let updated;
+    try {
+      updated = await prisma.$transaction(async (tx) => {
+        if (finalTableId) {
+          const conflict = await findTableConflict({
+            restaurantId, tableId: finalTableId, start, end, excludeReservationId: id, tx,
+          });
+          if (conflict && !overrideConflict) {
+            throw Object.assign(new Error('TABLE_CONFLICT'), { code: 'TABLE_CONFLICT' });
+          }
+        }
+
+        return tx.reservation.update({
+          where: { id },
+          data: { tableId: finalTableId, startTime: start, endTime: end },
+          include: { table: true, category: true }
+        });
       });
-      if (conflict && !overrideConflict) {
+    } catch (txErr: any) {
+      if (txErr?.code === 'TABLE_CONFLICT') {
         return errorResponse(res, 'errors.table_conflict', 409, { code: 'TABLE_CONFLICT' });
       }
+      throw txErr;
     }
 
-    const updated = await prisma.reservation.update({
-      where: { id },
-      data: { tableId: finalTableId, startTime: start, endTime: end },
-      include: { table: true, category: true }
-    });
+    // The reservation may have moved off its original table/day — let the next
+    // booking attempt re-derive whether that original day is still full.
+    const settings = await prisma.restaurantSettings.findUnique({ where: { restaurantId }, select: { timezone: true } });
+    await clearFullyBookedIfSet({ restaurantId, dateStr: restaurantDateStr(existingRes.startTime, settings?.timezone) });
 
     return successResponse(res, updated);
   } catch (error) {
@@ -398,11 +445,20 @@ export const updateReservationStatus = async (req: Request, res: Response) => {
 
     if (!existingRes) return errorResponse(res, 'errors.validation_error', 404, { message: 'Reservation not found' });
 
+    // Normalize like every other reservation handler: undefined = leave unchanged,
+    // 'none' = explicitly clear, otherwise the given id. Writing the literal string
+    // 'none' into the tableId column (as this endpoint previously did) fails the FK.
+    const finalTableId: string | null | undefined =
+      tableId === undefined ? undefined : (tableId === 'none' ? null : tableId);
+    const conflictEnd = existingRes.endTime ?? new Date(existingRes.startTime.getTime() + 90 * 60000);
+
     // If this status change assigns/keeps a table on a booking that will occupy it,
-    // make sure we're not overlapping another active booking on that table.
-    const targetTableId = tableId ?? existingRes.tableId;
+    // make sure we're not overlapping another active booking on that table. This is
+    // a fail-fast check so we don't generate a payment link for a doomed request;
+    // the authoritative check happens again inside the transaction right before the
+    // write, closing the race window between here and the eventual write.
+    const targetTableId = finalTableId !== undefined ? finalTableId : existingRes.tableId;
     if (targetTableId && status && BLOCKING_STATUSES.includes(status)) {
-      const conflictEnd = existingRes.endTime ?? new Date(existingRes.startTime.getTime() + 90 * 60000);
       const conflict = await findTableConflict({
         restaurantId, tableId: targetTableId, start: existingRes.startTime, end: conflictEnd, excludeReservationId: id,
       });
@@ -422,10 +478,28 @@ export const updateReservationStatus = async (req: Request, res: Response) => {
       if (paymentEnabled) {
         const pay = await createPaymentForReservation(existingRes, settings!);
         if (pay) {
-          const updated = await prisma.reservation.update({
-            where: { id },
-            data: { status: 'AWAITING_PAYMENT', paymentId: pay.paymentId, ...(tableId ? { tableId } : {}) },
-          });
+          let updated;
+          try {
+            updated = await prisma.$transaction(async (tx) => {
+              if (targetTableId) {
+                const conflict = await findTableConflict({
+                  restaurantId, tableId: targetTableId, start: existingRes.startTime, end: conflictEnd, excludeReservationId: id, tx,
+                });
+                if (conflict && !overrideConflict) {
+                  throw Object.assign(new Error('TABLE_CONFLICT'), { code: 'TABLE_CONFLICT' });
+                }
+              }
+              return tx.reservation.update({
+                where: { id },
+                data: { status: 'AWAITING_PAYMENT', paymentId: pay.paymentId, ...(finalTableId !== undefined ? { tableId: finalTableId } : {}) },
+              });
+            });
+          } catch (txErr: any) {
+            if (txErr?.code === 'TABLE_CONFLICT') {
+              return errorResponse(res, 'errors.table_conflict', 409, { code: 'TABLE_CONFLICT' });
+            }
+            throw txErr;
+          }
           const restaurant = await prisma.restaurant.findUnique({ where: { id: restaurantId } });
           const amountLabel = `${(pay.amountMinor / 100).toFixed(2)} ${pay.currency}`;
           const reservationLabel = new Date(existingRes.startTime).toLocaleString('tr-TR') + ` · ${existingRes.guestCount} kişi`;
@@ -448,10 +522,36 @@ export const updateReservationStatus = async (req: Request, res: Response) => {
       }
     }
 
-    const updated = await prisma.reservation.update({
-      where: { id },
-      data: { status, tableId }
-    });
+    let updated;
+    try {
+      updated = await prisma.$transaction(async (tx) => {
+        if (targetTableId) {
+          const conflict = await findTableConflict({
+            restaurantId, tableId: targetTableId, start: existingRes.startTime, end: conflictEnd, excludeReservationId: id, tx,
+          });
+          if (conflict && !overrideConflict) {
+            throw Object.assign(new Error('TABLE_CONFLICT'), { code: 'TABLE_CONFLICT' });
+          }
+        }
+        return tx.reservation.update({
+          where: { id },
+          data: { status, ...(finalTableId !== undefined ? { tableId: finalTableId } : {}) }
+        });
+      });
+    } catch (txErr: any) {
+      if (txErr?.code === 'TABLE_CONFLICT') {
+        return errorResponse(res, 'errors.table_conflict', 409, { code: 'TABLE_CONFLICT' });
+      }
+      throw txErr;
+    }
+
+    // If this transition freed a table (e.g. CANCELLED/NO_SHOW/EXPIRED, previously
+    // blocking), the day may no longer actually be fully booked.
+    if (status && existingRes.status !== status &&
+        BLOCKING_STATUSES.includes(existingRes.status) && !BLOCKING_STATUSES.includes(status)) {
+      const daySettings = await prisma.restaurantSettings.findUnique({ where: { restaurantId }, select: { timezone: true } });
+      await clearFullyBookedIfSet({ restaurantId, dateStr: restaurantDateStr(existingRes.startTime, daySettings?.timezone) });
+    }
 
     logAudit({
       req,

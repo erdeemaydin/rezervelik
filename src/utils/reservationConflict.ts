@@ -41,6 +41,39 @@ export async function findTableConflict({
 }
 
 /**
+ * The reservation's calendar day, resolved in the restaurant's own timezone (not
+ * UTC) so a booking near midnight lands on the day the guest actually picked and
+ * lines up with the DaySetting the admin manages for that date.
+ */
+export function restaurantDateStr(date: Date, timezone?: string): string {
+  return new Intl.DateTimeFormat('en-CA', {
+    timeZone: timezone || 'Europe/Istanbul',
+    year: 'numeric', month: '2-digit', day: '2-digit',
+  }).format(date);
+}
+
+/**
+ * DaySetting.isFullyBooked is a coarse, manually-managed gate: createReservation
+ * sets it when a public request finds no table free for its requested slot, but
+ * that says nothing about whether the day is *still* full once a reservation that
+ * held a table is deleted, canceled, marked no-show, or moved off that day. We
+ * don't try to recompute true full-day capacity here (that's slot-dependent and
+ * expensive); we just clear the gate so the next booking attempt re-derives it
+ * accurately. Worst case we under-flag for a moment and the very next request that
+ * genuinely can't find a table re-sets it — better than the previous behavior of
+ * never clearing and hard-blocking the day indefinitely after a cancellation.
+ */
+export async function clearFullyBookedIfSet({
+  restaurantId, dateStr, tx,
+}: { restaurantId: string; dateStr: string; tx?: Prisma.TransactionClient }) {
+  const client = tx ?? prisma;
+  await client.daySetting.updateMany({
+    where: { restaurantId, date: dateStr, isFullyBooked: true },
+    data: { isFullyBooked: false },
+  });
+}
+
+/**
  * Finds a table that can seat `partySize` and is free for [start, end).
  * Ordered by smallest sufficient capacity first so large tables stay open for
  * larger parties. Returns null when nothing fits (fully booked for the slot).
