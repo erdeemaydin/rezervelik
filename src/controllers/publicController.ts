@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import prisma from '../config/prisma';
 import { successResponse, errorResponse } from '../utils/response';
 import { findAvailableTable } from '../utils/reservationConflict';
+import { releaseWaitlistCapacity } from '../utils/waitlistCapacity';
 
 export const getRestaurantBySlug = async (req: Request, res: Response) => {
   try {
@@ -210,6 +211,14 @@ export const acceptOffer = async (req: Request, res: Response) => {
       await tx.waitlistEntry.update({
         where: { id: entry.id },
         data: { status: 'ACCEPTED' }
+      });
+      await releaseWaitlistCapacity({
+        restaurantId: entry.restaurantId,
+        fromStatus: entry.status,
+        toStatus: 'ACCEPTED',
+        partySize: entry.partySize,
+        targetDate: entry.targetDate,
+        tx,
       });
     });
 

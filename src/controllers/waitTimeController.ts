@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import prisma from '../config/prisma';
 import { successResponse, errorResponse } from '../utils/response';
+import { releaseWaitlistCapacity } from '../utils/waitlistCapacity';
 
 export const getWaitTimeConfig = async (req: Request, res: Response) => {
   try {
@@ -138,6 +139,16 @@ export const updateWaitlistStatus = async (req: Request, res: Response) => {
       data: dataToUpdate
     });
 
+    // If this transition took the entry out of the active queue, the person no
+    // longer counts toward the next customer's quoted wait time.
+    await releaseWaitlistCapacity({
+      restaurantId,
+      fromStatus: existingEntry.status,
+      toStatus: status,
+      partySize: existingEntry.partySize,
+      targetDate: existingEntry.targetDate,
+    });
+
     return successResponse(res, entry);
   } catch (error) {
     console.error('Update waitlist status error:', error);
@@ -169,7 +180,14 @@ export const sendOffer = async (req: Request, res: Response) => {
       }
     });
 
-    const offerUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/r/${existingEntry.restaurantId}/offer/${offerToken}`;
+    // NEXT_PUBLIC_APP_URL is a frontend-only env var and is never set on this
+    // (backend) process, so it silently fell back to this process's own port —
+    // the backend's :3000, not the Next.js frontend's :3001 that actually serves
+    // /r/[slug]/offer/[token]. It also interpolated the restaurantId (a UUID)
+    // where the route expects the tenant's slug. APP_PUBLIC_URL is the convention
+    // used elsewhere for frontend links (see paymentService.ts, staffController.ts).
+    const restaurant = await prisma.restaurant.findUnique({ where: { id: existingEntry.restaurantId }, select: { slug: true } });
+    const offerUrl = `${process.env.APP_PUBLIC_URL || 'http://localhost:3001'}/r/${restaurant?.slug}/offer/${offerToken}`;
     console.log(`[SMS/Email Integration] -> Sending offer link to ${existingEntry.customerPhone}: "We have an opening at ${offeredTime}! Please accept or decline: ${offerUrl}"`);
 
     return successResponse(res, entry);
