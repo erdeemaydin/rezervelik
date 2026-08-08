@@ -1105,7 +1105,7 @@
     "standardBulk": "Standart (Manuel İnceleme)",
     "blackoutBulk": "Kapatma (Rezervasyonları Kapat)",
     "bulkActionDesc": "Bu işlem, Takvim Yöneticinizdeki sonraki 365 güne bir operasyonel modu toplu olarak uygulamanızı sağlar.",
-    "paymentsDeposits": "Ödemeler ve Kaporalar",
+    "paymentsDeposits": "Kapora Kuralları",
     "secureBookings": "Rezervasyonları finansal taahhütlerle güvence altına alın",
     "enableDeposit": "Kapora Ödemesini Etkinleştir",
     "depositAmount": "Kapora Tutarı",
@@ -1156,7 +1156,7 @@
       "HOST": "Karşılama",
       "STAFF": "Personel"
     },
-    "appearance": "Görünüm",
+    "appearance": "Pano Teması",
     "appearanceDesc": "Tüm ekibiniz için pano renk temasını seçin.",
     "appearanceHint": "Ekibinizdeki herkes bu temayı görür. Değişiklikler kaydettikten sonra uygulanır."
   },

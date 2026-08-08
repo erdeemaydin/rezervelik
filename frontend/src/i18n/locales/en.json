@@ -1105,7 +1105,7 @@
     "standardBulk": "Standard (Manual Review)",
     "blackoutBulk": "Blackout (Close Bookings)",
     "bulkActionDesc": "This action allows you to mass-apply an operational mode to the next 365 days in your Calendar Master.",
-    "paymentsDeposits": "Payments & Deposits",
+    "paymentsDeposits": "Deposit Rules",
     "secureBookings": "Secure bookings with financial commitments",
     "enableDeposit": "Enable Deposit Payment",
     "depositAmount": "Deposit Amount",
@@ -1156,7 +1156,7 @@
       "HOST": "Host",
       "STAFF": "Staff"
     },
-    "appearance": "Appearance",
+    "appearance": "Dashboard Theme",
     "appearanceDesc": "Choose the dashboard color theme for your whole team.",
     "appearanceHint": "Everyone on your team sees this theme. Changes apply after you save."
   },
