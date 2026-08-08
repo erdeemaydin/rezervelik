@@ -117,11 +117,12 @@ export const createReservation = async (req: Request, res: Response) => {
 
     const staffInitiated = isStaffRequest(req);
 
-    // A service-driven booking always ends after its service length, regardless of
-    // the tenant's slot logic; otherwise keep the existing dynamic/fixed behavior.
-    const endTime: Date = (settings.logic === 'DYNAMIC_DURATION' || finalServiceId)
-      ? windowEnd
-      : new Date(start.getTime() + 120 * 60000);
+    // The tenant's configured defaultDurationMinutes (or the service's own
+    // duration, when set) governs how long a table is considered occupied,
+    // regardless of reservation logic mode — FIXED_SLOTS/MANUAL_AVAILABILITY
+    // used to hardcode a flat 2h window here, which silently ignored the
+    // restaurant's own Settings value.
+    const endTime: Date = windowEnd;
 
     const paymentEnabled = !!settings.isPaidReservationEnabled && (settings.depositAmount || 0) > 0;
 
@@ -268,10 +269,11 @@ export const updateReservation = async (req: Request, res: Response) => {
     const settings = await prisma.restaurantSettings.findUnique({ where: { restaurantId } });
 
     // Mirror createReservation's window logic: a service-linked booking keeps its
-    // service's duration; otherwise DYNAMIC_DURATION uses the tenant default and
-    // everything else (FIXED_TIME_SLOT/MANUAL_AVAILABILITY) keeps the flat 2h slot.
-    // The edit form doesn't let staff change the linked service, so we reuse
-    // whatever service was resolved (and tenant-validated) at creation time.
+    // service's duration; otherwise the tenant's configured defaultDurationMinutes
+    // applies regardless of logic mode (see createReservation for why the old flat
+    // 2h FIXED_SLOTS/MANUAL_AVAILABILITY hardcode was removed). The edit form
+    // doesn't let staff change the linked service, so we reuse whatever service was
+    // resolved (and tenant-validated) at creation time.
     let durationMinutes = settings?.defaultDurationMinutes || 90;
     if (existingRes.serviceId) {
       const service = await prisma.menuItem.findUnique({
@@ -282,10 +284,7 @@ export const updateReservation = async (req: Request, res: Response) => {
         durationMinutes = service.durationMinutes;
       }
     }
-    const windowEnd = new Date(start.getTime() + durationMinutes * 60000);
-    const endTime: Date = (settings?.logic === 'DYNAMIC_DURATION' || existingRes.serviceId)
-      ? windowEnd
-      : new Date(start.getTime() + 120 * 60000);
+    const endTime: Date = new Date(start.getTime() + durationMinutes * 60000);
 
     // Conflict-check + write happen inside one transaction so two concurrent edits
     // (or an edit racing a new booking) can't both pass the availability check and

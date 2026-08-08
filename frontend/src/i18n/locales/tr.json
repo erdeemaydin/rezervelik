@@ -1161,7 +1161,7 @@
     },
     "logicExplain": {
       "DYNAMIC_DURATION": "Bir rezervasyonun bitiş saati, yukarıda belirlenen varsayılan süreden otomatik olarak hesaplanır (örneğin başlangıçtan 90 dakika sonra).",
-      "FIXED_SLOTS": "Rezervasyonlar önceden tanımlanmış sabit zaman dilimlerini kullanır. Her rezervasyon, süre alanından bağımsız olarak belirli bir dilimi kaplar.",
+      "FIXED_SLOTS": "Rezervasyonlar önceden tanımlanmış sabit zaman dilimlerini kullanır. Her rezervasyon, dilimin başlangıcından itibaren yukarıda belirlenen varsayılan süre kadar masayı kaplar.",
       "MANUAL_AVAILABILITY": "Otomatik zaman bazlı çakışma kontrolü yapılmaz. Bir masa, yalnızca personel Masalar sayfasında \"Dolu\" olarak işaretlediği sürece yeni rezervasyonları engeller — masayı boşaltmak (tekrar \"Müsait\" işaretlemek) bir sonraki rezervasyon için masayı açar, saat değil."
     },
     "currencyManagedBySystem": "Platform yöneticisi belirler",

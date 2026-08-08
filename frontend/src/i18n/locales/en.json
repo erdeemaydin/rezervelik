@@ -1161,7 +1161,7 @@
     },
     "logicExplain": {
       "DYNAMIC_DURATION": "A booking's end time is calculated automatically from the default duration set above (e.g. 90 minutes after the start time).",
-      "FIXED_SLOTS": "Bookings use fixed, pre-defined time slots. Each reservation occupies a set slot regardless of the duration field.",
+      "FIXED_SLOTS": "Bookings use fixed, pre-defined time slots. Each reservation occupies the table for the default duration set above, starting from the slot's time.",
       "MANUAL_AVAILABILITY": "No automatic time-based conflict checking. A table only blocks new bookings while staff mark it Occupied on the Tables page — clearing it (marking it Available again) is what frees it up for the next booking, not the clock."
     },
     "currencyManagedBySystem": "Set by platform admin",
