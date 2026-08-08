@@ -243,13 +243,21 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
       { name: t('admin.waitlist'), href: '/dashboard/wait-time', icon: Clock, perm: 'manage_settings', feature: 'hasWaitTimeFeature' },
       { name: t('admin.staffSchedule'), href: '/dashboard/scheduling', icon: Calendar, feature: 'hasShiftFeature' },
     ]},
-    { section: t('admin.sectionAdministration'), items: [
-      { name: t('admin.payments'), href: '/dashboard/payments', icon: CreditCard, feature: 'hasPaymentFeature', perm: 'view_payments' },
+    // Administration used to be one flat, unrelated grab-bag (payments ledger,
+    // staff records, reviews, branding, audit log, and settings all side by side).
+    // Split by what they actually have in common so "who works here" reads
+    // separately from "how the business is configured" and from "compliance record".
+    { section: t('admin.sectionPeople'), items: [
       { name: t('admin.staffMembers'), href: '/dashboard/staff', icon: Users, perm: 'manage_staff' },
+    ]},
+    { section: t('admin.sectionBusiness'), items: [
+      { name: t('admin.payments'), href: '/dashboard/payments', icon: CreditCard, feature: 'hasPaymentFeature', perm: 'view_payments' },
       { name: t('admin.reviews'), href: '/dashboard/reviews', icon: MessageSquare, perm: 'view_reviews' },
       { name: t('admin.customization'), href: '/dashboard/customization', icon: Settings, perm: 'manage_settings' },
-      { name: t('admin.auditLog'), href: '/dashboard/audit', icon: ScrollText, perm: 'manage_settings', feature: 'showAuditLogToTenant' },
       { name: t('admin.settings'), href: '/dashboard/settings', icon: Settings, perm: 'manage_settings' },
+    ]},
+    { section: t('admin.sectionCompliance'), items: [
+      { name: t('admin.auditLog'), href: '/dashboard/audit', icon: ScrollText, perm: 'manage_settings', feature: 'showAuditLogToTenant' },
     ]}
   ];
 
