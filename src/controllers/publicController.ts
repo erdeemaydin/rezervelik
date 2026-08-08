@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import prisma from '../config/prisma';
 import { successResponse, errorResponse } from '../utils/response';
-import { findAvailableTable } from '../utils/reservationConflict';
+import { findAvailableTable, restaurantDateStr } from '../utils/reservationConflict';
 import { releaseWaitlistCapacity } from '../utils/waitlistCapacity';
 
 export const getRestaurantBySlug = async (req: Request, res: Response) => {
@@ -184,10 +184,18 @@ export const acceptOffer = async (req: Request, res: Response) => {
     if (entry.status !== 'OFFERED') return errorResponse(res, 'Offer no longer available', 400);
     if (entry.offerExpiresAt && new Date() > entry.offerExpiresAt) return errorResponse(res, 'Offer expired', 400);
 
-    // Create a real reservation
-    const startTimeStr = entry.offeredTime ? `${entry.targetDate}T${entry.offeredTime}:00+03:00` : `${entry.targetDate}T19:00:00+03:00`;
-    const start = new Date(startTimeStr);
     const settings = await prisma.restaurantSettings.findUnique({ where: { restaurantId: entry.restaurantId } });
+
+    // entry.targetDate is only set for the date-based "notify me if a table opens
+    // up" waitlist. A real-time walk-in entry (joinPublicWaitlist with no
+    // targetDate) has it as null — sendOffer never required one before marking an
+    // entry OFFERED, so this built the literal string "nullT19:00:00+03:00" (an
+    // invalid date) and threw here, 500ing on every walk-in offer acceptance.
+    const effectiveDate = entry.targetDate || restaurantDateStr(new Date(), settings?.timezone);
+
+    // Create a real reservation
+    const startTimeStr = entry.offeredTime ? `${effectiveDate}T${entry.offeredTime}:00+03:00` : `${effectiveDate}T19:00:00+03:00`;
+    const start = new Date(startTimeStr);
     const end = new Date(start.getTime() + (settings?.defaultDurationMinutes || 90) * 60000);
 
     await prisma.$transaction(async (tx) => {
