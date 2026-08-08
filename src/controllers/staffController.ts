@@ -5,6 +5,7 @@ import prisma from '../config/prisma';
 import { successResponse, errorResponse } from '../utils/response';
 import { generateResetToken } from '../utils/resetToken';
 import { isValidPhone } from '../utils/phone';
+import { logAudit } from '../services/auditService';
 
 const resetLinkFor = (rawToken: string) =>
   `${process.env.APP_PUBLIC_URL || 'http://localhost:3001'}/auth/reset/${rawToken}`;
@@ -82,8 +83,26 @@ export const createStaffMember = async (req: Request, res: Response) => {
 
     const resetLink = await issueResetLink(user.id);
 
+    logAudit({
+      req,
+      restaurantId,
+      category: 'PERMISSIONS',
+      action: 'STAFF_CREATED',
+      targetType: 'User',
+      targetId: user.id,
+      targetLabel: user.email,
+      metadata: { role: user.role, permissions: user.permissions },
+    });
+
     return successResponse(res, { ...user, resetLink }, 'Staff member created successfully', 201);
-  } catch (error) {
+  } catch (error: any) {
+    // The findUnique check above is a fail-fast convenience, not the real guard —
+    // User.email is DB-unique, so two near-simultaneous creates with the same email
+    // can both pass that check and race to this create() call. Without this, the
+    // loser got an opaque 500 instead of the same "Email already in use" message.
+    if (error?.code === 'P2002') {
+      return errorResponse(res, 'errors.validation_error', 400, { message: 'Email already in use' });
+    }
     console.error('Create staff error:', error);
     return errorResponse(res, 'errors.internal_error', 500);
   }
@@ -134,8 +153,28 @@ export const updateStaffMember = async (req: Request, res: Response) => {
     // was requested, issue a reset link the staff member uses to set their own.
     const resetLink = sendResetLink ? await issueResetLink(id) : undefined;
 
+    logAudit({
+      req,
+      restaurantId,
+      category: 'PERMISSIONS',
+      action: 'STAFF_UPDATED',
+      targetType: 'User',
+      targetId: user.id,
+      targetLabel: user.email,
+      metadata: {
+        previousRole: targetUser.role,
+        newRole: user.role,
+        previousPermissions: targetUser.permissions,
+        newPermissions: user.permissions,
+      },
+    });
+
     return successResponse(res, { ...user, ...(resetLink ? { resetLink } : {}) }, 'Staff member updated');
-  } catch (error) {
+  } catch (error: any) {
+    // Same check-then-write race as createStaffMember's email uniqueness check.
+    if (error?.code === 'P2002') {
+      return errorResponse(res, 'errors.validation_error', 400, { message: 'Email already in use' });
+    }
     console.error('Update staff error:', error);
     return errorResponse(res, 'errors.internal_error', 500);
   }
@@ -175,6 +214,18 @@ export const deleteStaffMember = async (req: Request, res: Response) => {
     }
 
     await prisma.user.delete({ where: { id } });
+
+    logAudit({
+      req,
+      restaurantId,
+      category: 'PERMISSIONS',
+      action: 'STAFF_DELETED',
+      targetType: 'User',
+      targetId: targetUser.id,
+      targetLabel: targetUser.email,
+      metadata: { role: targetUser.role },
+    });
+
     return successResponse(res, null, 'Staff member removed');
   } catch (error) {
     console.error('Delete staff error:', error);
