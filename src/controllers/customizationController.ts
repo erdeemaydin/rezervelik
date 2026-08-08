@@ -24,16 +24,22 @@ export const getCustomization = async (req: Request, res: Response) => {
 export const updateCustomization = async (req: Request, res: Response) => {
   try {
     const restaurantId = req.restaurantId!;
-    const { 
-      layoutStyle,
+    // layoutStyle is deliberately not destructured/accepted here: per
+    // PROJECT_LOGIC.md §8 it's a SysAdmin-exclusive design-architecture choice, set
+    // only via PUT /api/system/tenants/:id/settings (systemController.ts). This
+    // route is reachable by any tenant staffer with manage_settings — accepting
+    // layoutStyle from req.body here would let a tenant admin flip their own public
+    // page's layout with a direct API call, bypassing that restriction entirely
+    // (the dashboard UI simply never showing a control for it isn't enforcement).
+    const {
       typography,
       colorPalette,
-      primaryColor, 
-      announcementText, 
-      showAboutUs, 
-      aboutUsText, 
-      showLegal, 
-      legalText, 
+      primaryColor,
+      announcementText,
+      showAboutUs,
+      aboutUsText,
+      showLegal,
+      legalText,
       socialLinks,
       reservationInfoText,
       reservationWarningText
@@ -42,7 +48,6 @@ export const updateCustomization = async (req: Request, res: Response) => {
     const customization = await prisma.frontendCustomization.upsert({
       where: { restaurantId },
       update: {
-        layoutStyle,
         typography,
         colorPalette,
         primaryColor,
@@ -57,7 +62,6 @@ export const updateCustomization = async (req: Request, res: Response) => {
       },
       create: {
         restaurantId,
-        layoutStyle,
         typography,
         colorPalette,
         primaryColor,
