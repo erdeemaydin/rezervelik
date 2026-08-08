@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
+import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -73,6 +74,11 @@ export default function TablesPage() {
   const [tables, setTables] = useState<DiningTable[]>([]);
   const [floorElements, setFloorElements] = useState<FloorElement[]>([]);
   const [loading, setLoading] = useState(true);
+  // The tenant-wide booking mode (Settings > Reservations) silently controls how
+  // tables here behave — e.g. in MANUAL_AVAILABILITY, the isAvailable toggle below
+  // is what actually gates new bookings, not the reservation timeline. Surfacing it
+  // here so that behavior isn't invisible to whoever's on this page.
+  const [reservationLogic, setReservationLogic] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   
   const [isTableDialogOpen, setIsTableDialogOpen] = useState(false);
@@ -124,14 +130,16 @@ export default function TablesPage() {
   const fetchData = async () => {
     try {
       setLoading(true);
-      const [typesRes, tablesRes, elementsRes] = await Promise.all([
-        api.get('/table-types'), 
+      const [typesRes, tablesRes, elementsRes, settingsRes] = await Promise.all([
+        api.get('/table-types'),
         api.get('/tables'),
-        api.get('/floor-elements')
+        api.get('/floor-elements'),
+        api.get('/settings').catch(() => null),
       ]);
       setTableTypes(typesRes.data.data);
       setTables(tablesRes.data.data);
       setFloorElements(elementsRes.data.data);
+      setReservationLogic(settingsRes?.data?.data?.logic ?? null);
       if (selectedZoneId === 'all' && typesRes.data.data.length > 0) {
           setSelectedZoneId(typesRes.data.data[0].id);
       }
@@ -456,6 +464,15 @@ export default function TablesPage() {
           <div>
             <h1 className="text-xl font-bold text-slate-800">{isRestaurant ? t("tables.pageTitle") : term('resourcePlural')}</h1>
             <p className="text-[10px] text-slate-400 uppercase tracking-[0.2em] font-black">{t("tables.pageSubtitle")}</p>
+            {reservationLogic && (
+              <Link href="/dashboard/settings" className="inline-flex items-center gap-1 mt-1 text-[10px] font-bold text-blue-600 hover:text-blue-700 hover:underline">
+                {t("admin.bookingMode")}: {
+                  reservationLogic === 'FIXED_SLOTS' ? t("settings.fixedTimeSlots")
+                  : reservationLogic === 'MANUAL_AVAILABILITY' ? t("admin.bookingModeManual")
+                  : t("settings.dynamicDuration")
+                } · {t("admin.editInSettings")}
+              </Link>
+            )}
           </div>
           <div className="flex items-center gap-4">
             {hasEditPermission && (

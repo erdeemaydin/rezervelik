@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useMemo, useRef } from 'react';
+import Link from 'next/link';
 import { useTranslation } from "@/i18n/provider";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -59,6 +60,10 @@ export default function HostConsolePage() {
   const [waitlistHistory, setWaitlistHistory] = useState<WaitlistEntry[]>([]);
   const [tables, setTables] = useState<any[]>([]);
   const [categories, setCategories] = useState<any[]>([]);
+  // The tenant-wide booking mode (Settings > Reservations) silently controls how
+  // table assignment behaves here — surfacing it so that behavior isn't invisible
+  // to whoever's working this console.
+  const [reservationLogic, setReservationLogic] = useState<string | null>(null);
   
   // History Drawer State
   const [isHistoryDrawerOpen, setIsHistoryDrawerOpen] = useState(false);
@@ -106,18 +111,20 @@ export default function HostConsolePage() {
   const fetchData = async () => {
     try {
       setLoading(true);
-      const [resRes, waitlistRes, waitlistHistoryRes, tablesRes, catRes] = await Promise.all([
+      const [resRes, waitlistRes, waitlistHistoryRes, tablesRes, catRes, settingsRes] = await Promise.all([
         api.get('/reservations'),
         api.get('/wait-time/entries'),
         api.get('/wait-time/entries', { params: { history: 'true' } }),
         api.get('/tables'),
-        api.get('/categories')
+        api.get('/categories'),
+        api.get('/settings').catch(() => null),
       ]);
       setReservations(resRes.data.data);
       setWaitlist(waitlistRes.data.data);
       setWaitlistHistory(waitlistHistoryRes.data.data);
       setTables(tablesRes.data.data);
       setCategories(catRes.data.data);
+      setReservationLogic(settingsRes?.data?.data?.logic ?? null);
     } catch (error) {
       console.error('Failed to fetch data', error);
       toast.error(t("host.toastFailedLoad"));
@@ -400,6 +407,15 @@ export default function HostConsolePage() {
                 <Badge variant="outline" className="hidden sm:inline-flex text-[9px] font-black border-blue-400 text-blue-400 uppercase tracking-widest px-1.5 py-0 rounded-sm">{t("host.ipadMode")}</Badge>
               </h1>
               <p className="hidden sm:block text-slate-400 text-[10px] font-bold uppercase tracking-wider">{t("host.hostConsoleSubtitle")}</p>
+              {reservationLogic && (
+                <Link href="/dashboard/settings" className="hidden sm:inline-flex items-center gap-1 text-[9px] font-bold text-blue-400 hover:text-blue-300 hover:underline">
+                  {t("admin.bookingMode")}: {
+                    reservationLogic === 'FIXED_SLOTS' ? t("settings.fixedTimeSlots")
+                    : reservationLogic === 'MANUAL_AVAILABILITY' ? t("admin.bookingModeManual")
+                    : t("settings.dynamicDuration")
+                  } · {t("admin.editInSettings")}
+                </Link>
+              )}
             </div>
           </div>
 
