@@ -285,11 +285,12 @@ export default function SettingsPage() {
                                             <SelectContent>
                                                 <SelectItem value="DYNAMIC_DURATION" className="text-sm py-2">{t("settings.dynamicDuration")}</SelectItem>
                                                 <SelectItem value="FIXED_SLOTS" className="text-sm py-2">{t("settings.fixedTimeSlots")}</SelectItem>
+                                                <SelectItem value="MANUAL_AVAILABILITY" className="text-sm py-2">{t("settings.manualAvailability")}</SelectItem>
                                                 </SelectContent>
                                         </Select>
-                                        {/* Explain how the chosen mode computes a booking's end time. */}
+                                        {/* Explain how the chosen mode computes a booking's end time / conflict check. */}
                                         <p className="text-[11px] text-slate-500 leading-relaxed bg-slate-50 border border-slate-100 rounded-md p-2.5">
-                                            {t(`settings.logicExplain.${settings.logic === 'DYNAMIC_DURATION' ? 'DYNAMIC_DURATION' : 'FIXED_SLOTS'}`)}
+                                            {t(`settings.logicExplain.${settings.logic === 'DYNAMIC_DURATION' || settings.logic === 'MANUAL_AVAILABILITY' ? settings.logic : 'FIXED_SLOTS'}`)}
                                         </p>
                                     </div>
                                     <div className="grid gap-3 pt-2">

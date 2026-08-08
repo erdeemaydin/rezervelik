@@ -1114,6 +1114,7 @@
     "selectLogic": "Mantık seçin",
     "dynamicDuration": "Dinamik Süre",
     "fixedTimeSlots": "Sabit Zaman Dilimleri",
+    "manualAvailability": "Manuel Uygunluk",
     "calendarCustomization": "Takvim Özelleştirme",
     "calendarCustomizationDesc": "Genel takvim davranışını ve toplu işlemleri yönetin",
     "setFutureMode": "Gelecek Varsayılan Modu Ayarla",
@@ -1160,7 +1161,8 @@
     },
     "logicExplain": {
       "DYNAMIC_DURATION": "Bir rezervasyonun bitiş saati, yukarıda belirlenen varsayılan süreden otomatik olarak hesaplanır (örneğin başlangıçtan 90 dakika sonra).",
-      "FIXED_SLOTS": "Rezervasyonlar önceden tanımlanmış sabit zaman dilimlerini kullanır. Her rezervasyon, süre alanından bağımsız olarak belirli bir dilimi kaplar."
+      "FIXED_SLOTS": "Rezervasyonlar önceden tanımlanmış sabit zaman dilimlerini kullanır. Her rezervasyon, süre alanından bağımsız olarak belirli bir dilimi kaplar.",
+      "MANUAL_AVAILABILITY": "Otomatik zaman bazlı çakışma kontrolü yapılmaz. Bir masa, yalnızca personel Masalar sayfasında \"Dolu\" olarak işaretlediği sürece yeni rezervasyonları engeller — masayı boşaltmak (tekrar \"Müsait\" işaretlemek) bir sonraki rezervasyon için masayı açar, saat değil."
     },
     "currencyManagedBySystem": "Platform yöneticisi belirler",
     "currencyHint": "Para birimi, sistem yöneticisi tarafından yönetilen platform genelinde bir ayardır ve buradan değiştirilemez.",
