@@ -130,13 +130,14 @@ export const createReservation = async (req: Request, res: Response) => {
     // check and land on the same table (the previous check-then-insert race).
     let finalTableId: string | null = tableId === 'none' ? null : tableId;
     let requiresInstantPayment = false;
+    const isManualAvailability = settings.logic === 'MANUAL_AVAILABILITY';
 
     let reservation;
     try {
       reservation = await prisma.$transaction(async (tx) => {
         if (finalTableId) {
           const conflict = await findTableConflict({
-            restaurantId, tableId: finalTableId, start, end: windowEnd, tx,
+            restaurantId, tableId: finalTableId, start, end: windowEnd, tx, isManualAvailability,
           });
           if (conflict) {
             // Only an authenticated staff member may knowingly override a conflict;
@@ -148,7 +149,7 @@ export const createReservation = async (req: Request, res: Response) => {
         } else {
           // Auto-assign the smallest table that fits and is free for this window.
           const availableTable = await findAvailableTable({
-            restaurantId, partySize, start, end: windowEnd, tx,
+            restaurantId, partySize, start, end: windowEnd, tx, isManualAvailability,
           });
           if (availableTable) {
             finalTableId = availableTable.id;
@@ -295,6 +296,7 @@ export const updateReservation = async (req: Request, res: Response) => {
         if (finalTableId) {
           const isTableOccupied = await findTableConflict({
             restaurantId, tableId: finalTableId, start, end: endTime, excludeReservationId: id, tx,
+            isManualAvailability: settings?.logic === 'MANUAL_AVAILABILITY',
           });
           // This route is staff-only (authMiddleware + manage_reservations), so an explicit
           // overrideConflict from the confirmed warning dialog is enough to proceed.
@@ -382,6 +384,7 @@ export const updateReservationSchedule = async (req: Request, res: Response) => 
 
     if (!startTime) return errorResponse(res, 'errors.validation_error', 400, { message: 'startTime is required' });
 
+    const settings = await prisma.restaurantSettings.findUnique({ where: { restaurantId } });
     const finalTableId = tableId === 'none' || !tableId ? null : tableId;
     const start = new Date(startTime);
     let end: Date;
@@ -392,7 +395,6 @@ export const updateReservationSchedule = async (req: Request, res: Response) => 
       const dur = new Date(existingRes.endTime).getTime() - new Date(existingRes.startTime).getTime();
       end = new Date(start.getTime() + dur);
     } else {
-      const settings = await prisma.restaurantSettings.findUnique({ where: { restaurantId } });
       end = new Date(start.getTime() + (settings?.defaultDurationMinutes || 90) * 60000);
     }
 
@@ -402,6 +404,7 @@ export const updateReservationSchedule = async (req: Request, res: Response) => 
         if (finalTableId) {
           const conflict = await findTableConflict({
             restaurantId, tableId: finalTableId, start, end, excludeReservationId: id, tx,
+            isManualAvailability: settings?.logic === 'MANUAL_AVAILABILITY',
           });
           if (conflict && !overrideConflict) {
             throw Object.assign(new Error('TABLE_CONFLICT'), { code: 'TABLE_CONFLICT' });
@@ -423,7 +426,6 @@ export const updateReservationSchedule = async (req: Request, res: Response) => 
 
     // The reservation may have moved off its original table/day — let the next
     // booking attempt re-derive whether that original day is still full.
-    const settings = await prisma.restaurantSettings.findUnique({ where: { restaurantId }, select: { timezone: true } });
     await clearFullyBookedIfSet({ restaurantId, dateStr: restaurantDateStr(existingRes.startTime, settings?.timezone) });
 
     return successResponse(res, updated);
@@ -445,6 +447,9 @@ export const updateReservationStatus = async (req: Request, res: Response) => {
 
     if (!existingRes) return errorResponse(res, 'errors.validation_error', 404, { message: 'Reservation not found' });
 
+    const settings = await prisma.restaurantSettings.findUnique({ where: { restaurantId } });
+    const isManualAvailability = settings?.logic === 'MANUAL_AVAILABILITY';
+
     // Normalize like every other reservation handler: undefined = leave unchanged,
     // 'none' = explicitly clear, otherwise the given id. Writing the literal string
     // 'none' into the tableId column (as this endpoint previously did) fails the FK.
@@ -460,7 +465,7 @@ export const updateReservationStatus = async (req: Request, res: Response) => {
     const targetTableId = finalTableId !== undefined ? finalTableId : existingRes.tableId;
     if (targetTableId && status && BLOCKING_STATUSES.includes(status)) {
       const conflict = await findTableConflict({
-        restaurantId, tableId: targetTableId, start: existingRes.startTime, end: conflictEnd, excludeReservationId: id,
+        restaurantId, tableId: targetTableId, start: existingRes.startTime, end: conflictEnd, excludeReservationId: id, isManualAvailability,
       });
       if (conflict && !overrideConflict) {
         return errorResponse(res, 'errors.table_conflict', 409, { code: 'TABLE_CONFLICT' });
@@ -473,7 +478,6 @@ export const updateReservationStatus = async (req: Request, res: Response) => {
     // the booking as AWAITING_PAYMENT until they pay. Staff can bypass with
     // `skipPayment` (e.g. a trusted regular / deposit taken in person).
     if (status === 'CONFIRMED' && !skipPayment && !existingRes.isPaid) {
-      const settings = await prisma.restaurantSettings.findUnique({ where: { restaurantId } });
       const paymentEnabled = !!settings?.isPaidReservationEnabled && (settings.depositAmount || 0) > 0;
       if (paymentEnabled) {
         const pay = await createPaymentForReservation(existingRes, settings!);
@@ -483,7 +487,7 @@ export const updateReservationStatus = async (req: Request, res: Response) => {
             updated = await prisma.$transaction(async (tx) => {
               if (targetTableId) {
                 const conflict = await findTableConflict({
-                  restaurantId, tableId: targetTableId, start: existingRes.startTime, end: conflictEnd, excludeReservationId: id, tx,
+                  restaurantId, tableId: targetTableId, start: existingRes.startTime, end: conflictEnd, excludeReservationId: id, tx, isManualAvailability,
                 });
                 if (conflict && !overrideConflict) {
                   throw Object.assign(new Error('TABLE_CONFLICT'), { code: 'TABLE_CONFLICT' });
@@ -527,7 +531,7 @@ export const updateReservationStatus = async (req: Request, res: Response) => {
       updated = await prisma.$transaction(async (tx) => {
         if (targetTableId) {
           const conflict = await findTableConflict({
-            restaurantId, tableId: targetTableId, start: existingRes.startTime, end: conflictEnd, excludeReservationId: id, tx,
+            restaurantId, tableId: targetTableId, start: existingRes.startTime, end: conflictEnd, excludeReservationId: id, tx, isManualAvailability,
           });
           if (conflict && !overrideConflict) {
             throw Object.assign(new Error('TABLE_CONFLICT'), { code: 'TABLE_CONFLICT' });
@@ -549,8 +553,7 @@ export const updateReservationStatus = async (req: Request, res: Response) => {
     // blocking), the day may no longer actually be fully booked.
     if (status && existingRes.status !== status &&
         BLOCKING_STATUSES.includes(existingRes.status) && !BLOCKING_STATUSES.includes(status)) {
-      const daySettings = await prisma.restaurantSettings.findUnique({ where: { restaurantId }, select: { timezone: true } });
-      await clearFullyBookedIfSet({ restaurantId, dateStr: restaurantDateStr(existingRes.startTime, daySettings?.timezone) });
+      await clearFullyBookedIfSet({ restaurantId, dateStr: restaurantDateStr(existingRes.startTime, settings?.timezone) });
     }
 
     logAudit({

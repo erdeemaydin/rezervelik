@@ -15,17 +15,30 @@ interface ConflictArgs {
   end: Date;
   excludeReservationId?: string;
   tx?: Prisma.TransactionClient;
+  // MANUAL_AVAILABILITY mode (PROJECT_LOGIC.md §3): "reservations are accepted
+  // without strict end times... subsequent reservations rely on staff clearing the
+  // table." Pass true when the tenant is in this mode so the check below.
+  isManualAvailability?: boolean;
 }
 
 /**
- * Returns the first reservation that overlaps [start, end) on the given table,
- * or null if the slot is free. Two windows overlap when existing.startTime < end
- * AND existing.endTime > start.
+ * Returns a truthy conflict if the table can't be booked for [start, end), or null
+ * if it's free. In MANUAL_AVAILABILITY mode this ignores the reservation timeline
+ * entirely and instead blocks purely on BookableResource.isAvailable — the manual
+ * staff toggle is the only signal that mode uses. Otherwise, returns the first
+ * reservation that overlaps the window (existing.startTime < end AND
+ * existing.endTime > start).
  */
 export async function findTableConflict({
-  restaurantId, tableId, start, end, excludeReservationId, tx,
+  restaurantId, tableId, start, end, excludeReservationId, tx, isManualAvailability,
 }: ConflictArgs) {
   const client = tx ?? prisma;
+
+  if (isManualAvailability) {
+    const table = await client.bookableResource.findUnique({ where: { id: tableId }, select: { isAvailable: true } });
+    return table && !table.isAvailable ? { id: 'MANUAL_AVAILABILITY_OCCUPIED' } : null;
+  }
+
   return client.reservation.findFirst({
     where: {
       restaurantId,
@@ -77,22 +90,28 @@ export async function clearFullyBookedIfSet({
  * Finds a table that can seat `partySize` and is free for [start, end).
  * Ordered by smallest sufficient capacity first so large tables stay open for
  * larger parties. Returns null when nothing fits (fully booked for the slot).
+ * In MANUAL_AVAILABILITY mode, "free" means BookableResource.isAvailable, not "no
+ * overlapping reservation" — see findTableConflict's doc comment.
  */
 export async function findAvailableTable({
-  restaurantId, partySize, start, end, tx,
-}: { restaurantId: string; partySize: number; start: Date; end: Date; tx?: Prisma.TransactionClient }) {
+  restaurantId, partySize, start, end, tx, isManualAvailability,
+}: { restaurantId: string; partySize: number; start: Date; end: Date; tx?: Prisma.TransactionClient; isManualAvailability?: boolean }) {
   const client = tx ?? prisma;
   return client.bookableResource.findFirst({
     where: {
       restaurantId,
       capacity: { gte: partySize },
-      reservations: {
-        none: {
-          status: { in: BLOCKING_STATUSES },
-          startTime: { lt: end },
-          endTime: { gt: start },
-        },
-      },
+      ...(isManualAvailability
+        ? { isAvailable: true }
+        : {
+            reservations: {
+              none: {
+                status: { in: BLOCKING_STATUSES },
+                startTime: { lt: end },
+                endTime: { gt: start },
+              },
+            },
+          }),
     },
     orderBy: { capacity: 'asc' },
   });

@@ -194,6 +194,7 @@ export const acceptOffer = async (req: Request, res: Response) => {
       // Try to seat the offer on a free table; leave unassigned for staff if none.
       const table = await findAvailableTable({
         restaurantId: entry.restaurantId, partySize: entry.partySize, start, end, tx,
+        isManualAvailability: settings?.logic === 'MANUAL_AVAILABILITY',
       });
       await tx.reservation.create({
         data: {
