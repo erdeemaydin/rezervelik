@@ -1190,6 +1190,8 @@
     "subtitle": "Manage walk-in queue and wait times",
     "config": {
       "title": "Waitlist Config",
+      "statusOpen": "Waitlist Open",
+      "statusClosed": "Waitlist Closed",
       "acceptPublic": "Accept Public Walk-ins (QR)",
       "acceptPublicDesc": "Allow guests to join via waitlist URL.",
       "displayEstimatedTime": "Display Estimated Time",

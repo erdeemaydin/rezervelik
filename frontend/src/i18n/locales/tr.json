@@ -1190,6 +1190,8 @@
     "subtitle": "Rezervasyonsuz gelenleri ve bekleme sürelerini yönetin",
     "config": {
       "title": "Bekleme Listesi Ayarı",
+      "statusOpen": "Liste Açık",
+      "statusClosed": "Liste Kapalı",
       "acceptPublic": "Herkese Açık Bekleme Listesini Kabul Et (QR)",
       "acceptPublicDesc": "Misafirlerin bekleme listesi URL'si aracılığıyla katılmasına izin verin.",
       "displayEstimatedTime": "Tahmini Süreyi Göster",
