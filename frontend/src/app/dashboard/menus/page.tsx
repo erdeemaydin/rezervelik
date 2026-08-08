@@ -79,6 +79,7 @@ export default function MenuManagementPage() {
   const [isItemDialogOpen, setIsItemDialogOpen] = useState(false);
 
   const [isEditMode, setIsEditMode] = useState(false);
+  const [isSavingMenu, setIsSavingMenu] = useState(false);
   const [deleteMenuId, setDeleteMenuId] = useState<string | null>(null);
   const [restaurantProfile, setRestaurantProfile] = useState<any>(null);
   const [isQRDialogOpen, setIsQRDialogOpen] = useState(false);
@@ -143,6 +144,8 @@ export default function MenuManagementPage() {
   // --- MENU ACTIONS ---
   const handleMenuSubmit = async (e: React.FormEvent) => {
       e.preventDefault();
+      if (isSavingMenu) return; // guards against double-click/double-submit races
+      setIsSavingMenu(true);
       try {
           if (isEditMode && editId) {
               await api.put(`/menus/${editId}`, menuForm);
@@ -154,7 +157,11 @@ export default function MenuManagementPage() {
           }
           setIsMenuDialogOpen(false);
           fetchMenus();
-      } catch (err) { toast.error(t('menus.toast.menuSaveFailed')); }
+      } catch (err: any) {
+          toast.error(err?.response?.data?.error || t('menus.toast.menuSaveFailed'));
+      } finally {
+          setIsSavingMenu(false);
+      }
   };
 
   const handleDeleteMenu = (id: string) => {
@@ -544,8 +551,8 @@ export default function MenuManagementPage() {
                         </div>
                     </div>
                     <div className="p-4 bg-slate-50 border-t border-slate-100 flex justify-end gap-2">
-                        <Button type="button" variant="ghost" onClick={() => setIsMenuDialogOpen(false)} className="h-9 text-xs font-bold text-slate-400 uppercase">{t('menus.buttons.cancel')}</Button>
-                        <Button type="submit" className="h-9 bg-blue-600 hover:bg-blue-700 text-xs font-black uppercase px-6 rounded-sm">{t('menus.buttons.saveMenu')}</Button>
+                        <Button type="button" variant="ghost" onClick={() => setIsMenuDialogOpen(false)} disabled={isSavingMenu} className="h-9 text-xs font-bold text-slate-400 uppercase">{t('menus.buttons.cancel')}</Button>
+                        <Button type="submit" disabled={isSavingMenu} className="h-9 bg-blue-600 hover:bg-blue-700 text-xs font-black uppercase px-6 rounded-sm disabled:opacity-60">{isSavingMenu ? t('menus.buttons.saving') || '...' : t('menus.buttons.saveMenu')}</Button>
                     </div>
                 </form>
             </DialogContent>

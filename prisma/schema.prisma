@@ -531,6 +531,10 @@ model Menu {
   id           String  @id @default(uuid())
   restaurantId String
   name         String
+  // Only one Menu per restaurantId may have isActive = true. Enforced by a partial unique
+  // index (Menu_restaurantId_active_unique) added out-of-band in migration
+  // 20260808175255_add_menu_single_active_constraint — Prisma's schema DSL can't express a
+  // filtered/partial unique index, so it won't show up here as an @@unique.
   isActive     Boolean @default(true)
   footnotes    String?
 

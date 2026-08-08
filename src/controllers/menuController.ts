@@ -42,6 +42,8 @@ export const createMenu = async (req: Request, res: Response) => {
     const restaurantId = req.restaurantId!;
     const { name, isActive, footnotes } = req.body;
     // Only one menu may be live at a time — creating an active menu takes the others offline.
+    // The check-then-write below is a best-effort app-level guard; the DB-level partial unique
+    // index Menu_restaurantId_active_unique is the actual source of truth under concurrent requests.
     const menu = await prisma.$transaction(async (tx) => {
       if (isActive) {
         await tx.menu.updateMany({ where: { restaurantId }, data: { isActive: false } });
@@ -50,6 +52,9 @@ export const createMenu = async (req: Request, res: Response) => {
     });
     return successResponse(res, menu, undefined, 201);
   } catch (error) {
+    if (isUniqueActiveMenuViolation(error)) {
+      return errorResponse(res, 'errors.menu_activation_conflict', 409);
+    }
     return errorResponse(res, 'errors.internal_error', 500);
   }
 };
@@ -60,6 +65,8 @@ export const updateMenu = async (req: Request, res: Response) => {
     const { id } = req.params;
     const { name, isActive, footnotes } = req.body;
     // Enforce a single live menu: activating one deactivates the rest for this tenant.
+    // Same caveat as createMenu — the DB constraint is what actually prevents two active
+    // menus under a race; this transaction just makes the common case atomic and fast-failing.
     const menu = await prisma.$transaction(async (tx) => {
       if (isActive === true) {
         await tx.menu.updateMany({
@@ -71,9 +78,19 @@ export const updateMenu = async (req: Request, res: Response) => {
     });
     return successResponse(res, menu);
   } catch (error) {
+    if (isUniqueActiveMenuViolation(error)) {
+      return errorResponse(res, 'errors.menu_activation_conflict', 409);
+    }
     return errorResponse(res, 'errors.internal_error', 500);
   }
 };
+
+// Prisma P2002 (unique constraint violation). The only unique constraint touched by
+// createMenu/updateMenu besides the uuid PK is the partial index that backs "only one
+// active menu per restaurant" — a PK collision on a fresh uuid is not realistically
+// possible, so any P2002 here means two requests raced past the app-level check above.
+const isUniqueActiveMenuViolation = (error: unknown): boolean =>
+  !!error && typeof error === 'object' && (error as any).code === 'P2002';
 
 export const deleteMenu = async (req: Request, res: Response) => {
   try {
@@ -193,6 +210,9 @@ export const importMenuFromImage = async (req: Request, res: Response) => {
       data: {
         name: menuName || 'Imported Menu',
         restaurantId,
+        // Imported menus start as drafts — staff must explicitly activate one via
+        // updateMenu, which is the only path that correctly deactivates the rest.
+        isActive: false,
         categories: {
           create: aiParsedMenu.categories.map(category => ({
             name: category.name,
