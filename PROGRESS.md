@@ -71,6 +71,22 @@ flag it and ask rather than silently redesigning product behavior.
 
 ---
 
+## 2026-08-08 (cont'd)
+
+**Reservation duration: FIXED_SLOTS/MANUAL_AVAILABILITY ignored defaultDurationMinutes**
+
+User-reported: table sitting time was fixed at 120 minutes automatically,
+with no way to configure it. Root cause: `createReservation`/
+`updateReservation` special-cased any logic mode other than
+`DYNAMIC_DURATION` to a hardcoded `start + 120min` window, ignoring the
+tenant's `defaultDurationMinutes` setting entirely — even though the Settings
+UI exposed that field as applying to all modes, and `publicController`'s
+availability check + waitlist-offer acceptance already used it universally.
+Removed the hardcode so all modes (service-duration override still wins when
+one applies) use the tenant's configured value; updated the FIXED_SLOTS
+explain text in Settings to match. New regression test:
+`tests/api/reservation-fixed-slot-duration.test.ts`.
+
 ## 2026-08-08
 
 **Two-pass bug audit + fixes (12 bugs) + 6 UI/IA changes, all on `agent/telegram-bot`**
