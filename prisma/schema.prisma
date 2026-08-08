@@ -298,7 +298,10 @@ model User {
   // plans can be sent over WhatsApp (#7.6).
   phone        String?
 
-  setupToken          String?   @unique
+  // Tenant-invite setup token: only the SHA-256 hash is stored, never the raw
+  // token, same as resetTokenHash below — the raw token lives only in the
+  // one-time setup link handed to the new tenant admin.
+  setupTokenHash      String?   @unique
   setupTokenExpiresAt DateTime?
 
   // Password reset: only the SHA-256 hash of the token is stored, never the raw

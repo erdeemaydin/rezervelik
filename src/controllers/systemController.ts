@@ -1,8 +1,11 @@
 import { Request, Response } from 'express';
+import crypto from 'crypto';
 import bcrypt from 'bcrypt';
 import prisma from '../config/prisma';
 import { successResponse, errorResponse } from '../utils/response';
-import { generateResetToken, RESET_TOKEN_TTL_MS } from '../utils/resetToken';
+import { generateResetToken, RESET_TOKEN_TTL_MS, generateHashedToken } from '../utils/resetToken';
+
+const SETUP_TOKEN_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
 import {
   DEFAULT_BUSINESS_TYPE,
   FEATURE_FLAG_KEYS,
@@ -147,16 +150,21 @@ export const createTenant = async (req: Request, res: Response) => {
     }
 
     let isInvite = false;
-    let setupToken = null;
-    let setupTokenExpiresAt = null;
+    let rawSetupToken: string | null = null;
+    let setupTokenHash: string | null = null;
+    let setupTokenExpiresAt: Date | null = null;
     let finalPassword = adminPassword;
 
     if (!finalPassword) {
       isInvite = true;
-      finalPassword = Math.random().toString(36).slice(-10) + 'A1!'; // random secure dummy password
-      setupToken = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
-      setupTokenExpiresAt = new Date();
-      setupTokenExpiresAt.setDate(setupTokenExpiresAt.getDate() + 7); // 7 days expiry
+      // Dummy password the account is created with until setup completes — never
+      // shown or sent anywhere, but still a real credential accepted by /auth/login
+      // until then, so it needs the same CSPRNG entropy as the setup token itself.
+      finalPassword = crypto.randomBytes(16).toString('hex') + 'A1!';
+      const setup = generateHashedToken(SETUP_TOKEN_TTL_MS);
+      rawSetupToken = setup.rawToken;
+      setupTokenHash = setup.tokenHash;
+      setupTokenExpiresAt = setup.expiresAt;
     }
 
     const hashedPassword = await bcrypt.hash(finalPassword, 10);
@@ -193,7 +201,7 @@ export const createTenant = async (req: Request, res: Response) => {
           role: 'ADMIN',
           permissions: 'manage_reservations,manage_tables,edit_floor_plan,manage_menu,manage_calendar,manage_staff,manage_settings,manage_events',
           restaurantId: restaurant.id,
-          setupToken,
+          setupTokenHash,
           setupTokenExpiresAt
         }
       });
@@ -213,7 +221,7 @@ export const createTenant = async (req: Request, res: Response) => {
     });
 
     if (isInvite) {
-      return successResponse(res, { ...result, setupLink: `/auth/setup/${setupToken}` }, undefined, 201);
+      return successResponse(res, { ...result, setupLink: `/auth/setup/${rawSetupToken}` }, undefined, 201);
     }
     return successResponse(res, result, undefined, 201);
   } catch (error) {

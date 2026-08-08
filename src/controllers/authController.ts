@@ -392,19 +392,19 @@ export const completeSetup = async (req: Request, res: Response) => {
       return errorResponse(res, 'errors.password_policy', 400, { failed: policy.failed });
     }
 
-    const user = await prisma.user.findUnique({ where: { setupToken: token } });
+    const user = await prisma.user.findUnique({ where: { setupTokenHash: hashResetToken(token) } });
 
     if (!user || !user.setupTokenExpiresAt || new Date() > user.setupTokenExpiresAt) {
       return errorResponse(res, 'errors.setup_link_invalid', 400);
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
-    
+
     await prisma.user.update({
       where: { id: user.id },
       data: {
         passwordHash: hashedPassword,
-        setupToken: null,
+        setupTokenHash: null,
         setupTokenExpiresAt: null
       }
     });
