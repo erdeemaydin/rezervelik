@@ -59,7 +59,8 @@
     "userSettings": "User Settings",
     "auditLog": "Activity Log",
     "impersonationBanner": "Viewing as {{name}} — changes here affect their account.",
-    "returnToAdmin": "Return to Admin"
+    "returnToAdmin": "Return to Admin",
+    "returnToAdminFailed": "Couldn't return to your admin session — please sign in again."
   },
   "commandPalette": {
     "title": "Jump to page",

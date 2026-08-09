@@ -45,8 +45,8 @@ export default function SetupAccountPage() {
       setLoading(true);
       const response = await api.post('/auth/setup', { token, password });
 
-      const { user, token: authToken } = response.data.data;
-      login(authToken, user);
+      const { user } = response.data.data;
+      login(user);
 
       toast.success(t('auth.setupComplete'));
       router.push('/dashboard');

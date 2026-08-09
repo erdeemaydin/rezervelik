@@ -72,9 +72,9 @@ export default function LoginPage() {
     defaultValues: { email: '', password: '' },
   });
 
-  const finishLogin = (token: string, user: any) => {
+  const finishLogin = (user: any) => {
     setRedirecting(true);
-    login(token, user);
+    login(user);
     if (user.role === 'SUPER_ADMIN') router.push('/system-admin/tenants');
     else router.push('/dashboard');
   };
@@ -94,7 +94,7 @@ export default function LoginPage() {
           });
           return;
         }
-        finishLogin(data.token, data.user);
+        finishLogin(data.user);
       }
     } catch (err: any) {
       setError(getApiErrorMessage(err, t('auth.loginError')));
@@ -108,7 +108,7 @@ export default function LoginPage() {
       setError('');
       setOtpBusy(true);
       const res = await api.post('/auth/login/otp', { otpToken: challenge.otpToken, code: otpCode });
-      finishLogin(res.data.data.token, res.data.data.user);
+      finishLogin(res.data.data.user);
     } catch (err: any) {
       setError(getApiErrorMessage(err, t('auth.invalidCode')));
     } finally {

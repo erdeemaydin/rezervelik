@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { readAuth, writeAuth, clearAuth } from '@/lib/authStorage';
+import api from '@/lib/api';
 
 interface User {
   id: string;
@@ -13,21 +14,21 @@ interface User {
 
 interface AuthState {
   user: User | null;
-  token: string | null;
   isAuthenticated: boolean;
-  // True once startImpersonation() has stashed a SUPER_ADMIN session — drives
-  // the "Viewing as X — Return to Admin" banner in AdminLayout.
+  // True once startImpersonation() has switched to an impersonated session —
+  // drives the "Viewing as X — Return to Admin" banner in AdminLayout.
   isImpersonating: boolean;
-  login: (token: string, user: User) => void;
-  logout: () => void;
-  // Stashes the current (SUPER_ADMIN) session, then switches to the
-  // impersonated tenant user's session. Call from the impersonate action —
-  // never call login() directly for that, or there's no way back to the
-  // admin session short of a fresh login.
-  startImpersonation: (token: string, user: User) => void;
-  // Restores the stashed SUPER_ADMIN session. Returns true if a stash existed
-  // and was restored; false (no-op) if called when not impersonating.
-  stopImpersonation: () => boolean;
+  login: (user: User) => void;
+  logout: () => Promise<void>;
+  // Switches to the impersonated tenant user's session. The backend has
+  // already stashed the SUPER_ADMIN's own token server-side (an httpOnly
+  // cookie the SPA never touches) — call this instead of login() for the
+  // impersonate action, or there's no way back short of a fresh login.
+  startImpersonation: (user: User) => void;
+  // Asks the backend to restore the stashed SUPER_ADMIN session. Returns
+  // true if a stash existed and was restored; false if there was nothing to
+  // restore (e.g. called when not impersonating, or the request failed).
+  stopImpersonation: () => Promise<boolean>;
 }
 
 const parseUser = (raw?: string): User | null => {
@@ -39,57 +40,55 @@ const parseUser = (raw?: string): User | null => {
   }
 };
 
-export const useAuthStore = create<AuthState>((set, get) => {
-  const savedToken = readAuth('token');
+export const useAuthStore = create<AuthState>((set) => {
   const savedUser = parseUser(readAuth('user'));
-  const savedStashToken = readAuth('adminStashToken');
 
   return {
     user: savedUser,
-    token: savedToken ?? null,
-    // In-memory token is the runtime source of truth; persisted storage only
-    // needs to survive a reload. Requiring both a token and a user avoids a
-    // half-hydrated "ghost" session.
-    isAuthenticated: !!savedToken && !!savedUser,
-    // A stash surviving a reload means impersonation was still active.
-    isImpersonating: !!savedStashToken,
+    // The token itself lives in an httpOnly cookie the SPA can't read — this
+    // is a UI-only guard against flashing protected content before the
+    // backend has a chance to say otherwise. The backend's cookie check is
+    // the real source of truth: a missing/expired cookie 401s the next API
+    // call, and the axios interceptor clears this cache and redirects.
+    isAuthenticated: !!savedUser,
+    isImpersonating: readAuth('impersonating') === 'true',
 
-    login: (token, user) => {
-      writeAuth('token', token);
+    login: (user) => {
       writeAuth('restaurantId', user.restaurantId);
       writeAuth('user', JSON.stringify(user));
-      set({ user, token, isAuthenticated: true });
+      set({ user, isAuthenticated: true });
     },
 
-    logout: () => {
-      clearAuth();
-      set({ user: null, token: null, isAuthenticated: false, isImpersonating: false });
-    },
-
-    startImpersonation: (token, user) => {
-      const { token: currentToken, user: currentUser } = get();
-      if (currentToken && currentUser) {
-        writeAuth('adminStashToken', currentToken);
-        writeAuth('adminStashUser', JSON.stringify(currentUser));
+    logout: async () => {
+      try {
+        await api.post('/auth/logout');
+      } catch {
+        // Clear local state regardless — the cookie is httpOnly, but a failed
+        // logout call shouldn't leave the SPA appearing logged in.
       }
-      writeAuth('token', token);
-      writeAuth('restaurantId', user.restaurantId);
-      writeAuth('user', JSON.stringify(user));
-      set({ user, token, isAuthenticated: true, isImpersonating: true });
+      clearAuth();
+      set({ user: null, isAuthenticated: false, isImpersonating: false });
     },
 
-    stopImpersonation: () => {
-      const stashToken = readAuth('adminStashToken');
-      const stashUser = parseUser(readAuth('adminStashUser'));
-      if (!stashToken || !stashUser) return false;
+    startImpersonation: (user) => {
+      writeAuth('restaurantId', user.restaurantId);
+      writeAuth('user', JSON.stringify(user));
+      writeAuth('impersonating', 'true');
+      set({ user, isAuthenticated: true, isImpersonating: true });
+    },
 
-      writeAuth('token', stashToken);
-      writeAuth('restaurantId', stashUser.restaurantId);
-      writeAuth('user', JSON.stringify(stashUser));
-      writeAuth('adminStashToken', '');
-      writeAuth('adminStashUser', '');
-      set({ user: stashUser, token: stashToken, isAuthenticated: true, isImpersonating: false });
-      return true;
+    stopImpersonation: async () => {
+      try {
+        const res = await api.post('/system/stop-impersonation');
+        const user = res.data.data.user as User;
+        writeAuth('restaurantId', user.restaurantId ?? '');
+        writeAuth('user', JSON.stringify(user));
+        writeAuth('impersonating', '');
+        set({ user, isAuthenticated: true, isImpersonating: false });
+        return true;
+      } catch {
+        return false;
+      }
     },
   };
 });

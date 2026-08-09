@@ -93,8 +93,11 @@ export default function SystemAdminLayout({ children }: SystemAdminLayoutProps) 
     ]}
   ];
 
-  const handleLogout = () => {
-    logout();
+  const handleLogout = async () => {
+    // Await so the local "authenticated" cache is actually cleared before we
+    // navigate — otherwise the login page's own redirect-when-authenticated
+    // effect could see stale state and bounce straight back to /dashboard.
+    await logout();
     router.push('/auth/login');
   };
 

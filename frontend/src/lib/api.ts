@@ -12,20 +12,21 @@ const api = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
+  // The session credential is an httpOnly cookie now (see lib/authStorage.ts) —
+  // this tells the browser to actually attach it (and accept Set-Cookie back)
+  // on cross-origin requests to the API. Requires the backend's CORS origin
+  // allowlist + credentials:true (see CORS_ORIGIN in .env.example); a wildcard
+  // origin can't be combined with credentialed requests.
+  withCredentials: true,
 });
 
 api.interceptors.request.use(
   (config) => {
-    // Read straight from authStorage (in-memory cache → localStorage → legacy
-    // cookie). No store coupling here, so a Fast Refresh that re-creates the
-    // Zustand singleton can't desync the token the interceptor sends.
-    const authToken = readAuth('token');
+    // No Authorization header to attach anymore — the session cookie rides
+    // automatically via withCredentials above. X-Restaurant-ID isn't
+    // sensitive (the backend cross-checks it against the cookie's own
+    // restaurantId claim) and still needs to be sent explicitly.
     const restaurantId = readAuth('restaurantId');
-
-    if (authToken) {
-      config.headers.Authorization = `Bearer ${authToken}`;
-    }
-
     if (restaurantId) {
       config.headers['X-Restaurant-ID'] = restaurantId;
     }

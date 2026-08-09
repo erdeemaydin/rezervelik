@@ -1,7 +1,9 @@
 'use client';
 
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { UserCog } from 'lucide-react';
+import { UserCog, Loader2 } from 'lucide-react';
+import { toast } from 'sonner';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useTranslation } from '@/i18n/provider';
 
@@ -9,19 +11,27 @@ import { useTranslation } from '@/i18n/provider';
 // no way back except a fresh login, and nothing on screen indicated the
 // session wasn't really the tenant's own admin. This renders whenever
 // startImpersonation() left a stashed session behind, and "Return to Admin"
-// restores it in place instead of requiring re-authentication.
+// restores it in place instead of requiring re-authentication. The stash
+// itself lives server-side (an httpOnly cookie), so restoring it is a real
+// API round trip, not a local state flip.
 export function ImpersonationBanner() {
   const { t } = useTranslation();
   const router = useRouter();
   const isImpersonating = useAuthStore(state => state.isImpersonating);
   const user = useAuthStore(state => state.user);
   const stopImpersonation = useAuthStore(state => state.stopImpersonation);
+  const [returning, setReturning] = useState(false);
 
   if (!isImpersonating) return null;
 
-  const handleReturn = () => {
-    if (stopImpersonation()) {
+  const handleReturn = async () => {
+    setReturning(true);
+    const ok = await stopImpersonation();
+    setReturning(false);
+    if (ok) {
       router.push('/system-admin/tenants');
+    } else {
+      toast.error(t('admin.returnToAdminFailed'));
     }
   };
 
@@ -33,9 +43,10 @@ export function ImpersonationBanner() {
       </span>
       <button
         onClick={handleReturn}
-        className="shrink-0 rounded-md border border-amber-950/30 bg-amber-950/10 px-2.5 py-1 uppercase tracking-wide hover:bg-amber-950/20 transition-colors"
+        disabled={returning}
+        className="shrink-0 rounded-md border border-amber-950/30 bg-amber-950/10 px-2.5 py-1 uppercase tracking-wide hover:bg-amber-950/20 transition-colors disabled:opacity-60"
       >
-        {t('admin.returnToAdmin')}
+        {returning ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : t('admin.returnToAdmin')}
       </button>
     </div>
   );

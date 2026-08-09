@@ -143,8 +143,8 @@ export default function TenantManagementPage() {
   const handleImpersonate = async (tenantId: string) => {
     try {
       const res = await api.post(`/system/tenants/${tenantId}/impersonate`);
-      const { user, token } = res.data.data;
-      startImpersonation(token, user);
+      const { user } = res.data.data;
+      startImpersonation(user);
       toast.success('Impersonation successful');
       router.push('/dashboard');
     } catch (err: any) {

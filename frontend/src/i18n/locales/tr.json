@@ -59,7 +59,8 @@
     "userSettings": "Kullanıcı Ayarları",
     "auditLog": "Etkinlik Kaydı",
     "impersonationBanner": "{{name}} olarak görüntüleniyor — buradaki değişiklikler onların hesabını etkiler.",
-    "returnToAdmin": "Yöneticiye Dön"
+    "returnToAdmin": "Yöneticiye Dön",
+    "returnToAdminFailed": "Yönetici oturumunuza dönülemedi — lütfen tekrar giriş yapın."
   },
   "commandPalette": {
     "title": "Sayfaya git",
