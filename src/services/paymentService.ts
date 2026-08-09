@@ -1,4 +1,5 @@
 import crypto from 'crypto';
+import { Prisma } from '@prisma/client';
 import prisma from '../config/prisma';
 import { getPaymentProvider } from './payments';
 import { sendBookingConfirmation, formatReservationLabel } from './notificationService';
@@ -67,11 +68,13 @@ export interface CreatedPayment {
 // token is always fresh. Returns null if the deposit amount is not positive.
 export async function createPaymentForReservation(
   reservation: { id: string; restaurantId: string; startTime?: Date | string | null },
-  settings: { depositAmount?: number | null; currency?: string | null }
+  settings: { depositAmount?: number | null; currency?: string | null },
+  tx?: Prisma.TransactionClient
 ): Promise<CreatedPayment | null> {
   const amountMinor = Math.round((settings.depositAmount || 0) * 100);
   if (amountMinor <= 0) return null;
 
+  const client = tx ?? prisma;
   const rawLinkToken = crypto.randomBytes(32).toString('hex');
   const code = genCode();
   const currency = toProviderCurrency(settings.currency);
@@ -82,7 +85,7 @@ export async function createPaymentForReservation(
     ? computePaymentDeadline(startTime)
     : new Date(Date.now() + PAYMENT_LINK_TTL_MS);
 
-  const payment = await prisma.payment.create({
+  const payment = await client.payment.create({
     data: {
       restaurantId: reservation.restaurantId,
       reservationId: reservation.id,

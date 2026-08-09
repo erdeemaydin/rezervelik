@@ -491,30 +491,44 @@ export const updateReservationStatus = async (req: Request, res: Response) => {
     if (status === 'CONFIRMED' && !skipPayment && !existingRes.isPaid) {
       const paymentEnabled = !!settings?.isPaidReservationEnabled && (settings.depositAmount || 0) > 0;
       if (paymentEnabled) {
-        const pay = await createPaymentForReservation(existingRes, settings!);
-        if (pay) {
-          let updated;
-          try {
-            updated = await prisma.$transaction(async (tx) => {
-              if (targetTableId) {
-                const conflict = await findTableConflict({
-                  restaurantId, tableId: targetTableId, start: existingRes.startTime, end: conflictEnd, excludeReservationId: id, tx, isManualAvailability,
-                });
-                if (conflict && !overrideConflict) {
-                  throw Object.assign(new Error('TABLE_CONFLICT'), { code: 'TABLE_CONFLICT' });
-                }
-              }
-              return tx.reservation.update({
-                where: { id },
-                data: { status: 'AWAITING_PAYMENT', paymentId: pay.paymentId, ...(finalTableId !== undefined ? { tableId: finalTableId } : {}) },
-              });
-            });
-          } catch (txErr: any) {
-            if (txErr?.code === 'TABLE_CONFLICT') {
-              return errorResponse(res, 'errors.table_conflict', 409, { code: 'TABLE_CONFLICT' });
+        // Eligibility (isPaid/status) is re-checked from a fresh read *inside*
+        // the transaction, and the Payment row is created inside it too — two
+        // concurrent "Accept" clicks on the same reservation used to both pass
+        // the isPaid check above, both create a Payment row + payment link, and
+        // both text the guest a separate deposit link. Whichever request loses
+        // the re-check below is treated as a no-op, not an error.
+        let txResult: { updated: typeof existingRes; pay: NonNullable<Awaited<ReturnType<typeof createPaymentForReservation>>> } | null;
+        try {
+          txResult = await prisma.$transaction(async (tx) => {
+            const fresh = await tx.reservation.findFirst({ where: { id, restaurantId } });
+            if (!fresh || fresh.isPaid || fresh.status === 'AWAITING_PAYMENT') {
+              return null;
             }
-            throw txErr;
+            if (targetTableId) {
+              const conflict = await findTableConflict({
+                restaurantId, tableId: targetTableId, start: existingRes.startTime, end: conflictEnd, excludeReservationId: id, tx, isManualAvailability,
+              });
+              if (conflict && !overrideConflict) {
+                throw Object.assign(new Error('TABLE_CONFLICT'), { code: 'TABLE_CONFLICT' });
+              }
+            }
+            const pay = await createPaymentForReservation(fresh, settings!, tx);
+            if (!pay) return null;
+            const updated = await tx.reservation.update({
+              where: { id },
+              data: { status: 'AWAITING_PAYMENT', paymentId: pay.paymentId, ...(finalTableId !== undefined ? { tableId: finalTableId } : {}) },
+            });
+            return { updated, pay };
+          });
+        } catch (txErr: any) {
+          if (txErr?.code === 'TABLE_CONFLICT') {
+            return errorResponse(res, 'errors.table_conflict', 409, { code: 'TABLE_CONFLICT' });
           }
+          throw txErr;
+        }
+
+        if (txResult) {
+          const { updated, pay } = txResult;
           const restaurant = await prisma.restaurant.findUnique({ where: { id: restaurantId } });
           const amountLabel = `${(pay.amountMinor / 100).toFixed(2)} ${pay.currency}`;
           const reservationLabel = new Date(existingRes.startTime).toLocaleString('tr-TR') + ` · ${existingRes.guestCount} kişi`;
@@ -534,6 +548,13 @@ export const updateReservationStatus = async (req: Request, res: Response) => {
             payment: { token: pay.rawLinkToken, code: pay.code, url: pay.paymentUrl, amount: pay.amountMinor, currency: pay.currency, expiresAt: pay.expiresAt },
           });
         }
+        // Lost the race (or deposit amount was zeroed out concurrently) — a
+        // sibling request already moved this reservation on. Return its
+        // current state instead of falling through to the generic update
+        // below, which would otherwise force `status` back to CONFIRMED and
+        // silently skip the payment the sibling request just required.
+        const current = await prisma.reservation.findFirst({ where: { id, restaurantId } });
+        return successResponse(res, current);
       }
     }
 
