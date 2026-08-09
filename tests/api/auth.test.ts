@@ -19,9 +19,19 @@ describe('Auth & session boundaries', () => {
     expect(res.body.data.user.role).toBe('ADMIN');
   });
 
-  it('rejects a wrong password', async () => {
+  // A wrong-credentials login must be a normal 401 JSON response the login
+  // page can show inline (getApiErrorMessage reads .message/.error) — never a
+  // redirect. The axios interceptor explicitly skips its "clear session and
+  // send to /auth/login" handling when the failing request was itself made
+  // from an /auth/ page (see lib/api.ts), so the login form doesn't reset
+  // itself on a bad attempt; it just displays this response's message.
+  it('rejects a wrong password with a normal error response, not a redirect signal', async () => {
     const res = await api.post('/api/auth/login').send({ email: a.users.admin.email, password: 'wrong-password' });
     expect(res.status).toBe(401);
+    expect(res.body.success).toBe(false);
+    expect(typeof res.body.message).toBe('string');
+    expect(res.body.message.length).toBeGreaterThan(0);
+    expect(res.headers['set-cookie']).toBeFalsy();
   });
 
   // Security-audit finding: login used to return immediately for a nonexistent
