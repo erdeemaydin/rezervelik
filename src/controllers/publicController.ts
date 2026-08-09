@@ -198,38 +198,55 @@ export const acceptOffer = async (req: Request, res: Response) => {
     const start = new Date(startTimeStr);
     const end = new Date(start.getTime() + (settings?.defaultDurationMinutes || 90) * 60000);
 
-    await prisma.$transaction(async (tx) => {
-      // Try to seat the offer on a free table; leave unassigned for staff if none.
-      const table = await findAvailableTable({
-        restaurantId: entry.restaurantId, partySize: entry.partySize, start, end, tx,
-        isManualAvailability: settings?.logic === 'MANUAL_AVAILABILITY',
-      });
-      await tx.reservation.create({
-        data: {
-          restaurantId: entry.restaurantId,
-          tableId: table?.id ?? null,
-          customerName: entry.customerName,
-          customerPhone: entry.customerPhone,
-          guestCount: entry.partySize,
-          startTime: start,
-          endTime: end,
-          status: 'CONFIRMED',
-          notes: 'Converted from Waitlist Offer'
+    try {
+      await prisma.$transaction(async (tx) => {
+        // Atomically claim the offer before doing anything else. The pre-checks
+        // above (status !== 'OFFERED', expiry) are a fail-fast convenience, not
+        // the real guard — a double-tap or two tabs hitting Accept at once could
+        // both pass them and each create a reservation + double-decrement
+        // waitlist capacity. Only the request that actually flips
+        // OFFERED -> ACCEPTED here proceeds to seat it.
+        const claimed = await tx.waitlistEntry.updateMany({
+          where: { id: entry.id, status: 'OFFERED' },
+          data: { status: 'ACCEPTED' },
+        });
+        if (claimed.count === 0) {
+          throw Object.assign(new Error('OFFER_ALREADY_HANDLED'), { code: 'OFFER_ALREADY_HANDLED' });
         }
+
+        // Try to seat the offer on a free table; leave unassigned for staff if none.
+        const table = await findAvailableTable({
+          restaurantId: entry.restaurantId, partySize: entry.partySize, start, end, tx,
+          isManualAvailability: settings?.logic === 'MANUAL_AVAILABILITY',
+        });
+        await tx.reservation.create({
+          data: {
+            restaurantId: entry.restaurantId,
+            tableId: table?.id ?? null,
+            customerName: entry.customerName,
+            customerPhone: entry.customerPhone,
+            guestCount: entry.partySize,
+            startTime: start,
+            endTime: end,
+            status: 'CONFIRMED',
+            notes: 'Converted from Waitlist Offer'
+          }
+        });
+        await releaseWaitlistCapacity({
+          restaurantId: entry.restaurantId,
+          fromStatus: entry.status,
+          toStatus: 'ACCEPTED',
+          partySize: entry.partySize,
+          targetDate: entry.targetDate,
+          tx,
+        });
       });
-      await tx.waitlistEntry.update({
-        where: { id: entry.id },
-        data: { status: 'ACCEPTED' }
-      });
-      await releaseWaitlistCapacity({
-        restaurantId: entry.restaurantId,
-        fromStatus: entry.status,
-        toStatus: 'ACCEPTED',
-        partySize: entry.partySize,
-        targetDate: entry.targetDate,
-        tx,
-      });
-    });
+    } catch (txErr: any) {
+      if (txErr?.code === 'OFFER_ALREADY_HANDLED') {
+        return errorResponse(res, 'Offer no longer available', 400);
+      }
+      throw txErr;
+    }
 
     return successResponse(res, { message: 'Offer accepted' });
   } catch (error) {
