@@ -4,7 +4,7 @@ import { successResponse, errorResponse } from '../utils/response';
 import { verifyToken } from '../utils/jwt';
 import { createPaymentForReservation } from '../services/paymentService';
 import { sendPaymentRequest, sendBookingConfirmation, formatReservationLabel } from '../services/notificationService';
-import { findTableConflict, findAvailableTable, BLOCKING_STATUSES, restaurantDateStr, clearFullyBookedIfSet } from '../utils/reservationConflict';
+import { findTableConflict, findAvailableTable, BLOCKING_STATUSES, restaurantDateStr, clearFullyBookedIfSet, getBookedCoversForDate } from '../utils/reservationConflict';
 import { logAudit } from '../services/auditService';
 
 const isStaffRequest = (req: Request): boolean => {
@@ -151,6 +151,24 @@ export const createReservation = async (req: Request, res: Response) => {
     let reservation;
     try {
       reservation = await prisma.$transaction(async (tx) => {
+        // DaySetting.maxCapacityOverride: a total-covers cap for this specific
+        // date, independent of per-table availability (e.g. a private event or
+        // reduced staffing where the restaurant wants to accept fewer total
+        // covers than table math alone would allow). Same staff-bypass
+        // convention as maxPartySize/FULLY_BOOKED above — an admin set this
+        // cap for the automated/public flow, not to block staff discretion.
+        // Re-read inside the transaction (not just off the `daySetting` fetched
+        // earlier) so two near-simultaneous bookings can't both pass a
+        // stale count and jointly overshoot the cap.
+        if (!staffInitiated && daySetting?.maxCapacityOverride != null) {
+          const booked = await getBookedCoversForDate({
+            restaurantId, dateStr, timezone: settings.timezone, tx,
+          });
+          if (booked + partySize > daySetting.maxCapacityOverride) {
+            throw Object.assign(new Error('DAY_CAPACITY_EXCEEDED'), { code: 'DAY_CAPACITY_EXCEEDED' });
+          }
+        }
+
         if (finalTableId) {
           const conflict = await findTableConflict({
             restaurantId, tableId: finalTableId, start, end: windowEnd, tx, isManualAvailability,
@@ -226,6 +244,9 @@ export const createReservation = async (req: Request, res: Response) => {
       }
       if (txErr?.code === 'NO_TABLE_CAPACITY') {
         return errorResponse(res, 'errors.validation_error', 400, { message: 'No table can accommodate this party size.' });
+      }
+      if (txErr?.code === 'DAY_CAPACITY_EXCEEDED') {
+        return errorResponse(res, 'errors.day_capacity_exceeded', 409, { code: 'DAY_CAPACITY_EXCEEDED' });
       }
       if (txErr?.code === 'FULLY_BOOKED') {
         return errorResponse(res, 'errors.fully_booked', 409, { code: 'FULLY_BOOKED' });

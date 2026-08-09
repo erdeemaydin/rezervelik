@@ -11,6 +11,7 @@
     "menu_activation_conflict": "Başka bir menü az önce aktif hale getirildi. Lütfen sayfayı yenileyip tekrar deneyin.",
     "schedule_violation": "Bu atama bir planlama kuralıyla çakışıyor (çift vardiya, yetersiz dinlenme süresi veya müsait değil olarak işaretlenmiş).",
     "fully_booked": "Seçtiğiniz tarih ve saat için tüm masalar dolu. Lütfen bekleme listesine katılın veya başka bir saat seçin.",
+    "day_capacity_exceeded": "Bu tarih için maksimum rezervasyon sayısına ulaşıldı. Lütfen başka bir tarih seçin veya bekleme listesine katılın.",
     "maintenance": "Platform geçici olarak bakımda. Lütfen kısa süre sonra tekrar deneyin.",
     "route_not_found": "İstenen kaynak bulunamadı.",
     "invalid_json": "İstek gövdesi geçerli bir JSON değil.",

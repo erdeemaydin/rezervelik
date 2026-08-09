@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import prisma from '../config/prisma';
 import { successResponse, errorResponse } from '../utils/response';
-import { restaurantDateStr } from '../utils/reservationConflict';
+import { restaurantDateStr, restaurantMidnightUTC } from '../utils/reservationConflict';
 
 // Hour (0-23) and day-of-week (0=Sun..6=Sat) of `date` as seen in the restaurant's
 // own timezone, not the server's. Reservation timestamps are stored as absolute
@@ -18,19 +18,6 @@ function restaurantHourAndDay(date: Date, timezone?: string): { hour: number; da
   const weekdayShort = parts.find(p => p.type === 'weekday')!.value;
   const dayOfWeek = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].indexOf(weekdayShort);
   return { hour, dayOfWeek };
-}
-
-// The UTC instant corresponding to local midnight of `dateStr` (YYYY-MM-DD) in the
-// given timezone. Standard cross-environment-safe technique: format the same guess
-// instant through both the target zone and UTC, take the wall-clock difference (the
-// zone's offset at that instant), and shift the guess back by it.
-function restaurantMidnightUTC(dateStr: string, timezone?: string): Date {
-  const tz = timezone || 'Europe/Istanbul';
-  const guess = new Date(`${dateStr}T00:00:00Z`);
-  const asZoned = new Date(guess.toLocaleString('en-US', { timeZone: tz }));
-  const asUTC = new Date(guess.toLocaleString('en-US', { timeZone: 'UTC' }));
-  const offsetMs = asZoned.getTime() - asUTC.getTime();
-  return new Date(guess.getTime() - offsetMs);
 }
 
 /**

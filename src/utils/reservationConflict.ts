@@ -66,6 +66,64 @@ export function restaurantDateStr(date: Date, timezone?: string): string {
 }
 
 /**
+ * The UTC instant corresponding to local midnight of `dateStr` (YYYY-MM-DD) in the
+ * given timezone. Standard cross-environment-safe technique: format the same guess
+ * instant through both the target zone and UTC, take the wall-clock difference (the
+ * zone's offset at that instant), and shift the guess back by it.
+ *
+ * Shared with analyticsController.ts (previously duplicated there as a private
+ * helper) — a single DST-sensitive implementation instead of two copies that could
+ * silently drift apart.
+ */
+export function restaurantMidnightUTC(dateStr: string, timezone?: string): Date {
+  const tz = timezone || 'Europe/Istanbul';
+  const guess = new Date(`${dateStr}T00:00:00Z`);
+  const asZoned = new Date(guess.toLocaleString('en-US', { timeZone: tz }));
+  const asUTC = new Date(guess.toLocaleString('en-US', { timeZone: 'UTC' }));
+  const offsetMs = asZoned.getTime() - asUTC.getTime();
+  return new Date(guess.getTime() - offsetMs);
+}
+
+/**
+ * Sums guestCount across all currently-active (BLOCKING_STATUSES) reservations
+ * whose calendar day (in the restaurant's own timezone) is `dateStr` — the basis
+ * for DaySetting.maxCapacityOverride, a total-covers cap for a specific date
+ * independent of per-table availability (e.g. a private event or reduced
+ * staffing where the restaurant wants to accept fewer total covers than table
+ * math alone would allow).
+ */
+export async function getBookedCoversForDate({
+  restaurantId, dateStr, timezone, excludeReservationId, tx,
+}: {
+  restaurantId: string;
+  dateStr: string;
+  timezone?: string;
+  excludeReservationId?: string;
+  tx?: Prisma.TransactionClient;
+}): Promise<number> {
+  const client = tx ?? prisma;
+  const dayStart = restaurantMidnightUTC(dateStr, timezone);
+  // Next calendar day's date string via plain UTC arithmetic on the
+  // (timezone-agnostic) YYYY-MM-DD string, then re-resolved through
+  // restaurantMidnightUTC — NOT `dayStart + 24h`, which would be wrong on a
+  // DST transition day (23h/25h of actual wall-clock time).
+  const nextDay = new Date(`${dateStr}T00:00:00Z`);
+  nextDay.setUTCDate(nextDay.getUTCDate() + 1);
+  const dayEnd = restaurantMidnightUTC(nextDay.toISOString().slice(0, 10), timezone);
+
+  const result = await client.reservation.aggregate({
+    where: {
+      restaurantId,
+      status: { in: BLOCKING_STATUSES },
+      startTime: { gte: dayStart, lt: dayEnd },
+      ...(excludeReservationId ? { id: { not: excludeReservationId } } : {}),
+    },
+    _sum: { guestCount: true },
+  });
+  return result._sum.guestCount ?? 0;
+}
+
+/**
  * DaySetting.isFullyBooked is a coarse, manually-managed gate: createReservation
  * sets it when a public request finds no table free for its requested slot, but
  * that says nothing about whether the day is *still* full once a reservation that

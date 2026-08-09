@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import prisma from '../config/prisma';
 import { successResponse, errorResponse } from '../utils/response';
-import { findAvailableTable, restaurantDateStr } from '../utils/reservationConflict';
+import { findAvailableTable, restaurantDateStr, getBookedCoversForDate } from '../utils/reservationConflict';
 import { releaseWaitlistCapacity } from '../utils/waitlistCapacity';
 import { INVALID, parseCount } from '../utils/numeric';
 
@@ -104,12 +104,30 @@ export const getDayStatus = async (req: Request, res: Response) => {
     // Check if any table is available at all on that day (coarse check)
     const tablesCount = await prisma.bookableResource.count({ where: { restaurantId: restaurant.id } });
 
+    // When the admin has set a total-covers cap for this date, let the public
+    // page show the same "may be full" hint it already shows for
+    // isFullyBooked, instead of guests only discovering the cap when their
+    // booking attempt is rejected.
+    let remainingCapacity: number | undefined;
+    let isCapacityFull: boolean | undefined;
+    if (daySetting?.maxCapacityOverride != null) {
+      const booked = await getBookedCoversForDate({
+        restaurantId: restaurant.id,
+        dateStr: date as string,
+        timezone: restaurant.settings?.timezone,
+      });
+      remainingCapacity = Math.max(0, daySetting.maxCapacityOverride - booked);
+      isCapacityFull = remainingCapacity <= 0;
+    }
+
     return successResponse(res, {
       daySetting: daySetting ? {
           isReservationEnabled: daySetting.isReservationEnabled,
           isFullyBooked: daySetting.isFullyBooked,
           autoConfirm: daySetting.autoConfirm,
-          maxCapacityOverride: daySetting.maxCapacityOverride
+          maxCapacityOverride: daySetting.maxCapacityOverride,
+          remainingCapacity,
+          isCapacityFull,
       } : {
           isReservationEnabled: restaurant.settings?.isReservationEnabled ?? true,
           isFullyBooked: false,
