@@ -1,11 +1,18 @@
 import { Router } from 'express';
 import * as reservationController from '../controllers/reservationController';
 import { authMiddleware, requirePermission } from '../middlewares/auth';
+import { rateLimitOrNoop } from '../middlewares/rateLimit';
 
 const router = Router();
 
-// Allow public to create reservations (assuming tenantMiddleware sets the restaurant ID context)
-router.post('/', reservationController.createReservation);
+// Allow public to create reservations (assuming tenantMiddleware sets the restaurant ID context).
+// Rate-limited for guest (unauthenticated) callers only — staff traffic on
+// this same path is unaffected.
+router.post(
+  '/',
+  rateLimitOrNoop({ windowMs: 60_000, max: 10, keyPrefix: 'reservation-create' }),
+  reservationController.createReservation
+);
 
 // Protect staff/management routes
 router.use(authMiddleware);
