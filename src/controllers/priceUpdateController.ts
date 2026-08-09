@@ -2,6 +2,17 @@ import { Request, Response } from 'express';
 import prisma from '../config/prisma';
 import { successResponse, errorResponse } from '../utils/response';
 
+// Security-audit finding: `value` was parseFloat'd with no isNaN guard and
+// `updateType` was never checked against its two valid values. A non-numeric
+// `value` (or a typo'd updateType, which the worker's if/else chain silently
+// ignores, applying neither PERCENTAGE nor FIXED_AMOUNT math and leaving
+// every price untouched) reached the worker as-is; for a bad `value`
+// specifically, the worker's `item.price ± NaN` computes NaN for every menu
+// item in the tenant, and Postgres' float type happily stores NaN — a
+// scheduled job that "succeeds" (status: APPLIED) while silently corrupting
+// every price in the tenant.
+const VALID_UPDATE_TYPES = ['PERCENTAGE', 'FIXED_AMOUNT'];
+
 export const bulkUpdatePrices = async (req: Request, res: Response) => {
   try {
     const restaurantId = req.restaurantId!;
@@ -10,15 +21,31 @@ export const bulkUpdatePrices = async (req: Request, res: Response) => {
     if (!updateType || value === undefined || isIncrease === undefined) {
       return errorResponse(res, 'errors.validation_error', 400, { message: 'Missing parameters' });
     }
+    if (!VALID_UPDATE_TYPES.includes(updateType)) {
+      return errorResponse(res, 'errors.validation_error', 400, { message: 'updateType must be PERCENTAGE or FIXED_AMOUNT' });
+    }
+    const parsedValue = typeof value === 'number' ? value : parseFloat(value);
+    if (!Number.isFinite(parsedValue) || parsedValue < 0) {
+      return errorResponse(res, 'errors.validation_error', 400, { message: 'value must be a non-negative number' });
+    }
+    if (typeof isIncrease !== 'boolean') {
+      return errorResponse(res, 'errors.validation_error', 400, { message: 'isIncrease must be a boolean' });
+    }
 
     // If scheduledFor is not provided, apply immediately by setting it to now
-    const targetDate = scheduledFor ? new Date(scheduledFor) : new Date();
+    let targetDate = new Date();
+    if (scheduledFor) {
+      targetDate = new Date(scheduledFor);
+      if (isNaN(targetDate.getTime())) {
+        return errorResponse(res, 'errors.validation_error', 400, { message: 'Invalid schedule date' });
+      }
+    }
 
     const update = await prisma.scheduledPriceUpdate.create({
       data: {
         restaurantId,
         updateType,
-        value: parseFloat(value),
+        value: parsedValue,
         isIncrease,
         scheduledFor: targetDate
       }
