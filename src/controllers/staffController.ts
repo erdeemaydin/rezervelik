@@ -120,8 +120,16 @@ export const updateStaffMember = async (req: Request, res: Response) => {
       return errorResponse(res, 'errors.unauthorized', 403, { message: 'Cannot modify this user' });
     }
 
-    // Prevent tenant admin from locking themselves out (basic protection)
-    if (targetUser.id === req.user?.userId && role !== 'ADMIN') {
+    // Prevent tenant admin from locking themselves out (basic protection).
+    // Bug fix: this used to block ANY self-edit unless the submitted `role`
+    // was literally 'ADMIN' — so a MANAGER/STAFF editing their own phone
+    // number, or an ADMIN updating an unrelated field without resubmitting
+    // role, got rejected as "Cannot demote yourself" even though nothing was
+    // being demoted. The actual intent (only an ADMIN can lock themselves
+    // out of admin access) requires checking the target's CURRENT role, and
+    // only treating it as a demotion attempt when `role` is actually being
+    // changed to something else.
+    if (targetUser.id === req.user?.userId && targetUser.role === 'ADMIN' && role !== undefined && role !== 'ADMIN') {
         return errorResponse(res, 'errors.forbidden', 403, { message: 'Cannot demote yourself' });
     }
 
