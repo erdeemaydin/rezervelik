@@ -60,14 +60,28 @@ async function findAssignShiftViolations({
   for (const a of neighbors) {
     if (a.date === date) continue; // same-day handled as DOUBLE_SHIFT above
     const w = shiftWindow(a.date, a.shift.startTime, a.shift.endTime);
+    // When w.start < candidate.end, this branch's `candidate.start - w.end` is
+    // only ever negative if w.end > candidate.start too — i.e. the two
+    // windows genuinely overlap in wall-clock time (this happens across an
+    // adjacent-day boundary when one of the shifts is overnight, e.g. a
+    // 22:00-06:00 shift on day 1 promoted to end on day 2, colliding with a
+    // 02:00-10:00 shift assigned ON day 2 — DOUBLE_SHIFT's plain date-string
+    // comparison never catches this since the two assignments sit on
+    // different `date` values). A negative gap is strictly worse than the
+    // 11h minimum, so it must still trip CONSECUTIVE_REST — bug fix: the old
+    // `gapHours >= 0` guard excluded exactly this case, silently letting
+    // staff be double-booked into two literally-overlapping shifts as long
+    // as they're recorded on different calendar dates.
     const gapMs = w.start.getTime() >= candidate.end.getTime()
       ? w.start.getTime() - candidate.end.getTime()
       : candidate.start.getTime() - w.end.getTime();
     const gapHours = gapMs / (1000 * 60 * 60);
-    if (gapHours >= 0 && gapHours < 11) {
+    if (gapHours < 11) {
       violations.push({
         type: 'CONSECUTIVE_REST',
-        message: `Only ${Math.round(gapHours * 10) / 10}h off between shifts (minimum 11h required).`,
+        message: gapHours < 0
+          ? `Shifts overlap by ${Math.round(-gapHours * 10) / 10}h.`
+          : `Only ${Math.round(gapHours * 10) / 10}h off between shifts (minimum 11h required).`,
       });
       break;
     }
