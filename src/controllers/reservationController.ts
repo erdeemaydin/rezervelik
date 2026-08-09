@@ -514,9 +514,19 @@ export const updateReservationStatus = async (req: Request, res: Response) => {
         // the isPaid check above, both create a Payment row + payment link, and
         // both text the guest a separate deposit link. Whichever request loses
         // the re-check below is treated as a no-op, not an error.
+        //
+        // The re-check alone isn't sufficient: a plain `findFirst` takes no row
+        // lock under Postgres' default READ COMMITTED isolation, so two
+        // concurrent transactions can both read the pre-race "not yet paid"
+        // state before either commits, and both proceed to create a Payment
+        // row. A Postgres advisory lock scoped to this reservation id (same
+        // pattern as the RSVP dedup lock in publicController.ts) makes the
+        // second transaction block until the first commits, so it then
+        // correctly observes the post-commit state and no-ops.
         let txResult: { updated: typeof existingRes; pay: NonNullable<Awaited<ReturnType<typeof createPaymentForReservation>>> } | null;
         try {
           txResult = await prisma.$transaction(async (tx) => {
+            await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${`reservation-accept:${id}`}))`;
             const fresh = await tx.reservation.findFirst({ where: { id, restaurantId } });
             if (!fresh || fresh.isPaid || fresh.status === 'AWAITING_PAYMENT') {
               return null;
