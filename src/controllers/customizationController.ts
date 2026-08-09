@@ -1,6 +1,29 @@
 import { Request, Response } from 'express';
+import sanitizeHtml from 'sanitize-html';
 import prisma from '../config/prisma';
 import { successResponse, errorResponse } from '../utils/response';
+
+// Security-audit finding: reservationInfoText/reservationWarningText were
+// stored verbatim from req.body and rendered on the public booking page via
+// dangerouslySetInnerHTML in all four layout components (ClassicLayout,
+// PremiumLayout, OldenLayout, GardenLayout) with no sanitization on either
+// side — any tenant staffer with manage_settings could plant a stored-XSS
+// payload that executes in every anonymous visitor's browser. Sanitizing on
+// write (rather than only on render) means every current and future reader
+// of these fields gets a value that's already safe, not just the React
+// components that happen to remember to escape it.
+const sanitizeRichText = (value: unknown): string | null | undefined => {
+  if (value === undefined) return undefined; // not provided -> leave field unchanged
+  if (value === null) return null; // explicit clear
+  return sanitizeHtml(String(value), {
+    allowedTags: ['p', 'br', 'strong', 'b', 'em', 'i', 'u', 'ul', 'ol', 'li', 'a'],
+    allowedAttributes: { a: ['href', 'target', 'rel'] },
+    allowedSchemes: ['http', 'https', 'mailto', 'tel'],
+    transformTags: {
+      a: sanitizeHtml.simpleTransform('a', { rel: 'noopener noreferrer', target: '_blank' }),
+    },
+  });
+};
 
 export const getCustomization = async (req: Request, res: Response) => {
   try {
@@ -45,6 +68,9 @@ export const updateCustomization = async (req: Request, res: Response) => {
       reservationWarningText
     } = req.body;
 
+    const sanitizedInfoText = sanitizeRichText(reservationInfoText);
+    const sanitizedWarningText = sanitizeRichText(reservationWarningText);
+
     const customization = await prisma.frontendCustomization.upsert({
       where: { restaurantId },
       update: {
@@ -57,8 +83,8 @@ export const updateCustomization = async (req: Request, res: Response) => {
         showLegal,
         legalText,
         socialLinks,
-        reservationInfoText,
-        reservationWarningText
+        reservationInfoText: sanitizedInfoText,
+        reservationWarningText: sanitizedWarningText
       },
       create: {
         restaurantId,
@@ -71,8 +97,8 @@ export const updateCustomization = async (req: Request, res: Response) => {
         showLegal,
         legalText,
         socialLinks,
-        reservationInfoText,
-        reservationWarningText
+        reservationInfoText: sanitizedInfoText,
+        reservationWarningText: sanitizedWarningText
       }
     });
 
