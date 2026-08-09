@@ -109,6 +109,45 @@ export async function createPaymentForReservation(
   };
 }
 
+export class RefundError extends Error {
+  constructor(message: string, public code: 'NOT_FOUND' | 'NOT_PAID' | 'PROVIDER_ERROR') {
+    super(message);
+  }
+}
+
+// Refund a paid deposit (e.g. staff cancelling a paid reservation within
+// policy). Tenant-scoped: only a Payment belonging to restaurantId can be
+// refunded. Only a currently-PAID payment can be refunded — this is not a
+// state machine with retries, so a second call on an already-REFUNDED
+// payment is rejected rather than silently re-issuing the refund.
+export async function refundPayment(paymentId: string, restaurantId: string, reason?: string) {
+  const payment = await prisma.payment.findFirst({ where: { id: paymentId, restaurantId } });
+  if (!payment) throw new RefundError('Payment not found', 'NOT_FOUND');
+  if (payment.status !== 'PAID') throw new RefundError('Only a paid deposit can be refunded', 'NOT_PAID');
+
+  const provider = getPaymentProvider();
+  const result = await provider.refund({
+    merchantOid: payment.merchantOid,
+    amountMinor: payment.amount,
+    currency: payment.currency,
+  });
+
+  if (!result.success) {
+    throw new RefundError(result.error || 'Refund failed at the payment gateway', 'PROVIDER_ERROR');
+  }
+
+  return prisma.payment.update({
+    where: { id: payment.id },
+    data: {
+      status: 'REFUNDED',
+      refundedAt: new Date(),
+      refundReason: reason || null,
+      rawRefund: result.raw ? JSON.stringify(result.raw) : null,
+      providerRef: result.providerRef || payment.providerRef,
+    },
+  });
+}
+
 // Look up a live payment by either the raw link token or the short code.
 export async function findPaymentByRef(ref: string) {
   const byToken = await prisma.payment.findUnique({ where: { linkTokenHash: hashLinkToken(ref) } });

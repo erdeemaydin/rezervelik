@@ -1,5 +1,5 @@
 import crypto from 'crypto';
-import { PaymentProvider, CreateCheckoutInput, CreateCheckoutResult, CallbackResult } from './types';
+import { PaymentProvider, CreateCheckoutInput, CreateCheckoutResult, CallbackResult, RefundInput, RefundResult } from './types';
 
 // Development/testing provider. Lets the whole payment flow be exercised
 // end-to-end without live PayTR credentials, and proves the abstraction: swapping
@@ -38,6 +38,10 @@ export class MockProvider implements PaymentProvider {
 
   callbackAck(): string {
     return 'OK';
+  }
+
+  async refund(input: RefundInput): Promise<RefundResult> {
+    return { success: true, providerRef: `mock_refund_${input.merchantOid}` };
   }
 
   // Helper (mock-only) to build a correctly-signed callback body, used by the

@@ -36,6 +36,19 @@ export interface CallbackResult {
   failReason?: string;
 }
 
+export interface RefundInput {
+  merchantOid: string;      // the original payment's order id
+  amountMinor: number;      // amount to refund, in minor units (full or partial)
+  currency: string;
+}
+
+export interface RefundResult {
+  success: boolean;
+  providerRef?: string;     // provider-side refund transaction id, if any
+  raw?: unknown;             // raw provider response, stored for audit
+  error?: string;
+}
+
 export interface PaymentProvider {
   readonly name: string;    // e.g. 'PAYTR', 'MOCK'
   createCheckout(input: CreateCheckoutInput): Promise<CreateCheckoutResult>;
@@ -43,4 +56,5 @@ export interface PaymentProvider {
   // What to write back in the HTTP response body so the provider stops retrying
   // the notification (PayTR expects the literal string "OK").
   callbackAck(): string;
+  refund(input: RefundInput): Promise<RefundResult>;
 }

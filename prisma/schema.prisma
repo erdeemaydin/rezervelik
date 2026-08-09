@@ -518,6 +518,10 @@ model Payment {
   failReason    String?
   rawCallback   String? // JSON of the last provider callback, for audit
 
+  refundedAt    DateTime?
+  refundReason  String?
+  rawRefund     String? // JSON of the last provider refund response, for audit
+
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 

@@ -296,7 +296,14 @@
     "reference": "Reference",
     "date": "Date",
     "loading": "Loading transactions…",
-    "empty": "No payments yet"
+    "empty": "No payments yet",
+    "actions": "Actions",
+    "refund": "Refund",
+    "refunding": "Refunding…",
+    "refundConfirmTitle": "Refund this deposit?",
+    "refundConfirmDesc": "The gateway will return the deposit to the guest's card. This cannot be undone.",
+    "refundSuccess": "Deposit refunded",
+    "refundFailed": "Refund failed"
   },
   "reviews": {
     "title": "Reviews & Feedback",

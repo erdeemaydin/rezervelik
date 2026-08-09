@@ -296,7 +296,14 @@
     "reference": "Referans",
     "date": "Tarih",
     "loading": "İşlemler yükleniyor…",
-    "empty": "Henüz ödeme yok"
+    "empty": "Henüz ödeme yok",
+    "actions": "İşlemler",
+    "refund": "İade Et",
+    "refunding": "İade ediliyor…",
+    "refundConfirmTitle": "Bu kapora iade edilsin mi?",
+    "refundConfirmDesc": "Ödeme sağlayıcısı kaporayı misafirin kartına iade edecek. Bu işlem geri alınamaz.",
+    "refundSuccess": "Kapora iade edildi",
+    "refundFailed": "İade başarısız oldu"
   },
   "reviews": {
     "title": "Değerlendirmeler ve Geri Bildirim",

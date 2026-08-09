@@ -27,6 +27,7 @@ export type AuditCategory =
   | 'SUBSCRIPTION'
   | 'PERMISSIONS'
   | 'RESERVATION'
+  | 'PAYMENT'
   | 'SYSTEM';
 
 interface AuditInput {
