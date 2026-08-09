@@ -526,7 +526,7 @@ export default function PremiumLayout({ slug, initialRestaurant, initialView, me
                 </div>
               </div>
 
-              <button type="submit" disabled={checkingDay || dayStatus?.daySetting?.isReservationEnabled === false}
+              <button type="submit" disabled={checkingDay || (dayStatus?.daySetting?.isReservationEnabled === false && !dayStatus?.daySetting?.isFullyBooked)}
                 className="w-full h-16 text-lg font-semibold tracking-[0.1em] uppercase rounded-2xl mt-8 disabled:opacity-50 transition-all hover:scale-[1.02] hover:brightness-110"
                 style={{ background: 'var(--moss)', color: 'var(--bg)' }}>
                 {dayStatus?.daySetting?.isFullyBooked ? 'Join Waitlist' : 'Request Table'}

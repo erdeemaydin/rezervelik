@@ -546,7 +546,7 @@ export default function GardenLayout({ slug, initialRestaurant, initialView, men
 
               <Button
                 type="submit"
-                disabled={checkingDay || dayStatus?.daySetting?.isReservationEnabled === false}
+                disabled={checkingDay || (dayStatus?.daySetting?.isReservationEnabled === false && !dayStatus?.daySetting?.isFullyBooked)}
                 className="h-16 w-full rounded-2xl bg-[var(--accent)] text-base font-semibold uppercase tracking-widest text-white hover:bg-[var(--accent-hover)] disabled:opacity-50"
               >
                 {dayStatus?.daySetting?.isFullyBooked ? 'Join Waitlist' : 'Request Table'}

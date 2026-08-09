@@ -558,7 +558,7 @@ export default function OldenLayout({ slug, initialRestaurant, initialView, menu
 
               <Button
                 type="submit"
-                disabled={checkingDay || dayStatus?.daySetting?.isReservationEnabled === false}
+                disabled={checkingDay || (dayStatus?.daySetting?.isReservationEnabled === false && !dayStatus?.daySetting?.isFullyBooked)}
                 className="w-full h-16 bg-[var(--accent)] hover:bg-[var(--accent-hover)] text-white font-bold tracking-widest uppercase rounded-xl mt-8 disabled:opacity-50 text-lg transition-all hover:scale-[1.02]"
               >
                 {dayStatus?.daySetting?.isFullyBooked ? 'Join Waitlist' : 'Request Table'}
