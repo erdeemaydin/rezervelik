@@ -88,7 +88,12 @@ export const deleteDaySetting = async (req: Request, res: Response) => {
     });
 
     return successResponse(res, null, 'Day setting deleted');
-  } catch (error) {
+  } catch (error: any) {
+    // Bug fix: deleting a date with no existing DaySetting row threw Prisma
+    // P2025 (record not found), which fell through to a raw 500.
+    if (error?.code === 'P2025') {
+      return errorResponse(res, 'errors.not_found', 404);
+    }
     return errorResponse(res, 'errors.internal_error', 500);
   }
 };

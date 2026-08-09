@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import prisma from '../config/prisma';
 import { successResponse, errorResponse } from '../utils/response';
 import { releaseWaitlistCapacity } from '../utils/waitlistCapacity';
+import { INVALID, parseCount } from '../utils/numeric';
 
 export const getWaitTimeConfig = async (req: Request, res: Response) => {
   try {
@@ -36,6 +37,15 @@ export const updateWaitTimeConfig = async (req: Request, res: Response) => {
       waitTimePerPersonUpper
     } = req.body;
 
+    let parsedPeopleWaiting: number | undefined;
+    if (peopleWaiting !== undefined) {
+      const parsed = parseCount(peopleWaiting, 0, 0);
+      if (parsed === INVALID) {
+        return errorResponse(res, 'errors.validation_error', 400, { message: 'peopleWaiting must be a non-negative integer' });
+      }
+      parsedPeopleWaiting = parsed;
+    }
+
     const config = await prisma.waitTimeConfig.upsert({
       where: { restaurantId },
       update: {
@@ -44,7 +54,7 @@ export const updateWaitTimeConfig = async (req: Request, res: Response) => {
         isWaitTimeCalculated,
         manualWaitTimeLower,
         manualWaitTimeUpper,
-        peopleWaiting,
+        peopleWaiting: parsedPeopleWaiting,
         waitTimePerPersonLower,
         waitTimePerPersonUpper
       },
@@ -55,7 +65,7 @@ export const updateWaitTimeConfig = async (req: Request, res: Response) => {
         isWaitTimeCalculated,
         manualWaitTimeLower,
         manualWaitTimeUpper,
-        peopleWaiting,
+        peopleWaiting: parsedPeopleWaiting,
         waitTimePerPersonLower,
         waitTimePerPersonUpper
       }
@@ -96,16 +106,44 @@ export const joinWaitlist = async (req: Request, res: Response) => {
     const restaurantId = req.restaurantId!;
     const { customerName, customerPhone, partySize, quotedWaitTime, notes } = req.body;
 
+    const parsedPartySize = parseCount(partySize, 1, 1);
+    if (parsedPartySize === INVALID) {
+      return errorResponse(res, 'errors.validation_error', 400, { message: 'partySize must be a positive integer' });
+    }
+    let parsedQuotedWaitTime: number | null = null;
+    if (quotedWaitTime) {
+      const parsed = parseCount(quotedWaitTime, 0, 0);
+      if (parsed === INVALID) {
+        return errorResponse(res, 'errors.validation_error', 400, { message: 'quotedWaitTime must be a non-negative integer' });
+      }
+      parsedQuotedWaitTime = parsed;
+    }
+
     const entry = await prisma.waitlistEntry.create({
       data: {
         restaurantId,
         customerName,
         customerPhone,
-        partySize: parseInt(partySize),
-        quotedWaitTime: quotedWaitTime ? parseInt(quotedWaitTime) : null,
+        partySize: parsedPartySize,
+        quotedWaitTime: parsedQuotedWaitTime,
         notes
       }
     });
+
+    // Bug fix: this staff-facing "add walk-in" endpoint never incremented
+    // WaitTimeConfig.peopleWaiting the way the public-facing joinPublicWaitlist
+    // (publicController.ts) does — but updateWaitlistStatus's
+    // releaseWaitlistCapacity unconditionally DECREMENTS it once this same
+    // entry later leaves the active queue (e.g. seated). Mixing staff and
+    // public joins (the normal case) systematically drifted the live count
+    // low, understating the wait-time quote shown to the next public guest.
+    const config = await prisma.waitTimeConfig.findUnique({ where: { restaurantId } });
+    if (config?.isWaitTimeCalculated) {
+      await prisma.waitTimeConfig.update({
+        where: { restaurantId },
+        data: { peopleWaiting: { increment: parsedPartySize } },
+      });
+    }
 
     return successResponse(res, entry, undefined, 201);
   } catch (error) {
@@ -162,13 +200,21 @@ export const sendOffer = async (req: Request, res: Response) => {
     const { entryId } = req.params;
     const { offeredTime, expiresInHours = 2 } = req.body;
 
+    // Bug fix: a non-numeric or negative expiresInHours previously produced
+    // an Invalid Date / an offer that was already expired the moment it was
+    // created, silently — instead of being rejected outright.
+    const parsedExpiresInHours = typeof expiresInHours === 'number' ? expiresInHours : Number(expiresInHours);
+    if (!Number.isFinite(parsedExpiresInHours) || parsedExpiresInHours <= 0) {
+      return errorResponse(res, 'errors.validation_error', 400, { message: 'expiresInHours must be a positive number' });
+    }
+
     const existingEntry = await prisma.waitlistEntry.findUnique({ where: { id: entryId } });
     if (!existingEntry || existingEntry.restaurantId !== restaurantId) {
       return errorResponse(res, 'errors.not_found', 404);
     }
 
     const offerToken = require('crypto').randomBytes(24).toString('hex');
-    const offerExpiresAt = new Date(Date.now() + expiresInHours * 60 * 60 * 1000);
+    const offerExpiresAt = new Date(Date.now() + parsedExpiresInHours * 60 * 60 * 1000);
 
     const entry = await prisma.waitlistEntry.update({
       where: { id: entryId },
