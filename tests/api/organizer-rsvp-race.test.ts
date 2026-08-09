@@ -12,7 +12,7 @@ describe('Public RSVP concurrent-submission race', () => {
 
   beforeAll(async () => {
     await resetDb();
-    a = await seedTenant();
+    a = await seedTenant({ businessType: 'WEDDING' });
   });
 
   const hdr = (t: SeededTenant) => auth(t.tokens.admin, t.restaurant.id);

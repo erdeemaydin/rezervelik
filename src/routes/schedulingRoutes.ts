@@ -14,12 +14,14 @@ import {
 } from '../controllers/schedulingController';
 import { authMiddleware, roleMiddleware } from '../middlewares/auth';
 import { tenantMiddleware } from '../middlewares/tenant';
+import { requireFeature } from '../middlewares/feature';
 
 const router = Router();
 
 // All routes require authentication and a valid tenant
 router.use(tenantMiddleware);
 router.use(authMiddleware);
+router.use(requireFeature('hasShiftFeature'));
 
 // --- SHIFTS ---
 router.get('/shifts', getShifts);

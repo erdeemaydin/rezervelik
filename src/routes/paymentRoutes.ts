@@ -1,12 +1,14 @@
 import { Router } from 'express';
 import { getPayments, refundPaymentHandler } from '../controllers/paymentController';
 import { authMiddleware, requirePermission } from '../middlewares/auth';
+import { requireFeature } from '../middlewares/feature';
 
 const router = Router();
 
 // Tenant-scoped admin view of payments. Mounted behind tenantMiddleware in app.ts.
 // Managers keep access by role; STAFF/HOST need the explicit `view_payments` grant.
 router.use(authMiddleware);
+router.use(requireFeature('hasPaymentFeature'));
 router.use(requirePermission('view_payments', { allowRoles: ['MANAGER'] }));
 
 router.get('/', getPayments);

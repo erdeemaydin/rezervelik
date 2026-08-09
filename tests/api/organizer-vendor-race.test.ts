@@ -12,7 +12,7 @@ describe('addEventVendor concurrent-add race', () => {
 
   beforeAll(async () => {
     await resetDb();
-    a = await seedTenant();
+    a = await seedTenant({ businessType: 'WEDDING' });
   });
 
   const hdr = () => auth(a.tokens.admin, a.restaurant.id);

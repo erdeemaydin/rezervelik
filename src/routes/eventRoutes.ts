@@ -1,10 +1,17 @@
 import { Router } from 'express';
 import * as eventController from '../controllers/eventController';
 import { authMiddleware, requirePermission } from '../middlewares/auth';
+import { requireFeature } from '../middlewares/feature';
 
 const router = Router();
 
 router.use(authMiddleware);
+// The event pipeline is a WEDDING-vertical module — previously gated only by
+// the manage_events permission below, with nothing checking the SysAdmin's
+// hasEventPipeline entitlement. A tenant whose flag was turned off (e.g.
+// downgraded, or any non-WEDDING businessType, which defaults it off) could
+// still hit every endpoint here directly; only the dashboard nav link was hidden.
+router.use(requireFeature('hasEventPipeline'));
 
 // Reads — any authenticated tenant user.
 router.get('/', eventController.getEvents);

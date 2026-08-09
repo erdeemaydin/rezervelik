@@ -135,7 +135,11 @@ export const createReservation = async (req: Request, res: Response) => {
     // restaurant's own Settings value.
     const endTime: Date = windowEnd;
 
-    const paymentEnabled = !!settings.isPaidReservationEnabled && (settings.depositAmount || 0) > 0;
+    // hasPaymentFeature is the SysAdmin's entitlement (e.g. off by default for
+    // CLINIC); isPaidReservationEnabled is the tenant's own toggle within that
+    // entitlement. Both must hold — a tenant whose plan doesn't include payments
+    // can't turn on deposits by flipping its own setting.
+    const paymentEnabled = !!settings.hasPaymentFeature && !!settings.isPaidReservationEnabled && (settings.depositAmount || 0) > 0;
 
     // Table resolution + conflict re-check + insert all happen inside one
     // transaction so two concurrent bookings can't both pass the availability
@@ -500,7 +504,9 @@ export const updateReservationStatus = async (req: Request, res: Response) => {
     // the booking as AWAITING_PAYMENT until they pay. Staff can bypass with
     // `skipPayment` (e.g. a trusted regular / deposit taken in person).
     if (status === 'CONFIRMED' && !skipPayment && !existingRes.isPaid) {
-      const paymentEnabled = !!settings?.isPaidReservationEnabled && (settings.depositAmount || 0) > 0;
+      // hasPaymentFeature is the SysAdmin's entitlement; isPaidReservationEnabled
+      // is the tenant's own toggle within it — both must hold, same as createReservation.
+      const paymentEnabled = !!settings?.hasPaymentFeature && !!settings?.isPaidReservationEnabled && (settings.depositAmount || 0) > 0;
       if (paymentEnabled) {
         // Eligibility (isPaid/status) is re-checked from a fresh read *inside*
         // the transaction, and the Payment row is created inside it too — two
