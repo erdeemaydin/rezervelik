@@ -303,7 +303,10 @@
     "refundConfirmTitle": "Refund this deposit?",
     "refundConfirmDesc": "The gateway will return the deposit to the guest's card. This cannot be undone.",
     "refundSuccess": "Deposit refunded",
-    "refundFailed": "Refund failed"
+    "refundFailed": "Refund failed",
+    "forfeited": "Forfeited (No-Shows)",
+    "forfeitedHint": "paid deposits kept on no-show",
+    "forfeitedBadge": "No-show"
   },
   "reviews": {
     "title": "Reviews & Feedback",

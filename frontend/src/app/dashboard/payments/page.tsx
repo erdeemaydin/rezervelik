@@ -16,8 +16,13 @@ interface PaymentRow {
   id: string; merchantOid: string; provider: string; amount: number; currency: string;
   status: 'PENDING' | 'PAID' | 'FAILED' | 'EXPIRED' | 'REFUNDED';
   createdAt: string; paidAt: string | null;
-  reservation: { customerName: string; customerPhone: string; startTime: string; guestCount: number } | null;
+  reservation: { customerName: string; customerPhone: string; startTime: string; guestCount: number; status: string } | null;
 }
+
+// A deposit is forfeited when it was actually paid and the guest never showed
+// up — nothing auto-refunds a no-show, so this is just visibility into money
+// the restaurant already kept, not a separate charge/state.
+const isForfeited = (p: PaymentRow) => p.status === 'PAID' && p.reservation?.status === 'NO_SHOW';
 
 const money = (minor: number, currency: string) => {
   const v = (minor / 100).toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -74,8 +79,10 @@ export default function PaymentsPage() {
     const paid = payments.filter(p => p.status === 'PAID');
     const collected = paid.reduce((s, p) => s + p.amount, 0);
     const pending = payments.filter(p => p.status === 'PENDING').length;
+    const forfeited = paid.filter(isForfeited);
+    const forfeitedTotal = forfeited.reduce((s, p) => s + p.amount, 0);
     const currency = payments[0]?.currency || 'TL';
-    return { collected, currency, count: payments.length, paidCount: paid.length, pending };
+    return { collected, currency, count: payments.length, paidCount: paid.length, pending, forfeitedTotal, forfeitedCount: forfeited.length };
   }, [payments]);
 
   const statusBadge = (status: string) => {
@@ -107,7 +114,7 @@ export default function PaymentsPage() {
           <p className="text-xs text-slate-500 font-medium">{t('payments.depositsSubtitle')}</p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <Card className="border-slate-100 shadow-sm bg-gradient-to-br from-emerald-600 to-teal-700 text-white">
             <CardHeader className="p-4 pb-2">
               <CardDescription className="text-[10px] font-black uppercase text-emerald-100 tracking-wider">{t('payments.totalCollected')}</CardDescription>
@@ -121,6 +128,13 @@ export default function PaymentsPage() {
               <CardTitle className="text-2xl font-bold text-slate-800">{stats.pending}</CardTitle>
             </CardHeader>
             <CardContent className="p-4 pt-0 text-[11px] font-bold text-slate-400">{t('payments.awaitingHint')}</CardContent>
+          </Card>
+          <Card className="border-rose-100 shadow-sm">
+            <CardHeader className="p-4 pb-2">
+              <CardDescription className="text-[10px] font-black uppercase text-rose-400 tracking-wider">{t('payments.forfeited')}</CardDescription>
+              <CardTitle className="text-2xl font-bold text-rose-600">{money(stats.forfeitedTotal, stats.currency)}</CardTitle>
+            </CardHeader>
+            <CardContent className="p-4 pt-0 text-[11px] font-bold text-rose-400">{stats.forfeitedCount} {t('payments.forfeitedHint')}</CardContent>
           </Card>
           <Card className="border-slate-100 shadow-sm">
             <CardHeader className="p-4 pb-2">
@@ -162,7 +176,16 @@ export default function PaymentsPage() {
                       <div className="text-[11px] text-slate-400 font-mono">{p.reservation?.customerPhone}</div>
                     </TableCell>
                     <TableCell className="font-black text-slate-900">{money(p.amount, p.currency)}</TableCell>
-                    <TableCell><div className="flex items-center gap-2">{statusIcon(p.status)} {statusBadge(p.status)}</div></TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        {statusIcon(p.status)} {statusBadge(p.status)}
+                        {isForfeited(p) && (
+                          <Badge className="bg-rose-50 text-rose-700 border-rose-200 hover:opacity-100 border font-black text-[10px] uppercase">
+                            {t('payments.forfeitedBadge')}
+                          </Badge>
+                        )}
+                      </div>
+                    </TableCell>
                     <TableCell className="text-[11px] font-mono text-slate-400">{p.merchantOid}</TableCell>
                     <TableCell className="text-xs text-slate-500">{new Date(p.paidAt || p.createdAt).toLocaleString('tr-TR')}</TableCell>
                     {canRefund && (

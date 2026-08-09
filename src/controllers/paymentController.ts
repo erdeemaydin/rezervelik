@@ -113,7 +113,7 @@ export const getPayments = async (req: Request, res: Response) => {
       where: { restaurantId },
       orderBy: { createdAt: 'desc' },
       take: 200,
-      include: { reservation: { select: { customerName: true, customerPhone: true, startTime: true, guestCount: true } } },
+      include: { reservation: { select: { customerName: true, customerPhone: true, startTime: true, guestCount: true, status: true } } },
     });
     return successResponse(res, payments);
   } catch (error) {

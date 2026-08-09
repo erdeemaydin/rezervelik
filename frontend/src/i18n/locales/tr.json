@@ -303,7 +303,10 @@
     "refundConfirmTitle": "Bu kapora iade edilsin mi?",
     "refundConfirmDesc": "Ödeme sağlayıcısı kaporayı misafirin kartına iade edecek. Bu işlem geri alınamaz.",
     "refundSuccess": "Kapora iade edildi",
-    "refundFailed": "İade başarısız oldu"
+    "refundFailed": "İade başarısız oldu",
+    "forfeited": "Gelmeyen Misafir Kaporası",
+    "forfeitedHint": "gelmeyen misafirde tutulan kapora",
+    "forfeitedBadge": "Gelmedi"
   },
   "reviews": {
     "title": "Değerlendirmeler ve Geri Bildirim",
