@@ -2,6 +2,91 @@
 
 Day-to-day record of substantial work sessions on this project. Newest entry first.
 
+## 2026-08-09 (cont'd) — full audit pass on previously-uncovered domains
+
+**Parallel domain audits (events/wedding/vendors, public-facing pages, system-admin) + fixes for everything confirmed**
+
+Extended the 2026-08-08 audit to the three domains it hadn't reached yet
+(events/wedding/vendors module, public/unauthenticated pages, system-admin) —
+three parallel read-only audit forks, then verified and fixed every confirmed
+finding myself. Also self-reviewed the payment/messaging code added earlier
+this session and found one more race there.
+
+- **Concurrent-accept payment race** (self-review): two staff "Accept" clicks
+  on the same reservation both read `isPaid=false` before either write
+  landed, each generating its own Payment row + deposit link + SMS. Moved the
+  eligibility re-check + Payment creation inside one transaction.
+- **Guest RSVP duplicate race**: `submitInvitationRsvp`'s dedupe-by-name check
+  wasn't transactional — a double-tap could create two Guest rows for one
+  person. Fixed with a Postgres advisory lock scoped to (event, name),
+  deliberately not a DB unique constraint (staff can legitimately add
+  distinct guests who share a name).
+- **`addEventVendor` unhandled P2002**: concurrent "Add vendor" clicks raced
+  the DB's own unique constraint; the loser got a raw 500 instead of the
+  friendly "already added" error the sequential path already had.
+- **`acceptOffer` double-accept race**: same shape as the payment race above —
+  a double-tap on a waitlist offer link could create two reservations and
+  double-decrement waitlist capacity. Now claims the offer atomically
+  (`OFFERED -> ACCEPTED`) inside the transaction.
+- **No server-side `maxPartySize` cap**: only ever enforced by a bounded
+  dropdown client-side; a direct API call could send any integer,
+  inflating `peopleWaiting` for every real guest behind it in the walk-in
+  queue. Also added a basic sanity check (positive integer) that didn't
+  exist at all before.
+- **Public layout button-disable drift**: Premium/Olden/Garden disabled the
+  submit button whenever a day was closed, with no exception for
+  `isFullyBooked` — unlike Classic. The button then showed "Join Waitlist"
+  as its label while staying disabled, promising an action the guest
+  couldn't take. Brought the three in line with Classic's (correct) logic.
+- **Feature-flag entitlements never enforced server-side** — the biggest
+  finding. `hasEventPipeline`/`hasVendors`/`hasPaymentFeature`/
+  `hasMenuFeature`/`hasShiftFeature` were only ever consumed by the frontend
+  to hide nav links; nothing rejected a direct API call to a module a
+  tenant's plan/vertical doesn't include (a CLINIC tenant could still
+  trigger deposit collection; any non-WEDDING tenant could hit the full
+  events/vendors CRUD directly). Added a `requireFeature` middleware
+  (mirrors `requirePermission`) and applied it across the five modules.
+- **`/api/wait-time/*` had no auth check at all** — found while fixing the
+  item above, more serious than what I was originally looking for. Only
+  `tenantMiddleware` (an `X-Restaurant-ID` header the caller supplies) gated
+  the live waitlist (customer names/phones), wait-time config, and
+  `sendOffer` — and the restaurant UUID it keys on isn't secret, since
+  `GET /api/public/restaurant/:slug` returns it to any visitor of the public
+  booking page. Now gated by `authMiddleware` + `requirePermission` +
+  `requireFeature`, matching what the dashboard nav already implied.
+- **Impersonation was a one-way trip**: overwrote the SUPER_ADMIN's own
+  stored session with no way back except a fresh login, and nothing on
+  screen indicated a dashboard view was really an impersonated tenant.
+  Added `startImpersonation`/`stopImpersonation` (stash + restore) and a
+  persistent "Viewing as X — Return to Admin" banner.
+- **No rate limiting on public write endpoints**: `joinPublicWaitlist`,
+  `createReservation` (guest path), `submitInvitationRsvp` could be looped
+  to flood rows and spam the paid SMS/WhatsApp account. Added an in-process
+  per-IP limiter (matches the app's existing single-instance pattern rather
+  than a new dependency); staff traffic on the shared `createReservation`
+  route is never throttled.
+- **`createSuperAdmin` bootstrap wasn't audit-logged**, unlike its sibling
+  `createSystemAdmin`. Minting a platform-level SUPER_ADMIN is about as
+  sensitive as actions get.
+
+**Deliberately not fixed, flagged instead:**
+- Impersonation JWT carries no `impersonatedBy` claim — actions taken while
+  impersonating are indistinguishable from the tenant admin's own in every
+  audit-log entry after the initial `IMPERSONATION_STARTED` row. Needs a
+  token-shape change; bigger than this pass.
+- No admin-deactivation endpoint exists — a compromised/offboarded SysAdmin
+  credential can't be revoked through the product, only directly in the DB.
+- `getOffer`/`getRestaurantBySlug` return their full row with no field
+  allowlist (unlike `getInvitation`, written deliberately display-safe) —
+  nothing secret leaks today, but it's the same missing-allowlist shape.
+
+`tests/helpers/seedTenant` now takes a `businessType` option seeding
+`RestaurantSettings` from the real per-vertical profile (same one
+`systemController.createTenant` applies in production), needed once
+`requireFeature` gates started rejecting the events/vendor tests' default
+RESTAURANT-profile tenants. Nine fixes, each its own commit + test; full
+suite 103/103, backend+frontend `tsc` clean, `next build --experimental-build-mode compile` clean.
+
 ## 2026-08-09
 
 **"Finish what's built": booking-confirmation messages, refunds, no-show deposit reporting**
