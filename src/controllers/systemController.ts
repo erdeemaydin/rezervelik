@@ -576,12 +576,57 @@ export const getSystemAdmins = async (req: Request, res: Response) => {
         firstName: true,
         lastName: true,
         role: true,
+        isActive: true,
         createdAt: true
       }
     });
     return successResponse(res, admins);
   } catch (error) {
     console.error('Get system admins error:', error);
+    return errorResponse(res, 'errors.internal_error', 500);
+  }
+};
+
+// PUT /system/admins/:id/active — revoke or restore a SUPER_ADMIN account.
+// Security-audit finding: there was previously no way to revoke a
+// compromised/offboarded SysAdmin credential through the product at all,
+// only directly in the DB. Deactivating blocks new logins immediately
+// (authController.login) and any already-issued token on its very next
+// system-admin request (requireActiveSuperAdmin below) — unlike a tenant
+// staff token, which is stateless until it expires, this one is checked live
+// specifically because SUPER_ADMIN is the highest-privilege role in the system.
+export const setSystemAdminActive = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { isActive } = req.body;
+    if (typeof isActive !== 'boolean') {
+      return errorResponse(res, 'errors.validation_error', 400, { message: 'isActive must be a boolean' });
+    }
+    if (id === req.user!.userId && !isActive) {
+      return errorResponse(res, 'errors.validation_error', 400, { message: 'You cannot deactivate your own account' });
+    }
+
+    const target = await prisma.user.findFirst({ where: { id, role: 'SUPER_ADMIN' } });
+    if (!target) return errorResponse(res, 'errors.not_found', 404);
+
+    const updated = await prisma.user.update({
+      where: { id },
+      data: { isActive },
+      select: { id: true, email: true, firstName: true, lastName: true, role: true, isActive: true, createdAt: true },
+    });
+
+    logAudit({
+      req,
+      category: 'SYSTEM',
+      action: isActive ? 'SUPER_ADMIN_REACTIVATED' : 'SUPER_ADMIN_DEACTIVATED',
+      targetType: 'User',
+      targetId: updated.id,
+      targetLabel: updated.email,
+    });
+
+    return successResponse(res, updated);
+  } catch (error) {
+    console.error('Set system admin active error:', error);
     return errorResponse(res, 'errors.internal_error', 500);
   }
 };

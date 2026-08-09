@@ -294,6 +294,12 @@ model User {
   lastName     String
   role         String  @default("STAFF") // SUPER_ADMIN, ADMIN, MANAGER, STAFF
   permissions  String? // Comma-separated permission keys e.g. "manage_reservations,manage_menu"
+  // Revocation switch — there was previously no way to disable a
+  // compromised/offboarded account (SUPER_ADMIN most critically) through the
+  // product, only directly in the DB. Checked at login (blocks new sessions)
+  // and, for SUPER_ADMIN specifically, on every system-admin request too
+  // (blocks an already-issued token from continuing to work).
+  isActive     Boolean @default(true)
   // E.164 phone (e.g. "+905551234567"). Required for staff so published shift
   // plans can be sent over WhatsApp (#7.6).
   phone        String?

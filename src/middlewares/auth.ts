@@ -52,6 +52,24 @@ export const authMiddleware = (req: Request, res: Response, next: NextFunction) 
   }
 };
 
+// Re-checks that the SUPER_ADMIN behind this token is still active, live,
+// against the DB — unlike every other role, whose tokens are trusted as
+// stateless until they expire. SUPER_ADMIN is the highest-privilege role in
+// the system, and deactivating one (systemController.setSystemAdminActive)
+// is meant to take effect immediately, not just block future logins; mount
+// after authMiddleware + roleMiddleware(['SUPER_ADMIN']).
+export const requireActiveSuperAdmin = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const user = await prisma.user.findUnique({ where: { id: req.user!.userId }, select: { isActive: true } });
+    if (!user || !user.isActive) {
+      return errorResponse(res, 'errors.unauthorized', 401);
+    }
+    next();
+  } catch {
+    return errorResponse(res, 'errors.internal_error', 500);
+  }
+};
+
 export const roleMiddleware = (roles: string[]) => {
   return (req: Request, res: Response, next: NextFunction) => {
     if (!req.user || !roles.includes(req.user.role)) {

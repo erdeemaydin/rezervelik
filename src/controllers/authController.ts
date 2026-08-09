@@ -154,7 +154,10 @@ export const login = async (req: Request, res: Response) => {
     // are indistinguishable by response time (see DUMMY_PASSWORD_HASH above).
     const isValidPassword = await bcrypt.compare(password, user?.passwordHash || DUMMY_PASSWORD_HASH);
 
-    if (!user || !isValidPassword) {
+    // A deactivated account gets the same generic response as a wrong
+    // password — don't leak account status, and keep bcrypt.compare in the
+    // path regardless so this doesn't reopen the timing side-channel above.
+    if (!user || !isValidPassword || !user.isActive) {
       console.log(`[Auth] Login failed for: ${email}`);
       return errorResponse(res, 'errors.invalid_credentials', 401);
     }
@@ -237,7 +240,7 @@ export const loginVerifyOtp = async (req: Request, res: Response) => {
     }
 
     const user = await prisma.user.findUnique({ where: { id: userId } });
-    if (!user || !(await userNeedsOtp(user))) {
+    if (!user || !user.isActive || !(await userNeedsOtp(user))) {
       return errorResponse(res, 'errors.unauthorized', 401, { message: 'Invalid credentials' });
     }
 

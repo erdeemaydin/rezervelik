@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import * as systemController from '../controllers/systemController';
 import * as auditController from '../controllers/auditController';
-import { authMiddleware, roleMiddleware } from '../middlewares/auth';
+import { authMiddleware, roleMiddleware, requireActiveSuperAdmin } from '../middlewares/auth';
 
 const router = Router();
 
@@ -15,9 +15,12 @@ router.post('/setup-super-admin', systemController.createSuperAdmin);
 // SUPER_ADMIN token before restoring it.
 router.post('/stop-impersonation', authMiddleware, systemController.stopImpersonation);
 
-// The rest are protected for SUPER_ADMIN only
+// The rest are protected for SUPER_ADMIN only — and, unlike every other role,
+// re-checked live against the DB on every request so deactivating one
+// (below) takes effect immediately rather than waiting for the token to expire.
 router.use(authMiddleware);
 router.use(roleMiddleware(['SUPER_ADMIN']));
+router.use(requireActiveSuperAdmin);
 
 router.get('/tenants', systemController.getAllTenants);
 router.post('/tenants', systemController.createTenant);
@@ -32,6 +35,7 @@ router.put('/settings/global', systemController.updateGlobalSettings);
 
 router.get('/admins', systemController.getSystemAdmins);
 router.post('/admins', systemController.createSystemAdmin);
+router.put('/admins/:id/active', systemController.setSystemAdminActive);
 router.get('/metrics', systemController.getSystemMetrics);
 router.get('/audit', auditController.getSystemAuditLogs);
 
