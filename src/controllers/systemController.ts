@@ -442,6 +442,19 @@ export const createSuperAdmin = async (req: Request, res: Response) => {
       }
     });
 
+    // Minting a platform-level SUPER_ADMIN is one of the most sensitive actions
+    // in the system — this bootstrap path (token-gated, no logged-in actor)
+    // was the one creation path that left no audit trail at all, unlike its
+    // sibling createSystemAdmin below.
+    logAudit({
+      req,
+      category: 'SYSTEM',
+      action: 'SUPER_ADMIN_BOOTSTRAPPED',
+      targetType: 'User',
+      targetId: user.id,
+      targetLabel: user.email,
+    });
+
     return successResponse(res, user, undefined, 201);
   } catch (error) {
     console.error('Create super admin error:', error);
