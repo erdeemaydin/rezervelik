@@ -14,6 +14,13 @@ import { validatePassword } from '../utils/passwordPolicy';
 // "Admin@x.com" would never match the stored "admin@x.com".
 const normalizeEmail = (email: string) => email.trim().toLowerCase();
 
+// Precomputed once so a login attempt against a nonexistent email pays the
+// same bcrypt cost as a wrong-password attempt on a real account — without
+// this, returning immediately when `user` is null makes the response for
+// "no such account" measurably faster than "wrong password", letting an
+// attacker time responses to enumerate which emails have accounts.
+const DUMMY_PASSWORD_HASH = bcrypt.hashSync('not-a-real-password-used-only-to-equalize-timing', 10);
+
 // Whether a given user is required to complete 2FA at login. The requirement is
 // role-based per restaurant (root admin enables the capability; the tenant admin
 // picks which roles it applies to). Root/system admins fall back to the legacy
@@ -131,15 +138,13 @@ export const login = async (req: Request, res: Response) => {
       where: { email: { equals: normalizeEmail(email), mode: 'insensitive' } },
     });
 
-    if (!user) {
-      console.log(`[Auth] User not found: ${email}`);
-      return errorResponse(res, 'errors.invalid_credentials', 401);
-    }
+    // Always run bcrypt.compare — against the real hash when the account
+    // exists, against a fixed dummy hash otherwise — so the two failure paths
+    // are indistinguishable by response time (see DUMMY_PASSWORD_HASH above).
+    const isValidPassword = await bcrypt.compare(password, user?.passwordHash || DUMMY_PASSWORD_HASH);
 
-    const isValidPassword = await bcrypt.compare(password, user.passwordHash);
-
-    if (!isValidPassword) {
-      console.log(`[Auth] Invalid password for: ${email}`);
+    if (!user || !isValidPassword) {
+      console.log(`[Auth] Login failed for: ${email}`);
       return errorResponse(res, 'errors.invalid_credentials', 401);
     }
 
@@ -323,6 +328,19 @@ export const setupTwoFactor = async (req: Request, res: Response) => {
     const user = await prisma.user.findUnique({ where: { id: req.user!.userId } });
     if (!user) return errorResponse(res, 'errors.unauthorized', 401);
 
+    // Re-provisioning (the user already has a confirmed secret) must prove
+    // current possession of the account first — otherwise anyone who got hold
+    // of a valid session token (stolen, or forged via some other bug) could
+    // silently swap out 2FA and lock in persistent access, or simply lock the
+    // real owner out of their own authenticator app. Initial setup (nothing to
+    // protect yet) doesn't need this.
+    if (user.otpConfirmedAt) {
+      const { currentPassword } = req.body;
+      if (!currentPassword || !(await bcrypt.compare(currentPassword, user.passwordHash))) {
+        return errorResponse(res, 'errors.current_password_incorrect', 400);
+      }
+    }
+
     const secret = generateOtpSecret();
     await prisma.user.update({ where: { id: user.id }, data: { otpSecret: secret, otpConfirmedAt: null } });
 
@@ -357,7 +375,10 @@ export const confirmTwoFactor = async (req: Request, res: Response) => {
 
 export const verifyPassword = async (req: Request, res: Response) => {
   try {
-    const userId = (req as any).userId;
+    // Bug: read req.userId, which nothing ever sets — authMiddleware sets
+    // req.user.userId. This endpoint (gated by PasswordConfirmDialog before
+    // sensitive actions) always 500'd since the day it was added.
+    const userId = req.user!.userId;
     const { password } = req.body;
 
     if (!password) {
