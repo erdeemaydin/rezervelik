@@ -313,37 +313,52 @@ export const submitInvitationRsvp = async (req: Request, res: Response) => {
     if (!event) return errorResponse(res, 'errors.not_found', 404);
 
     const size = partySize ? Math.max(1, parseInt(partySize)) : 1;
-    // Deduplicate on the responder's name so a repeat RSVP updates, not stacks.
-    const existing = await prisma.guest.findFirst({
-      where: { eventId: event.id, name: { equals: name.trim(), mode: 'insensitive' } },
-      select: { id: true },
-    });
+    const normalizedName = name.trim();
 
-    if (existing) {
-      await prisma.guest.update({
-        where: { id: existing.id },
-        data: {
-          partySize: size,
-          rsvp: rsvp || 'YES',
-          dietary: dietary || null,
-          note: note || null,
-          respondedAt: new Date(),
-        },
+    // Deduplicate on the responder's name so a repeat RSVP updates, not stacks
+    // — a double-tap submit or two people on the same shared family device
+    // must not create two Guest rows for one person. This is deliberately NOT
+    // a DB-level unique constraint on (eventId, name): staff manage their own
+    // guest list separately (createGuest) and can legitimately add multiple
+    // real guests who share a name. Instead, take a Postgres advisory lock
+    // scoped to this (event, normalized name) pair for the transaction's
+    // duration, so a concurrent submission blocks until the first commits and
+    // then sees the just-created row instead of racing past the same check.
+    await prisma.$transaction(async (tx) => {
+      const lockKey = `${event.id}:${normalizedName.toLowerCase()}`;
+      await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${lockKey}))`;
+
+      const existing = await tx.guest.findFirst({
+        where: { eventId: event.id, name: { equals: normalizedName, mode: 'insensitive' } },
+        select: { id: true },
       });
-    } else {
-      await prisma.guest.create({
-        data: {
-          restaurantId: event.restaurantId,
-          eventId: event.id,
-          name,
-          partySize: size,
-          rsvp: rsvp || 'YES',
-          dietary: dietary || null,
-          note: note || null,
-          respondedAt: new Date(),
-        },
-      });
-    }
+
+      if (existing) {
+        await tx.guest.update({
+          where: { id: existing.id },
+          data: {
+            partySize: size,
+            rsvp: rsvp || 'YES',
+            dietary: dietary || null,
+            note: note || null,
+            respondedAt: new Date(),
+          },
+        });
+      } else {
+        await tx.guest.create({
+          data: {
+            restaurantId: event.restaurantId,
+            eventId: event.id,
+            name: normalizedName,
+            partySize: size,
+            rsvp: rsvp || 'YES',
+            dietary: dietary || null,
+            note: note || null,
+            respondedAt: new Date(),
+          },
+        });
+      }
+    });
     return successResponse(res, { message: 'RSVP received' });
   } catch (error) {
     return errorResponse(res, 'errors.internal_error', 500);
