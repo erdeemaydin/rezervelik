@@ -7,6 +7,7 @@ import { hashResetToken } from '../utils/resetToken';
 import { generateOtpSecret, verifyTotp, buildOtpAuthUrl } from '../utils/totp';
 import { logAudit } from '../services/auditService';
 import { validatePassword } from '../utils/passwordPolicy';
+import { setAuthCookie, clearAuthCookies } from '../utils/authCookie';
 
 // Normalize an email for storage/lookup: trim + lowercase. Emails are
 // case-insensitive in practice, and mobile keyboards (iOS especially)
@@ -35,6 +36,15 @@ const userNeedsOtp = async (user: { role: string; restaurantId: string | null; o
   if (!s?.twoFactorEnabled) return false;
   const roles = s.twoFactorRoles ? s.twoFactorRoles.split(',').map(r => r.trim()).filter(Boolean) : [];
   return roles.includes(user.role);
+};
+
+// POST /auth/logout — clears the httpOnly session cookie server-side (JS can't
+// clear an httpOnly cookie itself). Also clears any impersonation stash, so
+// logging out while impersonating ends the session entirely rather than
+// leaving a stashed SUPER_ADMIN token behind.
+export const logout = async (_req: Request, res: Response) => {
+  clearAuthCookies(res);
+  return successResponse(res, { ok: true });
 };
 
 export const register = async (req: Request, res: Response) => {
@@ -103,6 +113,7 @@ export const register = async (req: Request, res: Response) => {
     });
 
     const token = generateToken(result.user.id, result.restaurant.id, result.user.role);
+    setAuthCookie(res, token);
 
     return successResponse(res, {
       user: {
@@ -175,6 +186,7 @@ export const login = async (req: Request, res: Response) => {
 
     console.log(`[Auth] Login successful: ${user.id} (${user.role})`);
     const token = generateToken(user.id, user.restaurantId, user.role);
+    setAuthCookie(res, token);
 
     logAudit({
       req,
@@ -248,6 +260,7 @@ export const loginVerifyOtp = async (req: Request, res: Response) => {
     }
 
     const token = generateToken(user.id, user.restaurantId, user.role);
+    setAuthCookie(res, token);
     return successResponse(res, {
       user: {
         id: user.id,
@@ -431,6 +444,7 @@ export const completeSetup = async (req: Request, res: Response) => {
     });
 
     const authToken = generateToken(user.id, user.restaurantId, user.role);
+    setAuthCookie(res, authToken);
 
     return successResponse(res, {
       user: {

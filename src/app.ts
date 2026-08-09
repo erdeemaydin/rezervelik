@@ -33,9 +33,28 @@ import path from 'path';
 
 const app = express();
 
+// Cookie-based auth (see utils/authCookie.ts) requires an explicit origin
+// allowlist + credentials:true — browsers reject `Access-Control-Allow-Origin:
+// *` combined with credentials, and won't send/accept cookies on a
+// cross-origin XHR without both being set correctly. CORS_ORIGIN is a
+// comma-separated list; falls back to APP_PUBLIC_URL (already used elsewhere
+// for the frontend's own public URL) and then a sane local-dev default.
+const allowedOrigins = (process.env.CORS_ORIGIN || process.env.APP_PUBLIC_URL || 'http://localhost:3001')
+  .split(',')
+  .map((o) => o.trim())
+  .filter(Boolean);
+
 // Middlewares
 app.use(helmet({ crossOriginResourcePolicy: false })); // Allow cross origin for images
-app.use(cors());
+app.use(cors({
+  origin(origin, callback) {
+    // No Origin header = same-origin, curl, or a server-to-server call (e.g.
+    // PayTR's payment callback) — never subject to CORS enforcement anyway.
+    if (!origin || allowedOrigins.includes(origin)) return callback(null, true);
+    return callback(new Error(`Origin ${origin} is not allowed by CORS`));
+  },
+  credentials: true,
+}));
 app.use(express.json());
 
 // Serve static uploads

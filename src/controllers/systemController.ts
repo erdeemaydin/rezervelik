@@ -603,7 +603,10 @@ export const getSystemMetrics = async (req: Request, res: Response) => {
   }
 };
 
-import { generateToken } from '../utils/jwt';
+import { generateToken, verifyToken } from '../utils/jwt';
+import { setAuthCookie, setAdminStashCookie, clearAdminStashCookie } from '../utils/authCookie';
+import { parseCookies } from '../utils/cookies';
+import { ADMIN_STASH_COOKIE } from '../utils/authCookie';
 
 export const impersonateTenant = async (req: Request, res: Response) => {
   try {
@@ -611,7 +614,7 @@ export const impersonateTenant = async (req: Request, res: Response) => {
 
     // Find the primary admin of this restaurant
     const adminUser = await prisma.user.findFirst({
-      where: { 
+      where: {
         restaurantId: id,
         role: 'ADMIN'
       }
@@ -621,8 +624,16 @@ export const impersonateTenant = async (req: Request, res: Response) => {
       return errorResponse(res, 'errors.not_found', 404, { message: 'No admin user found for this tenant.' });
     }
 
-    // Generate a token for this user
-    const token = generateToken(adminUser.id, adminUser.restaurantId, adminUser.role);
+    // impersonatedBy links every action taken during this session back to the
+    // real SUPER_ADMIN driving it (see logAudit, which reads this claim off
+    // req.user) — previously the only trace was the single audit row below;
+    // every subsequent action was indistinguishable from the tenant admin's own.
+    const token = generateToken(adminUser.id, adminUser.restaurantId, adminUser.role, req.user!.userId);
+    setAuthCookie(res, token);
+    // Stash the SUPER_ADMIN's own current token server-side (also httpOnly)
+    // so stop-impersonation can restore it without a fresh login. req.token is
+    // the raw token this very request authenticated with (set by authMiddleware).
+    if (req.token) setAdminStashCookie(res, req.token);
 
     logAudit({
       req,
@@ -648,6 +659,68 @@ export const impersonateTenant = async (req: Request, res: Response) => {
     });
   } catch (error) {
     console.error('Impersonate tenant error:', error);
+    return errorResponse(res, 'errors.internal_error', 500);
+  }
+};
+
+// POST /system/stop-impersonation — restores the stashed SUPER_ADMIN session
+// set aside by impersonateTenant. Reads the adminToken cookie directly (not
+// req.user) since the caller's *current* session is the impersonated tenant
+// admin's, not the SUPER_ADMIN's — this endpoint's whole job is switching back.
+export const stopImpersonation = async (req: Request, res: Response) => {
+  try {
+    const stashed = parseCookies(req.headers.cookie)[ADMIN_STASH_COOKIE];
+    if (!stashed) {
+      return errorResponse(res, 'errors.validation_error', 400, { message: 'No impersonation session to return from' });
+    }
+
+    let decoded;
+    try {
+      decoded = verifyToken(stashed);
+    } catch {
+      clearAdminStashCookie(res);
+      return errorResponse(res, 'errors.unauthorized', 401, { message: 'Stashed session is no longer valid' });
+    }
+    if (decoded.role !== 'SUPER_ADMIN') {
+      clearAdminStashCookie(res);
+      return errorResponse(res, 'errors.unauthorized', 401);
+    }
+
+    const admin = await prisma.user.findUnique({ where: { id: decoded.userId } });
+    if (!admin) {
+      clearAdminStashCookie(res);
+      return errorResponse(res, 'errors.unauthorized', 401);
+    }
+
+    setAuthCookie(res, stashed);
+    clearAdminStashCookie(res);
+
+    logAudit({
+      req,
+      actorId: admin.id,
+      actorEmail: admin.email,
+      actorName: `${admin.firstName ?? ''} ${admin.lastName ?? ''}`.trim() || null,
+      actorRole: admin.role,
+      category: 'SYSTEM',
+      action: 'IMPERSONATION_STOPPED',
+      targetType: 'User',
+      targetId: admin.id,
+      targetLabel: admin.email,
+    });
+
+    return successResponse(res, {
+      user: {
+        id: admin.id,
+        email: admin.email,
+        firstName: admin.firstName,
+        lastName: admin.lastName,
+        role: admin.role,
+        restaurantId: admin.restaurantId,
+        permissions: admin.permissions,
+      },
+    });
+  } catch (error) {
+    console.error('Stop impersonation error:', error);
     return errorResponse(res, 'errors.internal_error', 500);
   }
 };

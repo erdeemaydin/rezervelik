@@ -8,6 +8,13 @@ const router = Router();
 // Open route for initial setup (in reality, protect this via CLI or secret env var)
 router.post('/setup-super-admin', systemController.createSuperAdmin);
 
+// Requires a valid session but NOT specifically SUPER_ADMIN — while
+// impersonating, the current session's role is the impersonated tenant
+// admin's, so the SUPER_ADMIN-only gate below would incorrectly reject this.
+// The handler itself re-validates the stashed adminToken cookie is a genuine
+// SUPER_ADMIN token before restoring it.
+router.post('/stop-impersonation', authMiddleware, systemController.stopImpersonation);
+
 // The rest are protected for SUPER_ADMIN only
 router.use(authMiddleware);
 router.use(roleMiddleware(['SUPER_ADMIN']));
