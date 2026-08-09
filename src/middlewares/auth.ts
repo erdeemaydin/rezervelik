@@ -6,7 +6,7 @@ import prisma from '../config/prisma';
 declare global {
   namespace Express {
     interface Request {
-      user?: { userId: string; restaurantId?: string; role: string };
+      user?: { userId: string; restaurantId?: string | null; role: string; impersonatedBy?: string };
     }
   }
 }
