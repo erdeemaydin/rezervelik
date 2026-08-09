@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import crypto from 'crypto';
 import prisma from '../config/prisma';
 import { successResponse, errorResponse } from '../utils/response';
+import { INVALID, parseAmount, parseCount } from '../utils/numeric';
 
 // Wedding/organization vertical (Phase 4 + 5). Events (with a sales pipeline),
 // their installment payment plans, guest lists (RSVP + seating), vendor
@@ -93,8 +94,9 @@ export const getEvent = async (req: Request, res: Response) => {
 
 // Derive quotedTotal (minor units) from a per-person package × guest count when the
 // caller didn't set an explicit total. Package price is stored in major units.
-function derivedTotal(explicit: unknown, pkgPrice: number | undefined, guestCount: number): number | null {
-  if (explicit !== undefined && explicit !== null && explicit !== '') return Math.round(Number(explicit));
+// `explicit` is expected pre-validated (via parseAmount) by the caller.
+function derivedTotal(explicit: number | null | undefined, pkgPrice: number | undefined, guestCount: number): number | null {
+  if (explicit !== undefined && explicit !== null) return explicit;
   if (pkgPrice && guestCount > 0) return Math.round(pkgPrice * 100) * guestCount;
   return null;
 }
@@ -118,7 +120,14 @@ export const createEvent = async (req: Request, res: Response) => {
     }
 
     const pkg = await ownedPackage(restaurantId, packageId);
-    const count = guestCount ? parseInt(guestCount) : 0;
+    const count = parseCount(guestCount, 0);
+    if (count === INVALID) {
+      return errorResponse(res, 'errors.validation_error', 400, { message: 'guestCount must be a non-negative integer' });
+    }
+    const parsedQuotedTotal = parseAmount(quotedTotal);
+    if (parsedQuotedTotal === INVALID) {
+      return errorResponse(res, 'errors.validation_error', 400, { message: 'quotedTotal must be a number' });
+    }
 
     const event = await prisma.event.create({
       data: {
@@ -131,7 +140,7 @@ export const createEvent = async (req: Request, res: Response) => {
         slot: slot || null,
         guestCount: count,
         stage: stage || 'LEAD',
-        quotedTotal: derivedTotal(quotedTotal, pkg?.price, count),
+        quotedTotal: derivedTotal(parsedQuotedTotal, pkg?.price, count),
         notes: notes || null,
         resourceId: await ownedResourceId(restaurantId, resourceId),
         packageId: pkg?.id ?? null,
@@ -159,12 +168,19 @@ export const updateEvent = async (req: Request, res: Response) => {
       return errorResponse(res, 'errors.validation_error', 400, { message: `Invalid eventType.` });
     }
 
-    const count = b.guestCount !== undefined ? parseInt(b.guestCount) : existing.guestCount;
+    const count = b.guestCount !== undefined ? parseCount(b.guestCount, existing.guestCount) : existing.guestCount;
+    if (count === INVALID) {
+      return errorResponse(res, 'errors.validation_error', 400, { message: 'guestCount must be a non-negative integer' });
+    }
     // Only recompute the derived total when a package or guest count actually changes
     // and no explicit quotedTotal is supplied.
     let quotedTotal: number | null | undefined = undefined;
     if (b.quotedTotal !== undefined) {
-      quotedTotal = b.quotedTotal === null || b.quotedTotal === '' ? null : Math.round(Number(b.quotedTotal));
+      const parsed = parseAmount(b.quotedTotal);
+      if (parsed === INVALID) {
+        return errorResponse(res, 'errors.validation_error', 400, { message: 'quotedTotal must be a number' });
+      }
+      quotedTotal = parsed;
     } else if (b.packageId !== undefined || b.guestCount !== undefined) {
       const pkgId = b.packageId !== undefined ? b.packageId : existing.packageId;
       const pkg = await ownedPackage(restaurantId, pkgId);
@@ -231,8 +247,16 @@ export const upsertPaymentPlan = async (req: Request, res: Response) => {
     if (!(await ownedEventId(restaurantId, eventId))) return errorResponse(res, 'errors.not_found', 404);
 
     const { totalAmount, currency } = req.body;
+    let parsedTotal = 0;
+    if (totalAmount !== undefined) {
+      const parsed = parseAmount(totalAmount);
+      if (parsed === INVALID) {
+        return errorResponse(res, 'errors.validation_error', 400, { message: 'totalAmount must be a number' });
+      }
+      parsedTotal = parsed ?? 0;
+    }
     const data = {
-      totalAmount: totalAmount !== undefined ? Math.round(Number(totalAmount)) : 0,
+      totalAmount: parsedTotal,
       currency: currency || 'TRY',
     };
     const plan = await prisma.paymentPlan.upsert({
@@ -260,6 +284,10 @@ export const addInstallment = async (req: Request, res: Response) => {
     if (status && !INSTALLMENT_STATUS.includes(status)) {
       return errorResponse(res, 'errors.validation_error', 400, { message: 'Invalid status' });
     }
+    const parsedAmount = parseAmount(amount);
+    if (parsedAmount === INVALID || parsedAmount === null || parsedAmount === undefined) {
+      return errorResponse(res, 'errors.validation_error', 400, { message: 'amount must be a number' });
+    }
     // Create the plan lazily if it doesn't exist yet.
     const plan = await prisma.paymentPlan.upsert({
       where: { eventId },
@@ -271,7 +299,7 @@ export const addInstallment = async (req: Request, res: Response) => {
         planId: plan.id,
         label: label || null,
         dueDate,
-        amount: Math.round(Number(amount)),
+        amount: parsedAmount,
         status: status || 'PENDING',
         paidAt: status === 'PAID' ? new Date() : null,
       },
@@ -296,12 +324,20 @@ export const updateInstallment = async (req: Request, res: Response) => {
     if (status !== undefined && !INSTALLMENT_STATUS.includes(status)) {
       return errorResponse(res, 'errors.validation_error', 400, { message: 'Invalid status' });
     }
+    let parsedAmount: number | undefined;
+    if (amount !== undefined) {
+      const parsed = parseAmount(amount);
+      if (parsed === INVALID || parsed === null) {
+        return errorResponse(res, 'errors.validation_error', 400, { message: 'amount must be a number' });
+      }
+      parsedAmount = parsed;
+    }
     const installment = await prisma.paymentInstallment.update({
       where: { id: installmentId },
       data: {
         label,
         dueDate,
-        amount: amount !== undefined ? Math.round(Number(amount)) : undefined,
+        amount: parsedAmount,
         status,
         // Stamp/clear paidAt as the status flips to/from PAID.
         ...(status === 'PAID' ? { paidAt: existing.paidAt ?? new Date() } : {}),
@@ -359,12 +395,16 @@ export const createGuest = async (req: Request, res: Response) => {
     if (rsvp && !RSVP_VALUES.includes(rsvp)) {
       return errorResponse(res, 'errors.validation_error', 400, { message: 'Invalid rsvp' });
     }
+    const parsedPartySize = parseCount(partySize, 1, 1);
+    if (parsedPartySize === INVALID) {
+      return errorResponse(res, 'errors.validation_error', 400, { message: 'partySize must be a positive integer' });
+    }
     const guest = await prisma.guest.create({
       data: {
         restaurantId,
         eventId,
         name,
-        partySize: partySize ? parseInt(partySize) : 1,
+        partySize: parsedPartySize,
         rsvp: rsvp || 'PENDING',
         dietary: dietary || null,
         note: note || null,
@@ -388,11 +428,19 @@ export const updateGuest = async (req: Request, res: Response) => {
     if (b.rsvp !== undefined && !RSVP_VALUES.includes(b.rsvp)) {
       return errorResponse(res, 'errors.validation_error', 400, { message: 'Invalid rsvp' });
     }
+    let parsedPartySize: number | undefined;
+    if (b.partySize !== undefined) {
+      const parsed = parseCount(b.partySize, 1, 1);
+      if (parsed === INVALID) {
+        return errorResponse(res, 'errors.validation_error', 400, { message: 'partySize must be a positive integer' });
+      }
+      parsedPartySize = parsed;
+    }
     const guest = await prisma.guest.update({
       where: { id: guestId },
       data: {
         name: b.name,
-        partySize: b.partySize !== undefined ? parseInt(b.partySize) : undefined,
+        partySize: parsedPartySize,
         rsvp: b.rsvp,
         dietary: b.dietary,
         note: b.note,
@@ -471,6 +519,10 @@ export const addEventVendor = async (req: Request, res: Response) => {
     if (status && !VENDOR_LINK_STATUS.includes(status)) {
       return errorResponse(res, 'errors.validation_error', 400, { message: 'Invalid status' });
     }
+    const parsedCost = parseAmount(cost);
+    if (parsedCost === INVALID) {
+      return errorResponse(res, 'errors.validation_error', 400, { message: 'cost must be a number' });
+    }
     // A vendor can only be linked to an event once (schema unique constraint).
     const existing = await prisma.eventVendor.findFirst({ where: { eventId, vendorId: ownedVendor }, select: { id: true } });
     if (existing) return errorResponse(res, 'errors.validation_error', 400, { message: 'Vendor already added to this event' });
@@ -481,7 +533,7 @@ export const addEventVendor = async (req: Request, res: Response) => {
         eventId,
         vendorId: ownedVendor,
         role: role || null,
-        cost: cost !== undefined && cost !== null && cost !== '' ? Math.round(Number(cost)) : null,
+        cost: parsedCost ?? null,
         status: status || 'PENDING',
         notes: notes || null,
       },
@@ -512,13 +564,17 @@ export const updateEventVendor = async (req: Request, res: Response) => {
     if (b.status !== undefined && !VENDOR_LINK_STATUS.includes(b.status)) {
       return errorResponse(res, 'errors.validation_error', 400, { message: 'Invalid status' });
     }
+    const parsedCost = parseAmount(b.cost);
+    if (parsedCost === INVALID) {
+      return errorResponse(res, 'errors.validation_error', 400, { message: 'cost must be a number' });
+    }
     const link = await prisma.eventVendor.update({
       where: { id: linkId },
       data: {
         role: b.role,
         status: b.status,
         notes: b.notes,
-        ...(b.cost !== undefined ? { cost: b.cost === null || b.cost === '' ? null : Math.round(Number(b.cost)) } : {}),
+        cost: parsedCost,
       },
       include: { vendor: { select: { id: true, name: true, category: true, phone: true } } },
     });

@@ -3,6 +3,7 @@ import prisma from '../config/prisma';
 import { successResponse, errorResponse } from '../utils/response';
 import { findAvailableTable, restaurantDateStr } from '../utils/reservationConflict';
 import { releaseWaitlistCapacity } from '../utils/waitlistCapacity';
+import { INVALID, parseCount } from '../utils/numeric';
 
 export const getRestaurantBySlug = async (req: Request, res: Response) => {
   try {
@@ -376,14 +377,21 @@ export const submitInvitationRsvp = async (req: Request, res: Response) => {
     if (rsvp && !RSVP_VALUES.includes(rsvp)) {
       return errorResponse(res, 'errors.validation_error', 400, { message: 'Invalid rsvp' });
     }
+    // Bug fix: Math.max(1, parseInt(partySize)) returns NaN (not 1) when
+    // partySize is a non-numeric truthy string, since Math.max with a NaN
+    // operand is always NaN — that NaN then hit Guest.partySize (an Int
+    // column) and threw an unhandled Prisma error (500) instead of a clean
+    // 400.
+    const size = parseCount(partySize, 1, 1);
+    if (size === INVALID) {
+      return errorResponse(res, 'errors.validation_error', 400, { message: 'partySize must be a positive integer' });
+    }
 
     const event = await prisma.event.findUnique({
       where: { publicToken: token },
       select: { id: true, restaurantId: true },
     });
     if (!event) return errorResponse(res, 'errors.not_found', 404);
-
-    const size = partySize ? Math.max(1, parseInt(partySize)) : 1;
     const normalizedName = name.trim();
 
     // Deduplicate on the responder's name so a repeat RSVP updates, not stacks
