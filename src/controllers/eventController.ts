@@ -488,7 +488,15 @@ export const addEventVendor = async (req: Request, res: Response) => {
       include: { vendor: { select: { id: true, name: true, category: true, phone: true } } },
     });
     return successResponse(res, link, 'Vendor added', 201);
-  } catch (error) {
+  } catch (error: any) {
+    // The findFirst check above is a fail-fast convenience, not the real guard —
+    // EventVendor has @@unique([eventId, vendorId]), so two near-simultaneous
+    // "Add vendor" clicks for the same pair can both pass that check and race to
+    // this create() call. Without this, the loser got an opaque 500 instead of
+    // the same "Vendor already added" message the sequential path returns.
+    if (error?.code === 'P2002') {
+      return errorResponse(res, 'errors.validation_error', 400, { message: 'Vendor already added to this event' });
+    }
     return errorResponse(res, 'errors.internal_error', 500);
   }
 };
