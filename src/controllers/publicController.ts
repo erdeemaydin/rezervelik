@@ -94,16 +94,25 @@ export const joinPublicWaitlist = async (req: Request, res: Response) => {
     const { slug } = req.params;
     const { customerName, customerPhone, partySize, targetDate, notes } = req.body;
 
-    if (!customerName || !customerPhone || !partySize) {
+    const parsedPartySize = parseInt(partySize);
+    if (!customerName || !customerPhone || !partySize || !Number.isInteger(parsedPartySize) || parsedPartySize < 1) {
       return errorResponse(res, 'Missing parameters', 400);
     }
 
     const restaurant = await prisma.restaurant.findUnique({
       where: { slug },
-      include: { waitTimeConfig: true }
+      include: { waitTimeConfig: true, settings: true }
     });
 
     if (!restaurant) return errorResponse(res, 'Restaurant not found', 404);
+
+    // Server-side cap on party size — previously enforced only client-side
+    // (a bounded dropdown/bubble buttons), so a direct API call could join
+    // the waitlist with an arbitrarily large partySize, inflating
+    // `peopleWaiting` and breaking the wait-time quote for every real guest.
+    if (restaurant.settings?.maxPartySize && parsedPartySize > restaurant.settings.maxPartySize) {
+      return errorResponse(res, 'errors.validation_error', 400, { message: `Party size exceeds the maximum of ${restaurant.settings.maxPartySize}` });
+    }
 
     const config = restaurant.waitTimeConfig;
     const isDateWaitlist = Boolean(targetDate);
@@ -121,7 +130,7 @@ export const joinPublicWaitlist = async (req: Request, res: Response) => {
       // Auto increment the people waiting so the next person gets a higher quote
       await prisma.waitTimeConfig.update({
         where: { id: config.id },
-        data: { peopleWaiting: { increment: parseInt(partySize) } }
+        data: { peopleWaiting: { increment: parsedPartySize } }
       });
     } else if (!isDateWaitlist && config?.manualWaitTimeUpper) {
       quotedWaitTime = config.manualWaitTimeUpper;
@@ -132,7 +141,7 @@ export const joinPublicWaitlist = async (req: Request, res: Response) => {
         restaurantId: restaurant.id,
         customerName,
         customerPhone,
-        partySize: parseInt(partySize),
+        partySize: parsedPartySize,
         quotedWaitTime,
         status: 'WAITING',
         targetDate: targetDate || null,

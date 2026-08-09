@@ -75,10 +75,23 @@ export const createReservation = async (req: Request, res: Response) => {
 
     const start = new Date(startTime);
     const partySize = parseInt(guestCount);
+    if (!Number.isInteger(partySize) || partySize < 1) {
+      return errorResponse(res, 'errors.validation_error', 400, { message: 'Invalid guestCount' });
+    }
 
     const settings = await prisma.restaurantSettings.findUnique({
       where: { restaurantId }
     });
+
+    // maxPartySize is documented as bounding the *public* booking form (the
+    // dashboard only rendered it as a UI hint, e.g. bubble buttons 1..maxPartySize)
+    // — nothing rejected a direct API call with a larger value. Staff can still
+    // book bigger private/VIP parties manually; only guest-initiated requests are
+    // capped here.
+    const staffInitiated = isStaffRequest(req);
+    if (!staffInitiated && settings?.maxPartySize && partySize > settings.maxPartySize) {
+      return errorResponse(res, 'errors.validation_error', 400, { message: `Party size exceeds the maximum of ${settings.maxPartySize}` });
+    }
 
     const dateStr = restaurantDateStr(start, settings?.timezone);
 
@@ -114,8 +127,6 @@ export const createReservation = async (req: Request, res: Response) => {
       }
     }
     const windowEnd = new Date(start.getTime() + durationMinutes * 60000);
-
-    const staffInitiated = isStaffRequest(req);
 
     // The tenant's configured defaultDurationMinutes (or the service's own
     // duration, when set) governs how long a table is considered occupied,
