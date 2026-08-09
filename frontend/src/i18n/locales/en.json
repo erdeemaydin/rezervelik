@@ -57,7 +57,9 @@
     "mainDiningRoom": "Main Dining Room",
     "logout": "Logout",
     "userSettings": "User Settings",
-    "auditLog": "Activity Log"
+    "auditLog": "Activity Log",
+    "impersonationBanner": "Viewing as {{name}} — changes here affect their account.",
+    "returnToAdmin": "Return to Admin"
   },
   "commandPalette": {
     "title": "Jump to page",

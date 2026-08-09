@@ -57,7 +57,9 @@
     "mainDiningRoom": "Ana Yemek Salonu",
     "logout": "Çıkış Yap",
     "userSettings": "Kullanıcı Ayarları",
-    "auditLog": "Etkinlik Kaydı"
+    "auditLog": "Etkinlik Kaydı",
+    "impersonationBanner": "{{name}} olarak görüntüleniyor — buradaki değişiklikler onların hesabını etkiler.",
+    "returnToAdmin": "Yöneticiye Dön"
   },
   "commandPalette": {
     "title": "Sayfaya git",

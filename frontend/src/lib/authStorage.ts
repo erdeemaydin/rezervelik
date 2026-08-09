@@ -20,6 +20,12 @@ const KEYS = {
   token: 'token',
   restaurantId: 'restaurantId',
   user: 'user',
+  // Stashed SUPER_ADMIN session, set only while impersonating a tenant — lets
+  // "Return to Admin" restore the original session instead of requiring a
+  // fresh login. Cleared like everything else on logout(): logging out while
+  // impersonating ends the session entirely, same as it would for anyone else.
+  adminStashToken: 'adminStashToken',
+  adminStashUser: 'adminStashUser',
 } as const;
 
 type Key = keyof typeof KEYS;

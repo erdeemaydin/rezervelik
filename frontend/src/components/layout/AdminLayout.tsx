@@ -45,6 +45,7 @@ import { useTranslation } from '@/i18n/provider';
 import { readAuth } from '@/lib/authStorage';
 import Cookies from 'js-cookie';
 import { CommandPalette } from '@/components/layout/CommandPalette';
+import { ImpersonationBanner } from '@/components/layout/ImpersonationBanner';
 
 interface AdminLayoutProps {
   children: ReactNode;
@@ -529,6 +530,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
 
       {/* Main Content Area — no top bar; all account/nav controls live in the sidebar. */}
       <div className="flex-1 flex flex-col min-w-0 relative">
+        <ImpersonationBanner />
         {/* Scrollable Content. Mobile/tablet gets minimal padding (and top space for
             the floating menu button) so the dashboard uses the full screen. */}
         <main className="flex-1 p-3 pt-16 sm:p-4 sm:pt-16 lg:p-6 lg:pt-6">

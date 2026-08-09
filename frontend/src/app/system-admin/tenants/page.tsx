@@ -23,7 +23,7 @@ import { useTranslation } from '@/i18n/provider';
 export default function TenantManagementPage() {
   const { t } = useTranslation();
   const router = useRouter();
-  const login = useAuthStore((s) => s.login);
+  const startImpersonation = useAuthStore((s) => s.startImpersonation);
   const [tenants, setTenants] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -144,7 +144,7 @@ export default function TenantManagementPage() {
     try {
       const res = await api.post(`/system/tenants/${tenantId}/impersonate`);
       const { user, token } = res.data.data;
-      login(token, user);
+      startImpersonation(token, user);
       toast.success('Impersonation successful');
       router.push('/dashboard');
     } catch (err: any) {
