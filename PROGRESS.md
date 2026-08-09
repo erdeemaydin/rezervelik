@@ -2,6 +2,40 @@
 
 Day-to-day record of substantial work sessions on this project. Newest entry first.
 
+## 2026-08-09
+
+**"Finish what's built": booking-confirmation messages, refunds, no-show deposit reporting**
+
+Planning pass first: cross-checked `FEATURE_OPPORTUNITIES.md`'s status table
+against the actual code and found it stale (written before the same-day
+commit that shipped payments/messaging) — payments (PayTR + Mock, both
+trigger flows) and messaging (Netgsm SMS + WhatsApp Cloud API) were already
+fully built, just needing real credentials, not stubs. Picked the
+highest-ROI gap instead of re-building what existed:
+- **Booking-confirmation message**: guests got a payment-request SMS when a
+  deposit was needed, but nothing at all once a reservation was actually
+  confirmed. Added `sendBookingConfirmation` (reuses the existing SMS/WhatsApp
+  layer) and fired it at all three moments a reservation becomes CONFIRMED —
+  auto-confirm at creation, staff direct accept, and deposit paid.
+- **Refunds**: `PaymentProvider` had no `refund()` at all. Added it to the
+  interface + PayTR ("İade API", un-live-tested like the file's other two
+  formulas) + Mock adapters, a `REFUNDED` transition (`refundedAt`/
+  `refundReason`/`rawRefund` columns), a new `PAYMENT` audit category, and a
+  tenant-scoped `POST /api/payments/:id/refund` (ADMIN/MANAGER only) with a
+  Refund action + confirm dialog on paid rows in `dashboard/payments`.
+- **No-show deposit-forfeiture reporting**: `PAYMENTS.md` already flagged this
+  as a follow-up. `GET /api/payments` now includes the linked reservation's
+  status; the dashboard totals paid deposits whose reservation is `NO_SHOW`
+  into a "Forfeited (No-Shows)" stat card and badges those rows.
+
+Also fixed a real bug along the way (user-reported): `FIXED_SLOTS`/
+`MANUAL_AVAILABILITY` reservation logic modes hardcoded the table-occupancy
+window to a flat 120 minutes, ignoring the tenant's own `defaultDurationMinutes`
+setting — removed the hardcode so all three logic modes respect it.
+
+All new work has its own test file and commit; full suite 79/79, backend +
+frontend `tsc` clean, `next build --experimental-build-mode compile` clean.
+
 ## Methodology: how bug-hunting/fix sessions on this repo are run
 
 Kept here (not just in the moment) so the approach carries forward across
