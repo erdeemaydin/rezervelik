@@ -10,7 +10,39 @@ export const getRestaurantBySlug = async (req: Request, res: Response) => {
     const restaurant = await prisma.restaurant.findUnique({
       where: { slug },
       include: {
-        settings: true,
+        // Security-audit finding: this was `settings: true` (full row), which
+        // leaked internal/staff-only config to an unauthenticated public
+        // endpoint — most notably twoFactorEnabled/twoFactorRoles (auth
+        // policy reconnaissance) plus other admin-only settings with no
+        // public-page use. Allowlist only what the public booking/menu pages
+        // (ClassicLayout/PremiumLayout/OldenLayout/GardenLayout, and this
+        // controller's own party-size/reservation-enabled checks below)
+        // actually consume.
+        settings: {
+          select: {
+            isReservationEnabled: true,
+            logic: true,
+            defaultDurationMinutes: true,
+            isPaidReservationEnabled: true,
+            depositAmount: true,
+            currency: true,
+            maxPartySize: true,
+            operatingHours: true,
+            openingHour: true,
+            closingHour: true,
+            timezone: true,
+            hasWaitTimeFeature: true,
+            hasShiftFeature: true,
+            hasMenuFeature: true,
+            hasPaymentFeature: true,
+            hasEventPipeline: true,
+            hasInstallmentPlans: true,
+            hasGuestList: true,
+            hasVendors: true,
+            isVipEnabled: true,
+            isCategoriesEnabled: true,
+          },
+        },
         waitTimeConfig: true,
         customization: true,
         menus: {
@@ -159,13 +191,26 @@ export const joinPublicWaitlist = async (req: Request, res: Response) => {
 export const getOffer = async (req: Request, res: Response) => {
   try {
     const { token } = req.params;
+    // Display-safe payload only — the previous version returned the raw row,
+    // including customerPhone and notes (a free-text field that mixes the
+    // guest's own text with staff-appended notes like "- Offer declined by
+    // customer"), to anyone holding the link. Select only what the public
+    // offer page actually renders.
     const entry = await prisma.waitlistEntry.findUnique({
       where: { offerToken: token },
-      include: { restaurant: { select: { slug: true, name: true } } }
+      select: {
+        customerName: true,
+        partySize: true,
+        targetDate: true,
+        offeredTime: true,
+        offerExpiresAt: true,
+        status: true,
+        restaurant: { select: { slug: true, name: true } },
+      },
     });
 
     if (!entry) return errorResponse(res, 'Offer not found or invalid', 404);
-    
+
     // Check if expired
     if (entry.offerExpiresAt && new Date() > entry.offerExpiresAt) {
       return errorResponse(res, 'This offer has expired', 400);
