@@ -57,3 +57,14 @@ Icon?
 # Misc
 .vercel
 *.tsbuildinfo
+
+# Bot-only SSH deploy key (this worktree's checkout only — never commit)
+.ssh_bot/
+
+# Isolated dev-instance config (this worktree's checkout only — never commit)
+ecosystem.dev.config.js
+nginx-dining-dev.conf
+
+# User-uploaded content (runtime-generated, not source; directory is
+# recreated at runtime by src/controllers/uploadController.ts)
+public/uploads/*
