@@ -1,6 +1,7 @@
 import crypto from 'crypto';
 import prisma from '../config/prisma';
 import { getPaymentProvider } from './payments';
+import { sendBookingConfirmation, formatReservationLabel } from './notificationService';
 
 export const PAYMENT_LINK_TTL_MS = 60 * 60 * 1000; // 1 hour (fallback default)
 
@@ -160,6 +161,19 @@ export async function applyCallback(body: Record<string, any>): Promise<{ ack: b
           })]
         : []),
     ]);
+
+    // Deposit paid -> the booking is now actually confirmed; let the guest know.
+    if (payment.reservationId) {
+      const reservation = await prisma.reservation.findUnique({ where: { id: payment.reservationId } });
+      if (reservation) {
+        const restaurant = await prisma.restaurant.findUnique({ where: { id: payment.restaurantId }, select: { name: true } });
+        await sendBookingConfirmation({
+          customerPhone: reservation.customerPhone,
+          restaurantName: restaurant?.name || 'Restaurant',
+          reservationLabel: formatReservationLabel(reservation.startTime, reservation.guestCount),
+        });
+      }
+    }
   } else {
     await prisma.payment.update({
       where: { id: payment.id },

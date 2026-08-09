@@ -3,7 +3,7 @@ import prisma from '../config/prisma';
 import { successResponse, errorResponse } from '../utils/response';
 import { verifyToken } from '../utils/jwt';
 import { createPaymentForReservation } from '../services/paymentService';
-import { sendPaymentRequest } from '../services/notificationService';
+import { sendPaymentRequest, sendBookingConfirmation, formatReservationLabel } from '../services/notificationService';
 import { findTableConflict, findAvailableTable, BLOCKING_STATUSES, restaurantDateStr, clearFullyBookedIfSet } from '../utils/reservationConflict';
 import { logAudit } from '../services/auditService';
 
@@ -239,6 +239,18 @@ export const createReservation = async (req: Request, res: Response) => {
           payment: { token: pay.rawLinkToken, code: pay.code, url: pay.paymentUrl, amount: pay.amountMinor, currency: pay.currency, expiresAt: pay.expiresAt },
         }, 'messages.reservation_created', 201);
       }
+    }
+
+    // Reservation is confirmed outright (auto-confirm, no deposit needed) —
+    // let the guest know immediately. When a deposit is required instead,
+    // sendPaymentRequest already covers the outbound message above.
+    if (reservation.status === 'CONFIRMED') {
+      const restaurant = await prisma.restaurant.findUnique({ where: { id: restaurantId }, select: { name: true } });
+      await sendBookingConfirmation({
+        customerPhone: reservation.customerPhone,
+        restaurantName: restaurant?.name || 'Restaurant',
+        reservationLabel: formatReservationLabel(reservation.startTime, reservation.guestCount),
+      });
     }
 
     return successResponse(res, reservation, 'messages.reservation_created', 201);
@@ -553,6 +565,18 @@ export const updateReservationStatus = async (req: Request, res: Response) => {
     if (status && existingRes.status !== status &&
         BLOCKING_STATUSES.includes(existingRes.status) && !BLOCKING_STATUSES.includes(status)) {
       await clearFullyBookedIfSet({ restaurantId, dateStr: restaurantDateStr(existingRes.startTime, settings?.timezone) });
+    }
+
+    // Staff manually accepted a request straight to CONFIRMED (no deposit
+    // required, or skipPayment) — the payment-request branch above already
+    // handles the deposit-required path, so this only fires for the direct case.
+    if (status === 'CONFIRMED' && existingRes.status !== 'CONFIRMED') {
+      const restaurant = await prisma.restaurant.findUnique({ where: { id: restaurantId }, select: { name: true } });
+      await sendBookingConfirmation({
+        customerPhone: updated.customerPhone,
+        restaurantName: restaurant?.name || 'Restaurant',
+        reservationLabel: formatReservationLabel(updated.startTime, updated.guestCount),
+      });
     }
 
     logAudit({

@@ -16,6 +16,28 @@ interface PaymentRequestPayload {
   reservationLabel: string; // e.g. "Sat 12 Jul, 20:00 · 4 guests"
 }
 
+// Shared label format for reservation-related outbound messages, e.g.
+// "12.07.2026 20:00 · 4 kişi".
+export function formatReservationLabel(startTime: Date | string, guestCount: number): string {
+  return `${new Date(startTime).toLocaleString('tr-TR')} · ${guestCount} kişi`;
+}
+
+interface BookingConfirmationPayload {
+  customerPhone: string;
+  restaurantName: string;
+  reservationLabel: string; // e.g. "Sat 12 Jul, 20:00 · 4 guests"
+}
+
+// Sent the moment a reservation actually becomes CONFIRMED — immediately on
+// booking (auto-confirm, no deposit required), after a deposit is paid, or
+// when staff manually accept a pending request. Distinct from
+// sendPaymentRequest, which is sent instead when a deposit still needs to be
+// collected before the booking can be confirmed.
+export async function sendBookingConfirmation(p: BookingConfirmationPayload): Promise<void> {
+  const smsText = `${p.restaurantName}: ${p.reservationLabel} rezervasyonunuz onaylandı. Sizi bekliyoruz!`;
+  await sendSms(p.customerPhone, smsText);
+}
+
 export async function sendPaymentRequest(p: PaymentRequestPayload): Promise<void> {
   const smsText =
     `${p.restaurantName}: ${p.reservationLabel} rezervasyonunuz için ${p.amountLabel} kapora gerekiyor. ` +
