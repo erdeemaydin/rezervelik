@@ -532,6 +532,16 @@ export default function ClassicLayout({ slug, initialRestaurant, initialView = '
                             </div>
                          </div>
                     )}
+
+                    {dayStatus?.daySetting?.isCapacityFull && (
+                        <div className="flex items-start gap-3 rounded-3xl border border-amber-200 bg-amber-50 p-4 text-sm font-medium text-amber-800 animate-in fade-in duration-300">
+                            <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5" />
+                            <div>
+                                <p className="mb-0.5 font-semibold">{t('public.capacityFullTitle')}</p>
+                                <p>{t('public.capacityFullDesc')}</p>
+                            </div>
+                        </div>
+                    )}
                 </div>
 
                 <div className="lg:col-span-3">

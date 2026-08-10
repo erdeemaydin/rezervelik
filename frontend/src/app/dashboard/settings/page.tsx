@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import api from '@/lib/api';
 import { toast } from 'sonner';
-import { Save, Calendar, Clock, CreditCard, ArrowLeft, CalendarClock, AlertCircle, Check, Timer, Palette } from 'lucide-react';
+import { Save, Calendar, Clock, CreditCard, ArrowLeft, CalendarClock, AlertCircle, Check, Timer, Palette, Users } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { PasswordConfirmDialog } from '@/components/auth/PasswordConfirmDialog';
@@ -37,7 +37,12 @@ interface RestaurantSettings {
     twoFactorEnabled: boolean;
     twoFactorRoles: string;
     dashboardTheme: string;
+    allowOverbooking: boolean;
+    overbookingMaxExtraCovers: number | null;
+    overbookingMaxExtraReservations: number | null;
 }
+
+const isPositiveInt = (n: unknown): n is number => Number.isInteger(n) && (n as number) > 0;
 
 // Common IANA timezones offered in the settings picker.
 const TIMEZONE_OPTIONS = [
@@ -79,7 +84,10 @@ export default function SettingsPage() {
         closingHour: 23,
         twoFactorEnabled: false,
         twoFactorRoles: '',
-        dashboardTheme: 'default'
+        dashboardTheme: 'default',
+        allowOverbooking: false,
+        overbookingMaxExtraCovers: null,
+        overbookingMaxExtraReservations: null
     });
 
     const fetchSettings = useCallback(async () => {
@@ -106,7 +114,10 @@ export default function SettingsPage() {
                     closingHour: data.closingHour ?? 23,
                     twoFactorEnabled: data.twoFactorEnabled ?? false,
                     twoFactorRoles: data.twoFactorRoles ?? '',
-                    dashboardTheme: data.dashboardTheme ?? 'default'
+                    dashboardTheme: data.dashboardTheme ?? 'default',
+                    allowOverbooking: data.allowOverbooking ?? false,
+                    overbookingMaxExtraCovers: data.overbookingMaxExtraCovers ?? null,
+                    overbookingMaxExtraReservations: data.overbookingMaxExtraReservations ?? null
                 });
             }
         } catch (error) {
@@ -131,6 +142,13 @@ export default function SettingsPage() {
     }, []);
 
     const handleSave = async () => {
+        // Mirrors the backend rule (settingsController.updateSettings): overbooking
+        // only ever takes effect with both caps validly set, so block the save
+        // client-side with a clear reason instead of round-tripping a 400.
+        if (settings.allowOverbooking && (!isPositiveInt(settings.overbookingMaxExtraCovers) || !isPositiveInt(settings.overbookingMaxExtraReservations))) {
+            toast.error(t("settings.overbookingRequiresCaps"));
+            return;
+        }
         try {
             setLoading(true);
             await api.put('/settings', settings);
@@ -329,6 +347,41 @@ export default function SettingsPage() {
                                             </SelectContent>
                                         </Select>
                                         <p className="text-[10px] text-slate-400 leading-relaxed">{t("settings.timezoneHint")}</p>
+                                    </div>
+                                </CardContent>
+                            </Card>
+
+                            <Card className="rounded-xl border-slate-200 shadow-sm overflow-hidden bg-white">
+                                <CardHeader className="p-6 bg-slate-50/50 border-b border-slate-100 flex flex-row items-center gap-4">
+                                    <div className="p-3 bg-amber-100 rounded-lg text-amber-600"><Users className="w-6 h-6" /></div>
+                                    <div>
+                                        <CardTitle className="text-lg font-black uppercase tracking-tight">{t("settings.overbooking")}</CardTitle>
+                                        <CardDescription className="text-sm">{t("settings.overbookingDesc")}</CardDescription>
+                                    </div>
+                                </CardHeader>
+                                <CardContent className="p-6 space-y-4">
+                                    <div className="flex items-center justify-between">
+                                        <Label className="text-sm font-bold text-slate-700">{t("settings.allowOverbooking")}</Label>
+                                        <Switch checked={settings.allowOverbooking} onCheckedChange={(v: boolean) => setSettings(prev => ({...prev, allowOverbooking: v}))} className="scale-125" />
+                                    </div>
+                                    <p className="text-[10px] text-slate-400 leading-relaxed">{t("settings.allowOverbookingHint")}</p>
+                                    <div className="grid grid-cols-2 gap-4 pt-2">
+                                        <div className="grid gap-3">
+                                            <Label className="text-xs font-black uppercase tracking-wider text-slate-500">{t("settings.overbookingMaxExtraCovers")}</Label>
+                                            <Input type="number" min="1" disabled={!settings.allowOverbooking}
+                                                value={settings.overbookingMaxExtraCovers ?? ''}
+                                                onChange={(e) => setSettings(prev => ({...prev, overbookingMaxExtraCovers: e.target.value === '' ? null : parseInt(e.target.value)}))}
+                                                className="h-12 text-base font-bold rounded-lg px-4" />
+                                            <p className="text-[10px] text-slate-400 leading-relaxed">{t("settings.overbookingMaxExtraCoversHint")}</p>
+                                        </div>
+                                        <div className="grid gap-3">
+                                            <Label className="text-xs font-black uppercase tracking-wider text-slate-500">{t("settings.overbookingMaxExtraReservations")}</Label>
+                                            <Input type="number" min="1" disabled={!settings.allowOverbooking}
+                                                value={settings.overbookingMaxExtraReservations ?? ''}
+                                                onChange={(e) => setSettings(prev => ({...prev, overbookingMaxExtraReservations: e.target.value === '' ? null : parseInt(e.target.value)}))}
+                                                className="h-12 text-base font-bold rounded-lg px-4" />
+                                            <p className="text-[10px] text-slate-400 leading-relaxed">{t("settings.overbookingMaxExtraReservationsHint")}</p>
+                                        </div>
                                     </div>
                                 </CardContent>
                             </Card>

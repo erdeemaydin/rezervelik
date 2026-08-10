@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useTranslation } from "@/i18n/provider";
-import { Calendar as CalendarIcon, ChevronDown, CheckCircle2, X, Clock, Menu, ArrowLeft, Leaf, Sprout } from 'lucide-react';
+import { Calendar as CalendarIcon, ChevronDown, CheckCircle2, X, Clock, Menu, ArrowLeft, Leaf, Sprout, AlertTriangle } from 'lucide-react';
 import axios from 'axios';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
@@ -500,6 +500,16 @@ export default function PremiumLayout({ slug, initialRestaurant, initialView, me
                   </div>
                 </div>
               ) : null}
+
+              {dayStatus?.daySetting?.isCapacityFull && (
+                <div className="rounded-2xl border-l-4 border-amber-400 bg-amber-400/15 p-4 text-sm font-normal text-amber-50 flex items-start gap-3">
+                  <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5 text-amber-300" />
+                  <div>
+                    <p className="mb-0.5 font-semibold text-amber-200">{t('public.capacityFullTitle')}</p>
+                    <p>{t('public.capacityFullDesc')}</p>
+                  </div>
+                </div>
+              )}
 
               <div className="space-y-8 pt-8 border-t border-[color:var(--line)]">
                 <div className="space-y-4 text-center">

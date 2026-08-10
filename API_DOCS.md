@@ -43,7 +43,7 @@
 *   **Description:** Allows a guest to join the virtual waitlist directly via QR code.
 *   **Payload:** `{ customerName, customerPhone, partySize }`
 ### `GET /api/public/day-status`
-*   **Description:** Checks overarching reservation availability for a specific date (coarse check).
+*   **Description:** Checks overarching reservation availability for a specific date (coarse check). When `DaySetting.maxCapacityOverride` is set for the date, the response also includes `remainingCapacity`/`isCapacityFull` so the public page can warn before a booking is attempted; omitted entirely when no cap is set.
 
 ---
 
@@ -57,7 +57,7 @@
 
 ### Reservations & Calendar
 *   **`GET /api/reservations`** - Lists reservations. Each entry includes `phoneHistory: { totalVisits, noShowCount }`, a per-phone-number tally within the tenant, used to flag repeat no-shows in the dashboard.
-*   **`POST /api/reservations`** - Creates a new reservation. Public (no auth). Blocks table double-booking within `defaultDurationMinutes` of an existing CONFIRMED/PENDING reservation on that table; returns `409` with `details.code: 'TABLE_CONFLICT'` on conflict. An authenticated staff caller may pass `overrideConflict: true` to book anyway. Auto-confirms only if `DaySetting.autoConfirm` is true *and* a table was actually assigned; otherwise saves as `PENDING` and returns `possiblyFullyBooked: true` when no table was free (unless the party size can never fit anywhere, which is a hard `400`).
+*   **`POST /api/reservations`** - Creates a new reservation. Public (no auth). Blocks table double-booking within `defaultDurationMinutes` of an existing CONFIRMED/PENDING reservation on that table; returns `409` with `details.code: 'TABLE_CONFLICT'` on conflict. An authenticated staff caller may pass `overrideConflict: true` to book anyway. Auto-confirms only if `DaySetting.autoConfirm` is true *and* a table was actually assigned. If no table is free at that moment, the request is hard-rejected (`409 FULLY_BOOKED`) unless the restaurant has overbooking enabled and configured (`RestaurantSettings.allowOverbooking` + both caps, optionally overridden per-day via `DaySetting`) and the day is still under both caps — in that case it's saved `PENDING` with no table and the response includes `possiblyFullyBooked: true`. If the party size can never fit anywhere in the restaurant, that's always a hard `400` regardless of overbooking. Also enforces `DaySetting.maxCapacityOverride` (total covers cap for the date) with `409 DAY_CAPACITY_EXCEEDED`.
 *   **`PUT /api/reservations/:id`** - Updates a reservation (e.g., status changes to CONFIRMED or CANCELLED, table/time changes). Staff-only; same table-conflict check as creation, overridable with `overrideConflict: true`.
 *   **`GET /api/categories`** - Manages reservation source categories (Phone, Online, Walk-in).
 
@@ -71,8 +71,9 @@ Reservation Timeline (tables × time-of-day) is a frontend-only view built from 
 
 ### Settings & Configuration
 *   **`GET /api/settings`** - Retrieves tenant-level settings (Deposit amounts, reservation logic).
-*   **`PUT /api/settings`** - Updates tenant-level settings.
+*   **`PUT /api/settings`** - Updates tenant-level settings, including the overbooking opt-in (`allowOverbooking`, `overbookingMaxExtraCovers`, `overbookingMaxExtraReservations`). Rejects `400` if `allowOverbooking: true` is submitted without both caps resolving to positive integers (either in this request or already saved).
 *   **`GET /api/day-settings`** - Manages exceptional days (e.g., New Year's Eve capacity overrides).
+*   **`POST /api/day-settings`** / **`POST /api/day-settings/bulk`** - Upserts one or many exceptional days, including a per-day overbooking override (`allowOverbookingOverride` tri-state: `true`/`false`/unset-to-inherit, plus `overbookingMaxExtraCoversOverride`/`overbookingMaxExtraReservationsOverride`). Same both-caps-required validation as `PUT /api/settings` applies when the override is turned on for a day.
 *   **`GET /api/customization`** - Retrieves the frontend page customization settings (typography, color, texts).
 *   **`PUT /api/customization`** - Updates the frontend page customization settings.
 

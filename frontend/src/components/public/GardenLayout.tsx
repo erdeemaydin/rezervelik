@@ -523,6 +523,16 @@ export default function GardenLayout({ slug, initialRestaurant, initialView, men
                 </div>
               ) : null}
 
+              {dayStatus?.daySetting?.isCapacityFull && (
+                <div className="rounded-2xl border-l-4 border-amber-500 bg-amber-50 p-4 text-sm text-amber-800 flex items-start gap-3">
+                  <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5 text-amber-500" />
+                  <div>
+                    <p className="mb-0.5 font-semibold text-amber-600">{t('public.capacityFullTitle')}</p>
+                    <p>{t('public.capacityFullDesc')}</p>
+                  </div>
+                </div>
+              )}
+
               <div className="space-y-6 border-t border-black/5 pt-8">
                 <div className="space-y-2">
                   <Label className="text-xs font-semibold uppercase tracking-widest opacity-60">Guests</Label>

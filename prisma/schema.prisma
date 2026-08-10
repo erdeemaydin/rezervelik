@@ -19,7 +19,7 @@ model Restaurant {
   // Vertical / business type. Drives per-tenant terminology labels and default
   // feature profile. Set by the SysAdmin (like layoutStyle), never by the tenant.
   // RESTAURANT, SALON, SPORTS, COWORKING, CLINIC, WEDDING. See MULTI_BUSINESS_ROADMAP.md.
-  businessType String  @default("RESTAURANT")
+  businessType String @default("RESTAURANT")
 
   // Subscription & Billing
   subscriptionPlan   String    @default("TRIAL") // TRIAL, BASIC, PRO, PREMIUM
@@ -149,6 +149,16 @@ model RestaurantSettings {
   // backend derives the reservation's calendar day (for DaySetting lookups) from it.
   timezone                 String  @default("Europe/Istanbul")
 
+  // Overbooking: when no table is physically free for a public booking request
+  // but the party size could fit somewhere in the restaurant, admins can opt in
+  // to soft-accepting the request as PENDING (for manual staff review) instead
+  // of hard-rejecting it. Only takes effect when both caps below are set to a
+  // positive integer — see getEffectiveOverbookingConfig in reservationConflict.ts.
+  // DaySetting can override this per date.
+  allowOverbooking                Boolean @default(false)
+  overbookingMaxExtraCovers       Int?
+  overbookingMaxExtraReservations Int?
+
   schedulingSystem String @default("MONTHLY") // "WEEKLY" or "MONTHLY"
 
   // Feature flags controlled by System Admin
@@ -163,10 +173,10 @@ model RestaurantSettings {
 
   // Wedding/organization vertical capabilities (default off; SysAdmin enables via
   // the WEDDING business profile). See MULTI_BUSINESS_ROADMAP.md Phase 4.
-  hasEventPipeline   Boolean @default(false) // Event sales pipeline (lead → confirmed)
+  hasEventPipeline    Boolean @default(false) // Event sales pipeline (lead → confirmed)
   hasInstallmentPlans Boolean @default(false) // kapora + taksit payment schedules
-  hasGuestList       Boolean @default(false) // guest list, RSVP, seating assignment
-  hasVendors         Boolean @default(false) // external vendor coordination (organizer model)
+  hasGuestList        Boolean @default(false) // guest list, RSVP, seating assignment
+  hasVendors          Boolean @default(false) // external vendor coordination (organizer model)
 
   // Privacy & Staff View Settings
   staffScheduleView String @default("OWN_ONLY") // "OWN_ONLY", "SHIFT_TEAM", "FULL_ROSTER"
@@ -175,13 +185,13 @@ model RestaurantSettings {
   // ONLY by the root/system admin per restaurant. When enabled, the tenant admin
   // chooses which roles must use 2FA via `twoFactorRoles` (comma-separated, e.g.
   // "ADMIN,MANAGER"). Staff are excluded by default (empty list).
-  twoFactorEnabled  Boolean @default(false)
-  twoFactorRoles    String  @default("")
+  twoFactorEnabled Boolean @default(false)
+  twoFactorRoles   String  @default("")
 
   // Default UI language for this tenant, set by the root/system admin. Applied on
   // the dashboard when a user hasn't explicitly picked a language yet. "tr" is the
   // platform default.
-  defaultLanguage   String  @default("tr")
+  defaultLanguage String @default("tr")
 
   // Whether the tenant's own admins/managers may view the activity audit log for
   // their restaurant. Root/system-admin decides this per tenant; default off so
@@ -199,8 +209,8 @@ model RestaurantSettings {
   // dashboard Reviews page. The tenant pastes their Google Maps place URL
   // (googleMapsUrl); the backend resolves a Place ID (googlePlaceId) from it for
   // the Places Details API. Replying to reviews (Google OAuth) is a later phase.
-  googleMapsUrl  String?
-  googlePlaceId  String?
+  googleMapsUrl String?
+  googlePlaceId String?
 
   updatedAt  DateTime   @updatedAt
   restaurant Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
@@ -211,27 +221,27 @@ model RestaurantSettings {
 // single tenant so it can surface in that tenant's own audit view. Actor identity
 // is snapshotted (email/name/role) so the record survives user deletion.
 model AuditLog {
-  id           String   @id @default(uuid())
-  createdAt    DateTime @default(now())
+  id        String   @id @default(uuid())
+  createdAt DateTime @default(now())
 
   // Who did it (snapshot — not a hard FK, so deleting the user keeps the record).
-  actorId      String?
-  actorEmail   String?
-  actorName    String?
-  actorRole    String?
+  actorId    String?
+  actorEmail String?
+  actorName  String?
+  actorRole  String?
 
   // Scope: null = platform-level; otherwise the tenant the action belongs to.
   restaurantId String?
   restaurant   Restaurant? @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
 
   // What happened.
-  action       String  // e.g. LOGIN, TENANT_PROVISIONED, SETTINGS_UPDATED
-  category     String  // e.g. AUTH, TENANT, SETTINGS, RESERVATION, SYSTEM
-  targetType   String? // e.g. Restaurant, User, Reservation
-  targetId     String?
-  targetLabel  String? // human-readable name of the target
-  metadata     Json?   // arbitrary extra detail
-  ip           String?
+  action      String // e.g. LOGIN, TENANT_PROVISIONED, SETTINGS_UPDATED
+  category    String // e.g. AUTH, TENANT, SETTINGS, RESERVATION, SYSTEM
+  targetType  String? // e.g. Restaurant, User, Reservation
+  targetId    String?
+  targetLabel String? // human-readable name of the target
+  metadata    Json? // arbitrary extra detail
+  ip          String?
 
   @@index([restaurantId, createdAt])
   @@index([category])
@@ -322,13 +332,13 @@ model User {
   otpSecret      String?
   otpConfirmedAt DateTime?
 
-  createdAt        DateTime               @default(now())
-  updatedAt        DateTime               @updatedAt
-  restaurant       Restaurant?            @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
-  availabilities   EmployeeAvailability[]
-  shiftAssignments ShiftAssignment[]
-  timeEntries      TimeEntry[]
-  coordinatedEvents Event[]              @relation("EventCoordinator")
+  createdAt         DateTime               @default(now())
+  updatedAt         DateTime               @updatedAt
+  restaurant        Restaurant?            @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  availabilities    EmployeeAvailability[]
+  shiftAssignments  ShiftAssignment[]
+  timeEntries       TimeEntry[]
+  coordinatedEvents Event[]                @relation("EventCoordinator")
 
   @@index([restaurantId])
 }
@@ -369,12 +379,12 @@ model Zone {
   description  String?
 
   parentId String?
-  parent   Zone?  @relation("SubZones", fields: [parentId], references: [id])
-  children Zone[] @relation("SubZones")
+  parent   Zone?   @relation("SubZones", fields: [parentId], references: [id])
+  children Zone[]  @relation("SubZones")
 
   tables        BookableResource[]
   floorElements FloorElement[]
-  restaurant    Restaurant     @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  restaurant    Restaurant         @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
 
   @@index([restaurantId])
   @@index([parentId])
@@ -432,15 +442,21 @@ model FloorElement {
 }
 
 model DaySetting {
-  id                   String     @id @default(uuid())
-  restaurantId         String
-  date                 String // ISO Date string (YYYY-MM-DD)
-  eventTitle           String?
-  isReservationEnabled Boolean    @default(true)
-  isFullyBooked        Boolean    @default(false)
-  autoConfirm          Boolean    @default(false) // If true, skip PENDING and go to CONFIRMED
-  maxCapacityOverride  Int? // Optional: limit capacity for special events
-  restaurant           Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  id                                      String     @id @default(uuid())
+  restaurantId                            String
+  date                                    String // ISO Date string (YYYY-MM-DD)
+  eventTitle                              String?
+  isReservationEnabled                    Boolean    @default(true)
+  isFullyBooked                           Boolean    @default(false)
+  autoConfirm                             Boolean    @default(false) // If true, skip PENDING and go to CONFIRMED
+  maxCapacityOverride                     Int? // Optional: limit capacity for special events
+  // Per-day override of RestaurantSettings' overbooking feature (null = inherit
+  // the restaurant-wide setting). Same "only takes effect when both caps are set"
+  // rule as the global fields.
+  allowOverbookingOverride                Boolean?
+  overbookingMaxExtraCoversOverride       Int?
+  overbookingMaxExtraReservationsOverride Int?
+  restaurant                              Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
 
   @@unique([restaurantId, date])
   @@index([restaurantId])
@@ -480,6 +496,11 @@ model Reservation {
   isVIP         Boolean   @default(false)
   isPaid        Boolean   @default(false)
   paymentId     String?
+  // Set when this PENDING reservation was soft-accepted with no table assigned
+  // under the RestaurantSettings/DaySetting overbooking feature (no table was
+  // free at request time, but the party could fit somewhere). Counted against
+  // the overbooking caps for its date — see getOverbookedCountsForDate.
+  isOverbooked  Boolean   @default(false)
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
@@ -502,34 +523,34 @@ model Reservation {
 // Card data never touches this table — the customer enters it in the provider's
 // hosted iframe (PCI SAQ A).
 model Payment {
-  id            String    @id @default(uuid())
+  id            String  @id @default(uuid())
   restaurantId  String
   reservationId String?
-  provider      String    @default("PAYTR") // PAYTR, MOCK, STRIPE, IYZICO
-  merchantOid   String    @unique // our order id echoed back by the provider callback
+  provider      String  @default("PAYTR") // PAYTR, MOCK, STRIPE, IYZICO
+  merchantOid   String  @unique // our order id echoed back by the provider callback
   providerRef   String? // provider-side transaction reference
   amount        Int // minor units (e.g. kuruş)
-  currency      String    @default("TL")
-  status        String    @default("PENDING") // PENDING, PAID, FAILED, EXPIRED, REFUNDED
+  currency      String  @default("TL")
+  status        String  @default("PENDING") // PENDING, PAID, FAILED, EXPIRED, REFUNDED
 
   // Customer access to the hosted payment page. Only the SHA-256 hash of the raw
   // link token is stored; the raw token lives only in the payment link. `code` is
   // a short human-typeable fallback so guests can reach payment from the known site
   // instead of trusting a raw SMS link (anti-phishing).
-  linkTokenHash String    @unique
+  linkTokenHash String   @unique
   code          String
   expiresAt     DateTime
 
-  paidAt        DateTime?
-  failReason    String?
-  rawCallback   String? // JSON of the last provider callback, for audit
+  paidAt      DateTime?
+  failReason  String?
+  rawCallback String? // JSON of the last provider callback, for audit
 
-  refundedAt    DateTime?
-  refundReason  String?
-  rawRefund     String? // JSON of the last provider refund response, for audit
+  refundedAt   DateTime?
+  refundReason String?
+  rawRefund    String? // JSON of the last provider refund response, for audit
 
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   reservation Reservation? @relation(fields: [reservationId], references: [id], onDelete: SetNull)
   restaurant  Restaurant   @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
@@ -585,39 +606,39 @@ model MenuCategory {
 }
 
 model MenuItem {
-  id          String       @id @default(uuid())
-  categoryId  String
-  name        String
-  description String?
-  price       Float
-  imageUrl    String?
-  isAvailable Boolean      @default(true)
-  isHighlight Boolean      @default(false) // Chef's Special / Popular
-  order       Int          @default(0)
-  dietaryTags String? // e.g., "Vegan,Gluten-Free"
-  allergens   String? // e.g., "Nuts,Dairy"
-  spiceLevel  Int          @default(0) // 0: none, 1: mild, 2: medium, 3: spicy
+  id              String  @id @default(uuid())
+  categoryId      String
+  name            String
+  description     String?
+  price           Float
+  imageUrl        String?
+  isAvailable     Boolean @default(true)
+  isHighlight     Boolean @default(false) // Chef's Special / Popular
+  order           Int     @default(0)
+  dietaryTags     String? // e.g., "Vegan,Gluten-Free"
+  allergens       String? // e.g., "Nuts,Dairy"
+  spiceLevel      Int     @default(0) // 0: none, 1: mild, 2: medium, 3: spicy
   // Appointment verticals: intrinsic service/treatment length in minutes. When set
   // on the service a booking references (Reservation.serviceId), it drives the
   // booking window instead of the tenant's default duration. Null for menu dishes.
   durationMinutes Int?
 
   // Regulation Fields
-  ingredients      String?
-  calories         Int?
-  containsAlcohol  Boolean      @default(false)
-  containsPork     Boolean      @default(false)
+  ingredients     String?
+  calories        Int?
+  containsAlcohol Boolean @default(false)
+  containsPork    Boolean @default(false)
 
-  createdAt        DateTime     @default(now())
-  updatedAt        DateTime     @default(now()) @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
 
-  category    MenuCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  category MenuCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
 
-  modifiers  MenuItemModifier[]
-  pairings   MenuItemPairing[]  @relation("ItemPairings")
-  pairedWith MenuItemPairing[]  @relation("PairedItems")
+  modifiers    MenuItemModifier[]
+  pairings     MenuItemPairing[]  @relation("ItemPairings")
+  pairedWith   MenuItemPairing[]  @relation("PairedItems")
   reservations Reservation[]
-  events       Event[]          @relation("EventPackage")
+  events       Event[]            @relation("EventPackage")
 
   @@index([categoryId])
 }
@@ -748,7 +769,7 @@ model GlobalSettings {
 // ---------------------------------------------------------------------------
 
 model Event {
-  id            String   @id @default(uuid())
+  id            String  @id @default(uuid())
   restaurantId  String
   resourceId    String? // the Hall (BookableResource) reserved for this date-slot
   packageId     String? // per-person package (MenuItem/CatalogItem)
@@ -832,13 +853,13 @@ model PaymentInstallment {
 }
 
 model Guest {
-  id           String  @id @default(uuid())
+  id           String    @id @default(uuid())
   restaurantId String
   eventId      String
   resourceId   String? // seating: assigned guest table (BookableResource)
   name         String
-  partySize    Int     @default(1)
-  rsvp         String  @default("PENDING") // PENDING, YES, NO, MAYBE
+  partySize    Int       @default(1)
+  rsvp         String    @default("PENDING") // PENDING, YES, NO, MAYBE
   dietary      String?
   note         String?
   respondedAt  DateTime? // set when the guest self-responds via the invitation microsite

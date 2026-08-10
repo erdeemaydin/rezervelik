@@ -1,4 +1,4 @@
-import { Prisma } from '@prisma/client';
+import { Prisma, RestaurantSettings, DaySetting } from '@prisma/client';
 import prisma from '../config/prisma';
 
 // A reservation in any of these statuses actively occupies its table for its
@@ -142,6 +142,85 @@ export async function clearFullyBookedIfSet({
     where: { restaurantId, date: dateStr, isFullyBooked: true },
     data: { isFullyBooked: false },
   });
+}
+
+const isPositiveInt = (n: unknown): n is number => Number.isInteger(n) && (n as number) > 0;
+
+export interface OverbookingConfig {
+  enabled: boolean;
+  maxExtraCovers: number;
+  maxExtraReservations: number;
+}
+
+/**
+ * Resolves whether overbooking (soft-accepting a PENDING, tableless reservation
+ * when no table is free but the party could fit somewhere) is active for a given
+ * date, and its caps. DaySetting.allowOverbookingOverride is tri-state: true/false
+ * take the day's own override numbers as-is (validated to be complete at save
+ * time — see daySettingController), null/undefined inherits the restaurant-wide
+ * RestaurantSettings fields entirely.
+ *
+ * Defense in depth: even if bad data ever reached the DB, this only reports
+ * `enabled: true` when both caps resolve to valid positive integers — the
+ * feature silently stays off rather than misbehave on a malformed value.
+ */
+export function getEffectiveOverbookingConfig(
+  settings: Pick<RestaurantSettings, 'allowOverbooking' | 'overbookingMaxExtraCovers' | 'overbookingMaxExtraReservations'>,
+  daySetting?: Pick<DaySetting, 'allowOverbookingOverride' | 'overbookingMaxExtraCoversOverride' | 'overbookingMaxExtraReservationsOverride'> | null,
+): OverbookingConfig {
+  const override = daySetting?.allowOverbookingOverride;
+  const rawEnabled = override === true || override === false ? override : !!settings.allowOverbooking;
+  const rawCovers = override === true ? daySetting?.overbookingMaxExtraCoversOverride : settings.overbookingMaxExtraCovers;
+  const rawReservations = override === true ? daySetting?.overbookingMaxExtraReservationsOverride : settings.overbookingMaxExtraReservations;
+
+  const enabled = rawEnabled && isPositiveInt(rawCovers) && isPositiveInt(rawReservations);
+  return {
+    enabled: !!enabled,
+    maxExtraCovers: isPositiveInt(rawCovers) ? rawCovers : 0,
+    maxExtraReservations: isPositiveInt(rawReservations) ? rawReservations : 0,
+  };
+}
+
+/**
+ * Counts currently-active (BLOCKING_STATUSES) overbooked reservations (isOverbooked
+ * = true, i.e. soft-accepted with no table assigned) for `dateStr`, and sums their
+ * covers — the running totals getEffectiveOverbookingConfig's caps are checked
+ * against. Mirrors getBookedCoversForDate's day-window resolution.
+ */
+export async function getOverbookedCountsForDate({
+  restaurantId, dateStr, timezone, tx,
+}: {
+  restaurantId: string;
+  dateStr: string;
+  timezone?: string;
+  tx?: Prisma.TransactionClient;
+}): Promise<{ count: number; covers: number }> {
+  const client = tx ?? prisma;
+  const dayStart = restaurantMidnightUTC(dateStr, timezone);
+  const nextDay = new Date(`${dateStr}T00:00:00Z`);
+  nextDay.setUTCDate(nextDay.getUTCDate() + 1);
+  const dayEnd = restaurantMidnightUTC(nextDay.toISOString().slice(0, 10), timezone);
+
+  const [count, sum] = await Promise.all([
+    client.reservation.count({
+      where: {
+        restaurantId,
+        isOverbooked: true,
+        status: { in: BLOCKING_STATUSES },
+        startTime: { gte: dayStart, lt: dayEnd },
+      },
+    }),
+    client.reservation.aggregate({
+      where: {
+        restaurantId,
+        isOverbooked: true,
+        status: { in: BLOCKING_STATUSES },
+        startTime: { gte: dayStart, lt: dayEnd },
+      },
+      _sum: { guestCount: true },
+    }),
+  ]);
+  return { count, covers: sum._sum.guestCount ?? 0 };
 }
 
 /**

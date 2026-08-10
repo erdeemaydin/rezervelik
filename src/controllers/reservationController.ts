@@ -4,7 +4,7 @@ import { successResponse, errorResponse } from '../utils/response';
 import { verifyToken } from '../utils/jwt';
 import { createPaymentForReservation } from '../services/paymentService';
 import { sendPaymentRequest, sendBookingConfirmation, formatReservationLabel } from '../services/notificationService';
-import { findTableConflict, findAvailableTable, BLOCKING_STATUSES, restaurantDateStr, clearFullyBookedIfSet, getBookedCoversForDate } from '../utils/reservationConflict';
+import { findTableConflict, findAvailableTable, BLOCKING_STATUSES, restaurantDateStr, clearFullyBookedIfSet, getBookedCoversForDate, getEffectiveOverbookingConfig, getOverbookedCountsForDate } from '../utils/reservationConflict';
 import { logAudit } from '../services/auditService';
 
 const isStaffRequest = (req: Request): boolean => {
@@ -146,6 +146,7 @@ export const createReservation = async (req: Request, res: Response) => {
     // check and land on the same table (the previous check-then-insert race).
     let finalTableId: string | null = tableId === 'none' ? null : tableId;
     let requiresInstantPayment = false;
+    let isOverbooked = false;
     const isManualAvailability = settings.logic === 'MANUAL_AVAILABILITY';
 
     let reservation;
@@ -195,18 +196,37 @@ export const createReservation = async (req: Request, res: Response) => {
             if (!anyTableFitsCapacity) {
               throw Object.assign(new Error('NO_TABLE_CAPACITY'), { code: 'NO_TABLE_CAPACITY' });
             }
-            // Every fitting table is booked for this slot. We never create an
-            // overlapping/unassigned booking on the public side; instead we flag
-            // the day as fully booked (manual control) and reject so the guest is
-            // offered the waitlist. Staff may still force an unassigned pending
-            // booking to resolve manually.
+            // Every fitting table is booked for this slot. By default we never
+            // create an overlapping/unassigned booking on the public side;
+            // instead we flag the day as fully booked (manual control) and
+            // reject so the guest is offered the waitlist. Staff may still
+            // force an unassigned pending booking to resolve manually.
+            //
+            // Overbooking (admin opt-in, RestaurantSettings/DaySetting): if
+            // configured and this date is still under both caps, soft-accept
+            // instead — PENDING, no table assigned, isOverbooked: true — so
+            // staff can resolve it manually rather than turning the guest away.
+            // Re-counted inside the transaction so concurrent requests can't
+            // jointly overshoot the caps, same race protection as maxCapacityOverride.
             if (!staffInitiated) {
-              await tx.daySetting.upsert({
-                where: { restaurantId_date: { restaurantId, date: dateStr } },
-                create: { restaurantId, date: dateStr, isFullyBooked: true },
-                update: { isFullyBooked: true },
-              });
-              throw Object.assign(new Error('FULLY_BOOKED'), { code: 'FULLY_BOOKED' });
+              const overbooking = getEffectiveOverbookingConfig(settings, daySetting);
+              if (overbooking.enabled) {
+                const { count, covers } = await getOverbookedCountsForDate({
+                  restaurantId, dateStr, timezone: settings.timezone, tx,
+                });
+                if (count + 1 <= overbooking.maxExtraReservations && covers + partySize <= overbooking.maxExtraCovers) {
+                  isOverbooked = true;
+                }
+              }
+
+              if (!isOverbooked) {
+                await tx.daySetting.upsert({
+                  where: { restaurantId_date: { restaurantId, date: dateStr } },
+                  create: { restaurantId, date: dateStr, isFullyBooked: true },
+                  update: { isFullyBooked: true },
+                });
+                throw Object.assign(new Error('FULLY_BOOKED'), { code: 'FULLY_BOOKED' });
+              }
             }
           }
         }
@@ -234,6 +254,7 @@ export const createReservation = async (req: Request, res: Response) => {
             notes,
             internalNote,
             isVIP: !!isVIP,
+            isOverbooked,
             status: requiresInstantPayment ? 'AWAITING_PAYMENT' : (isConfirmed ? 'CONFIRMED' : 'PENDING'),
           },
         });
@@ -272,6 +293,7 @@ export const createReservation = async (req: Request, res: Response) => {
         return successResponse(res, {
           ...reservation,
           status: 'AWAITING_PAYMENT',
+          possiblyFullyBooked: reservation.isOverbooked,
           payment: { token: pay.rawLinkToken, code: pay.code, url: pay.paymentUrl, amount: pay.amountMinor, currency: pay.currency, expiresAt: pay.expiresAt },
         }, 'messages.reservation_created', 201);
       }
@@ -289,7 +311,7 @@ export const createReservation = async (req: Request, res: Response) => {
       });
     }
 
-    return successResponse(res, reservation, 'messages.reservation_created', 201);
+    return successResponse(res, { ...reservation, possiblyFullyBooked: reservation.isOverbooked }, 'messages.reservation_created', 201);
   } catch (error) {
     console.error('Create reservation error', error);
     return errorResponse(res, 'errors.internal_error', 500);
