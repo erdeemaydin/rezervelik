@@ -2,6 +2,59 @@
 
 Day-to-day record of substantial work sessions on this project. Newest entry first.
 
+## 2026-08-11 (cont'd) — worked the PRODUCTION_ROADMAP.md follow-ups list
+
+Picked up the prior session's "Follow-ups — flagged but not done" list in priority order,
+re-verifying each claim against current code (not the docs) before acting, per standing practice.
+
+- **HSTS**: confirmed `src/app.ts` still had no `hsts: false` override. Since this sandbox has no
+  credentialed access to the live deploy server (tried SSH to `deploy@your-server-ip` per
+  `docs/DATABASE_RUNBOOK.md` — host reachable, key rejected, so live-HTTPS status genuinely cannot
+  be confirmed from here), applied the roadmap's own prescribed interim fix: `hsts: false` in the
+  `helmet()` call, closing the "poisons iOS Safari with a false HTTPS upgrade" failure mode
+  regardless of whether TLS is actually live yet. Needs reverting once someone with real server
+  access confirms Caddy/TLS is in front of the app.
+- **Next.js 16.2.4 → 16.3.0**: read the GitHub release notes (no breaking changes touched this
+  app's actual config — no experimental flags in use), bumped the version, and verified `tsc
+  --noEmit` clean, `eslint` unchanged at 412 pre-existing warnings/0 errors (diffed against the
+  pre-bump tree to confirm), the frontend unit suite green, and a clean `next build`. Closes the 3
+  remaining frontend dependency advisories (postcss, sharp/libvips) — `npm audit` now reports 0
+  vulnerabilities on the frontend at every severity, matching the backend, so removed the `|| true`
+  carve-out on the CI frontend audit step and tightened it to `--audit-level=moderate` to match.
+  **Not verified**: a real browser smoke-test — this sandbox has no root to install Chromium's
+  shared libs, so even a cached Playwright Chromium binary fails to launch (same limitation as
+  prior sessions).
+- **`frontend/src/proxy.ts`**: the comment claiming the session token "lives in localStorage...
+  this server-side proxy cannot read it" was false since the httpOnly-cookie migration — cookie
+  matching ignores port, so this proxy can already read the `token` cookie in both the cross-port
+  dev setup and the same-origin production setup behind the reverse proxy. Made the deliberate call
+  the prior session flagged as open: added presence-only server-side gating (redirect to
+  `/auth/login` if the `token` cookie is missing on `/dashboard/*` or `/system-admin/*`) — not JWT
+  validation, which would need `JWT_SECRET` shared into the frontend. The backend's `authMiddleware`
+  remains the real enforcement boundary; this only closes the gap where a fully logged-out visitor
+  could load the dashboard shell HTML/JS at all before the existing client-side redirect fired.
+  Verified with `next build` + `next start` + `curl` (protected paths 307 without a cookie, 200
+  with one; public `/r/[slug]` and `/auth/login` unaffected) since a real browser isn't available
+  here either.
+- **`docs/TESTING_AND_CICD.md`**: same fact-check-every-claim treatment the roadmap doc got last
+  session. It still described the test suite running against a throwaway SQLite file — actually
+  Postgres everywhere now, and even the filename it cited (`prepare-test-db.ts`) was wrong (it's
+  `.mjs`). Corrected the test-pyramid table, the "how the test DB comes from" section, the CI step
+  lists (missing the `npm audit` gate added last session), and the local-dev command block.
+- **Live-server-only checklist items** (§9/§10's ⚠️ items — firewall, DB user privileges, backup
+  encryption/offsite copy, `CORS_ORIGIN` value, secrets storage): confirmed, don't guess. Recorded
+  in the roadmap doc that this is now a *tested* fact for any session running in a sandbox like this
+  one (SSH reaches the host, no key is provisioned for `deploy`), not just "nobody's checked yet."
+- **Not started this session** (explicitly lower-priority per the request that kicked this off):
+  object storage for uploads, a staging environment, KVKK consent/retention UI, uptime/error
+  monitoring, frontend CSP. Each is substantial enough to be its own scoped session.
+
+**Test DB note for future sessions in this sandbox:** no Docker/Podman available here, but a
+Postgres 16 server is already running locally (`pg_lsclusters`) with a `dining_dev` superuser-ish
+role that has `CREATEDB`. Hand-created a throwaway `dining_test` database owned by that role and
+pointed `TEST_DATABASE_URL` at it — `npm run test:setup-db` doesn't need to spin up its own
+container in that case, it just resets + migrates whatever `TEST_DATABASE_URL` points to.
+
 ## 2026-08-11 (cont'd) — dependency scanning in CI + PRODUCTION_ROADMAP.md refresh
 
 Prompted by "how do we know we've eliminated all the bugs/security issues before production" —
