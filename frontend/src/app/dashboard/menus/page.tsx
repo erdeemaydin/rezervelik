@@ -257,7 +257,10 @@ export default function MenuManagementPage() {
               await api.put(`/menus/items/${editId}`, payload);
               toast.success(t('menus.toast.itemUpdated'));
           } else {
-              await api.post(`/menus/categories/${itemForm.categoryId}/items`, payload);
+              // Matches the actual registered route: POST /menus/items with
+              // categoryId in the body (src/routes/menuRoutes.ts) — not a
+              // nested /categories/:categoryId/items path, which 404s.
+              await api.post('/menus/items', payload);
               toast.success(t('menus.toast.itemAdded'));
           }
           setIsItemDialogOpen(false);

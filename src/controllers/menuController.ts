@@ -231,11 +231,14 @@ const parsePrice = (value: unknown): number | null => {
 export const createMenuItem = async (req: Request, res: Response) => {
   try {
     const restaurantId = req.restaurantId!;
-    const { categoryId } = req.params;
-    const { name, description, price, imageUrl, isAvailable, order, dietaryTags, allergens, spiceLevel, ingredients, calories, containsAlcohol, containsPork, durationMinutes } = req.body;
+    // categoryId comes from the body, not req.params — this route is the flat
+    // POST /items (no :categoryId in its path); reading it from req.params
+    // meant it was always undefined here, so every create silently 400'd as
+    // "Invalid categoryId" regardless of what was actually sent.
+    const { categoryId, name, description, price, imageUrl, isAvailable, order, dietaryTags, allergens, spiceLevel, ingredients, calories, containsAlcohol, containsPork, durationMinutes } = req.body;
 
-    // Security-audit finding: categoryId (from the URL) was never checked to
-    // belong to the caller's tenant — any tenant could attach an item to
+    // Security-audit finding: categoryId (from the request) was never checked
+    // to belong to the caller's tenant — any tenant could attach an item to
     // another tenant's category.
     const category = await findOwnedCategory(categoryId, restaurantId);
     if (!category) return errorResponse(res, 'errors.validation_error', 400, { message: 'Invalid categoryId' });

@@ -18,6 +18,26 @@ describe('Menu rules', () => {
     expect(active[0].name).toBe('M2');
   });
 
+  // Regression: POST /menus/items is the flat route (no :categoryId in the
+  // path — see src/routes/menuRoutes.ts), but createMenuItem used to read
+  // categoryId from req.params instead of req.body, so it was always
+  // undefined and every create 400'd as "Invalid categoryId" — no test ever
+  // asserted the happy path actually returns 201, so this went unnoticed.
+  it('creates a menu item under its category', async () => {
+    const menu = await prisma.menu.create({ data: { restaurantId: a.restaurant.id, name: 'Create Test', isActive: false } });
+    const cat = await prisma.menuCategory.create({ data: { menuId: menu.id, name: 'Starters' } });
+
+    const res = await api
+      .post('/api/menus/items')
+      .set(auth(a.tokens.admin, a.restaurant.id))
+      .send({ categoryId: cat.id, name: 'Soup', price: 12.5 });
+
+    expect(res.status).toBe(201);
+    expect(res.body.data.categoryId).toBe(cat.id);
+    const item = await prisma.menuItem.findUnique({ where: { id: res.body.data.id } });
+    expect(item).toMatchObject({ categoryId: cat.id, name: 'Soup', price: 12.5 });
+  });
+
   it('bulk price set applies immediately but defers a future-scheduled change', async () => {
     const menu = await prisma.menu.create({ data: { restaurantId: a.restaurant.id, name: 'Priced', isActive: false } });
     const cat = await prisma.menuCategory.create({ data: { menuId: menu.id, name: 'Mains' } });
