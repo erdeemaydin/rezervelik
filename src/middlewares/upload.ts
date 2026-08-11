@@ -1,5 +1,10 @@
 import multer from 'multer';
 
+// Files are buffered in memory, not written to local disk here — the
+// controller streams the buffer straight to object storage (S3-compatible, or
+// a local-disk fallback) via src/services/storage. See that module for where
+// the file actually ends up.
+//
 // Security-audit finding: this used to write straight to disk with
 // diskStorage, choosing the stored filename's extension from the
 // attacker-controlled `originalname` and only pre-filtering on the equally

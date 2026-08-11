@@ -1,9 +1,6 @@
 import { Request, Response } from 'express';
-import fs from 'fs/promises';
-import path from 'path';
 import { successResponse, errorResponse } from '../utils/response';
-
-const uploadDir = path.join(process.cwd(), 'public', 'uploads');
+import { getStorageProvider } from '../services/storage';
 
 // Magic-byte signatures for the image formats we accept. Sniffing the actual
 // bytes — rather than trusting the client-supplied mimetype/filename — is
@@ -30,13 +27,32 @@ export const uploadImage = async (req: Request, res: Response) => {
       return errorResponse(res, 'errors.validation_error', 400, { message: 'File content is not a recognized image format' });
     }
 
-    // Filename is entirely server-generated — never derived from the
-    // client-supplied originalname or mimetype.
-    const filename = `${Date.now()}-${Math.round(Math.random() * 1e9)}.${ext}`;
-    await fs.mkdir(uploadDir, { recursive: true });
-    await fs.writeFile(path.join(uploadDir, filename), req.file.buffer);
+    // tenantMiddleware (mounted ahead of this route in app.ts) always sets
+    // this, but guard it explicitly so a stored file can never end up
+    // un-namespaced if that invariant is ever relaxed, and so TypeScript knows
+    // it's a plain string below.
+    if (!req.restaurantId) {
+      return errorResponse(res, 'errors.unauthorized', 400);
+    }
 
-    return successResponse(res, { url: `/uploads/${filename}` });
+    const provider = getStorageProvider();
+    const { url } = await provider.uploadFile({
+      buffer: req.file.buffer,
+      // Derived from the sniffed magic bytes, NOT the client-supplied
+      // originalname/mimetype — storage providers use these to pick the
+      // stored file's extension/content-type, so trusting client input here
+      // would reopen the same spoofed-file-extension hole the sniffing above
+      // exists to close (e.g. an .html/.svg upload stored and served,
+      // same-origin, as whatever extension the client claimed).
+      originalName: `upload.${ext}`,
+      mimeType: `image/${ext === 'jpg' ? 'jpeg' : ext}`,
+      restaurantId: req.restaurantId,
+      requestBaseUrl: `${req.protocol}://${req.get('host')}`,
+    });
+
+    // Same response shape as before (`{ data: { url } }`) — dashboard callers
+    // (menu item/category image uploads) just read res.data.data.url.
+    return successResponse(res, { url });
   } catch (error) {
     console.error('Upload error:', error);
     return errorResponse(res, 'errors.internal_error', 500);
