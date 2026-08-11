@@ -2,6 +2,90 @@
 
 Day-to-day record of substantial work sessions on this project. Newest entry first.
 
+## 2026-08-11 (cont'd) — parallel multi-agent pass on the remaining roadmap items + a live menu-creation bug
+
+Picked up where the previous same-day session left off: item 6 of its priority list ("lower
+priority, still open" — object storage, staging tooling, KVKK consent/retention, uptime/error
+monitoring, frontend CSP). User asked for subagents on all five; also reported a live bug
+("can't add any new item to the menu") that got fixed directly first since it was blocking actual
+usage.
+
+**Menu item creation bug (fixed directly, not delegated):** root cause was commit `c1f75fb`
+(2026-06-02, unrelated pricing feature) flattening the item-create route from
+`POST /categories/:categoryId/items` to `POST /items` without updating either caller —
+`menuController.createMenuItem` kept reading `categoryId` from `req.params` (always `undefined` on
+the new flat route), and both frontend call sites (`dashboard/menus/page.tsx`,
+`menus/wizard/page.tsx`) kept posting to the old nested URL, which 404s outright. This had been
+broken since June; every existing test that hit this endpoint was a *negative* test (tenant
+isolation / bad-price checks) expecting a 400, so nothing ever caught that the happy path never
+worked. Fixed both call sites + the controller, added the missing 201 regression test.
+
+**Five parallel subagents, each in an isolated git worktree** (to avoid concurrent edits
+clobbering each other), merged back into `agent/telegram-bot` one at a time as they finished, with
+conflicts resolved by hand rather than blind `git merge --no-ff`:
+
+- **Object storage** (`src/services/storage/`, S3-compatible or local-disk fallback) — merge
+  conflict: the new provider derived the stored file's extension/mimetype from the *client-supplied*
+  originalname, which would have reopened a spoofed-upload hole a prior security pass had closed
+  (this branch's `uploadController.ts` sniffs real file content instead). Resolved by feeding the
+  sniffed result into the provider rather than trusting client input. Also merged a same-endpoint
+  add/add test-file conflict by hand, keeping both the security tests (auth-required, content-
+  sniffing) from this branch and the new tenant-isolation tests from the storage branch.
+- **Staging environment** — mostly docs/tooling (`docs/STAGING.md`,
+  `docs/PRE_DEPLOY_SMOKE_CHECKLIST.md`, `.github/workflows/staging.yml`), since no live-server
+  access exists in this sandbox to actually provision anything. Merged clean, no conflicts.
+- **Uptime/error monitoring** (Sentry, gated behind `SENTRY_DSN`) — merge conflict: this worktree's
+  fork point predated `src/middlewares/errorHandler.ts`'s existence entirely, so the agent
+  (reasonably, from its vantage point) wrote a new minimal one from scratch. Taking it wholesale
+  would have silently reverted the real handler's i18n-aware messages, `AppError` mapping, Prisma
+  P2025→404 handling, and `asyncHandler`/`notFoundHandler` — all load-bearing across the existing
+  test suite. Resolved by keeping the existing handler and adding `Sentry.captureException()` as
+  its first line; similarly kept `server.ts`'s established `import './env'`-first dotenv-order
+  pattern (a previously-fixed bug) rather than the agent's inline rewrite.
+- **KVKK consent/retention** — by far the largest scope (8 public layout components each needed a
+  shared new `ConsentFields.tsx`, a schema migration, a retention worker, a deletion endpoint).
+  First completion notification claimed success but had left everything uncommitted — the agent's
+  own background test/build verification apparently never finished before it stopped. Caught by
+  checking the actual worktree state directly instead of trusting the summary (also found a stray
+  `anmeldedaten.txt` scratch file with dummy dev credentials in the worktree — harmless, untracked,
+  left alone). **Mistake made and corrected in-session:** the first attempt to get it to finish used
+  a fresh `Agent` call instead of `SendMessage` to resume the *same* agent — this spawned a second,
+  context-less agent that started operating blind in the wrong directory. Caught within seconds
+  (it had only read files, no writes) and stopped before any damage; properly resumed the original
+  agent via `SendMessage` instead, which then finished cleanly (271→282 tests passing, 5 real
+  commits, pushed). Only merge conflict was an additive one in `.env.example`.
+- **Frontend CSP** — this agent stalled silently: over an hour with zero commits and, for its last
+  15+ minutes, zero active process and zero diff growth. A status-check nudge via `SendMessage` got
+  no response. Rather than write a CSP policy from scratch blind, reviewed what it *had* drafted
+  before stalling — a well-reasoned, app-specific policy (correctly identified that `style-src`
+  needs `'unsafe-inline'` because per-tenant customization colors are inline `style={{}}` attributes
+  nonces can't cover, that `img-src` needs to stay broad pending the object-storage migration, that
+  the PayTR payment iframe needs a `frame-src` allowance) rather than a cargo-culted template.
+  Independently verified every factual claim it rested on against the actual code before trusting
+  it, then finished and merged the work directly.
+
+**Final combined verification** after all five merges: 282/282 backend tests, clean `tsc --noEmit`
+on both apps, clean `next build`, `eslint` unchanged at 413 pre-existing warnings (0 errors).
+
+**Standing lessons for future multi-agent sessions in this sandbox:**
+- Isolated worktrees created via the `Agent` tool's `isolation: "worktree"` option have, so far,
+  consistently started from a stale ~130-commit-behind base rather than the current branch tip —
+  not something this session's prompts caused. Always check `git merge-base` against the target
+  branch before merging; don't assume a subagent's worktree is current.
+- A subagent's "done, verified, pushed" claim is not reliable on its own — this session hit one
+  agent that left real work uncommitted despite saying otherwise, and would have hit a second
+  silent-stall case if the CSP agent's draft hadn't been salvageable. **Check the actual
+  worktree/branch state directly** (`git log`, `git status`, `git diff --stat`) before trusting a
+  completion summary, especially before merging.
+- To resume a specific subagent with its full context intact, use `SendMessage` to its agent ID —
+  a fresh `Agent` call (even one that says "[resuming agent X]" in the prompt) starts a *new*,
+  context-less agent instead. Caught this mistake within seconds this session; it could have caused
+  real confusion if left running longer.
+
+Consolidated all five agents' documentation notes into `PRODUCTION_ROADMAP.md`/`PROGRESS.md`
+myself afterward — deliberately kept every subagent out of those two files during their individual
+runs specifically to avoid five-way merge conflicts on the same doc sections.
+
 ## 2026-08-11 (cont'd) — worked the PRODUCTION_ROADMAP.md follow-ups list
 
 Picked up the prior session's "Follow-ups — flagged but not done" list in priority order,

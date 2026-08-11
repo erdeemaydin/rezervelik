@@ -5,23 +5,32 @@
 >
 > **Disclaimer:** The legal/KVKK sections give direction, not legal advice. Confirm current requirements with a KVKK danışmanı/lawyer before launch.
 >
-> **Status note (refreshed 2026-08-11):** this doc was originally written pre-launch and several of
-> its "blockers" have since shipped — most importantly, **the app is already running in
-> production** (`deploy@your-server-ip`, PostgreSQL, `pm2`, daily automated backups — see
-> `docs/DATABASE_RUNBOOK.md`, which is now the authoritative source for current live-ops state).
-> Sections below are marked **✅ Done** where the code/infra already reflects them, or left as-is
-> where they're still open. Historical rationale is kept even for done items since it explains *why*
-> a decision was made, not just what to do. If something below conflicts with the current code,
-> trust the code (and `docs/DATABASE_RUNBOOK.md` for live-server specifics) over this doc.
+> **Status note (refreshed 2026-08-11, twice today):** this doc was originally written pre-launch
+> and nearly all of its original "blockers" have since shipped — most importantly, **the app is
+> already running in production** (`deploy@your-server-ip`, PostgreSQL, `pm2`, daily automated
+> backups — see `docs/DATABASE_RUNBOOK.md`, which is now the authoritative source for current
+> live-ops state). A second pass later the same day worked through this doc's own "Follow-ups"
+> list end-to-end (object storage, a staging-tooling pass, KVKK consent/retention, uptime/error
+> monitoring, and a frontend CSP), using parallel isolated-worktree agents merged back in one at a
+> time with conflicts resolved by hand — see `PROGRESS.md`'s session log for the full account,
+> including two things worth knowing before trusting a future multi-agent session in this sandbox:
+> agent worktrees kept getting created from a stale ~130-commit-behind base rather than the current
+> branch tip (caught and fixed at merge time every time), and one agent silently left 56 minutes of
+> real work uncommitted despite claiming otherwise. Sections below are marked **✅ Done** where the
+> code/infra already reflects them, or left as-is where they're still open. Historical rationale is
+> kept even for done items since it explains *why* a decision was made, not just what to do. If
+> something below conflicts with the current code, trust the code (and `docs/DATABASE_RUNBOOK.md`
+> for live-server specifics) over this doc.
 
 ---
 
 ## 0. TL;DR — What actually matters now
 
 1. ✅ **PostgreSQL migration** — done (see §2). No SQLite anywhere in the codebase (`CLAUDE.md`).
-2. ✅ **Automated tests + CI gate** — done (see §4). 252 tests, both apps type-checked/linted/built on every PR (`.github/workflows/ci.yml`, `docs/TESTING_AND_CICD.md`).
+2. ✅ **Automated tests + CI gate** — done (see §4). 282 tests, both apps type-checked/linted/built on every PR (`.github/workflows/ci.yml`, `docs/TESTING_AND_CICD.md`).
 3. ✅ **Tested, encrypted, offsite backups** — done (see §6). Daily `pg_dump` via cron, documented restore procedure in `docs/DATABASE_RUNBOOK.md`. Confirm the "practice restore" and "offsite copy" specifics still hold — that's operational state this doc can't verify from the repo alone.
-4. **Still open, in rough priority order:** a staging environment (§4.1 — `develop` branch exists per `docs/GIT_WORKFLOW.md` but nothing deploys it anywhere yet), confirming HTTPS is actually live on the deploy server (§10 #1 — HSTS is now safely disabled in code either way, §10 #5), moving `multer` uploads off local disk (§3), KVKK consent/retention UI (§7). Dependency vulnerability scanning is wired into CI and both apps are at 0 known vulnerabilities as of the 2026-08-11 Next.js 16.3.0 upgrade (§11).
+4. ✅ **Object storage for uploads** — done (see §3). ✅ **KVKK consent/retention UI** — done (see §7). ✅ **Uptime/error monitoring readiness** (Sentry, gated behind env vars) — done (see §9/`docs/MONITORING.md`). ✅ **Frontend CSP** — done (see §10 #4).
+5. **Still genuinely open, in priority order:** confirming HTTPS is actually live on the deploy server (§10 #1 — this repo/sandbox cannot check; HSTS is safely disabled in code either way, §10 #5), a **real** staging environment (§4.1 — the tooling/docs are now ready, `docs/STAGING.md`, but no VPS/instance has actually been provisioned), the `⚠️`-marked live-server-only checklist items (§9), and a real browser pass over the new CSP header (§10 #4) and the Next.js 16.3.0 upgrade (§11) — this sandbox cannot launch a browser at all.
 
 VPS choice and splitting frontend/backend still matter far less than the open items above.
 
@@ -32,8 +41,8 @@ VPS choice and splitting frontend/backend still matter far less than the open it
 ### What this app actually is
 - **Backend:** Express + TypeScript + Prisma, port 3000. Lean deps (no Puppeteer/Chromium, no image processing, no ML). Modest CPU/RAM.
 - **Frontend:** Next.js 16 SSR + React 19, port 3001. This is the memory hog at runtime.
-- **Background work:** `priceUpdater` worker runs **in-process** with the backend — important for how you run PM2 (see §4).
-- **Uploads:** `multer` writes to local disk today → must move to object storage (see §3).
+- **Background work:** `priceUpdater` and (as of 2026-08-11) `retentionAnonymizer` both run **in-process** with the backend — important for how you run PM2 (see §4).
+- **Uploads:** ✅ go through a pluggable storage provider now (S3-compatible or local-disk fallback — see §3), not hardcoded to local disk anymore.
 
 ### Recommended VPS for launch (few tenants, low-moderate traffic)
 
@@ -79,11 +88,26 @@ decision needs the reasoning:
 
 ---
 
-## 3. Storage: How much space for 1 year? — object storage move still open
+## 3. Storage: How much space for 1 year? — object storage ✅ Done
 
-Verified 2026-08-11: `src/controllers/uploadController.ts` still writes to local disk
-(`path.join(process.cwd(), 'public', 'uploads')`) via `multer`. The "move to object storage"
-recommendation below is still accurate and still not done.
+**Resolved 2026-08-11.** `src/services/storage/` is now a provider-agnostic abstraction
+(`StorageProvider` interface, `types.ts`) with two implementations:
+- `S3Provider.ts` — any S3-compatible store (real AWS S3, Cloudflare R2, Backblaze B2, MinIO), via
+  the AWS SDK pointed at a custom `S3_ENDPOINT`. Selected when `S3_BUCKET` (or `STORAGE_PROVIDER=s3`)
+  is set.
+- `LocalDiskProvider.ts` — the local-disk fallback for dev/sandboxes with no cloud credentials
+  (this repo's own dev environment included). Explicitly documented as **not suitable for
+  production** (see `.env.example`'s comments) since most hosts don't persist/share local disk
+  across redeploys or multiple instances — the exact footgun this section originally warned about.
+
+`src/controllers/uploadController.ts` sniffs the real file content (magic bytes) and passes the
+*sniffed* extension/mimetype to the provider — not the client-supplied filename/mimetype — so the
+provider abstraction didn't reopen a spoofed-upload hole a prior security pass had closed. Storage
+keys are tenant-namespaced (`uploads/<restaurantId>/...`). Verified via unit tests against a mocked
+S3 client (`tests/unit/storage.test.ts`) and full HTTP-stack tests against the local-disk fallback
+(`tests/api/upload.test.ts`) — **not verified against a real bucket**, since no cloud credentials
+exist in this sandbox; that's the one thing a human still needs to confirm before relying on it in
+production (create a bucket, set the `S3_*` env vars per `.env.example`, upload something for real).
 
 Structured data is tiny; **uploaded images are the real space driver** and shouldn't live in the DB or on the VPS disk.
 
@@ -92,15 +116,18 @@ Structured data is tiny; **uploaded images are the real space driver** and shoul
 - Planning number: **~50 MB per tenant per year**.
 - **100 tenants → ~2–5 GB/year.** Trivial.
 
-**Images** (menu photos, logos) — via `multer` today:
+**Images** (menu photos, logos) — via the storage provider above:
 - 100 photos @ ~300 KB ≈ 30 MB/tenant; photo-heavy tenants 200–500 MB.
-- **Move to object storage** (Cloudflare R2 / Backblaze B2 / S3). Grows independently, ~$0.01–0.015/GB/month.
+- Object storage (Cloudflare R2 / Backblaze B2 / S3) grows independently of the VPS disk, ~$0.01–0.015/GB/month — set the `S3_*` env vars to actually use it in production (the local-disk fallback is dev-only).
 
 **Backups**: compressed Postgres dumps are small. With a sane retention policy (§6), 100 tenants after a year ≈ **30–60 GB compressed** — a few dollars/month.
 
 **Takeaway:** a 40–50 GB VPS disk covers app + live DB. You're not space-constrained — you're integrity- and process-constrained.
 
-**KVKK bonus:** the storage-limitation principle says don't keep personal data longer than necessary. "Keep 1 year, then anonymize/delete" is the *correct* legal posture, not a limitation. Build a **retention job** that anonymizes/deletes customer PII (name, phone, email) after the defined period.
+**KVKK: retention job ✅ Done** — see §7. The storage-limitation principle says don't keep personal
+data longer than necessary; `src/workers/retentionAnonymizer.ts` now anonymizes customer PII
+(name, phone, email, notes) on `Reservation`/`WaitlistEntry` rows past a configurable retention
+window (`RETENTION_DAYS`, default 400 days), running in-process daily alongside `priceUpdater`.
 
 ---
 
@@ -109,37 +136,36 @@ Structured data is tiny; **uploaded images are the real space driver** and shoul
 > "It must be perfect and contain no bugs" is not achievable for any software. What you need is a process that **catches breakage before users see it** and lets you **recover fast** when something slips through.
 
 **Current reality (updated 2026-08-11):** the "zero automated tests" risk this section originally
-opened with is resolved — 252 Vitest tests (backend API/integration + frontend unit) run in
+opened with is resolved — 282 Vitest tests (backend API/integration + frontend unit) run in
 `.github/workflows/ci.yml` on every PR and push to `main`, alongside `tsc`, `eslint`, and a
-production build for both apps (see `docs/TESTING_AND_CICD.md` for the full test-pyramid writeup).
-**Note:** `docs/TESTING_AND_CICD.md` itself still describes the tests as running against a
-throwaway **SQLite** file — that's now stale too (tests run on a disposable Postgres, per
-`CLAUDE.md`/`docs/DATABASE_RUNBOOK.md`); flagged in "Follow-ups" at the bottom of this file rather
-than fixed here, to keep this refresh scoped to `PRODUCTION_ROADMAP.md`.
+production build for both apps (see `docs/TESTING_AND_CICD.md` for the full test-pyramid writeup,
+itself refreshed 2026-08-11 to fix its own SQLite-vs-Postgres staleness).
 
-**Still genuinely open:** a staging environment (§4.1) and the smoke-test discipline around it
-(§4.2). `docs/GIT_WORKFLOW.md` already reserves a `develop` branch for this ("Staging (later)") but
-nothing deploys it anywhere yet — there's a *post-deploy* smoke workflow
-(`.github/workflows/smoke.yml`, `scripts/smoke-test.mjs`) that hits a live URL, but that's a
-different thing from a pre-production staging environment with a copy of prod data.
+**Genuinely open:** a *real* staging environment (§4.1) still doesn't exist — the tooling and
+process around it are ready now (below), but nobody has provisioned the actual second
+VPS/port-set. `.github/workflows/smoke.yml` + `scripts/smoke-test.mjs` remain the separate
+*post-deploy* smoke check against a live URL, distinct from the pre-deploy checklist below.
 
-### 4.1 Staging environment (non-negotiable, still open)
-A second, identical deployment running a **copy of production data** (separate cheap VPS, or a second set of ports/containers on the same box). Every update goes to staging first.
+### 4.1 Staging environment — tooling ready 2026-08-11, infra still not provisioned
+A second, identical deployment running a **copy of production data** (separate cheap VPS, or a
+second set of ports/containers on the same box). Every update goes to staging first. `docs/STAGING.md`
+now documents exactly how to stand this up (both the same-box-offset-ports option and the
+second-VPS option, with a full `.env` diff table and a data-refresh procedure built on
+`docs/DATABASE_RUNBOOK.md`'s existing `pg_dump`/`pg_restore` commands), and `.github/workflows/staging.yml`
+runs build+test on every push to `develop` (no deploy step yet — there's nowhere to deploy to).
+**What's still actually missing:** the VPS/port-set itself, and staging-specific secrets — this repo's
+tooling can't provision those; a human with hosting access needs to do it once, following `docs/STAGING.md`.
 
-### 4.2 Written smoke-test checklist
-Run manually on staging after every update (the money-path flows):
-- [ ] Log in as tenant admin / staff / super-admin
-- [ ] Create a reservation in each of the 3 reservation modes (`FIXED_TIME_SLOT`, `DYNAMIC_DURATION`, `MANUAL_AVAILABILITY`)
-- [ ] Load public `/r/[slug]` page and QR menu
-- [ ] Staff check-in/out + worked hours
-- [ ] A price update / scheduled price update runs
-- [ ] Language switch TR ↔ EN
-
-If any step fails on staging → the update does not ship.
+### 4.2 Written smoke-test checklist — ✅ Done, now a real file
+`docs/PRE_DEPLOY_SMOKE_CHECKLIST.md` is the money-path checklist (log in as each role, all 3
+reservation modes, public `/r/[slug]` + QR menu, staff check-in/out, a price update firing,
+TR↔EN) as an actual markdown checklist to run by hand on staging before every deploy — distinct
+from the automated *post-deploy* `scripts/smoke-test.mjs`. If any step fails on staging → the
+update does not ship.
 
 ### 4.3 Add automated tests over time — ✅ Done, keep growing it
 Vitest + Supertest now covers auth, tenant isolation, RBAC, and every domain's business-logic
-invariants (252 tests as of 2026-08-11, one new test per bug fix — see `PROGRESS.md`'s session
+invariants (282 tests as of 2026-08-11, one new test per bug fix — see `PROGRESS.md`'s session
 log for the pattern). Keep the habit: every bug fix gets a regression test in the same commit,
 same as the last several sessions did.
 
@@ -153,7 +179,7 @@ same as the last several sessions did.
 ```
 Keep the previous release ready to restart in seconds. **PM2** makes this easy (`pm2 reload`, keep prior `dist/`).
 
-> **PM2 caveat:** the `priceUpdater` worker runs *in-process* with the backend. Under PM2 **cluster mode you'd get duplicate workers** → run the backend as a **single instance**, not clustered (or extract the worker into its own process).
+> **PM2 caveat:** `priceUpdater` and `retentionAnonymizer` both run *in-process* with the backend. Under PM2 **cluster mode you'd get duplicate workers** → run the backend as a **single instance**, not clustered (or extract them into their own process(es)).
 
 ---
 
@@ -228,11 +254,23 @@ You are a **veri işleyen (data processor)**. Each restaurant is the **veri soru
 
 3. **VERBİS registration:** depending on size/data volume, you and/or the restaurants may need to register with the VERBİS registry. Check current thresholds.
 
-**Product implications (UI you don't fully have yet):**
-- Consent checkbox + privacy-notice link on the booking form
-- Separate consent for WhatsApp/marketing
-- Data-retention/anonymization job (§3)
-- A way to fulfill deletion requests
+**Product implications — ✅ Done 2026-08-11:**
+- ✅ Required consent checkbox + privacy-notice link (`/r/[slug]/privacy`, bilingual, tenant-overridable
+  via `FrontendCustomization.privacyNoticeText`) on the booking form — added across all 8 public
+  layout components via a shared `ConsentFields.tsx`, enforced server-side too (`createReservation`
+  rejects a guest booking with no `consentAccepted`), not just client-side.
+- ✅ Separate, optional, visually distinct consent checkbox for WhatsApp/marketing (`marketingConsent`
+  — never implied by the required booking consent).
+- ✅ Data-retention/anonymization job (§3) — `src/workers/retentionAnonymizer.ts`, daily, in-process.
+- ✅ A way to fulfill deletion requests — `DELETE /api/reservations/customer/:phone`, tenant-scoped +
+  authenticated, anonymizes every `Reservation`/`WaitlistEntry` row for that phone within the
+  caller's tenant.
+
+**Still open:** the aydınlatma metni content itself is generic, structurally-correct placeholder
+text (what/why/how-long/who-with) — deliberately not written with specific Turkish legal claims,
+since that needs a KVKK danışmanı's review before launch (see this doc's disclaimer at the top).
+VERBİS registration and the veri işleme sözleşmesi (data processing agreement) template are still
+unaddressed — those are legal/contractual artifacts, not code.
 
 ---
 
@@ -248,20 +286,20 @@ part of this section.
 2. One İstanbul VPS, 2–4 GB RAM. *(confirm against the actual live server)*
 3. **Caddy** reverse proxy: TLS + `yourdomain.com` → Next.js:3001, `/api` → Express:3000. *(unconfirmed — no credentialed access to the live server from this repo's coding-agent sandbox to check; see §10 #1)*
 4. ~~**PM2** keeps both Node processes alive; backend as single instance~~ — ✅ done (`docs/DATABASE_RUNBOOK.md`: `dining-api`/`dining-web`).
-5. **Move `multer` uploads to object storage** (S3/R2/B2) or a backed-up volume — still open (§3).
+5. ~~**Move `multer` uploads to object storage**~~ — ✅ done (§3); S3-compatible or local-disk fallback, not verified against a real bucket yet (no cloud credentials in this sandbox).
 6. ~~**Automated Postgres backups**~~ — ✅ done (daily cron, §6); confirm encryption/offsite specifics.
-7. **Staging environment + smoke-test checklist** (§4) — still open.
-8. **KVKK basics:** consent UI, aydınlatma metni, data processing agreement template, retention job — still open (§7), no evidence in the repo.
+7. **Staging environment + smoke-test checklist** (§4) — tooling/docs ✅ done (`docs/STAGING.md`, `docs/PRE_DEPLOY_SMOKE_CHECKLIST.md`); the actual VPS/port-set is still not provisioned.
+8. ~~**KVKK basics**~~ — ✅ done (§7): consent UI, privacy notice, retention job, deletion endpoint. Data processing agreement template and VERBİS registration remain (legal artifacts, not code).
 
 ### Phase 2 — First paying tenants
 - Move Postgres to a **managed database** (Turkey-region) — backups, patching, PITR, failover off your plate. Highest-value upgrade. *(confirm current hosting — `docs/DATABASE_RUNBOOK.md` describes a single self-managed server, not a managed DB, so this is likely still open)*
-- Add **uptime monitoring** (UptimeRobot/BetterStack) and **error tracking** (Sentry) — still open, no config found in the repo.
+- ~~Add **uptime monitoring** (UptimeRobot/BetterStack) and **error tracking** (Sentry)~~ — app-side readiness ✅ done (§9/`docs/MONITORING.md`): Sentry wired behind `SENTRY_DSN`/`NEXT_PUBLIC_SENTRY_DSN` env vars (clean no-op when unset), `/health` confirmed fit for an uptime check. Still needs a human to actually create the Sentry project and the UptimeRobot/BetterStack monitor — this repo can't do that itself.
 - ~~Add backend integration tests in CI~~ — ✅ done (§4.3).
 - ~~Fix the Prisma migration workflow~~ — ✅ done (§5).
 
 ### Phase 3 — When traffic justifies it
 - Split frontend and backend, add a load balancer, run multiple API instances.
-- **Extract the `priceUpdater` worker** into its own single process so it doesn't duplicate.
+- **Extract the `priceUpdater`/`retentionAnonymizer` workers** into their own single process(es) so they don't duplicate.
 
 ---
 
@@ -276,22 +314,22 @@ untried); unmarked items are confirmed still open.
 
 - [x] ✅ SQLite → PostgreSQL migration done (§2)
 - [x] ✅ Prisma production migration workflow reliable (`migrate deploy`, clean migration baseline — §5)
-- [ ] `multer` uploads moved to object storage (§3 — confirmed still local-disk)
+- [x] ✅ `multer` uploads moved to object storage (§3) — S3-compatible via `src/services/storage/`, local-disk dev fallback; ⚠️ not verified against a real bucket (no cloud credentials in this sandbox) — set the `S3_*` env vars and upload something for real before trusting this in production
 - [ ] ⚠️ DB not exposed to internet; least-privilege DB user; TLS; encryption at rest — `docs/DATABASE_RUNBOOK.md` shows Postgres is live on the deploy server; confirm the specific hardening (firewall, DB user privileges, at-rest encryption) directly on that server, not from this repo
 - [ ] ⚠️ Reverse proxy (Caddy) with TLS; only 80/443/SSH open — confirm on the live server (§10 #1 — HSTS is now safely disabled in code pending this confirmation, see §10 #5, but that doesn't tell you whether TLS is actually live)
 - [x] ✅ PM2 running backend (single instance) + frontend (`docs/DATABASE_RUNBOOK.md`: `dining-api` / `dining-web`)
 - [x] ✅ Automated, encrypted*, offsite* backups with retention policy — daily cron `pg_dump` + pruning (`scripts/db-backup.sh`, `docs/DATABASE_RUNBOOK.md`). *Confirm encryption-at-rest/in-transit and true offsite copy are actually configured — the script itself doesn't show that from the repo alone.
 - [ ] ⚠️ **Practice restore performed successfully** — procedure is documented in `docs/DATABASE_RUNBOOK.md`; confirm it's actually been run, not just written
-- [ ] Staging environment with copy of prod data (§4.1 — still open)
-- [ ] Smoke-test checklist written and run *before* each deploy (§4.2 — note this is different from the *post-deploy* `smoke.yml` workflow, which already exists)
+- [x] ✅ Staging environment tooling/docs ready (§4.1 — `docs/STAGING.md`, `.github/workflows/staging.yml`); ⚠️ the actual VPS/port-set is still not provisioned — needs a human with hosting access
+- [x] ✅ Smoke-test checklist written (§4.2 — `docs/PRE_DEPLOY_SMOKE_CHECKLIST.md`), distinct from the *post-deploy* `smoke.yml` workflow; still needs to actually be run before a deploy once staging exists
 - [ ] ⚠️ Secrets (`JWT_SECRET`, `SETUP_SECRET_TOKEN`) in real secret storage, not repo — confirm on the live server
-- [ ] KVKK: consent UI, aydınlatma metni, DPA template, retention/anonymization job, deletion process (§7 — no evidence in the repo this UI exists yet)
+- [x] ✅ KVKK: consent UI, privacy notice, retention/anonymization job, deletion endpoint (§7) — DPA template and VERBİS registration remain (legal artifacts, not code)
 - [ ] VERBİS registration checked
-- [ ] Uptime monitoring + error tracking (no Sentry/UptimeRobot config found in the repo)
-- [x] ✅ Backend integration tests in CI (§4.3 — 252 tests, `.github/workflows/ci.yml`)
+- [x] ✅ Uptime/error-tracking readiness (§9/`docs/MONITORING.md`) — Sentry wired behind env vars (no-op when unset), `/health` confirmed fit for an uptime check; ⚠️ actually creating the Sentry project + UptimeRobot/BetterStack monitor still needs a human with account access
+- [x] ✅ Backend integration tests in CI (§4.3 — 282 tests, `.github/workflows/ci.yml`)
 - [x] ✅ Dependency vulnerability scanning in CI + Dependabot (new — see §11)
 - [x] ✅ HSTS disabled in code pending live-HTTPS confirmation (§10 #5 — fixed 2026-08-11; re-enable once TLS is confirmed live on the deploy server)
-- [ ] Content-Security-Policy on the frontend (§10 #4 — still open, code-confirmed; note the *backend* API already gets a default CSP header from `helmet()`, but that doesn't cover the Next.js frontend's own HTML/JS responses)
+- [x] ✅ Content-Security-Policy on the frontend (§10 #4 — fixed 2026-08-11); ⚠️ not verified in a real browser (no Chromium in this sandbox) — do a manual pass watching devtools console before this ships
 
 ---
 
@@ -335,7 +373,20 @@ Right now passwords and JWTs travel in **cleartext HTTP** — anyone on the netw
 `src/routes/authRoutes.ts` rate-limits both `/login` and `/login/otp` (15 min window, max 10) via `rateLimitOrNoop` — the code comment there even calls out this exact finding ("Security-audit finding: /login and /login/otp had no throttling at all").
 
 ### #4 — Token storage — ✅ Done (see "How the session currently works" above)
-Session token is now an httpOnly cookie, not `localStorage`. A **Content-Security-Policy on the frontend** is still worth shipping regardless (defense-in-depth against other XSS impact beyond token theft) — not found in `frontend/` as of 2026-08-11; the *backend* API responses do get a default CSP from `helmet()`, but that's a different surface (JSON responses, not the frontend's HTML/JS).
+Session token is now an httpOnly cookie, not `localStorage`. **Content-Security-Policy on the
+frontend — ✅ Done (2026-08-11).** `frontend/next.config.ts`'s `headers()` now sends one, layered on
+top of the backend API's own separate default CSP from `helmet()` (different surface — JSON
+responses, not the frontend's HTML/JS). Specific to this app rather than a generic template:
+`script-src`/`style-src` need `'unsafe-inline'` (Next's App Router injects inline RSC-streaming
+scripts on every page; the public layouts set per-tenant customization colors via inline
+`style={{...}}`, which nonces can't cover at all); `img-src` stays broad (`https: data: blob:`)
+since uploads are mid-migration to object storage (§3) and the shift-schedule PNG export uses a
+`data:` URI internally; `frame-src` explicitly allows `https://www.paytr.com` for the payment
+iframe. Verified via `next build` + `next start` + `curl` across route types (public page, login,
+both the redirect and 200 paths of `proxy.ts`'s auth gate) — confirmed present and not interfering
+with that gate. **Not verified:** a real browser session watching devtools for actual CSP
+violations from live interactivity (chart rendering, PDF/PNG export, hydration) — no Chromium in
+this sandbox. That pass is still needed before this ships.
 
 ### #5 — Fix HSTS (currently sent over HTTP — actively harmful) — ✅ Done (2026-08-11)
 `src/app.ts` now reads `app.use(helmet({ hsts: false, crossOriginResourcePolicy: false }))`. Previously it had no `hsts: false` override, so helmet's default `Strict-Transport-Security` header went out on every response regardless of whether the connection was actually HTTPS — once any browser (especially **iOS Safari**) saw it, it force-upgrades future `http://<host>` requests to HTTPS, which a non-TLS server doesn't speak, silently breaking access. **This was flagged as "a leading suspect for can't sign in from iPhone/iPad Safari."**
@@ -354,7 +405,7 @@ Confirm `JWT_SECRET` and `SETUP_SECRET_TOKEN` are long, random, and stored in re
 - [ ] ⚠️ HTTPS/TLS in front of both apps (Caddy) — confirm on the live server
 - [x] ✅ CORS restricted to real frontend origin(s) — confirm `CORS_ORIGIN` env is set correctly in production
 - [x] ✅ Rate-limiting on login + OTP endpoints
-- [ ] Content-Security-Policy on the frontend — still open
+- [x] ✅ Content-Security-Policy on the frontend (2026-08-11) — ⚠️ not browser-verified, see §10 #4
 - [x] ✅ Token storage decided: httpOnly cookie (localStorage option is moot now) — `proxy.ts` now also does lightweight server-side gating on it (added 2026-08-11, see §10 above)
 - [x] ✅ HSTS: disabled pending live-HTTPS confirmation (2026-08-11) — re-enable once TLS is confirmed live
 - [ ] ⚠️ `JWT_SECRET` / `SETUP_SECRET_TOKEN` strong and out of the repo — confirm on the live server
@@ -393,34 +444,45 @@ after this ships to staging or production.
 
 ## Follow-ups — flagged but not done this session
 
-Things noticed while refreshing this doc that are worth a deliberate look next session, not fixed
-here because each needs its own scoped pass rather than a drive-by edit:
+Everything from the previous round's list is now done except the items that genuinely require a
+human with live-server or account access this sandbox cannot obtain. What's left, as of the
+second 2026-08-11 pass:
 
-1. ~~Next.js 16.2.4 → 16.3.0 upgrade~~ — ✅ done (2026-08-11, §11): closed the 3 remaining frontend
-   dependency advisories; frontend CI audit gate is back to blocking.
-2. ~~`frontend/src/proxy.ts` still carries stale reasoning~~ — ✅ done (2026-08-11, see §10): comment
-   fixed, and `proxy.ts` now redirects unauthenticated requests to `/dashboard/*`/`/system-admin/*`
-   server-side based on cookie presence (not JWT validity — the backend remains the real boundary).
-3. ~~`docs/TESTING_AND_CICD.md` is stale~~ — ✅ done (2026-08-11): fact-checked and corrected the
-   SQLite→Postgres drift, the CI step lists, and the local-dev instructions.
-4. **HTTPS/HSTS status still unconfirmed on the live server** (§10 #1/#5) — attempted a direct SSH
-   check against `deploy@your-server-ip` (per `docs/DATABASE_RUNBOOK.md`) from this session's
-   sandbox on 2026-08-11: the host is reachable (TCP/host-key exchange succeeds) but this sandbox
-   has no credentialed key for the `deploy` user (`Permission denied (publickey,password)`) — so
-   **live-server access is confirmed unavailable from this environment**, not just untried. As a
-   safe interim measure (not a substitute for confirming TLS is actually live), disabled HSTS in
-   `src/app.ts` per §10 #5's own guidance, so the "poisons Safari with a false upgrade" failure mode
-   is closed regardless of the live server's TLS state. **Someone with real access to that host
-   still needs to confirm Caddy/TLS is in front of it** — and once confirmed, re-enable HSTS by
-   reverting the `hsts: false` override.
-5. **KVKK consent/retention UI** (§7, §9) — no evidence in the repo of a consent checkbox,
-   aydınlatma metni, or retention/anonymization job existing yet. Worth a dedicated audit of what's
-   actually missing vs. what's just undocumented.
-6. **The `⚠️`-marked items in §9/§10's checklists (firewall, DB user privileges, backup
-   encryption/offsite copy, `CORS_ORIGIN` value, secrets storage) remain unconfirmed** — same
-   root cause as #4 above: this sandbox has no credentialed access to
-   `docs/DATABASE_RUNBOOK.md`'s deploy host. Needs a live-server audit pass by someone with actual
-   SSH access, separate from anything a code-only session can verify.
+1. **HTTPS/HSTS status still unconfirmed on the live server** (§10 #1/#5) — confirmed
+   *unavailable*, not just untried: this sandbox can reach `deploy@your-server-ip` at the TCP/SSH
+   level but has no credentialed key for the `deploy` user. HSTS is disabled in code as a safe
+   interim measure either way. **Someone with real access to that host needs to confirm Caddy/TLS
+   is actually in front of it**, then revert the `hsts: false` override in `src/app.ts`.
+2. **The `⚠️`-marked items in §9/§10's checklists** (firewall, DB user privileges, backup
+   encryption/offsite copy, `CORS_ORIGIN` value, secrets storage, and now also whether the S3
+   object-storage env vars are actually set in production) remain unconfirmed for the same reason
+   as #1 — needs a live-server audit pass by someone with actual SSH access.
+3. **A real browser pass is owed on two fronts**: the new frontend CSP header (§10 #4 — watch
+   devtools console across the public booking flow, dashboard, and the PDF/PNG schedule export for
+   violations) and the Next.js 16.3.0 upgrade (§11, carried over — never got a browser smoke-test
+   either). This sandbox cannot launch even a cached Playwright Chromium (no root for shared libs)
+   — this has been true all session and needs a human with a real browser.
+4. **A real staging environment still doesn't exist** (§4.1) — the tooling/docs are ready
+   (`docs/STAGING.md`, `docs/PRE_DEPLOY_SMOKE_CHECKLIST.md`, `.github/workflows/staging.yml`), but
+   nobody has provisioned the actual second VPS or port-set. That step needs hosting access this
+   sandbox doesn't have.
+5. **Object storage hasn't been verified against a real bucket** (§3) — `S3Provider.ts`'s logic is
+   covered by tests against a mocked S3 client only. Set the real `S3_*` env vars in production and
+   confirm an upload actually lands in the bucket and is publicly fetchable.
+6. **Uptime monitoring / Sentry error tracking need real accounts** (§9) — the app is wired to use
+   them via env vars and no-ops cleanly without, but nobody has created the actual Sentry project
+   or UptimeRobot/BetterStack monitor yet. See `docs/MONITORING.md` for the exact manual steps.
+7. **KVKK legal artifacts, not code**: the privacy-notice content is deliberately generic
+   placeholder text (§7) pending a KVKK danışmanı's review; the veri işleme sözleşmesi (data
+   processing agreement) template and VERBİS registration are still unaddressed.
+
+**Process note for future multi-agent sessions in this sandbox** (see `PROGRESS.md` for the full
+account): isolated agent worktrees kept getting created from a stale ~130-commit-behind base
+rather than the current branch tip — caught and fixed via a fast-forward merge at the start of
+each individual agent's own work, or at coordinator-merge time when an agent didn't catch it
+itself. One agent also silently left ~56 minutes of real, uncommitted work behind and reported
+success anyway when its background verification steps didn't finish — always verify a subagent's
+"done" claim by checking its actual worktree/branch state directly, not just its summary.
 
 ---
 
