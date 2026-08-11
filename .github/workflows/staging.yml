@@ -1,0 +1,99 @@
+name: Staging (develop) build & test
+
+# Runs the same build/audit/test/lint gate as ci.yml, but on push to `develop`
+# itself (the merge commit), not just on PRs targeting it. PRs into `develop`
+# already get the full ci.yml gate via its branch-filter-less `pull_request`
+# trigger — this workflow additionally catches a bad *merge* (e.g. two
+# individually-fine branches combining into something broken) landing directly
+# on `develop`.
+#
+# This is intentionally build+test only. There is currently no staging server
+# for it to deploy to — see docs/STAGING.md, which is the paperwork/tooling half
+# of PRODUCTION_ROADMAP.md §4.1. Once a real staging box exists (docs/STAGING.md
+# §1, Option A or B), add a deploy step here (SSH + `git pull` / `prisma migrate
+# deploy` / `pm2 reload`, per docs/STAGING.md §2), gated on repository secrets
+# for the staging host the same way .github/workflows/smoke.yml is gated on
+# secrets.SMOKE_*. After a real deploy step lands, follow it with
+# docs/PRE_DEPLOY_SMOKE_CHECKLIST.md run by hand before promoting to `main`.
+on:
+  push:
+    branches: [develop]
+  workflow_dispatch:
+
+jobs:
+  backend:
+    name: Backend (unit + API integration)
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: dining_test
+        ports:
+          - 5433:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      TEST_DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5433/dining_test?schema=public
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - name: Dependency audit (blocking — see PRODUCTION_ROADMAP.md §11)
+        run: npm audit --audit-level=moderate
+      - name: Generate Prisma client
+        run: npm run prisma:generate
+      - name: Provision isolated test database
+        run: npm run test:setup-db
+      - name: Run tests
+        run: npm test
+      - name: Type-check
+        run: npm run typecheck
+      - name: Build
+        run: npm run build
+
+  frontend:
+    name: Frontend (lint + types + unit + build)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci
+      - name: Dependency audit (blocking — see PRODUCTION_ROADMAP.md §11)
+        run: npm audit --audit-level=moderate
+      - name: Lint
+        run: npm run lint
+      - name: Type-check
+        run: npm run typecheck
+      - name: Unit tests
+        run: npm test
+      - name: Production build
+        run: npm run build
+
+  # Placeholder for the day a real staging server exists (docs/STAGING.md §1).
+  # No secrets are configured for this yet, so there is nothing to deploy to —
+  # this job exists to make the gap visible in the Actions UI rather than silent.
+  deploy-staging:
+    name: Deploy to staging (not yet configured)
+    needs: [backend, frontend]
+    runs-on: ubuntu-latest
+    steps:
+      - name: No staging server configured
+        run: |
+          echo "No staging deploy target is configured yet."
+          echo "See docs/STAGING.md for the runbook to provision one, then replace this step with a real deploy."
