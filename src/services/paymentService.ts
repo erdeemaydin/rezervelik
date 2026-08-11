@@ -3,6 +3,7 @@ import { Prisma } from '@prisma/client';
 import prisma from '../config/prisma';
 import { getPaymentProvider } from './payments';
 import { sendBookingConfirmation, formatReservationLabel } from './notificationService';
+import { restaurantDateStr } from '../utils/reservationConflict';
 
 export const PAYMENT_LINK_TTL_MS = 60 * 60 * 1000; // 1 hour (fallback default)
 
@@ -14,11 +15,14 @@ const MIN = 60 * 1000;
 //   - otherwise              -> 2 hours
 // The deadline is also capped at the reservation start time (paying after the
 // party's slot has begun is pointless).
-export function computePaymentDeadline(startTime: Date, now: Date = new Date()): Date {
+export function computePaymentDeadline(startTime: Date, now: Date = new Date(), timezone?: string | null): Date {
   const msUntilStart = startTime.getTime() - now.getTime();
-  const sameDay = startTime.getFullYear() === now.getFullYear()
-    && startTime.getMonth() === now.getMonth()
-    && startTime.getDate() === now.getDate();
+  // Compared in the restaurant's own timezone, not the server's — the server-local
+  // comparison this replaced could classify a reservation that's actually "today"
+  // for the tenant as a different day (or vice versa) near midnight, granting a
+  // 2h window instead of the intended 1h one (or vice versa). Not security-
+  // sensitive, just a minor deadline-generosity mismatch.
+  const sameDay = restaurantDateStr(startTime, timezone || undefined) === restaurantDateStr(now, timezone || undefined);
 
   let windowMs: number;
   if (msUntilStart < 2 * 60 * MIN) windowMs = 30 * MIN;
@@ -68,7 +72,7 @@ export interface CreatedPayment {
 // token is always fresh. Returns null if the deposit amount is not positive.
 export async function createPaymentForReservation(
   reservation: { id: string; restaurantId: string; startTime?: Date | string | null },
-  settings: { depositAmount?: number | null; currency?: string | null },
+  settings: { depositAmount?: number | null; currency?: string | null; timezone?: string | null },
   tx?: Prisma.TransactionClient
 ): Promise<CreatedPayment | null> {
   const amountMinor = Math.round((settings.depositAmount || 0) * 100);
@@ -82,7 +86,7 @@ export async function createPaymentForReservation(
   // flat TTL if we somehow don't have a start time.
   const startTime = reservation.startTime ? new Date(reservation.startTime) : null;
   const expiresAt = startTime
-    ? computePaymentDeadline(startTime)
+    ? computePaymentDeadline(startTime, new Date(), settings.timezone)
     : new Date(Date.now() + PAYMENT_LINK_TTL_MS);
 
   const payment = await client.payment.create({

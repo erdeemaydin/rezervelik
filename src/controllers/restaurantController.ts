@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import * as restaurantService from '../services/restaurantService';
 import prisma from '../config/prisma';
 import { successResponse, errorResponse } from '../utils/response';
+import { restaurantDateStr, restaurantMidnightUTC, restaurantHourAndDay } from '../utils/reservationConflict';
 
 export const getRestaurant = async (req: Request, res: Response) => {
   try {
@@ -22,8 +23,15 @@ export const getRestaurant = async (req: Request, res: Response) => {
 export const getDashboardStats = async (req: Request, res: Response) => {
   try {
     const restaurantId = req.restaurantId!;
+    const settings = await prisma.restaurantSettings.findUnique({ where: { restaurantId }, select: { timezone: true } });
+    const tz = settings?.timezone;
     const now = new Date();
-    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    // "Today" resolved in the restaurant's own timezone, not the server's — see
+    // restaurantMidnightUTC's doc comment. Using server-local midnight here (the
+    // previous behavior) shifts every boundary by the server/tenant offset, e.g.
+    // an Istanbul tenant on a UTC server mis-buckets any reservation between
+    // 21:00-00:00 UTC (00:00-03:00 local) onto the wrong day.
+    const todayStart = restaurantMidnightUTC(restaurantDateStr(now, tz), tz);
     const weekAgo = new Date(todayStart.getTime() - 7 * 24 * 60 * 60 * 1000);
 
     // 1. Total Reservations (Last 30 days)
@@ -50,7 +58,7 @@ export const getDashboardStats = async (req: Request, res: Response) => {
     });
 
     // 3. Staff Online (Today's assignments)
-    const dateStr = todayStart.toISOString().split('T')[0];
+    const dateStr = restaurantDateStr(now, tz);
     const staffToday = await prisma.shiftAssignment.findMany({
       where: {
         date: dateStr,
@@ -76,8 +84,8 @@ export const getDashboardStats = async (req: Request, res: Response) => {
     const volumeByDay = days.map(day => ({ name: day, total: 0 }));
     
     weeklyReservations.forEach(res => {
-      const dayIndex = res.startTime.getDay();
-      volumeByDay[dayIndex].total += 1; // Or use guestCount
+      const { dayOfWeek } = restaurantHourAndDay(res.startTime, tz);
+      volumeByDay[dayOfWeek].total += 1; // Or use guestCount
     });
 
     // Reorder to start from Mon or based on current week

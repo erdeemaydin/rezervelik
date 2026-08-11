@@ -1,24 +1,7 @@
 import { Request, Response } from 'express';
 import prisma from '../config/prisma';
 import { successResponse, errorResponse } from '../utils/response';
-import { restaurantDateStr, restaurantMidnightUTC } from '../utils/reservationConflict';
-
-// Hour (0-23) and day-of-week (0=Sun..6=Sat) of `date` as seen in the restaurant's
-// own timezone, not the server's. Reservation timestamps are stored as absolute
-// instants (UTC internally); reading them back with .getHours()/.getDay() reflects
-// wherever this Node process happens to run, which on a UTC-deployed server for an
-// Istanbul (UTC+3) tenant shifts every bucket by ~3 hours — an 8pm dinner shows up
-// at hour 17, and a day can straddle two server-local dates.
-function restaurantHourAndDay(date: Date, timezone?: string): { hour: number; dayOfWeek: number } {
-  const parts = new Intl.DateTimeFormat('en-US', {
-    timeZone: timezone || 'Europe/Istanbul',
-    hour: 'numeric', hourCycle: 'h23', weekday: 'short',
-  }).formatToParts(date);
-  const hour = parseInt(parts.find(p => p.type === 'hour')!.value, 10);
-  const weekdayShort = parts.find(p => p.type === 'weekday')!.value;
-  const dayOfWeek = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].indexOf(weekdayShort);
-  return { hour, dayOfWeek };
-}
+import { restaurantDateStr, restaurantMidnightUTC, restaurantHourAndDay } from '../utils/reservationConflict';
 
 /**
  * GET /analytics?period=30

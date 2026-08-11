@@ -92,6 +92,25 @@ export function restaurantMidnightUTC(dateStr: string, timezone?: string): Date 
 }
 
 /**
+ * Hour (0-23) and day-of-week (0=Sun..6=Sat) of `date` as seen in the restaurant's
+ * own timezone, not the server's. Reservation timestamps are stored as absolute
+ * instants (UTC internally); reading them back with .getHours()/.getDay() reflects
+ * wherever this Node process happens to run, which on a UTC-deployed server for an
+ * Istanbul (UTC+3) tenant shifts every bucket by ~3 hours — an 8pm dinner shows up
+ * at hour 17, and a day can straddle two server-local dates.
+ */
+export function restaurantHourAndDay(date: Date, timezone?: string): { hour: number; dayOfWeek: number } {
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone: timezone || 'Europe/Istanbul',
+    hour: 'numeric', hourCycle: 'h23', weekday: 'short',
+  }).formatToParts(date);
+  const hour = parseInt(parts.find(p => p.type === 'hour')!.value, 10);
+  const weekdayShort = parts.find(p => p.type === 'weekday')!.value;
+  const dayOfWeek = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].indexOf(weekdayShort);
+  return { hour, dayOfWeek };
+}
+
+/**
  * Sums guestCount across all currently-active (BLOCKING_STATUSES) reservations
  * whose calendar day (in the restaurant's own timezone) is `dateStr` — the basis
  * for DaySetting.maxCapacityOverride, a total-covers cap for a specific date
