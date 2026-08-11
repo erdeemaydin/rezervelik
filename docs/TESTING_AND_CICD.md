@@ -99,6 +99,11 @@ application-logic tests above — see `PRODUCTION_ROADMAP.md` §11 and `.github/
 the ongoing-scanning story. Both apps are 0 known vulnerabilities at every severity as of the
 2026-08-11 Next.js 16.3.0 upgrade.
 
+`.github/workflows/staging.yml` runs the same two jobs on push to `develop` (plus a placeholder
+`deploy-staging` job, since there's no staging server to deploy to yet — see `docs/STAGING.md`).
+PRs targeting `develop` already get `ci.yml`'s gate via its branch-filter-less `pull_request`
+trigger; `staging.yml` additionally catches a bad merge landing directly on `develop`.
+
 ## 6. Deployment gate (post-deploy smoke)
 
 After the app is deployed, run `node scripts/smoke-test.mjs` against the live base URL. It:
