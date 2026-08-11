@@ -1,22 +1,10 @@
 import multer from 'multer';
-import path from 'path';
-import fs from 'fs';
 
-// Ensure uploads directory exists
-const uploadDir = path.join(process.cwd(), 'public', 'uploads');
-if (!fs.existsSync(uploadDir)) {
-  fs.mkdirSync(uploadDir, { recursive: true });
-}
-
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, uploadDir);
-  },
-  filename: (req, file, cb) => {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, uniqueSuffix + path.extname(file.originalname));
-  }
-});
+// Files are buffered in memory, not written to local disk here — the
+// controller streams the buffer straight to object storage (S3-compatible, or
+// a local-disk fallback) via src/services/storage. See that module for where
+// the file actually ends up.
+const storage = multer.memoryStorage();
 
 const fileFilter = (req: any, file: Express.Multer.File, cb: multer.FileFilterCallback) => {
   if (file.mimetype.startsWith('image/')) {
