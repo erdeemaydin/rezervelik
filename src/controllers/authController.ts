@@ -128,7 +128,19 @@ export const register = async (req: Request, res: Response) => {
       token
     }, 'messages.welcome', 201);
 
-  } catch (error) {
+  } catch (error: any) {
+    // The findFirst/findUnique checks above are fail-fast convenience, not the real
+    // guard — User.email and Restaurant.slug are both DB-unique, so two near-
+    // simultaneous registrations (same email, or two restaurant names that slugify
+    // to the same value) can both pass those checks and race to create(). Without
+    // this, the loser got an opaque 500 instead of the same friendly message.
+    if (error?.code === 'P2002') {
+      const target = Array.isArray(error?.meta?.target) ? error.meta.target.join(',') : String(error?.meta?.target ?? '');
+      if (target.includes('slug')) {
+        return errorResponse(res, 'errors.validation_error', 400, { message: 'Restaurant name is already taken' });
+      }
+      return errorResponse(res, 'errors.email_in_use', 400);
+    }
     console.error('Registration error:', error);
     return errorResponse(res, 'errors.internal_error', 500);
   }

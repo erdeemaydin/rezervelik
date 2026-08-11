@@ -224,7 +224,18 @@ export const createTenant = async (req: Request, res: Response) => {
       return successResponse(res, { ...result, setupLink: `/auth/setup/${rawSetupToken}` }, undefined, 201);
     }
     return successResponse(res, result, undefined, 201);
-  } catch (error) {
+  } catch (error: any) {
+    // The findUnique checks above are fail-fast convenience, not the real guard —
+    // Restaurant.slug and User.email are both DB-unique, so two near-simultaneous
+    // provisioning requests can both pass those checks and race to create(). Same
+    // pattern already fixed in authController.register / staffController.createStaffMember.
+    if (error?.code === 'P2002') {
+      const target = Array.isArray(error?.meta?.target) ? error.meta.target.join(',') : String(error?.meta?.target ?? '');
+      if (target.includes('slug')) {
+        return errorResponse(res, 'errors.validation_error', 400, { message: 'Tenant name is already taken' });
+      }
+      return errorResponse(res, 'errors.validation_error', 400, { message: 'Admin email already exists' });
+    }
     console.error('Create tenant error:', error);
     return errorResponse(res, 'errors.internal_error', 500);
   }
