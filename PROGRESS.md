@@ -2,6 +2,75 @@
 
 Day-to-day record of substantial work sessions on this project. Newest entry first.
 
+## 2026-08-11 (cont'd) — full-codebase (not diff-scoped) re-audit
+
+Same day as the pass below, but explicitly whole-codebase this time rather
+than scoped to what changed since 2026-08-08 — three parallel read-only
+forks (security, functional bugs, i18n), then verified and fixed everything
+confirmed.
+
+- **Critical: role-grant privilege escalation** (`staffController.ts`).
+  `createStaffMember`/`updateStaffMember` wrote `role`/`permissions` straight
+  from `req.body` with no whitelist. `User.role` is a plain string column
+  (not a Prisma enum), and the router is gated only by
+  `requirePermission('manage_staff')` — which a MANAGER can hold, not just
+  ADMIN. A MANAGER holding that permission could set their own role to
+  `SUPER_ADMIN` directly via `PUT /api/staff/:ownId`, minting a token that
+  bypasses tenant scoping entirely (`authMiddleware` skips the tenant check
+  for SUPER_ADMIN) and unlocks all of `/api/system/*`. Fixed with
+  `isRoleGrantAllowed(newRole, callerRole)`: SUPER_ADMIN is never grantable
+  through this endpoint at all; ADMIN is only grantable by a caller who is
+  already ADMIN/SUPER_ADMIN (promoting a peer to ADMIN is an existing
+  supported flow, kept working); MANAGER/HOST/STAFF remain open to anyone who
+  reached the router. Resubmitting a target's own unchanged role (e.g. an
+  ADMIN self-editing their phone number) is exempted so it doesn't regress
+  the self-edit fix from 2026-08-08. `permissions` is now filtered to a known
+  key list instead of storing arbitrary strings verbatim.
+- **Cross-tenant IDOR via `tableId`/`categoryId`** (`reservationController.ts`,
+  all four write paths: create/update/updateSchedule/updateStatus).
+  `findTableConflict` only checked for *overlapping reservations* scoped to
+  `restaurantId`+`tableId` — it never confirmed the table itself belonged to
+  the tenant. A foreign `tableId` naturally has zero conflicting reservations
+  under the caller's own `restaurantId`, so the check always reported "free"
+  and the write proceeded, storing another tenant's `BookableResource.id` on
+  this tenant's `Reservation` (and leaking that tenant's table via
+  `include: { table: true }` on the reservation list). `categoryId` had the
+  same gap. Added `verifyTableOwnership`/`verifyCategoryOwnership` to
+  `reservationConflict.ts`, called before trusting either id at all four call
+  sites — same "ignore/reject untrusted foreign reference" shape already
+  established for `serviceId` in `createReservation`.
+- **Unhandled concurrent-signup races** (functional-bug fork): `authController
+  .register` (public tenant self-registration) and `systemController
+  .createTenant` (SysAdmin provisioning) both did check-then-create on
+  DB-unique columns (`User.email`, `Restaurant.slug`) with no `P2002`
+  handling — the exact race `staffController.createStaffMember` was already
+  fixed for, just never carried over to its two siblings. Both now return the
+  same friendly "already in use" error instead of a raw 500 on the loser.
+- **JWT algorithm pinning**: `verifyOtpChallengeToken` didn't pin
+  `algorithms: ['HS256']` like `verifyToken` does. Low real-world risk (this
+  app only ever signs HS256, no asymmetric keys anywhere to key-confuse
+  against) but fixed for consistency/defense-in-depth.
+- **i18n**: re-confirmed "İ" misuse is still clean codebase-wide (not just in
+  the diff), and `tr.json` naturalness holds up reading every key end-to-end
+  in both dictionaries. Found two more guest-facing pages with zero i18n
+  (same shape as the `/pay` pages found in the prior pass) — the waitlist-
+  offer accept/decline page (`/r/[slug]/offer/[token]`, reached via SMS/email
+  link) and the public QR-code walk-in waitlist join page
+  (`/r/[slug]/waitlist`) were both 100% hardcoded English. Wired both through
+  `useTranslation`/`LanguageSwitcher` with new `waitlistOffer`/
+  `publicWaitlist` i18n namespaces in both locale files; restructured the
+  offer page's expiry line from a sentence with an embedded time into its own
+  labeled detail row (matching the existing Date/Time/Party Size rows) since
+  this i18n system has no string-interpolation support and Turkish's
+  locative-suffix-on-a-number ("20:30'da") isn't safely computable from a
+  plain concatenation. (`/r/[slug]/invite/[token]` was checked too but is
+  deliberately hand-written bilingual TR·EN side-by-side, not an oversight.)
+
+New regression tests: `staff-role-escalation.test.ts`,
+`reservation-foreign-table-idor.test.ts`. Full suite (252 tests) green; both
+`tsc` clean; frontend `eslint` clean (no new warnings beyond pre-existing
+`any`/`<img>` ones); `next build --experimental-build-mode compile` clean.
+
 ## 2026-08-11 — security/bug audit + i18n pass on recent changes
 
 **Three parallel read-only audit forks (security, functional bugs, i18n) scoped to
