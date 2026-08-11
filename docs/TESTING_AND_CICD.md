@@ -3,6 +3,12 @@
 This document is the test strategy for taking the platform from commit → CI → production
 safely, and for guaranteeing that **an update to production doesn't break existing behavior**.
 
+> **Refreshed 2026-08-11:** this doc previously described the test suite as running against a
+> throwaway **SQLite** file. That's stale — the suite runs on real **PostgreSQL** everywhere
+> (same engine as production, no SQLite anywhere in this repo), matching `CLAUDE.md` and
+> `docs/DATABASE_RUNBOOK.md`. §2/§3/§5/§7 below are corrected to match current code
+> (`tests/setup/prepare-test-db.mjs`, `.github/workflows/ci.yml`) as of this refresh.
+
 ## 1. Goals
 
 1. **Regression safety** — every merge to `main` proves the critical flows still work.
@@ -16,7 +22,7 @@ safely, and for guaranteeing that **an update to production doesn't break existi
 | Layer | Tool | What it covers | Where it runs |
 |-------|------|----------------|---------------|
 | Unit (backend) | Vitest | Pure logic: TOTP, JWT, permission strings | CI `backend` job |
-| Integration (backend) | Vitest + Supertest | HTTP API against the real Express app + an isolated SQLite DB: auth, tenant isolation, RBAC, scheduling visibility, menu/live-menu, bulk-price, settings authority | CI `backend` job |
+| Integration (backend) | Vitest + Supertest | HTTP API against the real Express app + an isolated PostgreSQL DB (same engine as production): auth, tenant isolation, RBAC, scheduling visibility, menu/live-menu, bulk-price, settings authority | CI `backend` job |
 | Unit (frontend) | Vitest | Pure libs: `lib/format`, `lib/workedHours` | CI `frontend` job |
 | Static | `tsc --noEmit`, `eslint`, `next build` | Type safety, lint, production build | CI both jobs |
 | Smoke (post-deploy) | `scripts/smoke-test.mjs` | Hits the **live** URL: `/health`, a login round-trip, an authenticated tenant-scoped read | CD, after deploy |
@@ -27,10 +33,23 @@ scaffold can be added later behind an optional job.
 
 ## 3. Environments & data
 
-- **Isolated test DB**: tests never touch `prisma/dev.db`. `tests/setup/prepare-test-db.ts`
-  provisions a throwaway SQLite file (`prisma/test.db`) by pushing the schema to it via a
-  temp schema whose datasource reads `env("DATABASE_URL")`. The app picks up the same
-  `DATABASE_URL` because `src/config/prisma.ts` now honors it (see that file).
+- **Isolated test DB**: tests never touch the real dev/production database — same engine
+  (PostgreSQL) everywhere, no SQLite anywhere in this repo. `npm run test:setup-db`
+  (`tests/setup/prepare-test-db.mjs`) resets and re-applies every committed Prisma migration to a
+  throwaway `dining_test` database, then the suite runs against it. Where that database comes from
+  depends on the environment:
+  - **CI**: a Postgres service container (`.github/workflows/ci.yml`), reachable at
+    `TEST_DATABASE_URL=postgresql://postgres:postgres@127.0.0.1:5433/dining_test?schema=public`.
+  - **Local dev**: if `TEST_DATABASE_URL` (or `DATABASE_URL`) is already set to a reachable
+    Postgres, the script just resets + migrates it. Otherwise it starts a throwaway Podman/Docker
+    Postgres container (`dining-test-pg`) on port 5433 automatically. If neither a container engine
+    nor an explicit URL is available (e.g. a sandboxed environment with no Docker/Podman but a
+    Postgres server already running), hand-create a `dining_test` database on that server and pass
+    it via `TEST_DATABASE_URL` — see `tests/setup/test-env.ts` for the exact default it falls back
+    to.
+  - `tests/setup/test-env.ts` (the Vitest `setupFiles` entry) points `DATABASE_URL` at the test
+    database before any module imports the Prisma client, and `src/config/prisma.ts` honors that
+    override (see that file).
 - **Seed**: `tests/helpers/seed.ts` creates two restaurants (tenant isolation) each with an
   ADMIN / MANAGER / STAFF / HOST user, settings, a menu, shift, etc., and hands back valid
   JWTs generated with the same `utils/jwt` the app uses.
@@ -66,12 +85,19 @@ scaffold can be added later behind an optional job.
 
 ## 5. CI pipeline (`.github/workflows/ci.yml`)
 
-Triggered on PRs and pushes to `main`. Two parallel jobs:
+Triggered on PRs and pushes to `main`. Two parallel jobs, each running against a Postgres service
+container where needed (see §3):
 
-- **backend**: `npm ci` → `prisma generate` → `npm run test:setup-db` → `npm test` → `npm run build`.
-- **frontend**: `npm ci` (in `frontend/`) → `npm run lint` → `npm run typecheck` → `npm test` → `npm run build`.
+- **backend**: `npm ci` → `npm audit --audit-level=moderate` (blocking) → `prisma generate` →
+  `npm run test:setup-db` → `npm test` → `npm run typecheck` → `npm run build`.
+- **frontend**: `npm ci` (in `frontend/`) → `npm audit --audit-level=moderate` (blocking) →
+  `npm run lint` → `npm run typecheck` → `npm test` → `npm run build`.
 
 A merge is only allowed when both are green. This is the "before it can reach production" gate.
+The `npm audit` steps are dependency-CVE scanning, a separate failure mode from the
+application-logic tests above — see `PRODUCTION_ROADMAP.md` §11 and `.github/dependabot.yml` for
+the ongoing-scanning story. Both apps are 0 known vulnerabilities at every severity as of the
+2026-08-11 Next.js 16.3.0 upgrade.
 
 ## 6. Deployment gate (post-deploy smoke)
 
@@ -87,7 +113,9 @@ uptime check). See `scripts/smoke-test.mjs` for the env vars it expects.
 
 ```bash
 # Backend (from repo root)
-npm run test:setup-db     # provision prisma/test.db
+npm run test:setup-db     # provision + migrate the throwaway `dining_test` Postgres DB
+                           # (starts a Podman/Docker container automatically if neither
+                           # TEST_DATABASE_URL nor DATABASE_URL is already set — see §3)
 npm test                  # vitest run (unit + integration)
 npm run typecheck
 
