@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import prisma from '../config/prisma';
 import { successResponse, errorResponse } from '../utils/response';
-import { findAvailableTable, restaurantDateStr, getBookedCoversForDate } from '../utils/reservationConflict';
+import { findAvailableTable, restaurantDateStr, getBookedCoversForDate, generateConfirmationCode } from '../utils/reservationConflict';
 import { releaseWaitlistCapacity } from '../utils/waitlistCapacity';
 import { INVALID, parseCount } from '../utils/numeric';
 
@@ -271,57 +271,98 @@ export const acceptOffer = async (req: Request, res: Response) => {
     const start = new Date(startTimeStr);
     const end = new Date(start.getTime() + (settings?.defaultDurationMinutes || 90) * 60000);
 
-    try {
-      await prisma.$transaction(async (tx) => {
-        // Atomically claim the offer before doing anything else. The pre-checks
-        // above (status !== 'OFFERED', expiry) are a fail-fast convenience, not
-        // the real guard — a double-tap or two tabs hitting Accept at once could
-        // both pass them and each create a reservation + double-decrement
-        // waitlist capacity. Only the request that actually flips
-        // OFFERED -> ACCEPTED here proceeds to seat it.
-        const claimed = await tx.waitlistEntry.updateMany({
-          where: { id: entry.id, status: 'OFFERED' },
-          data: { status: 'ACCEPTED' },
-        });
-        if (claimed.count === 0) {
-          throw Object.assign(new Error('OFFER_ALREADY_HANDLED'), { code: 'OFFER_ALREADY_HANDLED' });
-        }
+    // Same total-covers cap createReservation enforces for the public booking
+    // path — a waitlist offer must not be able to push a capacity-capped day
+    // (e.g. a private event) over its limit just because it came in through a
+    // different code path.
+    const daySetting = await prisma.daySetting.findUnique({
+      where: { restaurantId_date: { restaurantId: entry.restaurantId, date: effectiveDate } },
+    });
 
-        // Try to seat the offer on a free table; leave unassigned for staff if none.
-        const table = await findAvailableTable({
-          restaurantId: entry.restaurantId, partySize: entry.partySize, start, end, tx,
-          isManualAvailability: settings?.logic === 'MANUAL_AVAILABILITY',
-        });
-        await tx.reservation.create({
-          data: {
-            restaurantId: entry.restaurantId,
-            tableId: table?.id ?? null,
-            customerName: entry.customerName,
-            customerPhone: entry.customerPhone,
-            guestCount: entry.partySize,
-            startTime: start,
-            endTime: end,
-            status: 'CONFIRMED',
-            notes: 'Converted from Waitlist Offer'
-          }
-        });
-        await releaseWaitlistCapacity({
-          restaurantId: entry.restaurantId,
-          fromStatus: entry.status,
-          toStatus: 'ACCEPTED',
-          partySize: entry.partySize,
-          targetDate: entry.targetDate,
-          tx,
-        });
-      });
+    let reservation;
+    try {
+      // Retried (fresh claim/capacity/table checks each attempt) on a
+      // confirmationCode collision, same pattern as createReservation.
+      const MAX_CODE_ATTEMPTS = 5;
+      for (let attempt = 1; ; attempt++) {
+        const confirmationCode = generateConfirmationCode();
+        try {
+          reservation = await prisma.$transaction(async (tx) => {
+            // Atomically claim the offer before doing anything else. The pre-checks
+            // above (status !== 'OFFERED', expiry) are a fail-fast convenience, not
+            // the real guard — a double-tap or two tabs hitting Accept at once could
+            // both pass them and each create a reservation + double-decrement
+            // waitlist capacity. Only the request that actually flips
+            // OFFERED -> ACCEPTED here proceeds to seat it.
+            const claimed = await tx.waitlistEntry.updateMany({
+              where: { id: entry.id, status: 'OFFERED' },
+              data: { status: 'ACCEPTED' },
+            });
+            if (claimed.count === 0) {
+              throw Object.assign(new Error('OFFER_ALREADY_HANDLED'), { code: 'OFFER_ALREADY_HANDLED' });
+            }
+
+            if (daySetting?.maxCapacityOverride != null) {
+              const booked = await getBookedCoversForDate({
+                restaurantId: entry.restaurantId, dateStr: effectiveDate, timezone: settings?.timezone, tx,
+              });
+              if (booked + entry.partySize > daySetting.maxCapacityOverride) {
+                throw Object.assign(new Error('DAY_CAPACITY_EXCEEDED'), { code: 'DAY_CAPACITY_EXCEEDED' });
+              }
+            }
+
+            // Try to seat the offer on a free table; leave unassigned for staff if none.
+            const table = await findAvailableTable({
+              restaurantId: entry.restaurantId, partySize: entry.partySize, start, end, tx,
+              isManualAvailability: settings?.logic === 'MANUAL_AVAILABILITY',
+            });
+            const created = await tx.reservation.create({
+              data: {
+                restaurantId: entry.restaurantId,
+                tableId: table?.id ?? null,
+                customerName: entry.customerName,
+                customerPhone: entry.customerPhone,
+                guestCount: entry.partySize,
+                startTime: start,
+                endTime: end,
+                // Only actually confirm when a table was really assigned — same
+                // rule createReservation uses. If nothing's free (something
+                // changed between the offer being sent and accepted), this stays
+                // PENDING/unassigned for staff to resolve manually instead of
+                // overpromising a seat that isn't there.
+                status: table ? 'CONFIRMED' : 'PENDING',
+                confirmationCode,
+                notes: 'Converted from Waitlist Offer'
+              }
+            });
+            await releaseWaitlistCapacity({
+              restaurantId: entry.restaurantId,
+              fromStatus: entry.status,
+              toStatus: 'ACCEPTED',
+              partySize: entry.partySize,
+              targetDate: entry.targetDate,
+              tx,
+            });
+            return created;
+          });
+          break;
+        } catch (innerErr: any) {
+          const isCodeCollision = innerErr?.code === 'P2002' && innerErr?.meta?.target?.includes?.('confirmationCode');
+          if (isCodeCollision && attempt < MAX_CODE_ATTEMPTS) continue;
+          throw innerErr;
+        }
+      }
     } catch (txErr: any) {
       if (txErr?.code === 'OFFER_ALREADY_HANDLED') {
         return errorResponse(res, 'Offer no longer available', 400);
       }
+      if (txErr?.code === 'DAY_CAPACITY_EXCEEDED') {
+        return errorResponse(res, 'errors.day_capacity_exceeded', 409, { code: 'DAY_CAPACITY_EXCEEDED' });
+      }
       throw txErr;
     }
 
-    return successResponse(res, { message: 'Offer accepted' });
+    return successResponse(res, { message: 'Offer accepted', confirmationCode: reservation.confirmationCode });
   } catch (error) {
     console.error('Accept offer error:', error);
     return errorResponse(res, 'errors.internal_error', 500);

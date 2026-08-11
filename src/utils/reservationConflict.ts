@@ -1,6 +1,13 @@
 import { Prisma, RestaurantSettings, DaySetting } from '@prisma/client';
 import prisma from '../config/prisma';
 
+// 6-digit, never leading-zero — reads unambiguously over the phone and lets
+// host-stand staff pull a reservation up by code instead of a name search.
+// Shared by every reservation-creating path (public create, waitlist
+// offer-accept) so a guest can be looked up by code regardless of which path
+// created their reservation.
+export const generateConfirmationCode = (): string => String(100000 + Math.floor(Math.random() * 900000));
+
 // A reservation in any of these statuses actively occupies its table for its
 // [startTime, endTime) window. AWAITING_PAYMENT and SEATED were previously
 // missing from the occupancy check, which let a second guest be booked onto a
