@@ -3,6 +3,7 @@ import cors from 'cors';
 import helmet from 'helmet';
 import i18next from './config/i18n';
 import { tenantMiddleware } from './middlewares/tenant';
+import { errorHandler } from './middlewares/errorHandler';
 
 import restaurantRoutes from './routes/restaurantRoutes';
 import authRoutes from './routes/authRoutes';
@@ -67,5 +68,9 @@ app.use('/api/wait-time', tenantMiddleware, waitTimeRoutes);
 app.use('/api/customization', tenantMiddleware, customizationRoutes);
 app.use('/api/payments', tenantMiddleware, paymentRoutes);
 app.use('/api/uploads', tenantMiddleware, uploadRoutes);
+
+// Centralized error handler — must be mounted last, after all routes, so Express
+// routes any forwarded/thrown error here. See src/middlewares/errorHandler.ts.
+app.use(errorHandler);
 
 export default app;
