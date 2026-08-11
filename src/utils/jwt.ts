@@ -62,7 +62,7 @@ export const generateOtpChallengeToken = (userId: string, setupSecret?: string) 
 };
 
 export const verifyOtpChallengeToken = (token: string) => {
-  const decoded = jwt.verify(token, JWT_SECRET) as { userId: string; purpose?: string; setupSecret?: string };
+  const decoded = jwt.verify(token, JWT_SECRET, { algorithms: ['HS256'] }) as { userId: string; purpose?: string; setupSecret?: string };
   if (decoded.purpose !== 'otp_challenge') {
     throw new Error('Invalid OTP challenge token');
   }
