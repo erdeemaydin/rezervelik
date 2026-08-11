@@ -40,7 +40,7 @@ describe('MANUAL_AVAILABILITY mode gates bookings on isAvailable', () => {
     const res = await api
       .post('/api/reservations')
       .set('X-Restaurant-ID', a.restaurant.id)
-      .send({ customerName: 'Bo', customerPhone: '+905550000021', guestCount: 2, startTime: '2026-11-01T18:00:00.000Z' });
+      .send({ customerName: 'Bo', customerPhone: '+905550000021', guestCount: 2, startTime: '2026-11-01T18:00:00.000Z', consentAccepted: true });
     expect(res.status).toBe(409);
     expect(res.body.details?.code).toBe('FULLY_BOOKED');
   });

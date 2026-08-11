@@ -13,6 +13,7 @@ import { Label } from '@/components/ui/label';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import { getTimeSuggestions } from '@/lib/reservationSuggestions';
 import ReservationCalendar from './ReservationCalendar';
+import ConsentFields from './ConsentFields';
 import { getTodayInTZ, zonedWallTimeToUTC, DEFAULT_TZ } from '@/lib/datetime';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || (typeof window !== 'undefined' ? `${window.location.protocol}//${window.location.hostname}:3000/api` : 'http://localhost:3000/api');
@@ -49,7 +50,12 @@ export default function GardenLayout({ slug, initialRestaurant, initialView, men
     customerPhone: '',
     customerEmail: '',
     guestCount: '2',
-    notes: ''
+    notes: '',
+    // KVKK consent (PRODUCTION_ROADMAP.md §7.3): required booking consent +
+    // separate optional marketing opt-in. Both ride along in the `...resForm`
+    // spread already sent to POST /reservations.
+    consentAccepted: false,
+    marketingConsent: false
   });
 
   useEffect(() => {
@@ -80,6 +86,11 @@ export default function GardenLayout({ slug, initialRestaurant, initialView, men
 
     if (combinedDateTime < new Date()) {
       toast.error('Cannot create reservations for the past');
+      return;
+    }
+
+    if (!resForm.consentAccepted) {
+      toast.error(t('public.consent.required'));
       return;
     }
 
@@ -562,6 +573,15 @@ export default function GardenLayout({ slug, initialRestaurant, initialView, men
                   </div>
                 </div>
               </div>
+
+              <ConsentFields
+                slug={slug}
+                consentAccepted={resForm.consentAccepted}
+                onConsentAcceptedChange={(v) => setResForm({ ...resForm, consentAccepted: v })}
+                marketingConsent={resForm.marketingConsent}
+                onMarketingConsentChange={(v) => setResForm({ ...resForm, marketingConsent: v })}
+                className="mt-2 space-y-3 text-sm opacity-80"
+              />
 
               <Button
                 type="submit"

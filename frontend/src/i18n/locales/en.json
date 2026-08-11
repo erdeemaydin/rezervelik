@@ -133,7 +133,32 @@
     "capacityFullTitle": "Near Full Capacity",
     "capacityFullDesc": "This day is close to or at its booking capacity — your request may need manual review before it's confirmed.",
     "confirmationCodeLabel": "Your confirmation code",
-    "confirmationCodeHint": "Give this to our host if we can't find your reservation by name."
+    "confirmationCodeHint": "Give this to our host if we can't find your reservation by name.",
+    "consent": {
+      "bookingPrefix": "I have read and agree to the",
+      "privacyNoticeLinkText": "Privacy Notice",
+      "bookingSuffix": ", and I consent to my personal data being processed to create and manage this reservation.",
+      "marketing": "I would also like to receive booking reminders and offers via WhatsApp/SMS (optional).",
+      "required": "Please accept the data processing consent to continue."
+    },
+    "privacyNotice": {
+      "title": "Privacy Notice",
+      "intro": "This notice explains, in general terms, how your personal data is handled when you make a reservation. It is provided by the restaurant you are booking with, using this platform.",
+      "controllerTitle": "Who is responsible for your data",
+      "controllerBody": "The restaurant you are booking with is the data controller for the information you submit. This platform acts only as a data processor, handling your data on the restaurant's behalf and instructions.",
+      "whatTitle": "What data is collected",
+      "whatBody": "Typically: your name, phone number, and (if provided) email address, along with reservation details such as date, time, and party size.",
+      "whyTitle": "Why it's collected",
+      "whyBody": "To create, confirm, and manage your reservation, to contact you about it (e.g. confirmations, reminders, or changes), and — only if you separately opt in — to send you marketing messages.",
+      "howLongTitle": "How long it's kept",
+      "howLongBody": "Your data is kept for as long as needed to fulfill the reservation and for a limited retention period afterward, after which it is anonymized or deleted.",
+      "whoWithTitle": "Who it's shared with",
+      "whoWithBody": "Your data is shared only with service providers that help operate this platform and deliver reservation-related messages (e.g. SMS/WhatsApp delivery), and is not sold or shared for unrelated purposes.",
+      "rightsTitle": "Your rights",
+      "rightsBody": "You may contact the restaurant directly to request access to, correction of, or deletion of your personal data.",
+      "tenantOverrideNote": "This restaurant has provided its own notice below.",
+      "backLink": "Back"
+    }
   },
   "dashboard": {
     "loading": "Loading command center...",
@@ -762,6 +787,12 @@
         "title": "Legal / Terms",
         "desc": "Terms of service or privacy policy",
         "placeholder": "Write your legal terms here..."
+      },
+      "privacyNotice": {
+        "title": "Privacy Notice (KVKK Aydınlatma Metni)",
+        "desc": "Optional restaurant-specific override of the privacy/disclosure notice linked from the reservation consent checkbox.",
+        "placeholder": "Write your own privacy notice here — what data you collect, why, how long it's kept, and who it's shared with. Supports basic HTML.",
+        "hint": "Leave blank to show guests the platform's generic default notice instead. This platform provides direction, not legal advice — review your own notice with a KVKK advisor before publishing it."
       }
     },
     "rules": {

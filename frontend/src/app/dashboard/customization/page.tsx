@@ -26,6 +26,7 @@ interface Customization {
     legalText: string;
     reservationInfoText: string;
     reservationWarningText: string;
+    privacyNoticeText: string;
 }
 
 export default function CustomizationPage() {
@@ -44,6 +45,7 @@ export default function CustomizationPage() {
         legalText: '',
         reservationInfoText: '',
         reservationWarningText: '',
+        privacyNoticeText: '',
     });
 
     const fetchCustomization = useCallback(async () => {
@@ -64,6 +66,7 @@ export default function CustomizationPage() {
                     legalText: data.legalText || '',
                     reservationInfoText: data.reservationInfoText || '',
                     reservationWarningText: data.reservationWarningText || '',
+                    privacyNoticeText: data.privacyNoticeText || '',
                 });
             }
         } catch (error) {
@@ -236,14 +239,30 @@ export default function CustomizationPage() {
                                     </CardHeader>
                                     {customization.showLegal && (
                                         <CardContent className="p-6">
-                                            <Textarea 
-                                                placeholder={t("customization.pages.legal.placeholder")} 
-                                                value={customization.legalText} 
+                                            <Textarea
+                                                placeholder={t("customization.pages.legal.placeholder")}
+                                                value={customization.legalText}
                                                 onChange={(e) => setCustomization({...customization, legalText: e.target.value})}
-                                                className="min-h-[150px] text-sm" 
+                                                className="min-h-[150px] text-sm"
                                             />
                                         </CardContent>
                                     )}
+                                </Card>
+
+                                <Card className="rounded-sm border-slate-200 shadow-sm bg-white">
+                                    <CardHeader className="p-4 border-b border-slate-100">
+                                        <CardTitle className="text-sm font-black uppercase tracking-tight">{t("customization.pages.privacyNotice.title")}</CardTitle>
+                                        <CardDescription className="text-[10px]">{t("customization.pages.privacyNotice.desc")}</CardDescription>
+                                    </CardHeader>
+                                    <CardContent className="p-6">
+                                        <Textarea
+                                            placeholder={t("customization.pages.privacyNotice.placeholder")}
+                                            value={customization.privacyNoticeText}
+                                            onChange={(e) => setCustomization({...customization, privacyNoticeText: e.target.value})}
+                                            className="min-h-[150px] text-sm"
+                                        />
+                                        <p className="text-[10px] text-slate-500 mt-2">{t("customization.pages.privacyNotice.hint")}</p>
+                                    </CardContent>
                                 </Card>
                             </TabsContent>
 

@@ -12,6 +12,7 @@ import { Label } from '@/components/ui/label';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import { getTimeSuggestions } from '@/lib/reservationSuggestions';
 import ReservationCalendar from './ReservationCalendar';
+import ConsentFields from './ConsentFields';
 import { getTodayInTZ, zonedWallTimeToUTC, DEFAULT_TZ } from '@/lib/datetime';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || (typeof window !== 'undefined' ? `${window.location.protocol}//${window.location.hostname}:3000/api` : 'http://localhost:3000/api');
@@ -44,7 +45,12 @@ export default function BoldEditorialLayout({ slug, initialRestaurant, initialVi
     customerPhone: '',
     customerEmail: '',
     guestCount: '2',
-    notes: ''
+    notes: '',
+    // KVKK consent (PRODUCTION_ROADMAP.md §7.3): required booking consent +
+    // separate optional marketing opt-in. Both ride along in the `...resForm`
+    // spread already sent to POST /reservations.
+    consentAccepted: false,
+    marketingConsent: false
   });
 
   const checkDayStatus = async (date: string) => {
@@ -69,6 +75,11 @@ export default function BoldEditorialLayout({ slug, initialRestaurant, initialVi
 
     if (combinedDateTime < new Date()) {
       toast.error('Cannot create reservations for the past');
+      return;
+    }
+
+    if (!resForm.consentAccepted) {
+      toast.error(t('public.consent.required'));
       return;
     }
 
@@ -500,6 +511,15 @@ export default function BoldEditorialLayout({ slug, initialRestaurant, initialVi
                         className="border-2 rounded-none h-14 px-4 text-base bg-transparent text-white" style={{ borderColor: 'rgba(255,255,255,0.15)' }} />
                     </div>
                   </div>
+
+                  <ConsentFields
+                    slug={slug}
+                    consentAccepted={resForm.consentAccepted}
+                    onConsentAcceptedChange={(v) => setResForm({ ...resForm, consentAccepted: v })}
+                    marketingConsent={resForm.marketingConsent}
+                    onMarketingConsentChange={(v) => setResForm({ ...resForm, marketingConsent: v })}
+                    className="mt-6 space-y-3 text-sm text-white/80"
+                  />
 
                   <button type="submit" disabled={checkingDay || (dayStatus?.daySetting?.isReservationEnabled === false && !dayStatus?.daySetting?.isFullyBooked)}
                     className="w-full h-16 text-lg font-black uppercase tracking-widest mt-8 disabled:opacity-40 transition-all hover:scale-[1.01] text-black"

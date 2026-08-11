@@ -14,6 +14,7 @@ import { cn } from '@/lib/utils';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import { getTimeSuggestions } from '@/lib/reservationSuggestions';
 import ReservationCalendar from './ReservationCalendar';
+import ConsentFields from './ConsentFields';
 import { getTodayInTZ, zonedWallTimeToUTC, DEFAULT_TZ } from '@/lib/datetime';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || (typeof window !== 'undefined' ? `${window.location.protocol}//${window.location.hostname}:3000/api` : 'http://localhost:3000/api');
@@ -44,7 +45,13 @@ export default function ClassicLayout({ slug, initialRestaurant, initialView = '
     customerPhone: '',
     customerEmail: '',
     guestCount: '2',
-    notes: ''
+    notes: '',
+    // KVKK consent (PRODUCTION_ROADMAP.md §7.3): consentAccepted is the required
+    // booking consent, marketingConsent a separate optional WhatsApp/marketing
+    // opt-in. Both ride along in the `...resForm` spread already sent to
+    // POST /reservations, so no extra plumbing is needed beyond these two fields.
+    consentAccepted: false,
+    marketingConsent: false
   });
 
   const tz = restaurant?.settings?.timezone || DEFAULT_TZ;
@@ -79,6 +86,11 @@ export default function ClassicLayout({ slug, initialRestaurant, initialView = '
       return;
     }
 
+    if (!resForm.consentAccepted) {
+      toast.error(t('public.consent.required'));
+      return;
+    }
+
     if (dayStatus?.daySetting?.isFullyBooked) {
       try {
         await axios.post(`${API_URL}/public/restaurant/${slug}/waitlist`, {
@@ -90,7 +102,7 @@ export default function ClassicLayout({ slug, initialRestaurant, initialView = '
         });
         setIsWaitlistSuccess(true);
         setView('success');
-        setResForm({ customerName: '', customerPhone: '', customerEmail: '', guestCount: '2', notes: '' });
+        setResForm({ customerName: '', customerPhone: '', customerEmail: '', guestCount: '2', notes: '', consentAccepted: false, marketingConsent: false });
       } catch (err: any) {
         toast.error(err.response?.data?.error || 'Failed to join waitlist');
       }
@@ -120,7 +132,7 @@ export default function ClassicLayout({ slug, initialRestaurant, initialView = '
       setIsPossiblyFullyBooked(!!res.data?.data?.possiblyFullyBooked);
       setConfirmationCode(res.data?.data?.confirmationCode || null);
       setView('success');
-      setResForm({ customerName: '', customerPhone: '', customerEmail: '', guestCount: '2', notes: '' });
+      setResForm({ customerName: '', customerPhone: '', customerEmail: '', guestCount: '2', notes: '', consentAccepted: false, marketingConsent: false });
     } catch (err: any) {
       toast.error(err.response?.data?.error || 'Failed to book');
     }
@@ -592,6 +604,14 @@ export default function ClassicLayout({ slug, initialRestaurant, initialView = '
                                 </div>
                             </div>
                         </div>
+
+                        <ConsentFields
+                          slug={slug}
+                          consentAccepted={resForm.consentAccepted}
+                          onConsentAcceptedChange={(v) => setResForm({ ...resForm, consentAccepted: v })}
+                          marketingConsent={resForm.marketingConsent}
+                          onMarketingConsentChange={(v) => setResForm({ ...resForm, marketingConsent: v })}
+                        />
 
                         <Button type="submit" disabled={checkingDay || (dayStatus && !dayStatus.daySetting?.isReservationEnabled && dayStatus.daySetting && !dayStatus.daySetting?.isFullyBooked)} className="h-16 w-full rounded-2xl bg-[var(--primary)] text-base font-semibold text-white hover:bg-[var(--primary-hover)] disabled:opacity-50">
                             {checkingDay ? "Checking Availability..." :

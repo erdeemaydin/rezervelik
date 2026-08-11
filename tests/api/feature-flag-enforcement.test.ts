@@ -45,7 +45,7 @@ describe('Server-side feature-flag enforcement', () => {
     const res = await api
       .post('/api/reservations')
       .set('X-Restaurant-ID', clinic.restaurant.id)
-      .send({ customerName: 'Guest', customerPhone: '+905550000080', guestCount: 2, startTime: '2026-10-20T10:00:00.000Z' });
+      .send({ customerName: 'Guest', customerPhone: '+905550000080', guestCount: 2, startTime: '2026-10-20T10:00:00.000Z', consentAccepted: true });
 
     expect(res.status).toBe(201);
     // Auto-confirms outright instead of falling into AWAITING_PAYMENT, because

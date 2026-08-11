@@ -13,6 +13,7 @@ import './env'; // must be the first import — loads .env synchronously before 
 import Sentry from './config/sentry';
 import app from './app';
 import { startPriceUpdater } from './workers/priceUpdater';
+import { startRetentionAnonymizer } from './workers/retentionAnonymizer';
 
 const PORT = process.env.PORT || 3000;
 
@@ -36,6 +37,7 @@ process.on('uncaughtException', (err) => {
 
 // Initialize background workers
 startPriceUpdater();
+startRetentionAnonymizer();
 
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);

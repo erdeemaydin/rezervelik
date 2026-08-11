@@ -41,7 +41,10 @@ export const getReservations = async (req: Request, res: Response) => {
 
     // Per-phone-number history: how many times this guest has visited/no-showed,
     // so repeat no-show patterns are visible directly on the reservation list.
-    const phones = [...new Set(reservations.map(r => r.customerPhone))];
+    // customerPhone is nullable (anonymized reservations past the retention
+    // window have it nulled out) — those are excluded from history entirely,
+    // same as they'd have no meaningful phone-based grouping anyway.
+    const phones = [...new Set(reservations.map(r => r.customerPhone).filter((p): p is string => !!p))];
     const historyCounts = phones.length ? await prisma.reservation.groupBy({
       by: ['customerPhone', 'status'],
       where: { restaurantId, customerPhone: { in: phones } },
@@ -50,15 +53,16 @@ export const getReservations = async (req: Request, res: Response) => {
 
     const historyByPhone = new Map<string, { totalVisits: number; noShowCount: number }>();
     for (const row of historyCounts) {
+      if (!row.customerPhone) continue;
       const entry = historyByPhone.get(row.customerPhone) || { totalVisits: 0, noShowCount: 0 };
-      entry.totalVisits += row._count._all;
-      if (row.status === 'NO_SHOW') entry.noShowCount += row._count._all;
+      entry.totalVisits += row._count?._all ?? 0;
+      if (row.status === 'NO_SHOW') entry.noShowCount += row._count?._all ?? 0;
       historyByPhone.set(row.customerPhone, entry);
     }
 
     const withHistory = reservations.map(r => ({
       ...r,
-      phoneHistory: historyByPhone.get(r.customerPhone) || { totalVisits: 1, noShowCount: 0 }
+      phoneHistory: (r.customerPhone && historyByPhone.get(r.customerPhone)) || { totalVisits: 1, noShowCount: 0 }
     }));
 
     return successResponse(res, withHistory);
@@ -72,7 +76,8 @@ export const createReservation = async (req: Request, res: Response) => {
     const restaurantId = req.restaurantId!;
     const {
       tableId, categoryId, serviceId, customerName, customerEmail, customerPhone,
-      guestCount, startTime, notes, internalNote, isVIP, overrideConflict
+      guestCount, startTime, notes, internalNote, isVIP, overrideConflict,
+      consentAccepted, marketingConsent
     } = req.body;
 
     if (!customerName || !customerPhone || !guestCount || !startTime) {
@@ -97,6 +102,16 @@ export const createReservation = async (req: Request, res: Response) => {
     const staffInitiated = isStaffRequest(req);
     if (!staffInitiated && settings?.maxPartySize && partySize > settings.maxPartySize) {
       return errorResponse(res, 'errors.validation_error', 400, { message: `Party size exceeds the maximum of ${settings.maxPartySize}` });
+    }
+
+    // KVKK "açık rıza" (explicit consent): required for guest-initiated bookings —
+    // the public form must not submit without it, and this is the server-side
+    // backstop so a direct API call can't skip the checkbox. Staff entering a
+    // reservation on a guest's behalf (dashboard/host screen — phone, walk-in)
+    // have no checkbox to check here, so they're exempt, same convention as
+    // maxPartySize/overrideConflict above.
+    if (!staffInitiated && consentAccepted !== true) {
+      return errorResponse(res, 'errors.consent_required', 400, { code: 'CONSENT_REQUIRED' });
     }
 
     const dateStr = restaurantDateStr(start, settings?.timezone);
@@ -289,6 +304,12 @@ export const createReservation = async (req: Request, res: Response) => {
               isOverbooked,
               confirmationCode,
               status: requiresInstantPayment ? 'AWAITING_PAYMENT' : (isConfirmed ? 'CONFIRMED' : 'PENDING'),
+              // Staff-entered bookings have no consent checkbox to reflect, so we
+              // don't record a false "accepted" for them. marketingConsent is a
+              // separate, optional opt-in — never implied by consentAccepted.
+              consentAccepted: staffInitiated ? false : true,
+              marketingConsent: staffInitiated ? false : marketingConsent === true,
+              consentTimestamp: staffInitiated ? null : new Date(),
             },
           });
           });
@@ -479,6 +500,55 @@ export const deleteReservation = async (req: Request, res: Response) => {
     await clearFullyBookedIfSet({ restaurantId, dateStr: restaurantDateStr(existingRes.startTime, settings?.timezone) });
 
     return successResponse(res, null, 'Reservation deleted');
+  } catch (error) {
+    return errorResponse(res, 'errors.internal_error', 500);
+  }
+};
+
+// KVKK data-subject rights (PRODUCTION_ROADMAP.md §7.3 / PROJECT_LOGIC.md §14):
+// "customers can request access, correction, or deletion" — this fulfills the
+// deletion side for a specific customer on staff's behalf, identified by phone
+// (the natural key already used for phoneHistory in getReservations above).
+// Anonymizes rather than hard-deletes, same as the retention worker: PII
+// (name/email/phone/notes) is nulled out but the rows themselves — and their
+// aggregate/statistical value, plus any Payment/audit references — are kept.
+// Tenant-scoped (only this restaurant's rows for the phone are touched) and
+// covers both Reservation and WaitlistEntry, the two places customer PII is
+// captured from the public booking surface.
+export const deleteCustomerData = async (req: Request, res: Response) => {
+  try {
+    const restaurantId = req.restaurantId!;
+    const { phone } = req.params;
+
+    if (!phone) {
+      return errorResponse(res, 'errors.validation_error', 400, { message: 'Missing phone' });
+    }
+
+    const now = new Date();
+    const [reservations, waitlistEntries] = await prisma.$transaction([
+      prisma.reservation.updateMany({
+        where: { restaurantId, customerPhone: phone, anonymizedAt: null },
+        data: {
+          customerName: null, customerEmail: null, customerPhone: null,
+          notes: null, internalNote: null, anonymizedAt: now,
+        },
+      }),
+      prisma.waitlistEntry.updateMany({
+        where: { restaurantId, customerPhone: phone, anonymizedAt: null },
+        data: { customerName: null, customerPhone: null, notes: null, anonymizedAt: now },
+      }),
+    ]);
+
+    logAudit({
+      req, restaurantId, category: 'RESERVATION', action: 'CUSTOMER_DATA_DELETED',
+      targetType: 'Customer',
+      metadata: { reservationsAnonymized: reservations.count, waitlistEntriesAnonymized: waitlistEntries.count },
+    });
+
+    return successResponse(res, {
+      reservationsAnonymized: reservations.count,
+      waitlistEntriesAnonymized: waitlistEntries.count,
+    });
   } catch (error) {
     return errorResponse(res, 'errors.internal_error', 500);
   }

@@ -80,7 +80,7 @@ describe('Booking-confirmation message', () => {
     const res = await api
       .post('/api/reservations')
       .set('X-Restaurant-ID', a.restaurant.id)
-      .send({ customerName: 'Cy', customerPhone: '+905550000022', guestCount: 2, startTime: `${date}T10:00:00.000Z` });
+      .send({ customerName: 'Cy', customerPhone: '+905550000022', guestCount: 2, startTime: `${date}T10:00:00.000Z`, consentAccepted: true });
 
     expect(res.status).toBe(201);
     expect(res.body.data.status).toBe('AWAITING_PAYMENT');

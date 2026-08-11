@@ -44,6 +44,7 @@ describe('Cross-tenant staff-token privilege escalation', () => {
         startTime: '2026-10-21T10:00:00.000Z',
         isVIP: true,
         internalNote: 'planted note',
+        consentAccepted: true,
       });
     // Not staff-recognized for this tenant -> falls back to the guest path,
     // which still succeeds (within cap) but must not honor isVIP/internalNote.

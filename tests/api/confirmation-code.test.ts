@@ -31,7 +31,7 @@ describe('Reservation confirmationCode', () => {
     const res = await api
       .post('/api/reservations')
       .set('X-Restaurant-ID', a.restaurant.id)
-      .send({ customerName: 'Guest', customerPhone: '+905550002001', guestCount: 2, startTime: '2026-12-20T18:00:00.000Z' });
+      .send({ customerName: 'Guest', customerPhone: '+905550002001', guestCount: 2, startTime: '2026-12-20T18:00:00.000Z', consentAccepted: true });
 
     expect(res.status).toBe(201);
     expect(res.body.data.confirmationCode).toMatch(/^[1-9]\d{5}$/);
@@ -44,7 +44,7 @@ describe('Reservation confirmationCode', () => {
     const created = await api
       .post('/api/reservations')
       .set('X-Restaurant-ID', a.restaurant.id)
-      .send({ customerName: 'Findable Guest', customerPhone: '+905550002002', guestCount: 2, startTime: '2026-12-20T21:00:00.000Z' });
+      .send({ customerName: 'Findable Guest', customerPhone: '+905550002002', guestCount: 2, startTime: '2026-12-20T21:00:00.000Z', consentAccepted: true });
     expect(created.status).toBe(201);
 
     const list = await api.get('/api/reservations').set(auth(a.tokens.admin, a.restaurant.id));
@@ -71,7 +71,7 @@ describe('Reservation confirmationCode', () => {
     const res = await api
       .post('/api/reservations')
       .set('X-Restaurant-ID', a.restaurant.id)
-      .send({ customerName: 'Retry Guest', customerPhone: '+905550002004', guestCount: 2, startTime: '2026-12-21T20:00:00.000Z' });
+      .send({ customerName: 'Retry Guest', customerPhone: '+905550002004', guestCount: 2, startTime: '2026-12-21T20:00:00.000Z', consentAccepted: true });
 
     expect(res.status).toBe(201);
     expect(res.body.data.confirmationCode).toBe('550000');
@@ -88,11 +88,11 @@ describe('Reservation confirmationCode', () => {
     const resA = await api
       .post('/api/reservations')
       .set('X-Restaurant-ID', a.restaurant.id)
-      .send({ customerName: 'Tenant A Guest', customerPhone: '+905550002005', guestCount: 2, startTime: '2026-12-22T18:00:00.000Z' });
+      .send({ customerName: 'Tenant A Guest', customerPhone: '+905550002005', guestCount: 2, startTime: '2026-12-22T18:00:00.000Z', consentAccepted: true });
     const resB = await api
       .post('/api/reservations')
       .set('X-Restaurant-ID', b.restaurant.id)
-      .send({ customerName: 'Tenant B Guest', customerPhone: '+905550002006', guestCount: 2, startTime: '2026-12-22T18:00:00.000Z' });
+      .send({ customerName: 'Tenant B Guest', customerPhone: '+905550002006', guestCount: 2, startTime: '2026-12-22T18:00:00.000Z', consentAccepted: true });
 
     expect(resA.status).toBe(201);
     expect(resB.status).toBe(201);

@@ -260,7 +260,9 @@ export const getAnalytics = async (req: Request, res: Response) => {
     // Classify each distinct guest (by phone) who booked in the period by their
     // all-time reservation count at this restaurant:
     //   new = 1 total · returning = 2-4 · regular = 5+.
-    const periodPhones = [...new Set(currentReservations.map((r) => r.customerPhone).filter(Boolean))];
+    // customerPhone is nullable (anonymized reservations past the retention
+    // window have it nulled out) — excluded from this segmentation.
+    const periodPhones = [...new Set(currentReservations.map((r) => r.customerPhone).filter((p): p is string => !!p))];
     const lifetimeCounts = periodPhones.length
       ? await prisma.reservation.groupBy({
           by: ['customerPhone'],
@@ -272,7 +274,7 @@ export const getAnalytics = async (req: Request, res: Response) => {
     let returningCustomers = 0;
     let regularCustomers = 0;
     for (const row of lifetimeCounts) {
-      const total = row._count._all;
+      const total = row._count?._all ?? 0;
       if (total <= 1) newCustomers += 1;
       else if (total <= 4) returningCustomers += 1;
       else regularCustomers += 1;

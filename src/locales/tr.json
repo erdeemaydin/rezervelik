@@ -23,7 +23,8 @@
     "setup_link_invalid": "Bu kurulum bağlantısı geçersiz veya süresi dolmuş.",
     "reset_link_invalid": "Bu şifre sıfırlama bağlantısı geçersiz veya süresi dolmuş.",
     "email_in_use": "Bu e-posta adresi zaten kullanımda.",
-    "registration_disabled": "Herkese açık kayıt şu anda devre dışı."
+    "registration_disabled": "Herkese açık kayıt şu anda devre dışı.",
+    "consent_required": "Rezervasyon yapabilmek için veri işleme onayını kabul etmelisiniz."
   },
   "messages": {
     "reservation_created": "Rezervasyon başarıyla oluşturuldu",
