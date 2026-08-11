@@ -2,6 +2,47 @@
 
 Day-to-day record of substantial work sessions on this project. Newest entry first.
 
+## 2026-08-11 (cont'd) — dependency scanning in CI + PRODUCTION_ROADMAP.md refresh
+
+Prompted by "how do we know we've eliminated all the bugs/security issues before production" —
+the honest answer is you can't, from audits alone; different techniques catch different blind
+spots. Proved the point immediately: `npm audit` (a tool, not a read-through) found a **critical**
+prototype-pollution CVE in `i18next-fs-backend` that three rounds of application-code review never
+would have, because it's not application code.
+
+- **Dependency fixes**: `npm audit fix` (non-breaking) on the backend — resolved the critical
+  i18next-fs-backend CVE plus nanoid/postcss/qs/body-parser advisories; backend is 0
+  vulnerabilities at every severity now. Frontend: fixed the safe subset (`qs`); 3 remaining
+  high-severity advisories (postcss XSS/path-traversal, sharp/libvips CVEs) are vendored inside
+  `next@16.2.4` itself and only close via `npm audit fix --force` (bumps to 16.3.0) — deliberately
+  *not* done unilaterally since `frontend/AGENTS.md` flags this Next.js version as breaking-change
+  risk; a version bump deserves its own tested pass, not a side effect of a dependency-fix task.
+- **CI + Dependabot**: added an `npm audit` gate to `ci.yml` (backend blocking at `moderate`,
+  frontend blocking at `critical` with `high` informational-only pending the Next.js upgrade
+  above) and `.github/dependabot.yml` for ongoing weekly scanning of both npm ecosystems + GitHub
+  Actions versions.
+- **`PRODUCTION_ROADMAP.md` refresh**: turned out to be far staler than expected — it was written
+  pre-launch and still framed SQLite→Postgres migration, "zero automated tests," and a broken
+  Prisma migration workflow as open blockers, when all three have been done for a while. Bigger
+  finding: `docs/DATABASE_RUNBOOK.md` shows **the app is already running in production** (live
+  server, pm2, daily automated backups) — a fact the roadmap doc gave no indication of. Went
+  section-by-section verifying each claim against current code (not just skimming): marked
+  CORS-lockdown/login-rate-limiting/httpOnly-cookie-session as done (all shipped since the doc was
+  last touched), confirmed HSTS-over-HTTP is still genuinely unfixed in code (flagged as the
+  highest-priority open item if HTTPS isn't live yet — the doc itself calls this "a leading
+  suspect for can't sign in from iPhone/iPad Safari"), confirmed multer-uploads/staging-env/KVKK
+  UI/uptime-monitoring/frontend-CSP are all still genuinely open by checking the actual code, and
+  added a new §11 documenting the audit/Dependabot work above. New "Follow-ups" section at the
+  bottom lists what's flagged but not fixed this pass — most notably `frontend/proxy.ts` still has
+  a comment asserting the session token lives in localStorage (false since the httpOnly-cookie
+  migration; nobody revisited whether server-side route gating is now worth adding) and
+  `docs/TESTING_AND_CICD.md` has its own, separate SQLite-staleness problem not addressed here.
+
+**Standing lesson for future sessions:** treat "operational/roadmap" docs (not just code) as
+things that drift and need periodic fact-checking against the actual repo state, the same way
+code itself gets audited — a stale pre-launch checklist read at face value is actively misleading
+once the thing it describes has shipped.
+
 ## 2026-08-11 (cont'd) — full-codebase (not diff-scoped) re-audit
 
 Same day as the pass below, but explicitly whole-codebase this time rather
