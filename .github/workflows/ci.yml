@@ -37,6 +37,9 @@ jobs:
           node-version: 20
           cache: npm
       - run: npm ci
+      - name: Dependency audit (blocking — backend is currently 0 vulnerabilities
+          at every severity; see PRODUCTION_ROADMAP.md §11)
+        run: npm audit --audit-level=moderate
       - name: Generate Prisma client
         run: npm run prisma:generate
       - name: Provision isolated test database
@@ -62,6 +65,13 @@ jobs:
           cache: npm
           cache-dependency-path: frontend/package-lock.json
       - run: npm ci
+      - name: Dependency audit — critical (blocking)
+        run: npm audit --audit-level=critical
+      - name: Dependency audit — high (informational; 3 known advisories are
+          vendored inside next@16.2.4 itself and only close via a Next.js
+          upgrade — see PRODUCTION_ROADMAP.md §11. Remove `|| true` once
+          that upgrade lands so this becomes a real gate again.)
+        run: npm audit --audit-level=high || true
       - name: Lint
         run: npm run lint
       - name: Type-check
