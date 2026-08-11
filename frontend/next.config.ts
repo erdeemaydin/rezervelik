@@ -15,15 +15,25 @@ function originOf(url?: string): string | null {
 // time (see frontend/.env.example). In production this is expected to be a
 // same-origin HTTPS path proxied by Nginx (so 'self' alone would cover it),
 // but we add the configured origin explicitly too in case a deployment points
-// the frontend at a different host. In dev, when NEXT_PUBLIC_API_URL is left
-// unset, src/lib/api.ts falls back to `http://<current-host>:3000/api` so the
-// app also works from other devices on the LAN -- that host isn't knowable
-// statically, so dev-only widen to "any host, port 3000" to match that
-// documented fallback without loosening the production policy.
+// the frontend at a different host.
+//
+// When NEXT_PUBLIC_API_URL is left unset, src/lib/api.ts falls back to
+// `<page protocol>//<current-host>:3000/api` -- and it does this unconditionally,
+// not just in dev (e.g. a `next build && next start` run with no .env
+// configured hits this exact path too, which is the common case for someone
+// trying the app locally before setting up a real domain). An earlier version
+// of this policy only widened connect-src for that fallback when isDev was
+// true, which meant a production-mode build/start with NEXT_PUBLIC_API_URL
+// unset had connect-src collapse to 'self' alone while lib/api.ts kept trying
+// to call :3000 -- the browser silently blocked every API request app-wide
+// (symptom: pages load, nothing they fetch ever shows up, e.g. the SysAdmin
+// tenant list looking empty). Match lib/api.ts's actual fallback whenever
+// NEXT_PUBLIC_API_URL isn't set, in any mode -- both http and https since the
+// fallback reuses whatever protocol the page itself was loaded with.
 const apiOrigin = originOf(process.env.NEXT_PUBLIC_API_URL);
-const connectSrc = ["'self'", apiOrigin, isDev ? "http://*:3000" : null]
-  .filter(Boolean)
-  .join(" ");
+const connectSrc = apiOrigin
+  ? ["'self'", apiOrigin]
+  : ["'self'", "http://*:3000", "https://*:3000"];
 
 const cspDirectives = [
   `default-src 'self'`,
@@ -54,7 +64,7 @@ const cspDirectives = [
   // next/font/google self-hosts the font files at build time under
   // /_next/static -- no runtime request to Google's font CDN is made.
   `font-src 'self'`,
-  `connect-src ${connectSrc}`,
+  `connect-src ${connectSrc.join(" ")}`,
   // /pay/[ref] embeds the PayTR-hosted secure card-entry iframe (see
   // src/services/payments/PayTRProvider.ts); /pay/mock (PAYMENT_PROVIDER=mock)
   // is a same-origin route.
