@@ -35,6 +35,7 @@ export default function OldenLayout({ slug, initialRestaurant, initialView, menu
   const [isWaitlistSuccess, setIsWaitlistSuccess] = useState(false);
   const [isBookingSuccess, setIsBookingSuccess] = useState(false);
   const [isPossiblyFullyBooked, setIsPossiblyFullyBooked] = useState(false);
+  const [confirmationCode, setConfirmationCode] = useState<string | null>(null);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const customization = restaurant?.customization || {};
@@ -119,6 +120,7 @@ export default function OldenLayout({ slug, initialRestaurant, initialView, menu
         return;
       }
       setIsPossiblyFullyBooked(!!res.data?.data?.possiblyFullyBooked);
+      setConfirmationCode(res.data?.data?.confirmationCode || null);
       setIsBookingSuccess(true);
     } catch (err: any) {
       toast.error(err.response?.data?.error || 'Failed to book');
@@ -444,6 +446,13 @@ export default function OldenLayout({ slug, initialRestaurant, initialView, menu
               <CheckCircle2 className="w-20 h-20 text-[#4caf50] mx-auto mb-6" />
               <h3 className="text-3xl font-serif mb-4 text-[#1a1a1a]">{isPossiblyFullyBooked ? 'Request Received' : 'Reservation Confirmed'}</h3>
               <p className="text-[#555] font-sans text-lg">We look forward to welcoming you.</p>
+              {confirmationCode && (
+                <div className="mx-auto mt-8 flex max-w-xs flex-col items-center rounded-xl border border-[#e0e0e0] bg-[#f9f9f9] px-6 py-4">
+                  <span className="text-[10px] font-sans font-bold uppercase tracking-[0.2em] text-[#888]">{t('public.confirmationCodeLabel')}</span>
+                  <span className="mt-1 text-2xl font-serif tracking-[0.2em] text-[var(--accent)]">{confirmationCode}</span>
+                  <span className="mt-2 text-[10px] font-sans text-[#888]">{t('public.confirmationCodeHint')}</span>
+                </div>
+              )}
               {isPossiblyFullyBooked && (
                 <div className="mx-auto mt-8 max-w-md rounded-xl border-l-4 border-[#ff9800] bg-[#fff3e0] p-4 text-left text-sm font-sans text-[#8a5a00]">
                   Heads up — we may be fully booked around this time, so your table hasn&apos;t been assigned yet. Our team will confirm by phone shortly.

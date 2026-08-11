@@ -131,7 +131,9 @@
     "allergens": "Allergens",
     "redirectingToPayment": "Reservation created — redirecting you to the secure payment page…",
     "capacityFullTitle": "Near Full Capacity",
-    "capacityFullDesc": "This day is close to or at its booking capacity — your request may need manual review before it's confirmed."
+    "capacityFullDesc": "This day is close to or at its booking capacity — your request may need manual review before it's confirmed.",
+    "confirmationCodeLabel": "Your confirmation code",
+    "confirmationCodeHint": "Give this to our host if we can't find your reservation by name."
   },
   "dashboard": {
     "loading": "Loading command center...",

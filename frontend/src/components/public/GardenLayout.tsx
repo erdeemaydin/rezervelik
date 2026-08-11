@@ -35,6 +35,7 @@ export default function GardenLayout({ slug, initialRestaurant, initialView, men
   const [isWaitlistSuccess, setIsWaitlistSuccess] = useState(false);
   const [isBookingSuccess, setIsBookingSuccess] = useState(false);
   const [isPossiblyFullyBooked, setIsPossiblyFullyBooked] = useState(false);
+  const [confirmationCode, setConfirmationCode] = useState<string | null>(null);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const customization = restaurant?.customization || {};
@@ -119,6 +120,7 @@ export default function GardenLayout({ slug, initialRestaurant, initialView, men
         return;
       }
       setIsPossiblyFullyBooked(!!res.data?.data?.possiblyFullyBooked);
+      setConfirmationCode(res.data?.data?.confirmationCode || null);
       setIsBookingSuccess(true);
     } catch (err: any) {
       toast.error(err.response?.data?.error || 'Failed to book');
@@ -442,6 +444,13 @@ export default function GardenLayout({ slug, initialRestaurant, initialView, men
               <CheckCircle2 className="mx-auto mb-6 h-16 w-16 text-emerald-500" />
               <h3 className="mb-3 font-serif text-2xl">{isPossiblyFullyBooked ? 'Request Received' : 'Reservation Confirmed'}</h3>
               <p className="text-base opacity-60">We look forward to welcoming you.</p>
+              {confirmationCode && (
+                <div className="mx-auto mt-8 flex max-w-xs flex-col items-center rounded-2xl border border-black/5 bg-[#fdfaf3] px-6 py-4">
+                  <span className="text-[10px] font-semibold uppercase tracking-[0.2em] opacity-50">{t('public.confirmationCodeLabel')}</span>
+                  <span className="mt-1 text-2xl font-semibold tracking-[0.2em]" style={{ color: 'var(--accent)' }}>{confirmationCode}</span>
+                  <span className="mt-2 text-[10px] opacity-50">{t('public.confirmationCodeHint')}</span>
+                </div>
+              )}
               {isPossiblyFullyBooked && (
                 <div className="mx-auto mt-8 max-w-md rounded-2xl border border-amber-200 bg-amber-50 p-4 text-left text-sm text-amber-800">
                   Heads up — we may be fully booked around this time, so your table hasn&apos;t been assigned yet. Our team will confirm by phone shortly.

@@ -7,6 +7,10 @@ import { sendPaymentRequest, sendBookingConfirmation, formatReservationLabel } f
 import { findTableConflict, findAvailableTable, BLOCKING_STATUSES, restaurantDateStr, clearFullyBookedIfSet, getBookedCoversForDate, getEffectiveOverbookingConfig, getOverbookedCountsForDate } from '../utils/reservationConflict';
 import { logAudit } from '../services/auditService';
 
+// 6-digit, never leading-zero — reads unambiguously over the phone and lets
+// host-stand staff pull a reservation up by code instead of a name search.
+const generateConfirmationCode = (): string => String(100000 + Math.floor(Math.random() * 900000));
+
 const isStaffRequest = (req: Request): boolean => {
   const authHeader = req.headers.authorization;
   if (!authHeader || !authHeader.startsWith('Bearer ')) return false;
@@ -151,114 +155,131 @@ export const createReservation = async (req: Request, res: Response) => {
 
     let reservation;
     try {
-      reservation = await prisma.$transaction(async (tx) => {
-        // DaySetting.maxCapacityOverride: a total-covers cap for this specific
-        // date, independent of per-table availability (e.g. a private event or
-        // reduced staffing where the restaurant wants to accept fewer total
-        // covers than table math alone would allow). Same staff-bypass
-        // convention as maxPartySize/FULLY_BOOKED above — an admin set this
-        // cap for the automated/public flow, not to block staff discretion.
-        // Re-read inside the transaction (not just off the `daySetting` fetched
-        // earlier) so two near-simultaneous bookings can't both pass a
-        // stale count and jointly overshoot the cap.
-        if (!staffInitiated && daySetting?.maxCapacityOverride != null) {
-          const booked = await getBookedCoversForDate({
-            restaurantId, dateStr, timezone: settings.timezone, tx,
-          });
-          if (booked + partySize > daySetting.maxCapacityOverride) {
-            throw Object.assign(new Error('DAY_CAPACITY_EXCEEDED'), { code: 'DAY_CAPACITY_EXCEEDED' });
-          }
-        }
-
-        if (finalTableId) {
-          const conflict = await findTableConflict({
-            restaurantId, tableId: finalTableId, start, end: windowEnd, tx, isManualAvailability,
-          });
-          if (conflict) {
-            // Only an authenticated staff member may knowingly override a conflict;
-            // public/customer requests are always hard-blocked here.
-            if (!staffInitiated || !overrideConflict) {
-              throw Object.assign(new Error('TABLE_CONFLICT'), { code: 'TABLE_CONFLICT' });
-            }
-          }
-        } else {
-          // Auto-assign the smallest table that fits and is free for this window.
-          const availableTable = await findAvailableTable({
-            restaurantId, partySize, start, end: windowEnd, tx, isManualAvailability,
-          });
-          if (availableTable) {
-            finalTableId = availableTable.id;
-          } else {
-            const anyTableFitsCapacity = await tx.bookableResource.findFirst({
-              where: { restaurantId, capacity: { gte: partySize } },
+      // The transaction is retried (fresh table/capacity checks each time, not
+      // just the create) on a confirmationCode collision — collisions are rare
+      // (900,000 codes per restaurant) but the unique constraint is what
+      // actually guarantees no two reservations at this restaurant ever share
+      // a code, so a retry loop is needed rather than trusting randomness alone.
+      const MAX_CODE_ATTEMPTS = 5;
+      for (let attempt = 1; ; attempt++) {
+        const confirmationCode = generateConfirmationCode();
+        try {
+          reservation = await prisma.$transaction(async (tx) => {
+          // DaySetting.maxCapacityOverride: a total-covers cap for this specific
+          // date, independent of per-table availability (e.g. a private event or
+          // reduced staffing where the restaurant wants to accept fewer total
+          // covers than table math alone would allow). Same staff-bypass
+          // convention as maxPartySize/FULLY_BOOKED above — an admin set this
+          // cap for the automated/public flow, not to block staff discretion.
+          // Re-read inside the transaction (not just off the `daySetting` fetched
+          // earlier) so two near-simultaneous bookings can't both pass a
+          // stale count and jointly overshoot the cap.
+          if (!staffInitiated && daySetting?.maxCapacityOverride != null) {
+            const booked = await getBookedCoversForDate({
+              restaurantId, dateStr, timezone: settings.timezone, tx,
             });
-            // No table can ever seat this party → hard reject.
-            if (!anyTableFitsCapacity) {
-              throw Object.assign(new Error('NO_TABLE_CAPACITY'), { code: 'NO_TABLE_CAPACITY' });
+            if (booked + partySize > daySetting.maxCapacityOverride) {
+              throw Object.assign(new Error('DAY_CAPACITY_EXCEEDED'), { code: 'DAY_CAPACITY_EXCEEDED' });
             }
-            // Every fitting table is booked for this slot. By default we never
-            // create an overlapping/unassigned booking on the public side;
-            // instead we flag the day as fully booked (manual control) and
-            // reject so the guest is offered the waitlist. Staff may still
-            // force an unassigned pending booking to resolve manually.
-            //
-            // Overbooking (admin opt-in, RestaurantSettings/DaySetting): if
-            // configured and this date is still under both caps, soft-accept
-            // instead — PENDING, no table assigned, isOverbooked: true — so
-            // staff can resolve it manually rather than turning the guest away.
-            // Re-counted inside the transaction so concurrent requests can't
-            // jointly overshoot the caps, same race protection as maxCapacityOverride.
-            if (!staffInitiated) {
-              const overbooking = getEffectiveOverbookingConfig(settings, daySetting);
-              if (overbooking.enabled) {
-                const { count, covers } = await getOverbookedCountsForDate({
-                  restaurantId, dateStr, timezone: settings.timezone, tx,
-                });
-                if (count + 1 <= overbooking.maxExtraReservations && covers + partySize <= overbooking.maxExtraCovers) {
-                  isOverbooked = true;
+          }
+
+          if (finalTableId) {
+            const conflict = await findTableConflict({
+              restaurantId, tableId: finalTableId, start, end: windowEnd, tx, isManualAvailability,
+            });
+            if (conflict) {
+              // Only an authenticated staff member may knowingly override a conflict;
+              // public/customer requests are always hard-blocked here.
+              if (!staffInitiated || !overrideConflict) {
+                throw Object.assign(new Error('TABLE_CONFLICT'), { code: 'TABLE_CONFLICT' });
+              }
+            }
+          } else {
+            // Auto-assign the smallest table that fits and is free for this window.
+            const availableTable = await findAvailableTable({
+              restaurantId, partySize, start, end: windowEnd, tx, isManualAvailability,
+            });
+            if (availableTable) {
+              finalTableId = availableTable.id;
+            } else {
+              const anyTableFitsCapacity = await tx.bookableResource.findFirst({
+                where: { restaurantId, capacity: { gte: partySize } },
+              });
+              // No table can ever seat this party → hard reject.
+              if (!anyTableFitsCapacity) {
+                throw Object.assign(new Error('NO_TABLE_CAPACITY'), { code: 'NO_TABLE_CAPACITY' });
+              }
+              // Every fitting table is booked for this slot. By default we never
+              // create an overlapping/unassigned booking on the public side;
+              // instead we flag the day as fully booked (manual control) and
+              // reject so the guest is offered the waitlist. Staff may still
+              // force an unassigned pending booking to resolve manually.
+              //
+              // Overbooking (admin opt-in, RestaurantSettings/DaySetting): if
+              // configured and this date is still under both caps, soft-accept
+              // instead — PENDING, no table assigned, isOverbooked: true — so
+              // staff can resolve it manually rather than turning the guest away.
+              // Re-counted inside the transaction so concurrent requests can't
+              // jointly overshoot the caps, same race protection as maxCapacityOverride.
+              if (!staffInitiated) {
+                const overbooking = getEffectiveOverbookingConfig(settings, daySetting);
+                if (overbooking.enabled) {
+                  const { count, covers } = await getOverbookedCountsForDate({
+                    restaurantId, dateStr, timezone: settings.timezone, tx,
+                  });
+                  if (count + 1 <= overbooking.maxExtraReservations && covers + partySize <= overbooking.maxExtraCovers) {
+                    isOverbooked = true;
+                  }
+                }
+
+                if (!isOverbooked) {
+                  await tx.daySetting.upsert({
+                    where: { restaurantId_date: { restaurantId, date: dateStr } },
+                    create: { restaurantId, date: dateStr, isFullyBooked: true },
+                    update: { isFullyBooked: true },
+                  });
+                  throw Object.assign(new Error('FULLY_BOOKED'), { code: 'FULLY_BOOKED' });
                 }
               }
-
-              if (!isOverbooked) {
-                await tx.daySetting.upsert({
-                  where: { restaurantId_date: { restaurantId, date: dateStr } },
-                  create: { restaurantId, date: dateStr, isFullyBooked: true },
-                  update: { isFullyBooked: true },
-                });
-                throw Object.assign(new Error('FULLY_BOOKED'), { code: 'FULLY_BOOKED' });
-              }
             }
           }
+
+          // Auto-confirm requires an actually-assigned, conflict-free table.
+          const isConfirmed = !!daySetting?.autoConfirm && !!finalTableId;
+
+          // Instant deposit rule (Trigger A): paid reservations enabled AND the day
+          // auto-confirms AND this is a guest (not staff) booking. Held as
+          // AWAITING_PAYMENT until the deposit is paid instead of confirming outright.
+          requiresInstantPayment = paymentEnabled && !staffInitiated && isConfirmed;
+
+          return tx.reservation.create({
+            data: {
+              restaurantId,
+              tableId: finalTableId,
+              categoryId: categoryId === 'none' ? null : categoryId,
+              serviceId: finalServiceId,
+              customerName,
+              customerEmail,
+              customerPhone,
+              guestCount: partySize,
+              startTime: start,
+              endTime,
+              notes,
+              internalNote,
+              isVIP: !!isVIP,
+              isOverbooked,
+              confirmationCode,
+              status: requiresInstantPayment ? 'AWAITING_PAYMENT' : (isConfirmed ? 'CONFIRMED' : 'PENDING'),
+            },
+          });
+          });
+          break;
+        } catch (innerErr: any) {
+          const isCodeCollision = innerErr?.code === 'P2002' && innerErr?.meta?.target?.includes?.('confirmationCode');
+          if (isCodeCollision && attempt < MAX_CODE_ATTEMPTS) continue;
+          throw innerErr;
         }
-
-        // Auto-confirm requires an actually-assigned, conflict-free table.
-        const isConfirmed = !!daySetting?.autoConfirm && !!finalTableId;
-
-        // Instant deposit rule (Trigger A): paid reservations enabled AND the day
-        // auto-confirms AND this is a guest (not staff) booking. Held as
-        // AWAITING_PAYMENT until the deposit is paid instead of confirming outright.
-        requiresInstantPayment = paymentEnabled && !staffInitiated && isConfirmed;
-
-        return tx.reservation.create({
-          data: {
-            restaurantId,
-            tableId: finalTableId,
-            categoryId: categoryId === 'none' ? null : categoryId,
-            serviceId: finalServiceId,
-            customerName,
-            customerEmail,
-            customerPhone,
-            guestCount: partySize,
-            startTime: start,
-            endTime,
-            notes,
-            internalNote,
-            isVIP: !!isVIP,
-            isOverbooked,
-            status: requiresInstantPayment ? 'AWAITING_PAYMENT' : (isConfirmed ? 'CONFIRMED' : 'PENDING'),
-          },
-        });
-      });
+      }
     } catch (txErr: any) {
       if (txErr?.code === 'TABLE_CONFLICT') {
         return errorResponse(res, 'errors.table_conflict', 409, { code: 'TABLE_CONFLICT' });
@@ -308,6 +329,7 @@ export const createReservation = async (req: Request, res: Response) => {
         customerPhone: reservation.customerPhone,
         restaurantName: restaurant?.name || 'Restaurant',
         reservationLabel: formatReservationLabel(reservation.startTime, reservation.guestCount),
+        confirmationCode: reservation.confirmationCode,
       });
     }
 
@@ -667,6 +689,7 @@ export const updateReservationStatus = async (req: Request, res: Response) => {
         customerPhone: updated.customerPhone,
         restaurantName: restaurant?.name || 'Restaurant',
         reservationLabel: formatReservationLabel(updated.startTime, updated.guestCount),
+        confirmationCode: updated.confirmationCode,
       });
     }
 

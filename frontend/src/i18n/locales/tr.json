@@ -131,7 +131,9 @@
     "allergens": "Alerjenler",
     "redirectingToPayment": "Rezervasyon oluşturuldu — güvenli ödeme sayfasına yönlendiriliyorsunuz…",
     "capacityFullTitle": "Kapasiteye Yakın",
-    "capacityFullDesc": "Bu gün rezervasyon kapasitesine ulaşmış veya yakın durumda — talebiniz onaylanmadan önce manuel inceleme gerektirebilir."
+    "capacityFullDesc": "Bu gün rezervasyon kapasitesine ulaşmış veya yakın durumda — talebiniz onaylanmadan önce manuel inceleme gerektirebilir.",
+    "confirmationCodeLabel": "Rezervasyon kodunuz",
+    "confirmationCodeHint": "Sizi isimle bulamazsak bu kodu görevliye gösterin."
   },
   "dashboard": {
     "loading": "Kontrol merkezi yükleniyor...",

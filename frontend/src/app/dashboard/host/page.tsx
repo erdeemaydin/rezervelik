@@ -32,6 +32,7 @@ interface Reservation {
   notes: string | null;
   internalNote: string | null;
   isVIP: boolean;
+  confirmationCode: string | null;
 }
 
 interface WaitlistEntry {
@@ -321,7 +322,10 @@ export default function HostConsolePage() {
       const nameMatch = res.customerName.toLowerCase().includes(searchQuery.toLowerCase());
       const phoneMatch = res.customerPhone.includes(searchQuery);
       const tableMatch = res.table?.identifier.toLowerCase().includes(searchQuery.toLowerCase()) || false;
-      const matchesSearch = nameMatch || phoneMatch || tableMatch;
+      // A guest reading their confirmation code off an SMS is a faster, more
+      // reliable lookup than a name search when the queue is long.
+      const codeMatch = !!res.confirmationCode && res.confirmationCode.includes(searchQuery.trim());
+      const matchesSearch = nameMatch || phoneMatch || tableMatch || codeMatch;
 
       if (!matchesSearch) return false;
 
@@ -583,6 +587,11 @@ export default function HostConsolePage() {
                           <div className="space-y-1">
                             <div className="flex items-center gap-2 flex-wrap">
                               <span className="font-black text-slate-900 text-sm uppercase tracking-tight">{res.customerName}</span>
+                              {res.confirmationCode && (
+                                <Badge className="bg-slate-100 text-slate-500 border-slate-200 text-[9px] font-black tracking-widest px-2 py-0.5 rounded-sm">
+                                  #{res.confirmationCode}
+                                </Badge>
+                              )}
                               {res.isVIP && (
                                 <Badge className="bg-amber-500 text-white border-transparent text-[8px] font-black uppercase px-2 py-0.5 rounded-sm">
                                   <Star className="w-2.5 h-2.5 mr-1 fill-white" /> {t("host.vip")}

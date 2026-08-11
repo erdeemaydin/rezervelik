@@ -475,34 +475,41 @@ model ReservationCategory {
 }
 
 model Reservation {
-  id            String    @id @default(uuid())
-  restaurantId  String
-  tableId       String?
-  categoryId    String?
+  id               String    @id @default(uuid())
+  restaurantId     String
+  tableId          String?
+  categoryId       String?
   // Appointment verticals (SALON/CLINIC): the service/treatment this booking is
   // for. When set and the service has durationMinutes, the booking window is
   // derived from it instead of RestaurantSettings.defaultDurationMinutes. Optional
   // and unused by restaurants.
-  serviceId     String?
-  customerName  String
-  customerEmail String?
-  customerPhone String
-  guestCount    Int
-  startTime     DateTime
-  endTime       DateTime?
-  status        String    @default("PENDING")
-  notes         String? // Customer note
-  internalNote  String? // Internal/Restaurant note
-  isVIP         Boolean   @default(false)
-  isPaid        Boolean   @default(false)
-  paymentId     String?
+  serviceId        String?
+  customerName     String
+  customerEmail    String?
+  customerPhone    String
+  guestCount       Int
+  startTime        DateTime
+  endTime          DateTime?
+  status           String    @default("PENDING")
+  notes            String? // Customer note
+  internalNote     String? // Internal/Restaurant note
+  isVIP            Boolean   @default(false)
+  isPaid           Boolean   @default(false)
+  paymentId        String?
   // Set when this PENDING reservation was soft-accepted with no table assigned
   // under the RestaurantSettings/DaySetting overbooking feature (no table was
   // free at request time, but the party could fit somewhere). Counted against
   // the overbooking caps for its date — see getOverbookedCountsForDate.
-  isOverbooked  Boolean   @default(false)
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  isOverbooked     Boolean   @default(false)
+  // Short guest-facing lookup code (e.g. "482913"), generated once at booking
+  // time. Lets host-stand staff pull up a reservation by code instead of
+  // searching by name when a guest gives it. Nullable so legacy rows created
+  // before this field existed don't need a backfill — Postgres treats
+  // multiple NULLs as distinct under the unique constraint below, so they
+  // don't collide with each other or with real codes.
+  confirmationCode String?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
 
   table      BookableResource?    @relation(fields: [tableId], references: [id])
   category   ReservationCategory? @relation(fields: [categoryId], references: [id])
@@ -510,6 +517,7 @@ model Reservation {
   restaurant Restaurant           @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
   payments   Payment[]
 
+  @@unique([restaurantId, confirmationCode])
   @@index([restaurantId])
   @@index([tableId])
   @@index([categoryId])

@@ -37,6 +37,7 @@ export default function ClassicLayout({ slug, initialRestaurant, initialView = '
   const [checkingDay, setCheckingDay] = useState(false);
   const [isWaitlistSuccess, setIsWaitlistSuccess] = useState(false);
   const [isPossiblyFullyBooked, setIsPossiblyFullyBooked] = useState(false);
+  const [confirmationCode, setConfirmationCode] = useState<string | null>(null);
 
   const [resForm, setResForm] = useState({
     customerName: '',
@@ -117,6 +118,7 @@ export default function ClassicLayout({ slug, initialRestaurant, initialView = '
         return;
       }
       setIsPossiblyFullyBooked(!!res.data?.data?.possiblyFullyBooked);
+      setConfirmationCode(res.data?.data?.confirmationCode || null);
       setView('success');
       setResForm({ customerName: '', customerPhone: '', customerEmail: '', guestCount: '2', notes: '' });
     } catch (err: any) {
@@ -624,6 +626,13 @@ export default function ClassicLayout({ slug, initialRestaurant, initialView = '
                   )}
                   <p className="mt-4 text-sm font-medium uppercase tracking-wide text-emerald-600">See you soon!</p>
               </div>
+              {!isWaitlistSuccess && confirmationCode && (
+                  <div className="mb-8 flex flex-col items-center rounded-2xl border border-black/5 bg-neutral-50 px-8 py-5">
+                      <span className="text-xs font-medium uppercase tracking-wide text-neutral-400">{t('public.confirmationCodeLabel')}</span>
+                      <span className="mt-1 text-3xl font-semibold tracking-[0.2em] text-neutral-900">{confirmationCode}</span>
+                      <span className="mt-2 max-w-xs text-center text-xs text-neutral-400">{t('public.confirmationCodeHint')}</span>
+                  </div>
+              )}
               {!isWaitlistSuccess && isPossiblyFullyBooked && (
                   <div className="mb-8 max-w-md rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm font-medium text-amber-800">
                       Heads up — we may be fully booked around this time, so your table hasn&apos;t been assigned yet. Our team will confirm by phone shortly.

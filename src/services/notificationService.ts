@@ -26,6 +26,10 @@ interface BookingConfirmationPayload {
   customerPhone: string;
   restaurantName: string;
   reservationLabel: string; // e.g. "Sat 12 Jul, 20:00 · 4 guests"
+  // Short lookup code the guest can give the host stand instead of their name
+  // (see Reservation.confirmationCode). Optional — legacy reservations from
+  // before this field existed have none.
+  confirmationCode?: string | null;
 }
 
 // Sent the moment a reservation actually becomes CONFIRMED — immediately on
@@ -34,7 +38,8 @@ interface BookingConfirmationPayload {
 // sendPaymentRequest, which is sent instead when a deposit still needs to be
 // collected before the booking can be confirmed.
 export async function sendBookingConfirmation(p: BookingConfirmationPayload): Promise<void> {
-  const smsText = `${p.restaurantName}: ${p.reservationLabel} rezervasyonunuz onaylandı. Sizi bekliyoruz!`;
+  const codeSuffix = p.confirmationCode ? ` Rezervasyon kodunuz: ${p.confirmationCode}.` : '';
+  const smsText = `${p.restaurantName}: ${p.reservationLabel} rezervasyonunuz onaylandı.${codeSuffix} Sizi bekliyoruz!`;
   await sendSms(p.customerPhone, smsText);
 }
 

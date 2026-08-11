@@ -36,6 +36,7 @@ export default function PremiumLayout({ slug, initialRestaurant, initialView, me
   const [isWaitlistSuccess, setIsWaitlistSuccess] = useState(false);
   const [isBookingSuccess, setIsBookingSuccess] = useState(false);
   const [isPossiblyFullyBooked, setIsPossiblyFullyBooked] = useState(false);
+  const [confirmationCode, setConfirmationCode] = useState<string | null>(null);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const tz = restaurant?.settings?.timezone || DEFAULT_TZ;
@@ -118,6 +119,7 @@ export default function PremiumLayout({ slug, initialRestaurant, initialView, me
         return;
       }
       setIsPossiblyFullyBooked(!!res.data?.data?.possiblyFullyBooked);
+      setConfirmationCode(res.data?.data?.confirmationCode || null);
       setIsBookingSuccess(true);
     } catch (err: any) {
       toast.error(err.response?.data?.error || 'Failed to book');
@@ -422,6 +424,13 @@ export default function PremiumLayout({ slug, initialRestaurant, initialView, me
               <CheckCircle2 className="w-16 h-16 text-[color:var(--moss)] mx-auto mb-6" />
               <h3 className="text-2xl mb-4">{isPossiblyFullyBooked ? 'Request Received' : 'Reservation Confirmed'}</h3>
               <p className="text-[color:var(--muted)] font-light text-base">We look forward to welcoming you.</p>
+              {confirmationCode && (
+                <div className="mx-auto mt-8 flex max-w-xs flex-col items-center rounded-2xl border border-[color:var(--line)] px-6 py-4" style={{ background: 'var(--panel)' }}>
+                  <span className="text-[10px] font-medium uppercase tracking-[0.25em] text-[color:var(--muted)]">{t('public.confirmationCodeLabel')}</span>
+                  <span className="mt-1 text-2xl font-medium tracking-[0.2em] text-[color:var(--moss)]">{confirmationCode}</span>
+                  <span className="mt-2 text-[10px] font-light text-[color:var(--muted)]">{t('public.confirmationCodeHint')}</span>
+                </div>
+              )}
               {isPossiblyFullyBooked && (
                 <div className="mt-8 rounded-2xl border border-amber-500/30 bg-amber-500/10 p-4 text-sm font-light text-amber-200">
                   Heads up — we may be fully booked around this time, so your table hasn&apos;t been assigned yet. Our team will confirm by phone shortly.
