@@ -97,6 +97,13 @@ model FrontendCustomization {
   reservationInfoText    String?
   reservationWarningText String?
 
+  // KVKK "aydınlatma metni" (privacy/disclosure notice) shown at booking time and
+  // linked from the consent checkbox. Optional per-tenant override of the generic
+  // bilingual default text shipped in the frontend (public.privacyNotice.* i18n
+  // keys) — most tenants can rely on the default; this lets a tenant supply their
+  // own restaurant-specific notice, same pattern as legalText/aboutUsText above.
+  privacyNoticeText String?
+
   updatedAt  DateTime   @updatedAt
   restaurant Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
 }
@@ -270,10 +277,14 @@ model WaitTimeConfig {
 }
 
 model WaitlistEntry {
-  id             String  @id @default(uuid())
-  restaurantId   String
-  customerName   String
-  customerPhone  String
+  id           String @id @default(uuid())
+  restaurantId String
+  // Nullable — same KVKK retention rationale as Reservation.customerName/
+  // customerPhone: the retention/anonymization worker nulls these out (plus
+  // notes, which is free text and may contain PII) once an entry ages past the
+  // retention window. Still required at creation time by controller validation.
+  customerName   String?
+  customerPhone  String?
   partySize      Int
   quotedWaitTime Int? // in minutes
   status         String  @default("WAITING") // WAITING, NOTIFIED, SEATED, CANCELED, NO_SHOW
@@ -285,9 +296,10 @@ model WaitlistEntry {
   offerExpiresAt DateTime?
   offeredTime    String? // e.g. "19:30"
 
-  joinedAt   DateTime  @default(now())
-  notifiedAt DateTime?
-  seatedAt   DateTime?
+  joinedAt     DateTime  @default(now())
+  notifiedAt   DateTime?
+  seatedAt     DateTime?
+  anonymizedAt DateTime? // set by the retention/anonymization worker; null = not yet anonymized
 
   restaurant Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
 
@@ -484,9 +496,13 @@ model Reservation {
   // derived from it instead of RestaurantSettings.defaultDurationMinutes. Optional
   // and unused by restaurants.
   serviceId        String?
-  customerName     String
+  // Nullable so the retention/anonymization worker can null out PII once a
+  // reservation ages past the retention window, while keeping the row (and its
+  // aggregate fields: guestCount, startTime, status, table, isVIP...) for
+  // statistics. Still required at creation time by controller-level validation.
+  customerName     String?
   customerEmail    String?
-  customerPhone    String
+  customerPhone    String?
   guestCount       Int
   startTime        DateTime
   endTime          DateTime?
@@ -511,6 +527,29 @@ model Reservation {
   createdAt        DateTime  @default(now())
   updatedAt        DateTime  @updatedAt
 
+  // --- KVKK consent (PRODUCTION_ROADMAP.md §7.3) ---
+  // consentAccepted: required "açık rıza" for the booking itself (data processing
+  // needed to fulfill the reservation) — checked at submission time on the public
+  // booking form and enforced server-side in reservationController.createReservation
+  // for guest-initiated (non-staff) requests. Staff-entered bookings (dashboard/host
+  // screen, phone/walk-in) are exempt server-side since there's no browser checkbox
+  // for the staff member to check on the guest's behalf.
+  // marketingConsent: a SEPARATE, optional opt-in for WhatsApp/marketing contact —
+  // must never be bundled with consentAccepted (§7.3 is explicit this has to be a
+  // distinct checkbox, not implied by booking).
+  // consentTimestamp: when the consent choice was captured (same moment for both
+  // flags today, since they're captured on the same form submission).
+  consentAccepted  Boolean   @default(false)
+  marketingConsent Boolean   @default(false)
+  consentTimestamp DateTime?
+
+  // Set by the retention/anonymization worker (src/workers/retentionAnonymizer.ts)
+  // once this row's PII (name/email/phone) has been cleared for having passed the
+  // retention window (RETENTION_DAYS env var, default 400 days). Null = not yet
+  // anonymized. Kept (not deleted) so aggregate/statistical fields — guestCount,
+  // startTime, status, table, isVIP, etc. — remain available for analytics.
+  anonymizedAt DateTime?
+
   table      BookableResource?    @relation(fields: [tableId], references: [id])
   category   ReservationCategory? @relation(fields: [categoryId], references: [id])
   service    MenuItem?            @relation(fields: [serviceId], references: [id])
@@ -523,6 +562,7 @@ model Reservation {
   @@index([categoryId])
   @@index([serviceId])
   @@index([startTime])
+  @@index([anonymizedAt])
 }
 
 // A payment attempt for a reservation deposit. Provider-agnostic: `provider`

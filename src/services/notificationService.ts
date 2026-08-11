@@ -6,8 +6,12 @@
 import { sendSms } from './messaging';
 
 interface PaymentRequestPayload {
-  customerName: string;
-  customerPhone: string;
+  customerName: string | null;
+  // Nullable: Reservation.customerPhone is nulled out by the retention/
+  // anonymization worker once a booking ages past the retention window. Those
+  // reservations are long past their active payment/notification lifecycle, but
+  // the type has to reflect it since callers read straight off the Prisma row.
+  customerPhone: string | null;
   customerEmail?: string | null;
   restaurantName: string;
   amountLabel: string;   // e.g. "₺250,00"
@@ -23,7 +27,8 @@ export function formatReservationLabel(startTime: Date | string, guestCount: num
 }
 
 interface BookingConfirmationPayload {
-  customerPhone: string;
+  // Nullable — see PaymentRequestPayload.customerPhone above.
+  customerPhone: string | null;
   restaurantName: string;
   reservationLabel: string; // e.g. "Sat 12 Jul, 20:00 · 4 guests"
   // Short lookup code the guest can give the host stand instead of their name
@@ -38,12 +43,14 @@ interface BookingConfirmationPayload {
 // sendPaymentRequest, which is sent instead when a deposit still needs to be
 // collected before the booking can be confirmed.
 export async function sendBookingConfirmation(p: BookingConfirmationPayload): Promise<void> {
+  if (!p.customerPhone) return; // anonymized reservation — nothing to notify
   const codeSuffix = p.confirmationCode ? ` Rezervasyon kodunuz: ${p.confirmationCode}.` : '';
   const smsText = `${p.restaurantName}: ${p.reservationLabel} rezervasyonunuz onaylandı.${codeSuffix} Sizi bekliyoruz!`;
   await sendSms(p.customerPhone, smsText);
 }
 
 export async function sendPaymentRequest(p: PaymentRequestPayload): Promise<void> {
+  if (!p.customerPhone) return; // anonymized reservation — nothing to notify
   const smsText =
     `${p.restaurantName}: ${p.reservationLabel} rezervasyonunuz için ${p.amountLabel} kapora gerekiyor. ` +
     `Güvenli ödeme: ${p.paymentUrl} — veya ${p.restaurantName} sitesinde ödeme kodu: ${p.code}. ` +
