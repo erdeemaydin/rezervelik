@@ -21,7 +21,7 @@
 1. ✅ **PostgreSQL migration** — done (see §2). No SQLite anywhere in the codebase (`CLAUDE.md`).
 2. ✅ **Automated tests + CI gate** — done (see §4). 252 tests, both apps type-checked/linted/built on every PR (`.github/workflows/ci.yml`, `docs/TESTING_AND_CICD.md`).
 3. ✅ **Tested, encrypted, offsite backups** — done (see §6). Daily `pg_dump` via cron, documented restore procedure in `docs/DATABASE_RUNBOOK.md`. Confirm the "practice restore" and "offsite copy" specifics still hold — that's operational state this doc can't verify from the repo alone.
-4. **Still open, in rough priority order:** a staging environment (§4.1 — `develop` branch exists per `docs/GIT_WORKFLOW.md` but nothing deploys it anywhere yet), HTTPS/HSTS correctness (§10 #1/#5), moving `multer` uploads off local disk (§3), KVKK consent/retention UI (§7), dependency vulnerability scanning now wired into CI but the frontend's 3 known advisories need a deliberate Next.js upgrade to close (§11).
+4. **Still open, in rough priority order:** a staging environment (§4.1 — `develop` branch exists per `docs/GIT_WORKFLOW.md` but nothing deploys it anywhere yet), confirming HTTPS is actually live on the deploy server (§10 #1 — HSTS is now safely disabled in code either way, §10 #5), moving `multer` uploads off local disk (§3), KVKK consent/retention UI (§7). Dependency vulnerability scanning is wired into CI and both apps are at 0 known vulnerabilities as of the 2026-08-11 Next.js 16.3.0 upgrade (§11).
 
 VPS choice and splitting frontend/backend still matter far less than the open items above.
 
@@ -362,21 +362,21 @@ need two different tools. The former has had several dedicated audit passes; the
 tooling until this session.
 
 **What's now in place:**
-- **`npm audit` in CI** (`.github/workflows/ci.yml`) — runs on every PR/push:
-  - Backend: blocking at `--audit-level=moderate` (backend is 0 vulnerabilities at every severity as of 2026-08-11, so this is a real gate, not a formality).
-  - Frontend: blocking at `--audit-level=critical`; `--audit-level=high` also runs but is informational (`|| true`) because of the known-accepted items below.
-- **Dependabot** (`.github/dependabot.yml`) — weekly PRs for both `npm` ecosystems (root + `frontend/`) plus GitHub Actions versions, grouped by minor/patch so routine bumps don't flood the PR list. `next` is excluded from *major*-version auto-PRs (deliberate manual upgrade — see below) but still gets patch/minor PRs.
+- **`npm audit` in CI** (`.github/workflows/ci.yml`) — runs on every PR/push, blocking at
+  `--audit-level=moderate` for both backend and frontend. Both are 0 vulnerabilities at every
+  severity as of 2026-08-11, so this is a real gate, not a formality.
+- **Dependabot** (`.github/dependabot.yml`) — weekly PRs for both `npm` ecosystems (root + `frontend/`) plus GitHub Actions versions, grouped by minor/patch so routine bumps don't flood the PR list. `next` is excluded from *major*-version auto-PRs (deliberate manual upgrade) but still gets patch/minor PRs.
 
-**Known accepted risk (frontend, 3 high-severity advisories):** `postcss` (XSS/path-traversal in
-sourcemap handling) and `sharp`/`libvips` (image-processing CVEs) are vendored *inside*
-`next@16.2.4`'s own dependency tree — `npm audit fix` only offers `--force`, which would bump to
-`next@16.3.0`. Not done in this session because `frontend/AGENTS.md` explicitly warns this Next.js
-version has breaking changes vs. training-data assumptions, so a version bump deserves its own
-deliberate, tested pass — not a side effect of a dependency-audit task. **Next session: do that
-Next.js upgrade deliberately** (read `frontend/node_modules/next/dist/docs/` for the delta, run
-the full test/build/lint suite, manually smoke-test the app in a browser per this repo's usual
-verification bar), then flip the frontend CI step's `--audit-level=high` from informational to
-blocking by removing `|| true`.
+**Resolved 2026-08-11: Next.js 16.2.4 → 16.3.0.** The 3 known-accepted high-severity advisories
+(`postcss` XSS/path-traversal in sourcemap handling, `sharp`/`libvips` image-processing CVEs —
+both vendored inside `next`'s own dependency tree) are closed by this upgrade; `npm audit` now
+reports 0 vulnerabilities on the frontend at every severity. Verified via `tsc --noEmit`, `eslint`
+(same 412 pre-existing warnings, 0 errors, before and after — confirmed no lint regression from
+the bump), the frontend unit test suite, and a clean `next build`. **Not verified:** a real browser
+smoke-test — this sandbox has no root to install Chromium's shared libs, so Playwright's cached
+Chromium binary fails to launch here (same limitation noted elsewhere in `PROGRESS.md`). Do a
+manual browser pass (login, dashboard, public `/r/[slug]` booking flow, language switch) before/soon
+after this ships to staging or production.
 
 **Backend dependency fixes applied this session:** `npm audit fix` (non-breaking) resolved a
 **critical** prototype-pollution CVE in `i18next-fs-backend`, plus `nanoid`/`postcss`/`qs`/

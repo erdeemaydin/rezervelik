@@ -65,13 +65,10 @@ jobs:
           cache: npm
           cache-dependency-path: frontend/package-lock.json
       - run: npm ci
-      - name: Dependency audit — critical (blocking)
-        run: npm audit --audit-level=critical
-      - name: Dependency audit — high (informational; 3 known advisories are
-          vendored inside next@16.2.4 itself and only close via a Next.js
-          upgrade — see PRODUCTION_ROADMAP.md §11. Remove `|| true` once
-          that upgrade lands so this becomes a real gate again.)
-        run: npm audit --audit-level=high || true
+      - name: Dependency audit (blocking — frontend is currently 0
+          vulnerabilities at every severity as of the next@16.3.0 upgrade;
+          see PRODUCTION_ROADMAP.md §11)
+        run: npm audit --audit-level=moderate
       - name: Lint
         run: npm run lint
       - name: Type-check
