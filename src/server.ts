@@ -9,11 +9,13 @@
 import './env'; // must be the first import — loads .env synchronously before anything else runs
 import app from './app';
 import { startPriceUpdater } from './workers/priceUpdater';
+import { startRetentionAnonymizer } from './workers/retentionAnonymizer';
 
 const PORT = process.env.PORT || 3000;
 
 // Initialize background workers
 startPriceUpdater();
+startRetentionAnonymizer();
 
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
