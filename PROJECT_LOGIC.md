@@ -50,7 +50,16 @@ The system supports three distinct operational modes, configurable per restauran
 
 ## 8. Frontend Customization CMS
 - A `FrontendCustomization` model allows tailoring the public-facing booking and menu page (`/r/[slug]`).
-- The **Design Architecture** (`CLASSIC_LIST`, `EDITORIAL_IMAGE`, `ANIMATED`, or `GARDEN_FRESH` — mapped to the `ClassicLayout`, `PremiumLayout`, `OldenLayout`, and `GardenLayout` components respectively) is controlled exclusively by the root SysAdmin via tenant settings, not by the tenant themselves.
+- The **Design Architecture** — one of 8 curated layout components, chosen via `layoutStyle` — is controlled exclusively by the root SysAdmin via tenant settings (`system-admin/tenants`), not by the tenant themselves:
+  - `CLASSIC_LIST` → `ClassicLayout` — modern minimal, multi-view (welcome/menu/booking/success).
+  - `EDITORIAL_IMAGE` → `PremiumLayout` — dark botanical editorial, single-page scroll.
+  - `ANIMATED` → `OldenLayout` — vintage/old-world diner feel.
+  - `GARDEN_FRESH` → `GardenLayout` — light, warm, organic.
+  - `NOIR_LOUNGE` → `NoirLoungeLayout` — dark, neon-accented nightlife/lounge; glass-card bento menu grid instead of a photo gallery.
+  - `NORDIC_MINIMAL` → `NordicMinimalLayout` — ultra-clean neutral palette, no hero photo (huge-whitespace typographic hero instead), hairline-divided menu list.
+  - `TRATTORIA_RUSTIC` → `TrattoriaRusticLayout` — warm terracotta/wood tones, wavy section dividers, two-column welcome hero instead of full-bleed.
+  - `BOLD_EDITORIAL` → `BoldEditorialLayout` — stark black/white with one loud accent, asymmetric split-screen hero, asymmetric bento-grid menu.
+  All 8 share the same functional core (day-status/capacity/overbooking checks, waitlist fallback, i18n where established) — only the visual/structural treatment differs. New layout components live in `frontend/src/components/public/` and are dispatched by `layoutStyle` in both `frontend/src/app/r/[slug]/page.tsx` and `.../menu/page.tsx`.
 - Configurable elements available to the tenant include:
   - **Typography & Color Palette.**
   - **Announcement Banner:** Temporary text for promotions or important notices.

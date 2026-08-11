@@ -7,6 +7,10 @@ import ClassicLayout from '@/components/public/ClassicLayout';
 import PremiumLayout from '@/components/public/PremiumLayout';
 import OldenLayout from '@/components/public/OldenLayout';
 import GardenLayout from '@/components/public/GardenLayout';
+import NoirLoungeLayout from '@/components/public/NoirLoungeLayout';
+import NordicMinimalLayout from '@/components/public/NordicMinimalLayout';
+import TrattoriaRusticLayout from '@/components/public/TrattoriaRusticLayout';
+import BoldEditorialLayout from '@/components/public/BoldEditorialLayout';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || (typeof window !== 'undefined' ? `${window.location.protocol}//${window.location.hostname}:3000/api` : 'http://localhost:3000/api');
 
@@ -46,6 +50,22 @@ export default function RestaurantRouterPage() {
 
   if (layoutStyle === 'GARDEN_FRESH') {
     return <GardenLayout slug={slug as string} initialRestaurant={restaurant} initialView={initialView} />;
+  }
+
+  if (layoutStyle === 'NOIR_LOUNGE') {
+    return <NoirLoungeLayout slug={slug as string} initialRestaurant={restaurant} initialView={initialView} />;
+  }
+
+  if (layoutStyle === 'NORDIC_MINIMAL') {
+    return <NordicMinimalLayout slug={slug as string} initialRestaurant={restaurant} initialView={initialView} />;
+  }
+
+  if (layoutStyle === 'TRATTORIA_RUSTIC') {
+    return <TrattoriaRusticLayout slug={slug as string} initialRestaurant={restaurant} initialView={initialView} />;
+  }
+
+  if (layoutStyle === 'BOLD_EDITORIAL') {
+    return <BoldEditorialLayout slug={slug as string} initialRestaurant={restaurant} initialView={initialView} />;
   }
 
   return <ClassicLayout slug={slug as string} initialRestaurant={restaurant} initialView={initialView} />;

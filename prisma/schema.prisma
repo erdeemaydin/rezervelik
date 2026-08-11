@@ -79,7 +79,7 @@ model FrontendCustomization {
   restaurantId String @unique
 
   // New Theming Architecture
-  layoutStyle  String @default("CLASSIC_LIST") // CLASSIC_LIST, EDITORIAL_IMAGE, ANIMATED, GARDEN_FRESH
+  layoutStyle  String @default("CLASSIC_LIST") // CLASSIC_LIST, EDITORIAL_IMAGE, ANIMATED, GARDEN_FRESH, NOIR_LOUNGE, NORDIC_MINIMAL, TRATTORIA_RUSTIC, BOLD_EDITORIAL
   typography   String @default("SANS") // SANS, SERIF, MONO
   colorPalette String @default("OBSIDIAN") // OBSIDIAN, PEARL, EARTH
 

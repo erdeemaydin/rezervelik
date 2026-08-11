@@ -531,6 +531,10 @@ export default function TenantManagementPage() {
                                   <option value="EDITORIAL_IMAGE">Premium Editorial</option>
                                   <option value="ANIMATED">Olden (Vintage)</option>
                                   <option value="GARDEN_FRESH">Garden (Light & Creative)</option>
+                                  <option value="NOIR_LOUNGE">Noir Lounge (Dark & Neon)</option>
+                                  <option value="NORDIC_MINIMAL">Nordic Minimal (Clean & Quiet)</option>
+                                  <option value="TRATTORIA_RUSTIC">Trattoria Rustic (Warm & Handcrafted)</option>
+                                  <option value="BOLD_EDITORIAL">Bold Editorial (Magazine & Asymmetric)</option>
                                 </select>
                             </div>
                         </div>
