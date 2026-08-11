@@ -23,7 +23,8 @@
     "setup_link_invalid": "This setup link is invalid or has expired.",
     "reset_link_invalid": "This password reset link is invalid or has expired.",
     "email_in_use": "This email address is already in use.",
-    "registration_disabled": "Public registration is currently disabled."
+    "registration_disabled": "Public registration is currently disabled.",
+    "consent_required": "Please accept the data processing consent to book a reservation."
   },
   "messages": {
     "reservation_created": "Reservation created successfully",

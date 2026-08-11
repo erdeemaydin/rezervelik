@@ -124,7 +124,7 @@ describe('Overbooking booking flow', () => {
     return api
       .post('/api/reservations')
       .set('X-Restaurant-ID', a.restaurant.id)
-      .send({ customerName: 'Guest', customerPhone: phone, guestCount, startTime: `${date}T12:00:00.000Z` });
+      .send({ customerName: 'Guest', customerPhone: phone, guestCount, startTime: `${date}T12:00:00.000Z`, consentAccepted: true });
   }
 
   beforeAll(async () => {

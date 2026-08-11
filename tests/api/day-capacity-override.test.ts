@@ -37,7 +37,7 @@ describe('DaySetting.maxCapacityOverride enforcement', () => {
     return api
       .post('/api/reservations')
       .set('X-Restaurant-ID', a.restaurant.id)
-      .send({ customerName: 'Guest', customerPhone: phone, guestCount, startTime: `${date}T12:00:00.000Z` });
+      .send({ customerName: 'Guest', customerPhone: phone, guestCount, startTime: `${date}T12:00:00.000Z`, consentAccepted: true });
   }
 
   it('allows public bookings that stay within the cap', async () => {
@@ -74,13 +74,13 @@ describe('DaySetting.maxCapacityOverride enforcement', () => {
     const first = await api
       .post('/api/reservations')
       .set('X-Restaurant-ID', a.restaurant.id)
-      .send({ customerName: 'Guest', customerPhone: '+905550001005', guestCount: 4, startTime: `${otherDate}T12:00:00.000Z` });
+      .send({ customerName: 'Guest', customerPhone: '+905550001005', guestCount: 4, startTime: `${otherDate}T12:00:00.000Z`, consentAccepted: true });
     expect(first.status).toBe(201);
 
     const blocked = await api
       .post('/api/reservations')
       .set('X-Restaurant-ID', a.restaurant.id)
-      .send({ customerName: 'Guest2', customerPhone: '+905550001006', guestCount: 2, startTime: `${otherDate}T12:00:00.000Z` });
+      .send({ customerName: 'Guest2', customerPhone: '+905550001006', guestCount: 2, startTime: `${otherDate}T12:00:00.000Z`, consentAccepted: true });
     expect(blocked.status).toBe(409);
 
     await api
@@ -91,7 +91,7 @@ describe('DaySetting.maxCapacityOverride enforcement', () => {
     const afterCancel = await api
       .post('/api/reservations')
       .set('X-Restaurant-ID', a.restaurant.id)
-      .send({ customerName: 'Guest3', customerPhone: '+905550001007', guestCount: 2, startTime: `${otherDate}T12:00:00.000Z` });
+      .send({ customerName: 'Guest3', customerPhone: '+905550001007', guestCount: 2, startTime: `${otherDate}T12:00:00.000Z`, consentAccepted: true });
     expect(afterCancel.status).toBe(201);
   });
 
@@ -100,7 +100,7 @@ describe('DaySetting.maxCapacityOverride enforcement', () => {
     const res = await api
       .post('/api/reservations')
       .set('X-Restaurant-ID', a.restaurant.id)
-      .send({ customerName: 'Guest', customerPhone: '+905550001008', guestCount: 15, startTime: `${uncappedDate}T12:00:00.000Z` });
+      .send({ customerName: 'Guest', customerPhone: '+905550001008', guestCount: 15, startTime: `${uncappedDate}T12:00:00.000Z`, consentAccepted: true });
     expect(res.status).toBe(201);
   });
 });

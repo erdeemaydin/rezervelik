@@ -33,7 +33,7 @@ describe('No-show deposit-forfeiture reporting', () => {
     const created = await api
       .post('/api/reservations')
       .set('X-Restaurant-ID', a.restaurant.id)
-      .send({ customerName: 'Guest', customerPhone: '+905550000040', guestCount: 2, startTime: `${date}T10:00:00.000Z` });
+      .send({ customerName: 'Guest', customerPhone: '+905550000040', guestCount: 2, startTime: `${date}T10:00:00.000Z`, consentAccepted: true });
     expect(created.status).toBe(201);
 
     const reservation = await prisma.reservation.findFirst({ where: { customerPhone: '+905550000040' } });
