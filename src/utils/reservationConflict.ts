@@ -60,6 +60,27 @@ export async function findTableConflict({
   });
 }
 
+// findTableConflict only checks for *overlapping reservations* scoped to
+// restaurantId+tableId — it never confirms the table itself belongs to this
+// tenant. A foreign tableId naturally has zero conflicting reservations under
+// the caller's own restaurantId, so the conflict check always reports "free"
+// and the write would proceed, storing another tenant's BookableResource.id
+// on this tenant's Reservation (and leaking that tenant's table via
+// `include: { table: true }`). Callers must run this (and verifyCategoryOwnership
+// below) before trusting a caller-supplied tableId/categoryId, same pattern as
+// menuController's findOwnedCategory/findOwnedMenuItem.
+export async function verifyTableOwnership(restaurantId: string, tableId: string | null): Promise<boolean> {
+  if (!tableId) return true;
+  const table = await prisma.bookableResource.findFirst({ where: { id: tableId, restaurantId }, select: { id: true } });
+  return !!table;
+}
+
+export async function verifyCategoryOwnership(restaurantId: string, categoryId: string | null): Promise<boolean> {
+  if (!categoryId) return true;
+  const category = await prisma.reservationCategory.findFirst({ where: { id: categoryId, restaurantId }, select: { id: true } });
+  return !!category;
+}
+
 /**
  * The reservation's calendar day, resolved in the restaurant's own timezone (not
  * UTC) so a booking near midnight lands on the day the guest actually picked and

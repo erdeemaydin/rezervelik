@@ -4,7 +4,7 @@ import { successResponse, errorResponse } from '../utils/response';
 import { verifyToken } from '../utils/jwt';
 import { createPaymentForReservation } from '../services/paymentService';
 import { sendPaymentRequest, sendBookingConfirmation, formatReservationLabel } from '../services/notificationService';
-import { findTableConflict, findAvailableTable, BLOCKING_STATUSES, restaurantDateStr, clearFullyBookedIfSet, getBookedCoversForDate, getEffectiveOverbookingConfig, getOverbookedCountsForDate, generateConfirmationCode } from '../utils/reservationConflict';
+import { findTableConflict, findAvailableTable, BLOCKING_STATUSES, restaurantDateStr, clearFullyBookedIfSet, getBookedCoversForDate, getEffectiveOverbookingConfig, getOverbookedCountsForDate, generateConfirmationCode, verifyTableOwnership, verifyCategoryOwnership } from '../utils/reservationConflict';
 import { logAudit } from '../services/auditService';
 
 const isStaffRequest = (req: Request): boolean => {
@@ -151,6 +151,13 @@ export const createReservation = async (req: Request, res: Response) => {
     // transaction so two concurrent bookings can't both pass the availability
     // check and land on the same table (the previous check-then-insert race).
     const originalTableId: string | null = tableId === 'none' ? null : tableId;
+    if (!(await verifyTableOwnership(restaurantId, originalTableId))) {
+      return errorResponse(res, 'errors.validation_error', 400, { message: 'Table not found' });
+    }
+    const finalCategoryId: string | null = categoryId === 'none' ? null : categoryId;
+    if (!(await verifyCategoryOwnership(restaurantId, finalCategoryId))) {
+      return errorResponse(res, 'errors.validation_error', 400, { message: 'Category not found' });
+    }
     let requiresInstantPayment = false;
     const isManualAvailability = settings.logic === 'MANUAL_AVAILABILITY';
 
@@ -264,7 +271,7 @@ export const createReservation = async (req: Request, res: Response) => {
             data: {
               restaurantId,
               tableId: finalTableId,
-              categoryId: categoryId === 'none' ? null : categoryId,
+              categoryId: finalCategoryId,
               serviceId: finalServiceId,
               customerName,
               customerEmail,
@@ -368,6 +375,13 @@ export const updateReservation = async (req: Request, res: Response) => {
     if (!existingRes) return errorResponse(res, 'errors.validation_error', 404, { message: 'Reservation not found' });
 
     const finalTableId = tableId === 'none' ? null : tableId;
+    if (!(await verifyTableOwnership(restaurantId, finalTableId))) {
+      return errorResponse(res, 'errors.validation_error', 400, { message: 'Table not found' });
+    }
+    const finalCategoryId = categoryId === 'none' ? null : categoryId;
+    if (!(await verifyCategoryOwnership(restaurantId, finalCategoryId))) {
+      return errorResponse(res, 'errors.validation_error', 400, { message: 'Category not found' });
+    }
     const start = new Date(startTime);
 
     const settings = await prisma.restaurantSettings.findUnique({ where: { restaurantId } });
@@ -412,7 +426,7 @@ export const updateReservation = async (req: Request, res: Response) => {
           where: { id },
           data: {
             tableId: finalTableId,
-            categoryId: categoryId === 'none' ? null : categoryId,
+            categoryId: finalCategoryId,
             customerName,
             customerEmail,
             customerPhone,
@@ -489,6 +503,9 @@ export const updateReservationSchedule = async (req: Request, res: Response) => 
 
     const settings = await prisma.restaurantSettings.findUnique({ where: { restaurantId } });
     const finalTableId = tableId === 'none' || !tableId ? null : tableId;
+    if (!(await verifyTableOwnership(restaurantId, finalTableId))) {
+      return errorResponse(res, 'errors.validation_error', 400, { message: 'Table not found' });
+    }
     const start = new Date(startTime);
     let end: Date;
     if (endTime) {
@@ -558,6 +575,9 @@ export const updateReservationStatus = async (req: Request, res: Response) => {
     // 'none' into the tableId column (as this endpoint previously did) fails the FK.
     const finalTableId: string | null | undefined =
       tableId === undefined ? undefined : (tableId === 'none' ? null : tableId);
+    if (finalTableId && !(await verifyTableOwnership(restaurantId, finalTableId))) {
+      return errorResponse(res, 'errors.validation_error', 400, { message: 'Table not found' });
+    }
     const conflictEnd = existingRes.endTime ?? new Date(existingRes.startTime.getTime() + 90 * 60000);
 
     // If this status change assigns/keeps a table on a booking that will occupy it,
