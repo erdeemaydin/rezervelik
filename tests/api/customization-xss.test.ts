@@ -84,4 +84,26 @@ describe('PUT /api/customization sanitizes rich-text fields', () => {
     expect(publicRes.body.data.customization.reservationWarningText).not.toContain('<script');
     expect(publicRes.body.data.customization.reservationWarningText).toContain('No-shows may be charged.');
   });
+
+  // KVKK privacy notice (PROJECT_LOGIC.md §14): tenant-editable override rendered
+  // via dangerouslySetInnerHTML on the public /r/[slug]/privacy page — needs the
+  // exact same write-time sanitization as reservationInfoText/reservationWarningText.
+  it('strips a <script> tag from privacyNoticeText and it survives the round trip to the public endpoint', async () => {
+    const res = await api
+      .put('/api/customization')
+      .set(auth(a.tokens.admin, a.restaurant.id))
+      .send({
+        privacyNoticeText: '<p>We keep your data for 1 year.</p><script>alert(document.cookie)</script><img src=x onerror="alert(1)">',
+      });
+
+    expect(res.status).toBe(200);
+    expect(res.body.data.privacyNoticeText).not.toContain('<script');
+    expect(res.body.data.privacyNoticeText).not.toContain('onerror');
+    expect(res.body.data.privacyNoticeText).toContain('We keep your data for 1 year.');
+
+    const publicRes = await api.get(`/api/public/restaurant/${a.restaurant.slug}`);
+    expect(publicRes.status).toBe(200);
+    expect(publicRes.body.data.customization.privacyNoticeText).not.toContain('<script');
+    expect(publicRes.body.data.customization.privacyNoticeText).toContain('We keep your data for 1 year.');
+  });
 });

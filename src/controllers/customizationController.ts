@@ -65,11 +65,17 @@ export const updateCustomization = async (req: Request, res: Response) => {
       legalText,
       socialLinks,
       reservationInfoText,
-      reservationWarningText
+      reservationWarningText,
+      privacyNoticeText
     } = req.body;
 
     const sanitizedInfoText = sanitizeRichText(reservationInfoText);
     const sanitizedWarningText = sanitizeRichText(reservationWarningText);
+    // Same rich-text/XSS treatment as reservationInfoText/reservationWarningText
+    // above — this KVKK "aydınlatma metni" override is rendered on the public
+    // /r/[slug]/privacy page via dangerouslySetInnerHTML, so it needs the same
+    // write-time sanitization, not just the same optional/tenant-editable pattern.
+    const sanitizedPrivacyNoticeText = sanitizeRichText(privacyNoticeText);
 
     const customization = await prisma.frontendCustomization.upsert({
       where: { restaurantId },
@@ -84,7 +90,8 @@ export const updateCustomization = async (req: Request, res: Response) => {
         legalText,
         socialLinks,
         reservationInfoText: sanitizedInfoText,
-        reservationWarningText: sanitizedWarningText
+        reservationWarningText: sanitizedWarningText,
+        privacyNoticeText: sanitizedPrivacyNoticeText
       },
       create: {
         restaurantId,
@@ -98,7 +105,8 @@ export const updateCustomization = async (req: Request, res: Response) => {
         legalText,
         socialLinks,
         reservationInfoText: sanitizedInfoText,
-        reservationWarningText: sanitizedWarningText
+        reservationWarningText: sanitizedWarningText,
+        privacyNoticeText: sanitizedPrivacyNoticeText
       }
     });
 

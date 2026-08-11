@@ -133,7 +133,32 @@
     "capacityFullTitle": "Kapasiteye Yakın",
     "capacityFullDesc": "Bu gün rezervasyon kapasitesine ulaşmış veya yakın durumda — talebiniz onaylanmadan önce manuel inceleme gerektirebilir.",
     "confirmationCodeLabel": "Rezervasyon kodunuz",
-    "confirmationCodeHint": "Sizi isimle bulamazsak bu kodu görevliye gösterin."
+    "confirmationCodeHint": "Sizi isimle bulamazsak bu kodu görevliye gösterin.",
+    "consent": {
+      "bookingPrefix": "Okudum, kabul ediyorum:",
+      "privacyNoticeLinkText": "Aydınlatma Metni",
+      "bookingSuffix": " ve bu rezervasyonu oluşturmak ve yönetmek amacıyla kişisel verilerimin işlenmesine rıza gösteriyorum.",
+      "marketing": "Ayrıca WhatsApp/SMS üzerinden rezervasyon hatırlatmaları ve kampanya bilgisi almak istiyorum (isteğe bağlı).",
+      "required": "Devam etmek için veri işleme onayını kabul etmelisiniz."
+    },
+    "privacyNotice": {
+      "title": "Aydınlatma Metni",
+      "intro": "Bu metin, rezervasyon yaparken kişisel verilerinizin genel hatlarıyla nasıl işlendiğini açıklar. Bu içerik, rezervasyon yaptığınız restoran tarafından, bu platform üzerinden sağlanmaktadır.",
+      "controllerTitle": "Verilerinizden kim sorumludur",
+      "controllerBody": "Rezervasyon yaptığınız restoran, gönderdiğiniz bilgiler için veri sorumlusudur. Bu platform yalnızca veri işleyen sıfatıyla, restoranın talimatları doğrultusunda verilerinizi işler.",
+      "whatTitle": "Hangi veriler toplanır",
+      "whatBody": "Genellikle: adınız, telefon numaranız ve (belirtmişseniz) e-posta adresiniz ile tarih, saat ve kişi sayısı gibi rezervasyon detayları.",
+      "whyTitle": "Neden toplanır",
+      "whyBody": "Rezervasyonunuzu oluşturmak, onaylamak ve yönetmek, sizinle rezervasyon hakkında iletişime geçmek (örneğin onay, hatırlatma veya değişiklik bildirimleri) ve yalnızca ayrıca onay verdiğiniz takdirde pazarlama mesajları göndermek amacıyla.",
+      "howLongTitle": "Ne kadar süreyle saklanır",
+      "howLongBody": "Verileriniz, rezervasyonun tamamlanması için gerekli süre boyunca ve ardından sınırlı bir saklama süresi için tutulur; bu sürenin sonunda anonim hale getirilir veya silinir.",
+      "whoWithTitle": "Kimlerle paylaşılır",
+      "whoWithBody": "Verileriniz yalnızca bu platformun işletilmesine ve rezervasyonla ilgili mesajların (örn. SMS/WhatsApp gönderimi) iletilmesine yardımcı olan hizmet sağlayıcılarla paylaşılır; satılmaz veya ilgisiz amaçlarla paylaşılmaz.",
+      "rightsTitle": "Haklarınız",
+      "rightsBody": "Kişisel verilerinize erişim, düzeltme veya silinmesini talep etmek için doğrudan restoranla iletişime geçebilirsiniz.",
+      "tenantOverrideNote": "Bu restoran aşağıda kendi metnini sağlamıştır.",
+      "backLink": "Geri"
+    }
   },
   "dashboard": {
     "loading": "Kontrol merkezi yükleniyor...",
@@ -762,6 +787,12 @@
         "title": "Yasal / Şartlar",
         "desc": "Hizmet şartları veya gizlilik politikası",
         "placeholder": "Yasal şartlarınızı buraya yazın..."
+      },
+      "privacyNotice": {
+        "title": "Aydınlatma Metni (KVKK)",
+        "desc": "Rezervasyon onay kutusundan bağlantı verilen aydınlatma metninin isteğe bağlı, restorana özel sürümü.",
+        "placeholder": "Kendi aydınlatma metninizi buraya yazın — hangi verileri topladığınızı, nedenini, ne kadar süre saklandığını ve kimlerle paylaşıldığını. Temel HTML desteklenir.",
+        "hint": "Boş bırakırsanız misafirlere platformun genel varsayılan metni gösterilir. Bu platform yön gösterir, hukuki tavsiye vermez — kendi metninizi yayınlamadan önce bir KVKK danışmanıyla gözden geçirin."
       }
     },
     "rules": {
