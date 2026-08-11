@@ -2,6 +2,57 @@
 
 Day-to-day record of substantial work sessions on this project. Newest entry first.
 
+## 2026-08-11 — security/bug audit + i18n pass on recent changes
+
+**Three parallel read-only audit forks (security, functional bugs, i18n) scoped to
+everything added since the 2026-08-08 pass** (confirmation codes, admin-gated
+overbooking, the 4 new public layout themes) **+ fixes for everything confirmed.**
+
+- **Critical: cross-tenant privilege escalation via `isStaffRequest`**
+  (`reservationController.ts`). It only checked that the bearer token was
+  *some* valid JWT, never that it belonged to the tenant in
+  `X-Restaurant-ID` — unlike `authMiddleware`'s real tenant check. Since
+  `POST /api/reservations` is public, any staff member's own token let them
+  act as staff against a *different* restaurant, bypassing `maxPartySize`,
+  day-capacity caps, table-conflict overrides, and `FULLY_BOOKED`. The same
+  unchecked pattern existed in the rate limiter's staff-bypass on the same
+  route (SMS-cost amplification risk). Both now require
+  `decoded.restaurantId === req.restaurantId` (or `SUPER_ADMIN`).
+- **Mass assignment**: `isVIP`/`internalNote` were written straight from the
+  public request body regardless of `staffInitiated`.
+- **Unrated public payment-session lookup**: `GET
+  /api/public/payment/session/:ref` had no rate limit, unlike every other
+  public write endpoint — brute-forceable for reservation PII, and each hit
+  on a valid `PENDING` payment fired a live PayTR gateway call (free
+  amplification against the merchant account).
+- **`acceptOffer` bypassed every capacity guarantee**: always created a
+  `CONFIRMED` reservation regardless of whether a table was actually
+  assigned, and never checked `DaySetting.maxCapacityOverride` — both
+  enforced on the regular public booking path. Now mirrors
+  `createReservation`; also now issues a `confirmationCode` like every
+  other creation path.
+- **Confirmation-code retry loop reused stale state**: `finalTableId`/
+  `isOverbooked` weren't reset between confirmation-code collision retry
+  attempts in `createReservation`.
+- **Dashboard stats used server-local time**: `getDashboardStats` had the
+  same server-local-vs-tenant-timezone bug already fixed in
+  `analyticsController.ts`, mis-bucketing `staffOnline` and the weekly
+  volume chart near a day boundary. `computePaymentDeadline`'s same-day
+  check had the same issue at lower stakes.
+- **i18n**: confirmed no "İ" (Turkish dotted capital I) misuse anywhere in
+  English text — already clean. `tr.json`'s naturalness turned out to
+  already be in good shape (contrary to the stale note in `WORK_LOG.md`);
+  found and fixed two real mistranslations (`avgLeadTime`, `crimson`). Also
+  found `/pay` and `/pay/[ref]` (the guest-facing deposit-payment pages,
+  reached directly from an SMS/email link) were 100% hardcoded Turkish with
+  no i18n at all — wired both through the existing
+  `useTranslation`/`LanguageSwitcher` infrastructure, including
+  locale-aware date/time/currency formatting.
+
+New regression tests: `reservation-cross-tenant-staff-token.test.ts`,
+`waitlist-offer-accept-capacity.test.ts`, `dashboard-stats-timezone.test.ts`.
+Full suite (238 tests) green; both `tsc` clean.
+
 ## 2026-08-09 (cont'd) — full audit pass on previously-uncovered domains
 
 **Parallel domain audits (events/wedding/vendors, public-facing pages, system-admin) + fixes for everything confirmed**
