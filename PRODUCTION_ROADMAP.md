@@ -246,7 +246,7 @@ part of this section.
 ### Phase 1 — Launch (single VPS, ~€5–15/mo equivalent)
 1. ~~Migrate SQLite → PostgreSQL~~ — ✅ done (§2).
 2. One İstanbul VPS, 2–4 GB RAM. *(confirm against the actual live server)*
-3. **Caddy** reverse proxy: TLS + `yourdomain.com` → Next.js:3001, `/api` → Express:3000. *(unconfirmed — see §10 #1, HSTS is still unaddressed in code which suggests this may not be done yet)*
+3. **Caddy** reverse proxy: TLS + `yourdomain.com` → Next.js:3001, `/api` → Express:3000. *(unconfirmed — no credentialed access to the live server from this repo's coding-agent sandbox to check; see §10 #1)*
 4. ~~**PM2** keeps both Node processes alive; backend as single instance~~ — ✅ done (`docs/DATABASE_RUNBOOK.md`: `dining-api`/`dining-web`).
 5. **Move `multer` uploads to object storage** (S3/R2/B2) or a backed-up volume — still open (§3).
 6. ~~**Automated Postgres backups**~~ — ✅ done (daily cron, §6); confirm encryption/offsite specifics.
@@ -268,14 +268,17 @@ part of this section.
 ## 9. Pre-Launch Checklist
 
 Re-verified against current code/docs 2026-08-11 — ✅ items are confirmed done from the repo
-itself; ⚠️ items need a human to confirm live operational state (the repo can't prove these);
-unmarked items are confirmed still open.
+itself; ⚠️ items need a human to confirm live operational state (the repo can't prove these — this
+was tested directly on 2026-08-11: this coding-agent sandbox tried SSHing to
+`docs/DATABASE_RUNBOOK.md`'s deploy host and confirmed it has no credentialed access, so every ⚠️
+item below is unavailable to *any* session running in an environment like this one, not just
+untried); unmarked items are confirmed still open.
 
 - [x] ✅ SQLite → PostgreSQL migration done (§2)
 - [x] ✅ Prisma production migration workflow reliable (`migrate deploy`, clean migration baseline — §5)
 - [ ] `multer` uploads moved to object storage (§3 — confirmed still local-disk)
 - [ ] ⚠️ DB not exposed to internet; least-privilege DB user; TLS; encryption at rest — `docs/DATABASE_RUNBOOK.md` shows Postgres is live on the deploy server; confirm the specific hardening (firewall, DB user privileges, at-rest encryption) directly on that server, not from this repo
-- [ ] ⚠️ Reverse proxy (Caddy) with TLS; only 80/443/SSH open — confirm on the live server (§10 #1 below suggests this may still be outstanding — HSTS is unaddressed in code, which implies HTTPS may not be fully live yet)
+- [ ] ⚠️ Reverse proxy (Caddy) with TLS; only 80/443/SSH open — confirm on the live server (§10 #1 — HSTS is now safely disabled in code pending this confirmation, see §10 #5, but that doesn't tell you whether TLS is actually live)
 - [x] ✅ PM2 running backend (single instance) + frontend (`docs/DATABASE_RUNBOOK.md`: `dining-api` / `dining-web`)
 - [x] ✅ Automated, encrypted*, offsite* backups with retention policy — daily cron `pg_dump` + pruning (`scripts/db-backup.sh`, `docs/DATABASE_RUNBOOK.md`). *Confirm encryption-at-rest/in-transit and true offsite copy are actually configured — the script itself doesn't show that from the repo alone.
 - [ ] ⚠️ **Practice restore performed successfully** — procedure is documented in `docs/DATABASE_RUNBOOK.md`; confirm it's actually been run, not just written
@@ -287,14 +290,14 @@ unmarked items are confirmed still open.
 - [ ] Uptime monitoring + error tracking (no Sentry/UptimeRobot config found in the repo)
 - [x] ✅ Backend integration tests in CI (§4.3 — 252 tests, `.github/workflows/ci.yml`)
 - [x] ✅ Dependency vulnerability scanning in CI + Dependabot (new — see §11)
-- [ ] Fix HSTS being sent unconditionally over HTTP (§10 #5 — still open, code-confirmed)
+- [x] ✅ HSTS disabled in code pending live-HTTPS confirmation (§10 #5 — fixed 2026-08-11; re-enable once TLS is confirmed live on the deploy server)
 - [ ] Content-Security-Policy on the frontend (§10 #4 — still open, code-confirmed; note the *backend* API already gets a default CSP header from `helmet()`, but that doesn't cover the Next.js frontend's own HTML/JS responses)
 
 ---
 
 ## 10. Auth, Login & Session Security Hardening
 
-> The auth **logic** is sound — bcrypt password hashing, JWT with 24h expiry, optional 2FA/OTP, and per-tenant isolation (`X-Restaurant-ID` matched against the token's `restaurantId` in `authMiddleware`). The items below are **configuration/hardening**, not logic rewrites. Ordered by priority. Re-verified against current code 2026-08-11 — several items below have shipped since this section was written; #1/#5 (HTTPS/HSTS) have not.
+> The auth **logic** is sound — bcrypt password hashing, JWT with 24h expiry, optional 2FA/OTP, and per-tenant isolation (`X-Restaurant-ID` matched against the token's `restaurantId` in `authMiddleware`). The items below are **configuration/hardening**, not logic rewrites. Ordered by priority. Re-verified against current code 2026-08-11 — several items below have shipped since this section was written; #5 (HSTS) is now fixed in code as of 2026-08-11 (disabled pending live-HTTPS confirmation); #1 (is TLS actually live) still needs a live-server check no coding-agent sandbox has credentials for.
 
 ### How the session currently works (context — updated 2026-08-11)
 - **The session moved from `localStorage` to an httpOnly cookie.** `src/utils/authCookie.ts` sets
@@ -320,8 +323,8 @@ unmarked items are confirmed still open.
   (protected paths 307 to `/auth/login` without a cookie, 200 with one; public `/r/[slug]` and
   `/auth/login` itself are unaffected) — not a real browser test (see §11's Chromium-sandbox note).
 
-### #1 — HTTPS / TLS everywhere (blocker) — still open
-Right now passwords and JWTs travel in **cleartext HTTP** — anyone on the network can read them. This is the top blocker and is already covered by the Caddy reverse-proxy step (§1, §8). Nothing else in this section is fully effective until TLS is in place. No `hsts: false` override or other HTTPS-specific config was found in `src/app.ts`, so this is still unresolved as of 2026-08-11 — confirm directly on the live server (`docs/DATABASE_RUNBOOK.md`'s deploy host) whether Caddy/TLS is actually in front of it yet.
+### #1 — HTTPS / TLS everywhere (blocker) — still open, still unconfirmed
+Right now passwords and JWTs travel in **cleartext HTTP** — anyone on the network can read them. This is the top blocker and is already covered by the Caddy reverse-proxy step (§1, §8). Nothing else in this section is fully effective until TLS is in place. **2026-08-11: attempted to confirm directly** — SSH'd toward `docs/DATABASE_RUNBOOK.md`'s deploy host (`deploy@your-server-ip`) from this session's sandbox; the host is reachable but this sandbox has no credentialed key for the `deploy` user, so it can't log in and check. This needs someone with real access to that server — the repo alone cannot answer it.
 - Serve both apps behind **Caddy** (auto-HTTPS) on one domain: `yourdomain.com` → Next.js, `/api/*` → Express.
 - Once same-origin over HTTPS, CORS (#2, already locked down either way) gets simpler too.
 
@@ -334,10 +337,9 @@ Right now passwords and JWTs travel in **cleartext HTTP** — anyone on the netw
 ### #4 — Token storage — ✅ Done (see "How the session currently works" above)
 Session token is now an httpOnly cookie, not `localStorage`. A **Content-Security-Policy on the frontend** is still worth shipping regardless (defense-in-depth against other XSS impact beyond token theft) — not found in `frontend/` as of 2026-08-11; the *backend* API responses do get a default CSP from `helmet()`, but that's a different surface (JSON responses, not the frontend's HTML/JS).
 
-### #5 — Fix HSTS (currently sent over HTTP — actively harmful) — still open
-`src/app.ts:48` is `app.use(helmet({ crossOriginResourcePolicy: false }))` — no `hsts: false`, so helmet's default `Strict-Transport-Security` header still goes out on every response regardless of whether the connection is actually HTTPS. Once any browser (especially **iOS Safari**) sees it, it force-upgrades future `http://<host>` requests to HTTPS — which a non-TLS server doesn't speak — silently breaking access. **This was flagged as "a leading suspect for can't sign in from iPhone/iPad Safari" and is still unfixed in code.**
-- **Until HTTPS is confirmed live:** disable HSTS — `app.use(helmet({ hsts: false, crossOriginResourcePolicy: false }))`.
-- **After HTTPS:** re-enable HSTS (it's correct and desirable there).
+### #5 — Fix HSTS (currently sent over HTTP — actively harmful) — ✅ Done (2026-08-11)
+`src/app.ts` now reads `app.use(helmet({ hsts: false, crossOriginResourcePolicy: false }))`. Previously it had no `hsts: false` override, so helmet's default `Strict-Transport-Security` header went out on every response regardless of whether the connection was actually HTTPS — once any browser (especially **iOS Safari**) saw it, it force-upgrades future `http://<host>` requests to HTTPS, which a non-TLS server doesn't speak, silently breaking access. **This was flagged as "a leading suspect for can't sign in from iPhone/iPad Safari."**
+- **After HTTPS is confirmed live on the deploy server (§10 #1):** revert this override so HSTS goes out again (it's correct and desirable once TLS is actually in front of the app).
 - To recover an already-poisoned device now: iOS → Settings → Safari → **Clear History and Website Data** (wipes the cached HSTS entry).
 
 ### #6 — Secrets
@@ -353,8 +355,8 @@ Confirm `JWT_SECRET` and `SETUP_SECRET_TOKEN` are long, random, and stored in re
 - [x] ✅ CORS restricted to real frontend origin(s) — confirm `CORS_ORIGIN` env is set correctly in production
 - [x] ✅ Rate-limiting on login + OTP endpoints
 - [ ] Content-Security-Policy on the frontend — still open
-- [x] ✅ Token storage decided: httpOnly cookie (localStorage option is moot now) — `proxy.ts` server-side gating is a separate, deliberately-deferred follow-up (see §10 and "Follow-ups" below)
-- [ ] HSTS: disabled on HTTP, enabled once on HTTPS — still open, code-confirmed unaddressed
+- [x] ✅ Token storage decided: httpOnly cookie (localStorage option is moot now) — `proxy.ts` now also does lightweight server-side gating on it (added 2026-08-11, see §10 above)
+- [x] ✅ HSTS: disabled pending live-HTTPS confirmation (2026-08-11) — re-enable once TLS is confirmed live
 - [ ] ⚠️ `JWT_SECRET` / `SETUP_SECRET_TOKEN` strong and out of the repo — confirm on the live server
 
 ---
@@ -394,26 +396,31 @@ after this ships to staging or production.
 Things noticed while refreshing this doc that are worth a deliberate look next session, not fixed
 here because each needs its own scoped pass rather than a drive-by edit:
 
-1. **Next.js 16.2.4 → 16.3.0 upgrade** (§11) — closes the 3 remaining frontend dependency
-   advisories; needs its own tested pass given the breaking-change warning in `frontend/AGENTS.md`.
+1. ~~Next.js 16.2.4 → 16.3.0 upgrade~~ — ✅ done (2026-08-11, §11): closed the 3 remaining frontend
+   dependency advisories; frontend CI audit gate is back to blocking.
 2. ~~`frontend/src/proxy.ts` still carries stale reasoning~~ — ✅ done (2026-08-11, see §10): comment
    fixed, and `proxy.ts` now redirects unauthenticated requests to `/dashboard/*`/`/system-admin/*`
    server-side based on cookie presence (not JWT validity — the backend remains the real boundary).
-3. **`docs/TESTING_AND_CICD.md` is stale** — still describes tests running against a throwaway
-   **SQLite** file; the test suite has since moved to disposable Postgres (`CLAUDE.md`,
-   `docs/DATABASE_RUNBOOK.md`). Same category of doc-drift this session fixed here, just not in
-   scope for this pass.
-4. **HTTPS/HSTS status unconfirmed** (§10 #1/#5) — the repo shows no `hsts: false` override and no
-   evidence either way of whether the live server is behind TLS yet. This needs a direct check
-   against the deploy server, not just the repo, and is flagged as the single highest-priority open
-   security item in this whole document if HTTPS isn't live yet (passwords/JWTs in cleartext).
+3. ~~`docs/TESTING_AND_CICD.md` is stale~~ — ✅ done (2026-08-11): fact-checked and corrected the
+   SQLite→Postgres drift, the CI step lists, and the local-dev instructions.
+4. **HTTPS/HSTS status still unconfirmed on the live server** (§10 #1/#5) — attempted a direct SSH
+   check against `deploy@your-server-ip` (per `docs/DATABASE_RUNBOOK.md`) from this session's
+   sandbox on 2026-08-11: the host is reachable (TCP/host-key exchange succeeds) but this sandbox
+   has no credentialed key for the `deploy` user (`Permission denied (publickey,password)`) — so
+   **live-server access is confirmed unavailable from this environment**, not just untried. As a
+   safe interim measure (not a substitute for confirming TLS is actually live), disabled HSTS in
+   `src/app.ts` per §10 #5's own guidance, so the "poisons Safari with a false upgrade" failure mode
+   is closed regardless of the live server's TLS state. **Someone with real access to that host
+   still needs to confirm Caddy/TLS is in front of it** — and once confirmed, re-enable HSTS by
+   reverting the `hsts: false` override.
 5. **KVKK consent/retention UI** (§7, §9) — no evidence in the repo of a consent checkbox,
    aydınlatma metni, or retention/anonymization job existing yet. Worth a dedicated audit of what's
    actually missing vs. what's just undocumented.
-6. **A few `⚠️`-marked items in §9/§10's checklists** can only be confirmed by someone with access
-   to the live deploy server (`docs/DATABASE_RUNBOOK.md`'s host) — this repo can't verify secrets
-   storage, firewall rules, or whether backups are actually encrypted/offsite from source code
-   alone. Worth a live-server audit pass, separate from a code audit.
+6. **The `⚠️`-marked items in §9/§10's checklists (firewall, DB user privileges, backup
+   encryption/offsite copy, `CORS_ORIGIN` value, secrets storage) remain unconfirmed** — same
+   root cause as #4 above: this sandbox has no credentialed access to
+   `docs/DATABASE_RUNBOOK.md`'s deploy host. Needs a live-server audit pass by someone with actual
+   SSH access, separate from anything a code-only session can verify.
 
 ---
 
