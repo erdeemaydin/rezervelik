@@ -305,15 +305,20 @@ unmarked items are confirmed still open.
   `frontend/src/lib/authStorage.ts` now only caches the non-secret user profile client-side, and
   explicitly documents the migration in its own comment. **This closes old #4 below** — the
   original XSS-reads-localStorage concern no longer applies to the session token itself.
-- **Route protection is still client-side only** (`AdminLayout`/`SystemAdminLayout` redirect
-  unauthenticated users) — `frontend/src/proxy.ts` still carries the *old* reasoning in its
-  comment ("session token lives in localStorage... this server-side proxy cannot read it"), which
-  is now factually wrong: the token is an httpOnly cookie, which server-side middleware *can* read
-  (unlike localStorage). Nobody has revisited whether to add real server-side gating in
-  `proxy.ts` now that it's technically possible. Not fixed in this pass — it's a deliberate
-  architecture decision (whether the client-shell-then-redirect pattern is acceptable, given the
-  backend is still the real enforcement boundary regardless) rather than a quick edit. **Flagged
-  as a next-session item** — see "Follow-ups" at the bottom of this file.
+- **Route protection now has a server-side layer too (2026-08-11).** `frontend/src/proxy.ts`'s
+  comment used to claim the session token "lives in localStorage... this server-side proxy cannot
+  read it" — false since the httpOnly-cookie migration (cookie matching ignores port, so the
+  cross-port dev setup and the same-origin production setup behind the reverse proxy both let this
+  proxy read the `token` cookie). It now redirects unauthenticated requests to `/dashboard/*` and
+  `/system-admin/*` straight to `/auth/login`, checking only *presence* of the cookie, not JWT
+  validity — verifying the JWT would need `JWT_SECRET` shared into the frontend, which this
+  deliberately doesn't do. An expired/invalid token still reaches the client shell exactly as
+  before; `AdminLayout`/`SystemAdminLayout` + the `lib/api.ts` 401 interceptor remain the fallback,
+  and the backend's `authMiddleware` remains the actual enforcement boundary regardless. What this
+  closes is just the gap where a fully logged-out visitor could load the dashboard shell HTML/JS at
+  all before the client-side redirect fired. Verified with `next build` + `next start` + `curl`
+  (protected paths 307 to `/auth/login` without a cookie, 200 with one; public `/r/[slug]` and
+  `/auth/login` itself are unaffected) — not a real browser test (see §11's Chromium-sandbox note).
 
 ### #1 — HTTPS / TLS everywhere (blocker) — still open
 Right now passwords and JWTs travel in **cleartext HTTP** — anyone on the network can read them. This is the top blocker and is already covered by the Caddy reverse-proxy step (§1, §8). Nothing else in this section is fully effective until TLS is in place. No `hsts: false` override or other HTTPS-specific config was found in `src/app.ts`, so this is still unresolved as of 2026-08-11 — confirm directly on the live server (`docs/DATABASE_RUNBOOK.md`'s deploy host) whether Caddy/TLS is actually in front of it yet.
@@ -391,11 +396,9 @@ here because each needs its own scoped pass rather than a drive-by edit:
 
 1. **Next.js 16.2.4 → 16.3.0 upgrade** (§11) — closes the 3 remaining frontend dependency
    advisories; needs its own tested pass given the breaking-change warning in `frontend/AGENTS.md`.
-2. **`frontend/src/proxy.ts` still carries stale reasoning** (§10) — its comment says the session
-   token "lives in localStorage... this server-side proxy cannot read it," which is no longer true
-   now that the token is an httpOnly cookie. Worth a deliberate decision: is client-side-only route
-   protection still acceptable (the backend is the real boundary regardless), or should `proxy.ts`
-   gate on the cookie too? Either way the comment should stop asserting something false.
+2. ~~`frontend/src/proxy.ts` still carries stale reasoning~~ — ✅ done (2026-08-11, see §10): comment
+   fixed, and `proxy.ts` now redirects unauthenticated requests to `/dashboard/*`/`/system-admin/*`
+   server-side based on cookie presence (not JWT validity — the backend remains the real boundary).
 3. **`docs/TESTING_AND_CICD.md` is stale** — still describes tests running against a throwaway
    **SQLite** file; the test suite has since moved to disposable Postgres (`CLAUDE.md`,
    `docs/DATABASE_RUNBOOK.md`). Same category of doc-drift this session fixed here, just not in
