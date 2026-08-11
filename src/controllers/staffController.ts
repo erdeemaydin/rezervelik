@@ -10,6 +10,45 @@ import { logAudit } from '../services/auditService';
 const resetLinkFor = (rawToken: string) =>
   `${process.env.APP_PUBLIC_URL || 'http://localhost:3001'}/auth/reset/${rawToken}`;
 
+// `role` is a plain string column (not a Prisma enum), and this router is
+// gated only by requirePermission('manage_staff') — which any non-ADMIN role
+// can hold once granted it (e.g. a MANAGER), not just an ADMIN. Without this
+// check, a MANAGER holding manage_staff could set their own (or a new
+// user's) role to ADMIN or SUPER_ADMIN directly via the API, minting a token
+// that bypasses tenant scoping entirely (authMiddleware skips the tenant
+// check for SUPER_ADMIN) and unlocks the whole /api/system/* surface.
+//
+// - SUPER_ADMIN is never grantable through this tenant-scoped endpoint, full
+//   stop — it's only ever minted via the setup-secret bootstrap /
+//   systemController's own provisioning flow.
+// - ADMIN may only be granted by a caller who is already ADMIN (or
+//   SUPER_ADMIN, e.g. impersonating) — promoting a peer to ADMIN is a
+//   supported tenant-owner action (see staff-audit-and-email-race.test.ts),
+//   but a MANAGER who merely holds manage_staff must not be able to do it.
+// - MANAGER/HOST/STAFF are grantable by anyone who reached this router at
+//   all (they already hold manage_staff or are ADMIN/SUPER_ADMIN).
+const OPEN_ROLES = ['MANAGER', 'HOST', 'STAFF'];
+const isRoleGrantAllowed = (newRole: string, callerRole: string): boolean => {
+  if (newRole === 'SUPER_ADMIN') return false;
+  if (newRole === 'ADMIN') return callerRole === 'ADMIN' || callerRole === 'SUPER_ADMIN';
+  return OPEN_ROLES.includes(newRole);
+};
+const KNOWN_PERMISSIONS = [
+  'manage_reservations', 'manage_tables', 'edit_floor_plan', 'manage_menu',
+  'manage_calendar', 'manage_staff', 'manage_settings', 'manage_events',
+  'manage_payments', 'view_analytics', 'view_payments', 'view_reviews',
+];
+
+// `undefined` in means "field not sent, don't touch it" (matches the old
+// pass-through behavior for Prisma create/update); anything else is
+// filtered down to only recognized permission keys.
+const sanitizePermissions = (permissions: unknown): string | null | undefined => {
+  if (permissions === undefined) return undefined;
+  const list = Array.isArray(permissions) ? permissions : typeof permissions === 'string' ? permissions.split(',') : [];
+  const filtered = list.map((p) => String(p).trim()).filter((p) => KNOWN_PERMISSIONS.includes(p));
+  return filtered.length ? filtered.join(',') : null;
+};
+
 // Attach a fresh single-use reset token to a user and return the one-time link.
 async function issueResetLink(userId: string): Promise<string> {
   const { rawToken, tokenHash, expiresAt } = generateResetToken();
@@ -54,6 +93,10 @@ export const createStaffMember = async (req: Request, res: Response) => {
       return errorResponse(res, 'errors.validation_error', 400, { message: 'Missing required fields' });
     }
 
+    if (!isRoleGrantAllowed(role, req.user!.role)) {
+      return errorResponse(res, 'errors.validation_error', 400, { message: 'Invalid role' });
+    }
+
     if (phone && !isValidPhone(phone)) {
       return errorResponse(res, 'errors.validation_error', 400, { message: 'Invalid phone number' });
     }
@@ -76,7 +119,7 @@ export const createStaffMember = async (req: Request, res: Response) => {
         lastName,
         role,
         phone: phone || null,
-        permissions: Array.isArray(permissions) ? permissions.join(',') : permissions
+        permissions: sanitizePermissions(permissions)
       },
       select: { id: true, email: true, firstName: true, lastName: true, role: true, permissions: true, phone: true }
     });
@@ -133,6 +176,14 @@ export const updateStaffMember = async (req: Request, res: Response) => {
         return errorResponse(res, 'errors.forbidden', 403, { message: 'Cannot demote yourself' });
     }
 
+    // Resubmitting the target's own unchanged role (e.g. an ADMIN self-editing
+    // their phone number while the form resends role: 'ADMIN') is fine — nothing
+    // is being escalated. Only an actual change of role is checked against what
+    // the caller is allowed to grant (see isRoleGrantAllowed above).
+    if (role !== undefined && role !== targetUser.role && !isRoleGrantAllowed(role, req.user!.role)) {
+      return errorResponse(res, 'errors.validation_error', 400, { message: 'Invalid role' });
+    }
+
     if (phone && !isValidPhone(phone)) {
       return errorResponse(res, 'errors.validation_error', 400, { message: 'Invalid phone number' });
     }
@@ -141,7 +192,7 @@ export const updateStaffMember = async (req: Request, res: Response) => {
       firstName,
       lastName,
       role,
-      permissions: Array.isArray(permissions) ? permissions.join(',') : permissions
+      permissions: sanitizePermissions(permissions)
     };
     if (phone !== undefined) updateData.phone = phone || null;
 
