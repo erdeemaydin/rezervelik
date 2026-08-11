@@ -120,7 +120,8 @@ app.use('/api/uploads', tenantMiddleware, uploadRoutes);
 // Unknown /api path → standard JSON 404 (not Express's HTML default).
 app.use('/api', notFoundHandler);
 
-// Central error handler — must be last so it catches everything above.
+// Central error handler — must be last so it catches everything above. Also
+// reports to Sentry when SENTRY_DSN is set (see src/middlewares/errorHandler.ts).
 app.use(errorHandler);
 
 export default app;
