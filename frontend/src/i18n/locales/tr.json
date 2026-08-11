@@ -217,7 +217,7 @@
     "clear": "Temizle",
     "cancelRate": "İptal Oranı",
     "noShowRate": "Gelmeme Oranı",
-    "avgLeadTime": "Ort. Rezervasyon Önceliği",
+    "avgLeadTime": "Ort. Önceden Rezervasyon Süresi",
     "leadTimeHint": "Misafirler ne kadar önceden rezervasyon yapıyor",
     "days": "gün",
     "hours": "saat",
@@ -671,7 +671,7 @@
       "selectPalette": "Renk paleti seçin",
       "obsidian": "Obsidyen (Koyu / Sade)",
       "earth": "Toprak (Sıcak / Rustik)",
-      "crimson": "Kızıl (Kalın / Şarap)",
+      "crimson": "Kızıl (Cesur / Şarap)",
       "primaryColor": "Ana Marka Rengi (Hex)"
     },
     "banner": {
