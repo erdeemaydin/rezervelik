@@ -4,18 +4,26 @@
 > Covers infrastructure, database, safe updates, backups, security, and Turkish (KVKK) legal requirements.
 >
 > **Disclaimer:** The legal/KVKK sections give direction, not legal advice. Confirm current requirements with a KVKK danışmanı/lawyer before launch.
+>
+> **Status note (refreshed 2026-08-11):** this doc was originally written pre-launch and several of
+> its "blockers" have since shipped — most importantly, **the app is already running in
+> production** (`deploy@your-server-ip`, PostgreSQL, `pm2`, daily automated backups — see
+> `docs/DATABASE_RUNBOOK.md`, which is now the authoritative source for current live-ops state).
+> Sections below are marked **✅ Done** where the code/infra already reflects them, or left as-is
+> where they're still open. Historical rationale is kept even for done items since it explains *why*
+> a decision was made, not just what to do. If something below conflicts with the current code,
+> trust the code (and `docs/DATABASE_RUNBOOK.md` for live-server specifics) over this doc.
 
 ---
 
-## 0. TL;DR — What actually matters
+## 0. TL;DR — What actually matters now
 
-The three things that stand between you and a bad production day are, in order:
+1. ✅ **PostgreSQL migration** — done (see §2). No SQLite anywhere in the codebase (`CLAUDE.md`).
+2. ✅ **Automated tests + CI gate** — done (see §4). 252 tests, both apps type-checked/linted/built on every PR (`.github/workflows/ci.yml`, `docs/TESTING_AND_CICD.md`).
+3. ✅ **Tested, encrypted, offsite backups** — done (see §6). Daily `pg_dump` via cron, documented restore procedure in `docs/DATABASE_RUNBOOK.md`. Confirm the "practice restore" and "offsite copy" specifics still hold — that's operational state this doc can't verify from the repo alone.
+4. **Still open, in rough priority order:** a staging environment (§4.1 — `develop` branch exists per `docs/GIT_WORKFLOW.md` but nothing deploys it anywhere yet), HTTPS/HSTS correctness (§10 #1/#5), moving `multer` uploads off local disk (§3), KVKK consent/retention UI (§7), dependency vulnerability scanning now wired into CI but the frontend's 3 known advisories need a deliberate Next.js upgrade to close (§11).
 
-1. **Migrate SQLite → PostgreSQL** (current blocker — see §2).
-2. **A safe update process**: staging + backup-before-deploy + rollback (see §4). This project has *zero automated tests* today — that's the single biggest risk.
-3. **Tested, encrypted, offsite backups** with a retention policy (see §6).
-
-VPS choice and splitting frontend/backend matter far less than these. Get the above right first.
+VPS choice and splitting frontend/backend still matter far less than the open items above.
 
 ---
 
@@ -54,19 +62,28 @@ VPS choice and splitting frontend/backend matter far less than these. Get the ab
 
 ---
 
-## 2. Database: Migrate SQLite → PostgreSQL (blocker)
+## 2. Database: PostgreSQL ✅ Done
 
-The schema currently uses **SQLite** (`file:./dev.db`). For a multi-tenant SaaS with concurrent writes (reservations, staff check-in/out, price worker) this is a real liability:
+This section originally argued for migrating off **SQLite** (`file:./dev.db`). That migration is
+complete — production, local dev, and the test suite all run PostgreSQL now (`CLAUDE.md`,
+`docs/DATABASE_RUNBOOK.md`); `prisma/migrations/migration_lock.toml` is `postgresql` and there's a
+clean baseline of real migration files. Kept below for context on *why*, in case a future schema
+decision needs the reasoning:
 
-- Single file with a **global write lock** — concurrent writes serialize → `SQLITE_BUSY` under load.
-- Ties the app to **one machine's local disk** — can't scale to a second instance, can't use a managed/backed-up DB.
-- Backups mean copying a live file — risky.
-
-**Action: migrate to PostgreSQL before production.** Prisma makes it mostly a `provider = "postgresql"` + connection-string change, but SQLite-specific column behavior and existing migrations need reworking. **This matters more than which VPS you pick.**
+- SQLite is a single file with a **global write lock** — concurrent writes serialize →
+  `SQLITE_BUSY` under load. Not viable for a multi-tenant SaaS with concurrent reservations/staff
+  check-in/out/price-worker writes.
+- SQLite ties the app to **one machine's local disk** — can't scale to a second instance, can't use
+  a managed/backed-up DB.
+- SQLite backups mean copying a live file — risky, vs. Postgres's `pg_dump`/PITR story.
 
 ---
 
-## 3. Storage: How much space for 1 year?
+## 3. Storage: How much space for 1 year? — object storage move still open
+
+Verified 2026-08-11: `src/controllers/uploadController.ts` still writes to local disk
+(`path.join(process.cwd(), 'public', 'uploads')`) via `multer`. The "move to object storage"
+recommendation below is still accurate and still not done.
 
 Structured data is tiny; **uploaded images are the real space driver** and shouldn't live in the DB or on the VPS disk.
 
@@ -91,9 +108,22 @@ Structured data is tiny; **uploaded images are the real space driver** and shoul
 
 > "It must be perfect and contain no bugs" is not achievable for any software. What you need is a process that **catches breakage before users see it** and lets you **recover fast** when something slips through.
 
-**Current reality:** zero automated tests on backend or frontend. This is the biggest risk to "updates shouldn't break it."
+**Current reality (updated 2026-08-11):** the "zero automated tests" risk this section originally
+opened with is resolved — 252 Vitest tests (backend API/integration + frontend unit) run in
+`.github/workflows/ci.yml` on every PR and push to `main`, alongside `tsc`, `eslint`, and a
+production build for both apps (see `docs/TESTING_AND_CICD.md` for the full test-pyramid writeup).
+**Note:** `docs/TESTING_AND_CICD.md` itself still describes the tests as running against a
+throwaway **SQLite** file — that's now stale too (tests run on a disposable Postgres, per
+`CLAUDE.md`/`docs/DATABASE_RUNBOOK.md`); flagged in "Follow-ups" at the bottom of this file rather
+than fixed here, to keep this refresh scoped to `PRODUCTION_ROADMAP.md`.
 
-### 4.1 Staging environment (non-negotiable)
+**Still genuinely open:** a staging environment (§4.1) and the smoke-test discipline around it
+(§4.2). `docs/GIT_WORKFLOW.md` already reserves a `develop` branch for this ("Staging (later)") but
+nothing deploys it anywhere yet — there's a *post-deploy* smoke workflow
+(`.github/workflows/smoke.yml`, `scripts/smoke-test.mjs`) that hits a live URL, but that's a
+different thing from a pre-production staging environment with a copy of prod data.
+
+### 4.1 Staging environment (non-negotiable, still open)
 A second, identical deployment running a **copy of production data** (separate cheap VPS, or a second set of ports/containers on the same box). Every update goes to staging first.
 
 ### 4.2 Written smoke-test checklist
@@ -107,10 +137,11 @@ Run manually on staging after every update (the money-path flows):
 
 If any step fails on staging → the update does not ship.
 
-### 4.3 Add automated tests over time (highest-value investment)
-You don't need to rewrite anything or hit 100% coverage. Start small:
-- Backend: **Vitest/Jest + Supertest** hitting the most important endpoints — auth, reservations, **tenant isolation** (verify one tenant can't read another's data).
-- Even ~20 tests running in CI before deploy catch most "an update broke it" regressions.
+### 4.3 Add automated tests over time — ✅ Done, keep growing it
+Vitest + Supertest now covers auth, tenant isolation, RBAC, and every domain's business-logic
+invariants (252 tests as of 2026-08-11, one new test per bug fix — see `PROGRESS.md`'s session
+log for the pattern). Keep the habit: every bug fix gets a regression test in the same commit,
+same as the last several sessions did.
 
 ### 4.4 Every-deploy sequence
 ```
@@ -130,7 +161,15 @@ Keep the previous release ready to restart in seconds. **PM2** makes this easy (
 
 Schema changes are where "an update breaks the DB" actually happens.
 
-**Your migrations are already fragile.** `prisma migrate dev` is broken in this repo (shadow DB issue); the workaround has been `db push` + hand-authored migration files. That's fine for dev but **dangerous for production** — hand-authored migrations aren't validated like generated ones. **Fix the migration workflow before production** so you have a reliable, tested `prisma migrate deploy` path.
+**✅ Mostly resolved.** `prisma/migrations/` is now a clean baseline of 9 real, generated
+migration files (`migration_lock.toml` = `postgresql`), and production deploys apply them with
+`prisma migrate deploy` (documented in `docs/DATABASE_RUNBOOK.md`), which needs no shadow DB — the
+original "hand-authored migrations aren't validated" risk this section warned about doesn't apply
+to what's shipped. One caveat specific to *this coding agent's sandbox* (not production): it
+sometimes can't reach a shadow database to run `prisma migrate dev` interactively, so migrations
+are occasionally hand-written SQL in that situation — see `PROGRESS.md`'s methodology notes. That
+SQL still gets validated the same way any migration does: applied via `migrate deploy` against a
+real Postgres, then the full test suite run against the resulting schema.
 
 **Rules for every schema change:**
 - **Always `pg_dump` the production DB immediately before running a migration.** This is your undo button.
@@ -199,21 +238,26 @@ You are a **veri işleyen (data processor)**. Each restaurant is the **veri soru
 
 ## 8. Phased Rollout Plan
 
+**Status note (2026-08-11):** the app is already live (`docs/DATABASE_RUNBOOK.md`), so "Phase 1" below is
+now a record of what launch required rather than a forward-looking plan — kept for reference, with
+items already confirmed done struck through inline. Treat Phase 2/3 as the actually-forward-looking
+part of this section.
+
 ### Phase 1 — Launch (single VPS, ~€5–15/mo equivalent)
-1. **Migrate SQLite → PostgreSQL** (blocker).
-2. One İstanbul VPS, 2–4 GB RAM.
-3. **Caddy** reverse proxy: TLS + `yourdomain.com` → Next.js:3001, `/api` → Express:3000.
-4. **PM2** keeps both Node processes alive; backend as **single instance** (in-process worker).
-5. **Move `multer` uploads to object storage** (S3/R2/B2) or a backed-up volume.
-6. **Automated, encrypted Postgres backups** to offsite object storage (§6).
-7. **Staging environment + smoke-test checklist** (§4).
-8. **KVKK basics:** consent UI, aydınlatma metni, data processing agreement template, retention job.
+1. ~~Migrate SQLite → PostgreSQL~~ — ✅ done (§2).
+2. One İstanbul VPS, 2–4 GB RAM. *(confirm against the actual live server)*
+3. **Caddy** reverse proxy: TLS + `yourdomain.com` → Next.js:3001, `/api` → Express:3000. *(unconfirmed — see §10 #1, HSTS is still unaddressed in code which suggests this may not be done yet)*
+4. ~~**PM2** keeps both Node processes alive; backend as single instance~~ — ✅ done (`docs/DATABASE_RUNBOOK.md`: `dining-api`/`dining-web`).
+5. **Move `multer` uploads to object storage** (S3/R2/B2) or a backed-up volume — still open (§3).
+6. ~~**Automated Postgres backups**~~ — ✅ done (daily cron, §6); confirm encryption/offsite specifics.
+7. **Staging environment + smoke-test checklist** (§4) — still open.
+8. **KVKK basics:** consent UI, aydınlatma metni, data processing agreement template, retention job — still open (§7), no evidence in the repo.
 
 ### Phase 2 — First paying tenants
-- Move Postgres to a **managed database** (Turkey-region) — backups, patching, PITR, failover off your plate. Highest-value upgrade.
-- Add **uptime monitoring** (UptimeRobot/BetterStack) and **error tracking** (Sentry).
-- Add **backend integration tests** in CI (auth, reservations, tenant isolation).
-- **Fix the Prisma migration workflow** for reliable `migrate deploy` (§5).
+- Move Postgres to a **managed database** (Turkey-region) — backups, patching, PITR, failover off your plate. Highest-value upgrade. *(confirm current hosting — `docs/DATABASE_RUNBOOK.md` describes a single self-managed server, not a managed DB, so this is likely still open)*
+- Add **uptime monitoring** (UptimeRobot/BetterStack) and **error tracking** (Sentry) — still open, no config found in the repo.
+- ~~Add backend integration tests in CI~~ — ✅ done (§4.3).
+- ~~Fix the Prisma migration workflow~~ — ✅ done (§5).
 
 ### Phase 3 — When traffic justifies it
 - Split frontend and backend, add a load balancer, run multiple API instances.
@@ -223,76 +267,150 @@ You are a **veri işleyen (data processor)**. Each restaurant is the **veri soru
 
 ## 9. Pre-Launch Checklist
 
-- [ ] SQLite → PostgreSQL migration done and tested on real data
-- [ ] Prisma production migration workflow fixed (`migrate deploy` reliable)
-- [ ] `multer` uploads moved to object storage
-- [ ] DB not exposed to internet; least-privilege DB user; TLS; encryption at rest
-- [ ] Reverse proxy (Caddy) with TLS; only 80/443/SSH open
-- [ ] PM2 running backend (single instance) + frontend
-- [ ] Automated, encrypted, offsite backups with retention policy
-- [ ] **Practice restore performed successfully**
-- [ ] Staging environment with copy of prod data
-- [ ] Smoke-test checklist written and run
-- [ ] Secrets (`JWT_SECRET`, `SETUP_SECRET_TOKEN`) in real secret storage, not repo
-- [ ] KVKK: consent UI, aydınlatma metni, DPA template, retention/anonymization job, deletion process
+Re-verified against current code/docs 2026-08-11 — ✅ items are confirmed done from the repo
+itself; ⚠️ items need a human to confirm live operational state (the repo can't prove these);
+unmarked items are confirmed still open.
+
+- [x] ✅ SQLite → PostgreSQL migration done (§2)
+- [x] ✅ Prisma production migration workflow reliable (`migrate deploy`, clean migration baseline — §5)
+- [ ] `multer` uploads moved to object storage (§3 — confirmed still local-disk)
+- [ ] ⚠️ DB not exposed to internet; least-privilege DB user; TLS; encryption at rest — `docs/DATABASE_RUNBOOK.md` shows Postgres is live on the deploy server; confirm the specific hardening (firewall, DB user privileges, at-rest encryption) directly on that server, not from this repo
+- [ ] ⚠️ Reverse proxy (Caddy) with TLS; only 80/443/SSH open — confirm on the live server (§10 #1 below suggests this may still be outstanding — HSTS is unaddressed in code, which implies HTTPS may not be fully live yet)
+- [x] ✅ PM2 running backend (single instance) + frontend (`docs/DATABASE_RUNBOOK.md`: `dining-api` / `dining-web`)
+- [x] ✅ Automated, encrypted*, offsite* backups with retention policy — daily cron `pg_dump` + pruning (`scripts/db-backup.sh`, `docs/DATABASE_RUNBOOK.md`). *Confirm encryption-at-rest/in-transit and true offsite copy are actually configured — the script itself doesn't show that from the repo alone.
+- [ ] ⚠️ **Practice restore performed successfully** — procedure is documented in `docs/DATABASE_RUNBOOK.md`; confirm it's actually been run, not just written
+- [ ] Staging environment with copy of prod data (§4.1 — still open)
+- [ ] Smoke-test checklist written and run *before* each deploy (§4.2 — note this is different from the *post-deploy* `smoke.yml` workflow, which already exists)
+- [ ] ⚠️ Secrets (`JWT_SECRET`, `SETUP_SECRET_TOKEN`) in real secret storage, not repo — confirm on the live server
+- [ ] KVKK: consent UI, aydınlatma metni, DPA template, retention/anonymization job, deletion process (§7 — no evidence in the repo this UI exists yet)
 - [ ] VERBİS registration checked
-- [ ] Uptime monitoring + error tracking
-- [ ] (Recommended) Backend integration tests in CI
+- [ ] Uptime monitoring + error tracking (no Sentry/UptimeRobot config found in the repo)
+- [x] ✅ Backend integration tests in CI (§4.3 — 252 tests, `.github/workflows/ci.yml`)
+- [x] ✅ Dependency vulnerability scanning in CI + Dependabot (new — see §11)
+- [ ] Fix HSTS being sent unconditionally over HTTP (§10 #5 — still open, code-confirmed)
+- [ ] Content-Security-Policy on the frontend (§10 #4 — still open, code-confirmed; note the *backend* API already gets a default CSP header from `helmet()`, but that doesn't cover the Next.js frontend's own HTML/JS responses)
 
 ---
 
 ## 10. Auth, Login & Session Security Hardening
 
-> The auth **logic** is sound — bcrypt password hashing, JWT with 24h expiry, optional 2FA/OTP, and per-tenant isolation (`X-Restaurant-ID` matched against the token's `restaurantId` in `authMiddleware`). The items below are **configuration/hardening**, not logic rewrites. Do them as part of the VPS switch. Ordered by priority.
+> The auth **logic** is sound — bcrypt password hashing, JWT with 24h expiry, optional 2FA/OTP, and per-tenant isolation (`X-Restaurant-ID` matched against the token's `restaurantId` in `authMiddleware`). The items below are **configuration/hardening**, not logic rewrites. Ordered by priority. Re-verified against current code 2026-08-11 — several items below have shipped since this section was written; #1/#5 (HTTPS/HSTS) have not.
 
-### How the session currently works (context)
-- The JWT is stored in the browser's **`localStorage`** (`frontend/src/lib/authStorage.ts`), read by JS and sent as `Authorization: Bearer …`. It is **not** a cookie.
-- **Route protection is client-side** (`AdminLayout` / `SystemAdminLayout` redirect unauthenticated users). The Next.js middleware (`frontend/src/proxy.ts`) intentionally does **not** gate on a token — it can't read `localStorage`. The backend is the real boundary: every data endpoint requires a valid Bearer token.
-- Reason for localStorage over cookies: the app runs cross-origin (`:3001` frontend → `:3000` API), and over plain HTTP on a LAN IP a cross-origin cookie can't be sent (needs `SameSite=None; Secure`, which requires HTTPS). Once on HTTPS behind one domain, cookie-based auth becomes viable again (see #4).
+### How the session currently works (context — updated 2026-08-11)
+- **The session moved from `localStorage` to an httpOnly cookie.** `src/utils/authCookie.ts` sets
+  `token`/`adminToken` as `httpOnly`, with `sameSite`/`secure` driven by `COOKIE_SAME_SITE`/
+  `COOKIE_SECURE` env vars (defaulting to `secure: true` when `NODE_ENV=production` or
+  `sameSite=none`). `frontend/src/lib/api.ts` sends `withCredentials: true`; `authMiddleware`
+  reads the cookie first, falling back to `Authorization: Bearer` for non-browser callers.
+  `frontend/src/lib/authStorage.ts` now only caches the non-secret user profile client-side, and
+  explicitly documents the migration in its own comment. **This closes old #4 below** — the
+  original XSS-reads-localStorage concern no longer applies to the session token itself.
+- **Route protection is still client-side only** (`AdminLayout`/`SystemAdminLayout` redirect
+  unauthenticated users) — `frontend/src/proxy.ts` still carries the *old* reasoning in its
+  comment ("session token lives in localStorage... this server-side proxy cannot read it"), which
+  is now factually wrong: the token is an httpOnly cookie, which server-side middleware *can* read
+  (unlike localStorage). Nobody has revisited whether to add real server-side gating in
+  `proxy.ts` now that it's technically possible. Not fixed in this pass — it's a deliberate
+  architecture decision (whether the client-shell-then-redirect pattern is acceptable, given the
+  backend is still the real enforcement boundary regardless) rather than a quick edit. **Flagged
+  as a next-session item** — see "Follow-ups" at the bottom of this file.
 
-### #1 — HTTPS / TLS everywhere (blocker)
-Right now passwords and JWTs travel in **cleartext HTTP** — anyone on the network can read them. This is the top blocker and is already covered by the Caddy reverse-proxy step (§1, §8). Nothing else in this section is fully effective until TLS is in place.
+### #1 — HTTPS / TLS everywhere (blocker) — still open
+Right now passwords and JWTs travel in **cleartext HTTP** — anyone on the network can read them. This is the top blocker and is already covered by the Caddy reverse-proxy step (§1, §8). Nothing else in this section is fully effective until TLS is in place. No `hsts: false` override or other HTTPS-specific config was found in `src/app.ts`, so this is still unresolved as of 2026-08-11 — confirm directly on the live server (`docs/DATABASE_RUNBOOK.md`'s deploy host) whether Caddy/TLS is actually in front of it yet.
 - Serve both apps behind **Caddy** (auto-HTTPS) on one domain: `yourdomain.com` → Next.js, `/api/*` → Express.
-- Once same-origin over HTTPS, the cross-origin CORS problem (#2) largely disappears too.
+- Once same-origin over HTTPS, CORS (#2, already locked down either way) gets simpler too.
 
-### #2 — Lock down CORS
-`src/app.ts` uses `app.use(cors())` — reflects **any** origin (`Access-Control-Allow-Origin: *`). In production, restrict to your real frontend origin(s):
-```ts
-app.use(cors({ origin: ['https://yourdomain.com'], credentials: true }));
-```
+### #2 — Lock down CORS — ✅ Done
+`src/app.ts` now validates `Origin` against an explicit allowlist (`CORS_ORIGIN` env, comma-separated) with `credentials: true`, required for the httpOnly-cookie auth flow above — not the `cors()` wildcard this section originally warned about. Just confirm `CORS_ORIGIN` is actually set to the real production frontend origin(s) in the live `.env`.
 
-### #3 — Rate-limit the login endpoint
-No brute-force / credential-stuffing protection today. Add `express-rate-limit` on `/api/auth/login` (and OTP verify):
-```ts
-import rateLimit from 'express-rate-limit';
-const loginLimiter = rateLimit({ windowMs: 15*60*1000, max: 10, standardHeaders: true });
-// mount ahead of the login route
-```
+### #3 — Rate-limit the login endpoint — ✅ Done
+`src/routes/authRoutes.ts` rate-limits both `/login` and `/login/otp` (15 min window, max 10) via `rateLimitOrNoop` — the code comment there even calls out this exact finding ("Security-audit finding: /login and /login/otp had no throttling at all").
 
-### #4 — Revisit token storage after HTTPS (XSS posture)
-A JWT in `localStorage` is readable by any XSS → token theft. Acceptable **with** HTTPS + a strict CSP, but once you're on HTTPS behind a single domain, an **`httpOnly`, `Secure`, `SameSite=Lax` cookie** set by the server is stronger (JS can't read it). If you switch to cookie auth you'd also re-enable server-side route protection in `proxy.ts`. Ship a **Content-Security-Policy** on the frontend regardless.
+### #4 — Token storage — ✅ Done (see "How the session currently works" above)
+Session token is now an httpOnly cookie, not `localStorage`. A **Content-Security-Policy on the frontend** is still worth shipping regardless (defense-in-depth against other XSS impact beyond token theft) — not found in `frontend/` as of 2026-08-11; the *backend* API responses do get a default CSP from `helmet()`, but that's a different surface (JSON responses, not the frontend's HTML/JS).
 
-### #5 — Fix HSTS (currently sent over HTTP — actively harmful)
-helmet sends `Strict-Transport-Security` on **HTTP** responses today. Once any browser (especially **iOS Safari**) sees it, it force-upgrades future `http://<host>` requests to HTTPS — which the dev/LAN server doesn't speak — silently breaking access. **This is a leading suspect for "can't sign in from iPhone/iPad Safari."**
-- **Until HTTPS:** disable HSTS — `app.use(helmet({ hsts: false, crossOriginResourcePolicy: false }))`.
+### #5 — Fix HSTS (currently sent over HTTP — actively harmful) — still open
+`src/app.ts:48` is `app.use(helmet({ crossOriginResourcePolicy: false }))` — no `hsts: false`, so helmet's default `Strict-Transport-Security` header still goes out on every response regardless of whether the connection is actually HTTPS. Once any browser (especially **iOS Safari**) sees it, it force-upgrades future `http://<host>` requests to HTTPS — which a non-TLS server doesn't speak — silently breaking access. **This was flagged as "a leading suspect for can't sign in from iPhone/iPad Safari" and is still unfixed in code.**
+- **Until HTTPS is confirmed live:** disable HSTS — `app.use(helmet({ hsts: false, crossOriginResourcePolicy: false }))`.
 - **After HTTPS:** re-enable HSTS (it's correct and desirable there).
 - To recover an already-poisoned device now: iOS → Settings → Safari → **Clear History and Website Data** (wipes the cached HSTS entry).
 
 ### #6 — Secrets
-Confirm `JWT_SECRET` and `SETUP_SECRET_TOKEN` are long, random, and stored in real secrets/env — never committed. (Also in §6 / §9.)
+Confirm `JWT_SECRET` and `SETUP_SECRET_TOKEN` are long, random, and stored in real secrets/env — never committed. (Also in §6 / §9.) `src/utils/jwt.ts` already fails startup loudly if `JWT_SECRET` is unset, so this can only be silently wrong via a *weak* value, not a missing one.
 
 ### #7 — Done already (no action)
 - **Request timeout** added to the Axios client (`frontend/src/lib/api.ts`, `timeout: 20000`) so an unreachable backend surfaces an error instead of hanging silently.
 - Client-side route guards on both `/dashboard` and `/system-admin`.
+- CORS origin allowlist (#2), login rate-limiting (#3), httpOnly cookie session (#4) — all added since this section was last written.
 
 ### Auth pre-launch checklist
-- [ ] HTTPS/TLS in front of both apps (Caddy)
-- [ ] CORS restricted to real frontend origin(s)
-- [ ] `express-rate-limit` on login + OTP endpoints
-- [ ] Content-Security-Policy on the frontend
-- [ ] Decide token storage: localStorage+CSP **or** httpOnly cookie (+ re-enable `proxy.ts` guard)
-- [ ] HSTS: disabled on HTTP, enabled once on HTTPS
-- [ ] `JWT_SECRET` / `SETUP_SECRET_TOKEN` strong and out of the repo
+- [ ] ⚠️ HTTPS/TLS in front of both apps (Caddy) — confirm on the live server
+- [x] ✅ CORS restricted to real frontend origin(s) — confirm `CORS_ORIGIN` env is set correctly in production
+- [x] ✅ Rate-limiting on login + OTP endpoints
+- [ ] Content-Security-Policy on the frontend — still open
+- [x] ✅ Token storage decided: httpOnly cookie (localStorage option is moot now) — `proxy.ts` server-side gating is a separate, deliberately-deferred follow-up (see §10 and "Follow-ups" below)
+- [ ] HSTS: disabled on HTTP, enabled once on HTTPS — still open, code-confirmed unaddressed
+- [ ] ⚠️ `JWT_SECRET` / `SETUP_SECRET_TOKEN` strong and out of the repo — confirm on the live server
+
+---
+
+## 11. Dependency Vulnerability Management (new, 2026-08-11)
+
+Application-code security review (audits of controllers/middleware/business logic — see
+`PROGRESS.md`'s session log) and dependency-CVE tracking are two different failure modes that
+need two different tools. The former has had several dedicated audit passes; the latter had zero
+tooling until this session.
+
+**What's now in place:**
+- **`npm audit` in CI** (`.github/workflows/ci.yml`) — runs on every PR/push:
+  - Backend: blocking at `--audit-level=moderate` (backend is 0 vulnerabilities at every severity as of 2026-08-11, so this is a real gate, not a formality).
+  - Frontend: blocking at `--audit-level=critical`; `--audit-level=high` also runs but is informational (`|| true`) because of the known-accepted items below.
+- **Dependabot** (`.github/dependabot.yml`) — weekly PRs for both `npm` ecosystems (root + `frontend/`) plus GitHub Actions versions, grouped by minor/patch so routine bumps don't flood the PR list. `next` is excluded from *major*-version auto-PRs (deliberate manual upgrade — see below) but still gets patch/minor PRs.
+
+**Known accepted risk (frontend, 3 high-severity advisories):** `postcss` (XSS/path-traversal in
+sourcemap handling) and `sharp`/`libvips` (image-processing CVEs) are vendored *inside*
+`next@16.2.4`'s own dependency tree — `npm audit fix` only offers `--force`, which would bump to
+`next@16.3.0`. Not done in this session because `frontend/AGENTS.md` explicitly warns this Next.js
+version has breaking changes vs. training-data assumptions, so a version bump deserves its own
+deliberate, tested pass — not a side effect of a dependency-audit task. **Next session: do that
+Next.js upgrade deliberately** (read `frontend/node_modules/next/dist/docs/` for the delta, run
+the full test/build/lint suite, manually smoke-test the app in a browser per this repo's usual
+verification bar), then flip the frontend CI step's `--audit-level=high` from informational to
+blocking by removing `|| true`.
+
+**Backend dependency fixes applied this session:** `npm audit fix` (non-breaking) resolved a
+**critical** prototype-pollution CVE in `i18next-fs-backend`, plus `nanoid`/`postcss`/`qs`/
+`body-parser` advisories. Backend is 0 vulnerabilities at every severity as of 2026-08-11.
+
+---
+
+## Follow-ups — flagged but not done this session
+
+Things noticed while refreshing this doc that are worth a deliberate look next session, not fixed
+here because each needs its own scoped pass rather than a drive-by edit:
+
+1. **Next.js 16.2.4 → 16.3.0 upgrade** (§11) — closes the 3 remaining frontend dependency
+   advisories; needs its own tested pass given the breaking-change warning in `frontend/AGENTS.md`.
+2. **`frontend/src/proxy.ts` still carries stale reasoning** (§10) — its comment says the session
+   token "lives in localStorage... this server-side proxy cannot read it," which is no longer true
+   now that the token is an httpOnly cookie. Worth a deliberate decision: is client-side-only route
+   protection still acceptable (the backend is the real boundary regardless), or should `proxy.ts`
+   gate on the cookie too? Either way the comment should stop asserting something false.
+3. **`docs/TESTING_AND_CICD.md` is stale** — still describes tests running against a throwaway
+   **SQLite** file; the test suite has since moved to disposable Postgres (`CLAUDE.md`,
+   `docs/DATABASE_RUNBOOK.md`). Same category of doc-drift this session fixed here, just not in
+   scope for this pass.
+4. **HTTPS/HSTS status unconfirmed** (§10 #1/#5) — the repo shows no `hsts: false` override and no
+   evidence either way of whether the live server is behind TLS yet. This needs a direct check
+   against the deploy server, not just the repo, and is flagged as the single highest-priority open
+   security item in this whole document if HTTPS isn't live yet (passwords/JWTs in cleartext).
+5. **KVKK consent/retention UI** (§7, §9) — no evidence in the repo of a consent checkbox,
+   aydınlatma metni, or retention/anonymization job existing yet. Worth a dedicated audit of what's
+   actually missing vs. what's just undocumented.
+6. **A few `⚠️`-marked items in §9/§10's checklists** can only be confirmed by someone with access
+   to the live deploy server (`docs/DATABASE_RUNBOOK.md`'s host) — this repo can't verify secrets
+   storage, firewall rules, or whether backups are actually encrypted/offsite from source code
+   alone. Worth a live-server audit pass, separate from a code audit.
 
 ---
 
