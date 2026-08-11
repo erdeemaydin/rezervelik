@@ -45,7 +45,14 @@ const allowedOrigins = (process.env.CORS_ORIGIN || process.env.APP_PUBLIC_URL ||
   .filter(Boolean);
 
 // Middlewares
-app.use(helmet({ crossOriginResourcePolicy: false })); // Allow cross origin for images
+// hsts: false until HTTPS in front of this server is confirmed live. helmet's
+// default HSTS header goes out on every response regardless of whether the
+// connection is actually TLS — a browser (esp. iOS Safari) that sees it force-
+// upgrades all future requests to https://, which a plain-HTTP origin can't
+// answer, silently locking users out. Flip back to helmet's default (remove
+// this override) once TLS/Caddy is confirmed live in front of the app — see
+// PRODUCTION_ROADMAP.md §10 #1/#5.
+app.use(helmet({ hsts: false, crossOriginResourcePolicy: false })); // Allow cross origin for images
 app.use(cors({
   origin(origin, callback) {
     // No Origin header = same-origin, curl, or a server-to-server call (e.g.
