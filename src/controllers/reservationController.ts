@@ -4,19 +4,21 @@ import { successResponse, errorResponse } from '../utils/response';
 import { verifyToken } from '../utils/jwt';
 import { createPaymentForReservation } from '../services/paymentService';
 import { sendPaymentRequest, sendBookingConfirmation, formatReservationLabel } from '../services/notificationService';
-import { findTableConflict, findAvailableTable, BLOCKING_STATUSES, restaurantDateStr, clearFullyBookedIfSet, getBookedCoversForDate, getEffectiveOverbookingConfig, getOverbookedCountsForDate } from '../utils/reservationConflict';
+import { findTableConflict, findAvailableTable, BLOCKING_STATUSES, restaurantDateStr, clearFullyBookedIfSet, getBookedCoversForDate, getEffectiveOverbookingConfig, getOverbookedCountsForDate, generateConfirmationCode } from '../utils/reservationConflict';
 import { logAudit } from '../services/auditService';
-
-// 6-digit, never leading-zero — reads unambiguously over the phone and lets
-// host-stand staff pull a reservation up by code instead of a name search.
-const generateConfirmationCode = (): string => String(100000 + Math.floor(Math.random() * 900000));
 
 const isStaffRequest = (req: Request): boolean => {
   const authHeader = req.headers.authorization;
   if (!authHeader || !authHeader.startsWith('Bearer ')) return false;
   try {
-    verifyToken(authHeader.split(' ')[1]);
-    return true;
+    const decoded = verifyToken(authHeader.split(' ')[1]);
+    // A valid token only proves who the caller is, not which tenant they may
+    // act as here — this endpoint is public and takes X-Restaurant-ID from
+    // the request, so without this check any staff member's own token would
+    // grant staff privileges (skip maxPartySize/day-capacity caps, force a
+    // table conflict, force past FULLY_BOOKED) against a restaurant they
+    // have no relationship to. Mirrors the tenant check in authMiddleware.
+    return decoded.role === 'SUPER_ADMIN' || decoded.restaurantId === req.restaurantId;
   } catch {
     return false;
   }
@@ -148,9 +150,8 @@ export const createReservation = async (req: Request, res: Response) => {
     // Table resolution + conflict re-check + insert all happen inside one
     // transaction so two concurrent bookings can't both pass the availability
     // check and land on the same table (the previous check-then-insert race).
-    let finalTableId: string | null = tableId === 'none' ? null : tableId;
+    const originalTableId: string | null = tableId === 'none' ? null : tableId;
     let requiresInstantPayment = false;
-    let isOverbooked = false;
     const isManualAvailability = settings.logic === 'MANUAL_AVAILABILITY';
 
     let reservation;
@@ -163,6 +164,13 @@ export const createReservation = async (req: Request, res: Response) => {
       const MAX_CODE_ATTEMPTS = 5;
       for (let attempt = 1; ; attempt++) {
         const confirmationCode = generateConfirmationCode();
+        // Reset per attempt — these are mutated inside the transaction below
+        // (auto-assign on a null table, or a soft overbooking accept), and a
+        // stale value from a failed prior attempt (e.g. isOverbooked left
+        // true from an attempt that hit a confirmationCode collision after
+        // soft-accepting) must not leak into the retry.
+        let finalTableId: string | null = originalTableId;
+        let isOverbooked = false;
         try {
           reservation = await prisma.$transaction(async (tx) => {
           // DaySetting.maxCapacityOverride: a total-covers cap for this specific
@@ -265,8 +273,12 @@ export const createReservation = async (req: Request, res: Response) => {
               startTime: start,
               endTime,
               notes,
-              internalNote,
-              isVIP: !!isVIP,
+              // Staff-only fields: internalNote is explicitly documented as an
+              // internal/restaurant-facing note, and isVIP drives sort order on
+              // the reservation list — an anonymous public request must not be
+              // able to set either on itself.
+              internalNote: staffInitiated ? internalNote : null,
+              isVIP: staffInitiated && !!isVIP,
               isOverbooked,
               confirmationCode,
               status: requiresInstantPayment ? 'AWAITING_PAYMENT' : (isConfirmed ? 'CONFIRMED' : 'PENDING'),

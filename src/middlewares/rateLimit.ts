@@ -39,8 +39,17 @@ const isStaffRequest = (req: Request): boolean => {
   const authHeader = req.headers.authorization;
   if (!authHeader || !authHeader.startsWith('Bearer ')) return false;
   try {
-    verifyToken(authHeader.split(' ')[1]);
-    return true;
+    const decoded = verifyToken(authHeader.split(' ')[1]);
+    if (decoded.role === 'SUPER_ADMIN') return true;
+    // On tenant-scoped mounts (e.g. POST /api/reservations, behind
+    // tenantMiddleware) req.restaurantId is set — only exempt a token acting
+    // within its own tenant, otherwise any staff member's own token would
+    // bypass the throttle against a restaurant they have no relationship to
+    // (spam/SMS-cost amplification). Public slug-resolved routes never set
+    // req.restaurantId here, so this preserves the prior "any valid staff
+    // token exempts" behavior there — this check only relaxes a DoS
+    // throttle, not data/write access.
+    return !req.restaurantId || decoded.restaurantId === req.restaurantId;
   } catch {
     return false;
   }

@@ -40,6 +40,15 @@ router.post(
 // Payments (public: the customer payment page + the gateway's server-to-server callback)
 router.post('/payment/callback', paymentCallback);      // PayTR notification (source of truth)
 router.post('/payment/mock/complete', mockComplete);    // dev-only simulate
-router.get('/payment/session/:ref', getPublicPaymentSession);
+// Unlike every other public endpoint here, this one was unrated-limited despite
+// being keyed by a human-typed short code — an unauthenticated caller could
+// brute-force codes for reservation PII, and each hit on a valid PENDING
+// payment also fires a live call to the payment gateway (free amplification
+// against the merchant account).
+router.get(
+  '/payment/session/:ref',
+  rateLimitOrNoop({ windowMs: 60_000, max: 20, keyPrefix: 'payment-session' }),
+  getPublicPaymentSession
+);
 
 export default router;
