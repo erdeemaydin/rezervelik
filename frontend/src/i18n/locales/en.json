@@ -556,7 +556,13 @@
       "forceTitle": "Assign unavailable staff?",
       "forceDesc": "marked themselves as UNAVAILABLE for this shift. Assign them anyway?",
       "forceConfirm": "Force assign",
-      "force": "Force"
+      "force": "Force",
+      "warnUnavailable": "Staff marked this day/shift as Unavailable.",
+      "warnUnspecified": "Staff did not submit availability for this day.",
+      "warnDoubleShift": "Double shift on same day",
+      "warnConsecutiveRestPrefix": "Short rest warning: only",
+      "warnConsecutiveRestSuffix": "h off between shifts",
+      "warnConsecutiveRestAnd": "and tomorrow's"
     },
     "availability": {
       "loadFailed": "Failed to load availability data",
@@ -926,6 +932,13 @@
       "buttonText": "Download QR Label (PDF)",
       "scanText": "Scan QR Code for Menu",
       "complianceText": "Allergen, calorie, and ingredient information is available in our digital menu."
+    },
+    "pdf": {
+      "buttonLabel": "Menu PDF",
+      "lastPriceUpdate": "Last price update:",
+      "containsAlcohol": "Contains alcohol",
+      "containsPork": "Contains pork",
+      "page": "Page"
     },
     "toast": {
       "valueRequired": "Value is required",

@@ -451,7 +451,7 @@ export default function ShiftAssigner({ viewMode = 'MONTHLY' }: { viewMode?: 'WE
               date: current.date,
               shiftId: current.shiftId,
               type: 'UNAVAILABLE',
-              message: 'Staff marked this day/shift as Unavailable.'
+              message: t('scheduling.assigner.warnUnavailable')
             });
           }
         } else {
@@ -460,7 +460,7 @@ export default function ShiftAssigner({ viewMode = 'MONTHLY' }: { viewMode?: 'WE
             date: current.date,
             shiftId: current.shiftId,
             type: 'UNSPECIFIED',
-            message: 'Staff did not submit availability for this day.'
+            message: t('scheduling.assigner.warnUnspecified')
           });
         }
 
@@ -470,7 +470,7 @@ export default function ShiftAssigner({ viewMode = 'MONTHLY' }: { viewMode?: 'WE
           const diffHours = diffMs / (1000 * 60 * 60);
 
           if (current.date === next.date) {
-            const msg = `Double shift on same day (${current.shift?.name} & ${next.shift?.name}).`;
+            const msg = `${t('scheduling.assigner.warnDoubleShift')} (${current.shift?.name} & ${next.shift?.name}).`;
             warnings.push({
               userId,
               date: current.date,
@@ -488,7 +488,7 @@ export default function ShiftAssigner({ viewMode = 'MONTHLY' }: { viewMode?: 'WE
             });
           } else if (diffHours >= 0 && diffHours < 11) {
             const roundedHours = Math.round(diffHours * 10) / 10;
-            const msg = `Short rest warning: only ${roundedHours}h off between shifts (${current.shift?.name} and tomorrow's ${next.shift?.name}).`;
+            const msg = `${t('scheduling.assigner.warnConsecutiveRestPrefix')} ${roundedHours}${t('scheduling.assigner.warnConsecutiveRestSuffix')} (${current.shift?.name} ${t('scheduling.assigner.warnConsecutiveRestAnd')} ${next.shift?.name}).`;
             warnings.push({
               userId,
               date: current.date,
@@ -517,7 +517,7 @@ export default function ShiftAssigner({ viewMode = 'MONTHLY' }: { viewMode?: 'WE
     });
 
     return warningsMap;
-  }, [assignments, shifts, availabilities]);
+  }, [assignments, shifts, availabilities, t]);
 
   // Number of shifts each staff member has in the currently-displayed plan range,
   // shown live on their card (#6).

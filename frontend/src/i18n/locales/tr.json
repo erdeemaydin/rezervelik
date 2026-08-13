@@ -556,7 +556,13 @@
       "forceTitle": "Müsait olmayan personel atansın mı?",
       "forceDesc": "bu vardiya için kendini MÜSAİT DEĞİL olarak işaretledi. Yine de atansın mı?",
       "forceConfirm": "Yine de ata",
-      "force": "Zorla"
+      "force": "Zorla",
+      "warnUnavailable": "Personel bu gün/vardiya için Müsait Değil olarak işaretledi.",
+      "warnUnspecified": "Personel bu gün için müsaitlik bildirmedi.",
+      "warnDoubleShift": "Aynı gün çift vardiya",
+      "warnConsecutiveRestPrefix": "Kısa dinlenme uyarısı: vardiyalar arasında sadece",
+      "warnConsecutiveRestSuffix": "saat boşluk var",
+      "warnConsecutiveRestAnd": "ve yarınki"
     },
     "availability": {
       "loadFailed": "Müsaitlik verileri yüklenemedi",
@@ -926,6 +932,13 @@
       "buttonText": "QR Etiket İndir (PDF)",
       "scanText": "Menü İçin QR Kodu Okutun",
       "complianceText": "Alerjen, kalori ve içindekiler bilgileri dijital menümüzde yer almaktadır."
+    },
+    "pdf": {
+      "buttonLabel": "Menü PDF",
+      "lastPriceUpdate": "Son Fiyat Güncelleme:",
+      "containsAlcohol": "Alkol İçerir",
+      "containsPork": "Domuz Eti İçerir",
+      "page": "Sayfa"
     },
     "toast": {
       "valueRequired": "Değer gereklidir",
