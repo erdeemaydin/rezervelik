@@ -301,6 +301,12 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
     if (!isMounted || !isAuthenticated || !user) return;
     const needed = requiredPermForPath(pathname);
     if (needed && !hasPermission(needed)) {
+      // HOST staff work the host stand — send them there instead of whatever
+      // happens to be first in nav order, even on a stale bookmark/deep link.
+      if (user.role === 'HOST' && hasPermission('manage_reservations')) {
+        router.replace('/dashboard/host');
+        return;
+      }
       const firstAllowed = navigation
         .flatMap(g => g.items)
         .find(item => hasPermission(item.perm) && hasFeature(item.feature));

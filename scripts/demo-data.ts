@@ -29,6 +29,7 @@
  */
 import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcrypt';
+import { generateConfirmationCode } from '../src/utils/reservationConflict';
 
 const prisma = new PrismaClient();
 
@@ -323,6 +324,18 @@ async function main() {
     }
   }
 
+  // Real bookings get a confirmationCode from createReservation; demo rows are
+  // written straight via createMany so they need it generated here instead,
+  // deduped within this batch (existing rows aren't queried — a cross-run
+  // collision would just fail that one createMany, acceptable for demo data).
+  const usedCodes = new Set<string>();
+  const nextConfirmationCode = () => {
+    let code = generateConfirmationCode();
+    while (usedCodes.has(code)) code = generateConfirmationCode();
+    usedCodes.add(code);
+    return code;
+  };
+
   const now = Date.now();
   const todayISO = new Date(now).toISOString().slice(0, 10);
   const rows: any[] = [];
@@ -370,6 +383,7 @@ async function main() {
         isVIP: chance(0.1),
         notes: note || null,
         internalNote: `${DEMO_TAG} generated`,
+        confirmationCode: nextConfirmationCode(),
       });
       summary[status] = (summary[status] || 0) + 1;
     }
