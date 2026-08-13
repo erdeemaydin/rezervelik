@@ -1115,8 +1115,6 @@
     "waitlistStatusCancelled": "cancelled",
     "waitlistStatusNoShow": "marked as no-show",
     "hostConsoleTitle": "Host Console",
-    "ipadMode": "iPad Mode",
-    "hostConsoleSubtitle": "Podium Service Desk • Active Floor Sync",
     "reservationsTab": "Reservations",
     "waitlistQueueTab": "Waitlist Queue",
     "bookTableBtn": "Book Table",

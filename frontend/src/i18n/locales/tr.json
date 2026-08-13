@@ -1115,8 +1115,6 @@
     "waitlistStatusCancelled": "iptal edildi",
     "waitlistStatusNoShow": "gelmedi olarak işaretlendi",
     "hostConsoleTitle": "Karşılama Konsolu",
-    "ipadMode": "iPad Modu",
-    "hostConsoleSubtitle": "Karşılama Masası • Aktif Salon Senkronizasyonu",
     "reservationsTab": "Rezervasyonlar",
     "waitlistQueueTab": "Bekleme Listesi",
     "bookTableBtn": "Masa Rezervasyonu Yap",
