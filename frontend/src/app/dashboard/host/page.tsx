@@ -112,23 +112,30 @@ export default function HostConsolePage() {
   const fetchData = async () => {
     try {
       setLoading(true);
-      const [resRes, waitlistRes, waitlistHistoryRes, tablesRes, catRes, settingsRes] = await Promise.all([
+      // Each resource is fetched independently: one flaky/slow endpoint (e.g. a
+      // backend restart mid-request) must not wipe out the others that succeeded,
+      // which is what Promise.all previously did by rejecting the whole batch.
+      const [resRes, waitlistRes, waitlistHistoryRes, tablesRes, catRes, settingsRes] = await Promise.allSettled([
         api.get('/reservations'),
         api.get('/wait-time/entries'),
         api.get('/wait-time/entries', { params: { history: 'true' } }),
         api.get('/tables'),
         api.get('/categories'),
-        api.get('/settings').catch(() => null),
+        api.get('/settings'),
       ]);
-      setReservations(resRes.data.data);
-      setWaitlist(waitlistRes.data.data);
-      setWaitlistHistory(waitlistHistoryRes.data.data);
-      setTables(tablesRes.data.data);
-      setCategories(catRes.data.data);
-      setReservationLogic(settingsRes?.data?.data?.logic ?? null);
-    } catch (error) {
-      console.error('Failed to fetch data', error);
-      toast.error(t("host.toastFailedLoad"));
+      if (resRes.status === 'fulfilled') setReservations(resRes.value.data.data);
+      if (waitlistRes.status === 'fulfilled') setWaitlist(waitlistRes.value.data.data);
+      if (waitlistHistoryRes.status === 'fulfilled') setWaitlistHistory(waitlistHistoryRes.value.data.data);
+      if (tablesRes.status === 'fulfilled') setTables(tablesRes.value.data.data);
+      if (catRes.status === 'fulfilled') setCategories(catRes.value.data.data);
+      if (settingsRes.status === 'fulfilled') setReservationLogic(settingsRes.value.data?.data?.logic ?? null);
+
+      const coreResults = [resRes, waitlistRes, waitlistHistoryRes, tablesRes, catRes];
+      const failed = coreResults.filter((r) => r.status === 'rejected');
+      if (failed.length > 0) {
+        for (const r of failed) console.error('Failed to fetch host console data', (r as PromiseRejectedResult).reason);
+        toast.error(t("host.toastFailedLoad"));
+      }
     } finally {
       setLoading(false);
     }

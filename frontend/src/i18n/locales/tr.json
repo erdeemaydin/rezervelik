@@ -674,12 +674,7 @@
     "toast": {
       "appliedDaysPrefix": "",
       "appliedDaysSuffix": " güne uygulandı",
-      "updateFailed": "Ayarlar güncellenemedi",
-      "applyingFuture": "Ayarlar gelecek günlere uygulanıyor...",
-      "noNewDays": "Güncellenecek yeni gün yok.",
-      "futureSuccessPrefix": "Mod başarıyla ",
-      "futureSuccessSuffix": " gelecek güne uygulandı.",
-      "futureFailed": "Gelecek ayarları uygulanamadı"
+      "updateFailed": "Ayarlar güncellenemedi"
     },
     "badge": {
       "event": "Etkinlik"
@@ -692,12 +687,6 @@
     "header": {
       "title": "Takvim Yönetimi",
       "subtitle": "Operasyon Yöneticisi"
-    },
-    "futureMode": {
-      "placeholder": "Gelecek Varsayılan Modunu Ayarla",
-      "autoConfirm": "Oto-Onay",
-      "standard": "Standart (Manuel)",
-      "blackout": "Kapalı"
     },
     "buttons": {
       "singleEdit": "Tekli Düzenleme",
@@ -1083,7 +1072,20 @@
       "schedule": "Planla",
       "roundUpShort": "Yuvarla",
       "pickSchedule": "Planlanan güncelleme için tarih ve saat seçin",
-      "scheduledSuffix": "fiyat değişikliği planlandı"
+      "scheduledSuffix": "fiyat değişikliği planlandı",
+      "scheduledTitle": "Bekleyen Planlanmış Değişiklikler",
+      "historyTitle": "Son Değişiklikler",
+      "itemsSuffix": "ürün",
+      "editButton": "Düzenle",
+      "cancelButton": "İptal Et",
+      "undoButton": "Geri Al",
+      "undoneBadge": "Geri Alındı",
+      "editingScheduled": "Bekleyen bir planlanmış değişiklik düzenleniyor — kaydetmek onun yerine geçer",
+      "cancelEdit": "Düzenlemeyi vazgeç",
+      "cancelSuccess": "Planlanmış değişiklik iptal edildi",
+      "cancelFailed": "Planlanmış değişiklik iptal edilemedi",
+      "undoSuccess": "Değişiklik geri alındı",
+      "undoFailed": "Değişiklik geri alınamadı"
     }
   },
   "host": {

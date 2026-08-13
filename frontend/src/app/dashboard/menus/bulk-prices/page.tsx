@@ -6,13 +6,22 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { ArrowLeft, Save, Percent, RotateCcw, Calendar } from 'lucide-react';
+import { ArrowLeft, Save, Percent, RotateCcw, Calendar, Clock, X, History, Undo2, Pencil } from 'lucide-react';
 import api from '@/lib/api';
 import { toast } from 'sonner';
 import { useTranslation } from '@/i18n/provider';
 
 interface Item { id: string; name: string; price: number; }
 interface Group { key: string; label: string; items: Item[]; }
+interface ChangeItem { id: string; name: string | null; price?: number; oldPrice?: number; newPrice?: number; }
+interface PriceUpdate {
+  id: string;
+  updateType: string;
+  status: string;
+  scheduledFor: string;
+  appliedAt: string | null;
+  items: ChangeItem[];
+}
 
 const round2 = (n: number) => Math.round(n * 100) / 100;
 
@@ -28,6 +37,13 @@ export default function BulkPricesPage() {
   // Schedule the change for a future time instead of applying immediately.
   const [scheduleEnabled, setScheduleEnabled] = useState(false);
   const [scheduledFor, setScheduledFor] = useState('');
+  // Pending (not yet applied) scheduled changes, and recently applied ones (for undo).
+  const [scheduled, setScheduled] = useState<PriceUpdate[]>([]);
+  const [history, setHistory] = useState<PriceUpdate[]>([]);
+  // Set while editing a pending scheduled change: saving will cancel this one first.
+  const [editingScheduledId, setEditingScheduledId] = useState<string | null>(null);
+  const [undoingId, setUndoingId] = useState<string | null>(null);
+  const [cancellingId, setCancellingId] = useState<string | null>(null);
 
   const fmtCurrency = useCallback((n: number) => {
     try {
@@ -69,7 +85,56 @@ export default function BulkPricesPage() {
     }
   }, [t]);
 
-  useEffect(() => { fetchData(); }, [fetchData]);
+  const fetchScheduleAndHistory = useCallback(async () => {
+    const [scheduledRes, historyRes] = await Promise.allSettled([
+      api.get('/menus/prices/scheduled'),
+      api.get('/menus/prices/history'),
+    ]);
+    if (scheduledRes.status === 'fulfilled') setScheduled(scheduledRes.value.data.data);
+    if (historyRes.status === 'fulfilled') setHistory(historyRes.value.data.data);
+  }, []);
+
+  useEffect(() => { fetchData(); fetchScheduleAndHistory(); }, [fetchData, fetchScheduleAndHistory]);
+
+  const cancelScheduled = async (id: string) => {
+    try {
+      setCancellingId(id);
+      await api.delete(`/menus/prices/scheduled/${id}`);
+      toast.success(t('menus.bulkEditor.cancelSuccess'));
+      if (editingScheduledId === id) { setEditingScheduledId(null); resetAll(); }
+      fetchScheduleAndHistory();
+    } catch (error) {
+      toast.error(t('menus.bulkEditor.cancelFailed'));
+    } finally {
+      setCancellingId(null);
+    }
+  };
+
+  // Loads a pending change's target prices into the editor for tweaking; saving
+  // will cancel the original scheduled entry and create a new one in its place.
+  const editScheduled = (update: PriceUpdate) => {
+    const next: Record<string, string> = {};
+    for (const it of update.items) if (it.price !== undefined) next[it.id] = String(it.price);
+    setNewPrices(next);
+    setEditingScheduledId(update.id);
+    setScheduleEnabled(true);
+    setScheduledFor(update.scheduledFor.slice(0, 16));
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const undoChange = async (id: string) => {
+    try {
+      setUndoingId(id);
+      await api.post(`/menus/prices/undo/${id}`);
+      toast.success(t('menus.bulkEditor.undoSuccess'));
+      fetchData();
+      fetchScheduleAndHistory();
+    } catch (error) {
+      toast.error(t('menus.bulkEditor.undoFailed'));
+    } finally {
+      setUndoingId(null);
+    }
+  };
 
   const allItems = useMemo(() => groups.flatMap(g => g.items), [groups]);
 
@@ -108,7 +173,11 @@ export default function BulkPricesPage() {
     setNewPrices(prev => ({ ...prev, [item.id]: String(Math.ceil(base / step) * step) }));
   };
 
-  const resetAll = () => { setNewPrices({}); setPercent(''); };
+  const resetAll = () => {
+    setNewPrices({});
+    setPercent('');
+    setEditingScheduledId(null);
+  };
 
   // Only items whose typed value is valid and actually differs from the old price.
   const changed = useMemo(() => {
@@ -128,6 +197,10 @@ export default function BulkPricesPage() {
     if (scheduleEnabled && !scheduledFor) { toast.error(t('menus.bulkEditor.pickSchedule')); return; }
     try {
       setSaving(true);
+      // Editing a pending scheduled change: drop the old one once the replacement is in.
+      if (editingScheduledId) {
+        await api.delete(`/menus/prices/scheduled/${editingScheduledId}`);
+      }
       const body: any = { items: changed };
       if (scheduleEnabled && scheduledFor) {
         body.scheduledFor = new Date(scheduledFor).toISOString();
@@ -142,8 +215,10 @@ export default function BulkPricesPage() {
       setPercent('');
       setScheduleEnabled(false);
       setScheduledFor('');
+      setEditingScheduledId(null);
       // A scheduled change hasn't been applied yet, so don't refetch (prices unchanged).
       if (!scheduleEnabled) fetchData();
+      fetchScheduleAndHistory();
     } catch (error) {
       toast.error(t('menus.bulkEditor.saveFailed'));
     } finally {
@@ -209,9 +284,89 @@ export default function BulkPricesPage() {
                   <Input type="datetime-local" value={scheduledFor} onChange={(e) => setScheduledFor(e.target.value)} className="h-10 text-xs font-medium w-56" />
                 </div>
               )}
+              {editingScheduledId && (
+                <div className="w-full flex items-center justify-between gap-2 rounded-lg bg-amber-50 border border-amber-200 px-3 py-2">
+                  <span className="text-[11px] font-bold text-amber-700">{t('menus.bulkEditor.editingScheduled')}</span>
+                  <Button type="button" variant="ghost" size="sm" onClick={resetAll} className="h-7 text-[10px] font-black uppercase text-amber-700">
+                    <X className="w-3 h-3 mr-1" /> {t('menus.bulkEditor.cancelEdit')}
+                  </Button>
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>
+
+        {/* Pending scheduled changes: view, cancel, or edit before the worker applies them. */}
+        {scheduled.length > 0 && (
+          <Card className="rounded-xl border-slate-200 shadow-sm">
+            <CardHeader className="p-5 border-b border-slate-100">
+              <CardTitle className="text-sm font-black uppercase tracking-tight flex items-center gap-2">
+                <Clock className="w-4 h-4 text-amber-600" /> {t('menus.bulkEditor.scheduledTitle')}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-0 divide-y divide-slate-50">
+              {scheduled.map(update => (
+                <div key={update.id} className="flex items-center gap-4 px-5 py-3">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-bold text-slate-700">
+                      {new Date(update.scheduledFor).toLocaleString(locale === 'tr' ? 'tr-TR' : 'en-US')}
+                    </p>
+                    <p className="text-[11px] text-slate-400 font-medium truncate">
+                      {update.items.length} {t('menus.bulkEditor.itemsSuffix')}
+                      {update.items.length > 0 && ` · ${update.items.slice(0, 3).map(i => i.name || '?').join(', ')}${update.items.length > 3 ? '…' : ''}`}
+                    </p>
+                  </div>
+                  <Button variant="outline" size="sm" onClick={() => editScheduled(update)} className="h-8 text-[10px] font-black uppercase border-slate-200">
+                    <Pencil className="w-3 h-3 mr-1" /> {t('menus.bulkEditor.editButton')}
+                  </Button>
+                  <Button
+                    variant="outline" size="sm" onClick={() => cancelScheduled(update.id)} disabled={cancellingId === update.id}
+                    className="h-8 text-[10px] font-black uppercase border-red-200 text-red-600 hover:bg-red-50"
+                  >
+                    <X className="w-3 h-3 mr-1" /> {t('menus.bulkEditor.cancelButton')}
+                  </Button>
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Recent changes: history of applied price changes, with undo. */}
+        {history.length > 0 && (
+          <Card className="rounded-xl border-slate-200 shadow-sm">
+            <CardHeader className="p-5 border-b border-slate-100">
+              <CardTitle className="text-sm font-black uppercase tracking-tight flex items-center gap-2">
+                <History className="w-4 h-4 text-slate-500" /> {t('menus.bulkEditor.historyTitle')}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-0 divide-y divide-slate-50">
+              {history.map(update => (
+                <div key={update.id} className="flex items-center gap-4 px-5 py-3">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-bold text-slate-700 flex items-center gap-2">
+                      {update.appliedAt ? new Date(update.appliedAt).toLocaleString(locale === 'tr' ? 'tr-TR' : 'en-US') : '—'}
+                      {update.status === 'UNDONE' && (
+                        <span className="text-[9px] font-black uppercase text-slate-400 bg-slate-100 rounded px-1.5 py-0.5">{t('menus.bulkEditor.undoneBadge')}</span>
+                      )}
+                    </p>
+                    <p className="text-[11px] text-slate-400 font-medium truncate">
+                      {update.items.length} {t('menus.bulkEditor.itemsSuffix')}
+                      {update.items.length > 0 && ` · ${update.items.slice(0, 3).map(i => i.name || '?').join(', ')}${update.items.length > 3 ? '…' : ''}`}
+                    </p>
+                  </div>
+                  {update.status === 'APPLIED' && (
+                    <Button
+                      variant="outline" size="sm" onClick={() => undoChange(update.id)} disabled={undoingId === update.id}
+                      className="h-8 text-[10px] font-black uppercase border-slate-200"
+                    >
+                      <Undo2 className="w-3 h-3 mr-1" /> {t('menus.bulkEditor.undoButton')}
+                    </Button>
+                  )}
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+        )}
 
         {loading ? (
           <div className="flex items-center justify-center h-40">

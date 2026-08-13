@@ -674,12 +674,7 @@
     "toast": {
       "appliedDaysPrefix": "Applied to ",
       "appliedDaysSuffix": " day(s)",
-      "updateFailed": "Failed to update settings",
-      "applyingFuture": "Applying settings to future days...",
-      "noNewDays": "No new days to update.",
-      "futureSuccessPrefix": "Successfully applied mode to ",
-      "futureSuccessSuffix": " future days.",
-      "futureFailed": "Failed to apply future settings"
+      "updateFailed": "Failed to update settings"
     },
     "badge": {
       "event": "Event"
@@ -692,12 +687,6 @@
     "header": {
       "title": "Calendar Master",
       "subtitle": "Operations Orchestrator"
-    },
-    "futureMode": {
-      "placeholder": "Set Future Default Mode",
-      "autoConfirm": "Auto-Confirm",
-      "standard": "Standard (Manual)",
-      "blackout": "Blackout"
     },
     "buttons": {
       "singleEdit": "Single Edit",
@@ -1083,7 +1072,20 @@
       "schedule": "Schedule",
       "roundUpShort": "Round up",
       "pickSchedule": "Pick a date & time for the scheduled update",
-      "scheduledSuffix": "price change(s) scheduled"
+      "scheduledSuffix": "price change(s) scheduled",
+      "scheduledTitle": "Pending Scheduled Changes",
+      "historyTitle": "Recent Changes",
+      "itemsSuffix": "item(s)",
+      "editButton": "Edit",
+      "cancelButton": "Cancel",
+      "undoButton": "Undo",
+      "undoneBadge": "Undone",
+      "editingScheduled": "Editing a pending scheduled change — saving replaces it",
+      "cancelEdit": "Discard edit",
+      "cancelSuccess": "Scheduled change cancelled",
+      "cancelFailed": "Failed to cancel the scheduled change",
+      "undoSuccess": "Change undone",
+      "undoFailed": "Failed to undo the change"
     }
   },
   "host": {

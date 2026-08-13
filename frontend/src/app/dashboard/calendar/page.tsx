@@ -9,8 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
-import { Calendar as CalendarIcon, Save, Trash2, ChevronLeft, ChevronRight, Star, Settings2, Info, AlertCircle, Check, MousePointer2, Layers, ToggleLeft, ToggleRight, Timer, CalendarClock } from 'lucide-react';
+import { Calendar as CalendarIcon, Save, Trash2, ChevronLeft, ChevronRight, Star, Settings2, Info, AlertCircle, Check, MousePointer2, Layers, ToggleLeft, ToggleRight, Timer } from 'lucide-react';
 import api from '@/lib/api';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
@@ -42,10 +41,6 @@ export default function CalendarSettingsPage() {
   // Selection Logic
   const [isBulkMode, setIsBulkMode] = useState(false);
   const [selectedDays, setSelectedDays] = useState<Set<string>>(new Set());
-
-  // Future Reset Logic
-  const [futureModeAction, setFutureModeAction] = useState<string | null>(null);
-  const [isFutureDialogOpen, setIsFutureDialogOpen] = useState(false);
 
   const [form, setForm] = useState({
     eventTitle: '',
@@ -138,54 +133,6 @@ export default function CalendarSettingsPage() {
     }
   };
 
-  const handleFutureApply = async (overwriteAll: boolean) => {
-    if (!futureModeAction) return;
-    setIsFutureDialogOpen(false);
-    const modeToastId = toast.loading(t("calendar.toast.applyingFuture"));
-
-    const isReservationEnabled = futureModeAction !== 'BLACKOUT';
-    const autoConfirm = futureModeAction === 'AUTO_CONFIRM';
-
-    const today = new Date();
-    today.setHours(0,0,0,0);
-    const datesToUpdate = [];
-
-    // Generate next 365 days
-    for (let i = 0; i < 365; i++) {
-        const d = new Date(today);
-        d.setDate(d.getDate() + i);
-        const dateStr = formatLocalDate(d);
-
-        if (!overwriteAll && daySettings[dateStr]) {
-            continue; // Skip if it has manual settings already
-        }
-        datesToUpdate.push(dateStr);
-    }
-
-    if (datesToUpdate.length === 0) {
-        toast.dismiss(modeToastId);
-        toast.info(t("calendar.toast.noNewDays"));
-        setFutureModeAction(null);
-        return;
-    }
-
-    try {
-        await api.post('/day-settings/bulk', {
-            dates: datesToUpdate,
-            eventTitle: '', // clear event title on bulk future overwrite
-            isReservationEnabled,
-            autoConfirm
-        });
-        toast.dismiss(modeToastId);
-        toast.success(`${t("calendar.toast.futureSuccessPrefix")}${datesToUpdate.length}${t("calendar.toast.futureSuccessSuffix")}`);
-        fetchDaySettings();
-    } catch (err) {
-        toast.dismiss(modeToastId);
-        toast.error(t("calendar.toast.futureFailed"));
-    }
-    setFutureModeAction(null);
-  };
-
   const renderCalendar = () => {
     const year = currentMonth.getFullYear();
     const month = currentMonth.getMonth();
@@ -264,19 +211,6 @@ export default function CalendarSettingsPage() {
           </div>
           
           <div className="flex flex-col items-end gap-2">
-            <div className="flex items-center gap-4">
-                <Select value={futureModeAction || ''} onValueChange={(v) => { setFutureModeAction(v); setIsFutureDialogOpen(true); }}>
-                    <SelectTrigger className="h-10 w-[240px] text-xs font-black uppercase border-slate-200 shadow-sm bg-white">
-                        <CalendarClock className="w-4 h-4 mr-2 text-blue-600" />
-                        <SelectValue placeholder={t("calendar.futureMode.placeholder")} />
-                    </SelectTrigger>
-                    <SelectContent>
-                        <SelectItem value="AUTO_CONFIRM" className="text-xs font-bold"><div className="flex items-center text-emerald-700"><Check className="w-3 h-3 mr-2" /> {t("calendar.futureMode.autoConfirm")}</div></SelectItem>
-                        <SelectItem value="STANDARD" className="text-xs font-bold"><div className="flex items-center text-amber-700"><Timer className="w-3 h-3 mr-2" /> {t("calendar.futureMode.standard")}</div></SelectItem>
-                        <SelectItem value="BLACKOUT" className="text-xs font-bold"><div className="flex items-center text-red-700"><AlertCircle className="w-3 h-3 mr-2" /> {t("calendar.futureMode.blackout")}</div></SelectItem>
-                    </SelectContent>
-                </Select>
-            </div>
             <div className="flex items-center gap-6 mt-2">
                 <div className="flex items-center gap-2 bg-slate-100 p-1 rounded-md border border-slate-200">
                     <Button 

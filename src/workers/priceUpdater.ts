@@ -23,21 +23,27 @@ export const startPriceUpdater = () => {
             // stored target prices directly (only to items still in this tenant).
             if (update.updateType === 'EXPLICIT_SET') {
               const targets: { id: string; price: number }[] = update.payload ? JSON.parse(update.payload) : [];
+              // Snapshot {id, oldPrice, newPrice} for every item actually changed, so
+              // this update can later be shown in history and undone.
+              const snapshot: { id: string; oldPrice: number; newPrice: number }[] = [];
               if (targets.length > 0) {
                 const owned = await tx.menuItem.findMany({
                   where: { id: { in: targets.map(t => t.id) }, category: { menu: { restaurantId: update.restaurantId } } },
-                  select: { id: true }
+                  select: { id: true, price: true }
                 });
-                const ownedIds = new Set(owned.map(o => o.id));
+                const oldPriceById = new Map(owned.map(o => [o.id, o.price]));
                 for (const target of targets) {
-                  if (ownedIds.has(target.id) && !isNaN(target.price) && target.price >= 0) {
-                    await tx.menuItem.update({ where: { id: target.id }, data: { price: Math.round(target.price * 100) / 100 } });
+                  const oldPrice = oldPriceById.get(target.id);
+                  if (oldPrice !== undefined && !isNaN(target.price) && target.price >= 0) {
+                    const newPrice = Math.round(target.price * 100) / 100;
+                    await tx.menuItem.update({ where: { id: target.id }, data: { price: newPrice } });
+                    snapshot.push({ id: target.id, oldPrice, newPrice });
                   }
                 }
               }
               await tx.scheduledPriceUpdate.update({
                 where: { id: update.id },
-                data: { status: 'APPLIED', appliedAt: new Date() }
+                data: { status: 'APPLIED', appliedAt: new Date(), payload: JSON.stringify(snapshot) }
               });
               console.log(`[Worker] Successfully applied explicit update ${update.id}`);
               return;
@@ -53,9 +59,10 @@ export const startPriceUpdater = () => {
               }
             });
 
+            const snapshot: { id: string; oldPrice: number; newPrice: number }[] = [];
             for (const item of menuItems) {
               let newPrice = item.price;
-              
+
               if (update.updateType === 'PERCENTAGE') {
                 const multiplier = update.value / 100;
                 if (update.isIncrease) {
@@ -79,14 +86,15 @@ export const startPriceUpdater = () => {
                   where: { id: item.id },
                   data: { price: newPrice }
                 });
+                snapshot.push({ id: item.id, oldPrice: item.price, newPrice });
               }
             }
 
             await tx.scheduledPriceUpdate.update({
               where: { id: update.id },
-              data: { status: 'APPLIED', appliedAt: new Date() }
+              data: { status: 'APPLIED', appliedAt: new Date(), payload: JSON.stringify(snapshot) }
             });
-            
+
             console.log(`[Worker] Successfully applied update ${update.id}`);
           });
         } catch (txError) {
