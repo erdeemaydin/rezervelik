@@ -25,7 +25,8 @@
     "rootAuthority": "Kök Yetki",
     "logoutSystem": "Sistemden Çıkış",
     "systemManagement": "Sistem Yönetimi",
-    "globalClusterActive": "Küresel Küme: Aktif"
+    "globalClusterActive": "Küresel Küme: Aktif",
+    "fetchTenantsError": "Kiracılar yüklenemedi"
   },
   "admin": {
     "dashboard": "Panel",

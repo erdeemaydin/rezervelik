@@ -117,6 +117,7 @@ export default function TenantManagementPage() {
       return res.data.data as any[];
     } catch (error) {
       console.error('Failed to fetch tenants:', error);
+      toast.error(t('systemAdmin.fetchTenantsError'));
       return [];
     } finally { setLoading(false); }
   };

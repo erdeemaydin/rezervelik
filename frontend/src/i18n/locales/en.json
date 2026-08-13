@@ -25,7 +25,8 @@
     "rootAuthority": "Root Authority",
     "logoutSystem": "Logout System",
     "systemManagement": "System Management",
-    "globalClusterActive": "Global Cluster: Active"
+    "globalClusterActive": "Global Cluster: Active",
+    "fetchTenantsError": "Failed to load tenants"
   },
   "admin": {
     "dashboard": "Dashboard",
