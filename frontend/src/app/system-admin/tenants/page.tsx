@@ -5,14 +5,15 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Building2, Plus, Settings2, ShieldCheck, ShieldAlert, Globe, Mail, Search, KeyRound, Copy } from 'lucide-react';
-import { 
-  Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter 
+import { Building2, Plus, Settings2, ShieldCheck, ShieldAlert, Globe, Mail, Search, KeyRound, Copy, CreditCard, SlidersHorizontal } from 'lucide-react';
+import {
+  Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Switch } from '@/components/ui/switch';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { useAuthStore } from '@/store/useAuthStore';
@@ -421,11 +422,19 @@ export default function TenantManagementPage() {
                             <p className="text-[11px] text-slate-400 font-medium normal-case tracking-normal">{selectedTenant?.name} · {selectedTenant?.slug}.your-domain.com</p>
                         </DialogHeader>
                     </div>
-                    <div className="p-6 space-y-6 bg-white max-h-[82vh] overflow-y-auto">
-                        <div className="border-b border-slate-200 pb-6">
-                            <div className="flex items-center gap-2 mb-4">
-                                <Label className="text-xs font-black uppercase text-slate-800 tracking-tight">Subscription Management</Label>
-                            </div>
+                    <div className="bg-white max-h-[82vh] overflow-y-auto">
+                      <Tabs defaultValue="subscription" className="w-full gap-0">
+                        <div className="px-6 pt-4 border-b border-slate-100 sticky top-0 bg-white z-10">
+                          <TabsList className="bg-slate-100/60">
+                            <TabsTrigger value="subscription" className="text-[10px] font-black uppercase gap-1.5"><CreditCard className="w-3.5 h-3.5" /> Subscription</TabsTrigger>
+                            <TabsTrigger value="configuration" className="text-[10px] font-black uppercase gap-1.5"><Settings2 className="w-3.5 h-3.5" /> Configuration</TabsTrigger>
+                            <TabsTrigger value="features" className="text-[10px] font-black uppercase gap-1.5"><SlidersHorizontal className="w-3.5 h-3.5" /> Feature Flags</TabsTrigger>
+                            <TabsTrigger value="admin" className="text-[10px] font-black uppercase gap-1.5"><ShieldAlert className="w-3.5 h-3.5" /> Admin &amp; Security</TabsTrigger>
+                          </TabsList>
+                        </div>
+                        <div className="p-6">
+                        <TabsContent value="subscription" className="mt-0 space-y-6">
+                        <div>
                             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                                 <div className="space-y-1.5">
                                     <Label className="text-[10px] font-black uppercase text-slate-400">Plan Tier</Label>
@@ -485,10 +494,9 @@ export default function TenantManagementPage() {
                                 />
                             </div>
                         </div>
+                        </TabsContent>
 
-                        {/* Configuration (left) + Feature flags (right) — two balanced columns */}
-                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-8 gap-y-6 border-b border-slate-200 pb-6">
-                          <div className="space-y-6">
+                        <TabsContent value="configuration" className="mt-0 space-y-6">
                         <div className="space-y-4">
                             <div className="flex items-center gap-2 mb-2">
                                 <Label className="text-xs font-black uppercase text-slate-800 tracking-tight">Business Vertical</Label>
@@ -575,64 +583,14 @@ export default function TenantManagementPage() {
                                   <option value="en">English (EN)</option>
                                 </select>
                             </div>
-                            {/* 2FA — root-admin-only. The SysAdmin both enables 2FA and
-                                picks which roles must use it; tenant admins have no 2FA
-                                controls of their own. */}
-                            <div className="p-3 border border-slate-100 rounded-sm bg-rose-50/30 space-y-3">
-                                <div className="flex items-center justify-between">
-                                    <div className="space-y-0.5">
-                                        <Label className="text-xs font-black uppercase text-rose-900">Two-Factor Authentication</Label>
-                                        <p className="text-[9px] text-rose-400 font-bold uppercase">Require 2FA For Selected Roles</p>
-                                    </div>
-                                    <Checkbox
-                                        checked={settingsForm.twoFactorEnabled}
-                                        onCheckedChange={(c) => setSettingsForm({
-                                            ...settingsForm,
-                                            twoFactorEnabled: !!c,
-                                            // Clearing the capability clears the role list too.
-                                            twoFactorRoles: c ? settingsForm.twoFactorRoles : '',
-                                        })}
-                                    />
-                                </div>
-                                {settingsForm.twoFactorEnabled && (
-                                    <div className="grid grid-cols-4 gap-1.5 pt-1">
-                                        {['ADMIN', 'MANAGER', 'HOST', 'STAFF'].map(role => {
-                                            const list = settingsForm.twoFactorRoles ? settingsForm.twoFactorRoles.split(',').filter(Boolean) : [];
-                                            const active = list.includes(role);
-                                            return (
-                                                <button
-                                                    key={role}
-                                                    type="button"
-                                                    onClick={() => {
-                                                        const set = new Set(list);
-                                                        if (set.has(role)) set.delete(role); else set.add(role);
-                                                        setSettingsForm({ ...settingsForm, twoFactorRoles: Array.from(set).join(',') });
-                                                    }}
-                                                    className={`px-1.5 py-1.5 rounded-sm border text-[10px] font-black uppercase tracking-tight transition-all ${active ? 'border-rose-500 bg-rose-500 text-white' : 'border-slate-200 bg-white text-slate-500 hover:border-rose-300'}`}
-                                                >
-                                                    {role}
-                                                </button>
-                                            );
-                                        })}
-                                    </div>
-                                )}
-                            </div>
-                            {/* Audit log visibility — let this tenant's admins see their own activity log. */}
-                            <div className="flex items-center justify-between p-3 border border-slate-100 rounded-sm bg-slate-50/40">
-                                <div className="space-y-0.5">
-                                    <Label className="text-xs font-black uppercase">Audit Log Visibility</Label>
-                                    <p className="text-[9px] text-slate-400 font-bold uppercase">Let Tenant Admins See Their Activity Log</p>
-                                </div>
-                                <Checkbox checked={settingsForm.showAuditLogToTenant} onCheckedChange={(c) => setSettingsForm({...settingsForm, showAuditLogToTenant: !!c})} />
-                            </div>
                         </div>
+                        </TabsContent>
 
-                          </div>{/* end left configuration column */}
-
-                        <div className="space-y-4">
-                            <div className="flex items-center gap-2 mb-2">
-                                <Label className="text-xs font-black uppercase text-slate-800 tracking-tight">Feature Flags</Label>
-                            </div>
+                        <TabsContent value="features" className="mt-0">
+                        <div className="flex items-center gap-2 mb-3">
+                            <Label className="text-xs font-black uppercase text-slate-800 tracking-tight">Feature Flags</Label>
+                        </div>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                             <div className="flex items-center justify-between p-3 border border-slate-100 rounded-sm">
                                 <div className="space-y-0.5">
                                     <Label className="text-xs font-black uppercase">VIP Status</Label>
@@ -712,8 +670,64 @@ export default function TenantManagementPage() {
                                 <Checkbox checked={settingsForm.hasVendors} onCheckedChange={(c) => setSettingsForm({...settingsForm, hasVendors: !!c})} />
                             </div>
                         </div>
+                        </TabsContent>
 
-                        </div>{/* end configuration / feature-flags grid */}
+                        <TabsContent value="admin" className="mt-0 space-y-6">
+                        <div className="space-y-4">
+                            <div className="flex items-center gap-2 mb-1">
+                                <Label className="text-xs font-black uppercase text-slate-800 tracking-tight">Platform-Enforced Security</Label>
+                            </div>
+                            {/* 2FA — root-admin-only. The SysAdmin both enables 2FA and
+                                picks which roles must use it; tenant admins have no 2FA
+                                controls of their own. */}
+                            <div className="p-3 border border-slate-100 rounded-sm bg-rose-50/30 space-y-3">
+                                <div className="flex items-center justify-between">
+                                    <div className="space-y-0.5">
+                                        <Label className="text-xs font-black uppercase text-rose-900">Two-Factor Authentication</Label>
+                                        <p className="text-[9px] text-rose-400 font-bold uppercase">Require 2FA For Selected Roles</p>
+                                    </div>
+                                    <Checkbox
+                                        checked={settingsForm.twoFactorEnabled}
+                                        onCheckedChange={(c) => setSettingsForm({
+                                            ...settingsForm,
+                                            twoFactorEnabled: !!c,
+                                            // Clearing the capability clears the role list too.
+                                            twoFactorRoles: c ? settingsForm.twoFactorRoles : '',
+                                        })}
+                                    />
+                                </div>
+                                {settingsForm.twoFactorEnabled && (
+                                    <div className="grid grid-cols-4 gap-1.5 pt-1">
+                                        {['ADMIN', 'MANAGER', 'HOST', 'STAFF'].map(role => {
+                                            const list = settingsForm.twoFactorRoles ? settingsForm.twoFactorRoles.split(',').filter(Boolean) : [];
+                                            const active = list.includes(role);
+                                            return (
+                                                <button
+                                                    key={role}
+                                                    type="button"
+                                                    onClick={() => {
+                                                        const set = new Set(list);
+                                                        if (set.has(role)) set.delete(role); else set.add(role);
+                                                        setSettingsForm({ ...settingsForm, twoFactorRoles: Array.from(set).join(',') });
+                                                    }}
+                                                    className={`px-1.5 py-1.5 rounded-sm border text-[10px] font-black uppercase tracking-tight transition-all ${active ? 'border-rose-500 bg-rose-500 text-white' : 'border-slate-200 bg-white text-slate-500 hover:border-rose-300'}`}
+                                                >
+                                                    {role}
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
+                                )}
+                            </div>
+                            {/* Audit log visibility — let this tenant's admins see their own activity log. */}
+                            <div className="flex items-center justify-between p-3 border border-slate-100 rounded-sm bg-slate-50/40">
+                                <div className="space-y-0.5">
+                                    <Label className="text-xs font-black uppercase">Audit Log Visibility</Label>
+                                    <p className="text-[9px] text-slate-400 font-bold uppercase">Let Tenant Admins See Their Activity Log</p>
+                                </div>
+                                <Checkbox checked={settingsForm.showAuditLogToTenant} onCheckedChange={(c) => setSettingsForm({...settingsForm, showAuditLogToTenant: !!c})} />
+                            </div>
+                        </div>
 
                         {/* Tenant admin permissions — full width */}
                         <div className="space-y-4">
@@ -780,6 +794,9 @@ export default function TenantManagementPage() {
                                 );
                             })()}
                         </div>
+                        </TabsContent>
+                        </div>
+                      </Tabs>
                     </div>
                     <div className="p-4 bg-slate-50 border-t border-slate-100 flex justify-end gap-2">
                         <Button type="button" variant="ghost" disabled={saving} onClick={() => setIsSettingsOpen(false)} className="h-9 text-xs font-bold text-slate-400">CANCEL</Button>
