@@ -558,6 +558,12 @@ model Reservation {
 
   @@unique([restaurantId, confirmationCode])
   @@index([restaurantId])
+  // Every hot-path reservation query (dashboard list, analytics windows, the
+  // recent-activity/weekly-count widgets) filters by restaurantId AND a
+  // startTime range together. The separate single-column indexes below force
+  // Postgres to pick one and re-filter the rest row-by-row; this composite
+  // lets it satisfy both predicates directly from a single index range scan.
+  @@index([restaurantId, startTime])
   @@index([tableId])
   @@index([categoryId])
   @@index([serviceId])
