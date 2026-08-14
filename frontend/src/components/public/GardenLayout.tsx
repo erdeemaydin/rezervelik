@@ -33,7 +33,7 @@ export default function GardenLayout({ slug, initialRestaurant, initialView, men
 
   const [dayStatus, setDayStatus] = useState<any>(null);
   const [checkingDay, setCheckingDay] = useState(false);
-  const [isWaitlistSuccess, setIsWaitlistSuccess] = useState(false);
+
   const [isBookingSuccess, setIsBookingSuccess] = useState(false);
   const [isPossiblyFullyBooked, setIsPossiblyFullyBooked] = useState(false);
   const [confirmationCode, setConfirmationCode] = useState<string | null>(null);
@@ -94,19 +94,11 @@ export default function GardenLayout({ slug, initialRestaurant, initialView, men
       return;
     }
 
+    // A fully booked day has no capacity left — future demand belongs to the
+    // reservation flow (retry another date) rather than a waitlist join; the
+    // walk-in waitlist is for real-time, same-day guests only.
     if (dayStatus?.daySetting?.isFullyBooked) {
-      try {
-        await axios.post(`${API_URL}/public/restaurant/${slug}/waitlist`, {
-          customerName: resForm.customerName,
-          customerPhone: resForm.customerPhone,
-          partySize: parseInt(resForm.guestCount),
-          targetDate: selectedDate,
-          notes: `Requested Time: ${selectedTime} - ${resForm.notes}`
-        });
-        setIsWaitlistSuccess(true);
-      } catch (err: any) {
-        toast.error(err.response?.data?.error || 'Failed to join waitlist');
-      }
+      toast.error('This day is fully booked. Please choose another date.');
       return;
     }
 
@@ -468,12 +460,6 @@ export default function GardenLayout({ slug, initialRestaurant, initialView, men
                 </div>
               )}
             </div>
-          ) : isWaitlistSuccess ? (
-            <div className="rounded-[2rem] border border-black/5 bg-white p-12 text-center animate-in zoom-in">
-              <CheckCircle2 className="mx-auto mb-6 h-16 w-16 text-emerald-500" />
-              <h3 className="mb-3 font-serif text-2xl">Waitlist Joined</h3>
-              <p className="text-base opacity-60">We will notify you if a table becomes available.</p>
-            </div>
           ) : (
             <form onSubmit={handleBooking} className="space-y-8 rounded-[2rem] border border-black/5 bg-white p-6 shadow-sm sm:p-10">
               {restaurant.customization?.reservationInfoText && (
@@ -510,8 +496,8 @@ export default function GardenLayout({ slug, initialRestaurant, initialView, men
                   <Clock className="h-5 w-5 shrink-0 text-amber-500" />
                   <div>
                     <span className="mb-1 block text-xs font-semibold uppercase tracking-widest text-amber-600">{selectedDateLabel}</span>
-                    <strong className="mb-1 block text-base">Fully Booked (Waitlist Open)</strong>
-                    We are fully booked for reservations on this day, but you can join our waitlist.
+                    <strong className="mb-1 block text-base">Fully Booked</strong>
+                    We are fully booked for reservations on this day. Please choose another date, or call us directly.
                   </div>
                 </div>
               ) : dayStatus?.daySetting?.isReservationEnabled === false ? (
@@ -585,10 +571,10 @@ export default function GardenLayout({ slug, initialRestaurant, initialView, men
 
               <Button
                 type="submit"
-                disabled={checkingDay || (dayStatus?.daySetting?.isReservationEnabled === false && !dayStatus?.daySetting?.isFullyBooked)}
+                disabled={checkingDay || dayStatus?.daySetting?.isFullyBooked || (dayStatus?.daySetting?.isReservationEnabled === false && !dayStatus?.daySetting?.isFullyBooked)}
                 className="h-16 w-full rounded-2xl bg-[var(--accent)] text-base font-semibold uppercase tracking-widest text-white hover:bg-[var(--accent-hover)] disabled:opacity-50"
               >
-                {dayStatus?.daySetting?.isFullyBooked ? 'Join Waitlist' : 'Request Table'}
+                {dayStatus?.daySetting?.isFullyBooked ? 'Fully Booked' : 'Request Table'}
               </Button>
             </form>
           )}

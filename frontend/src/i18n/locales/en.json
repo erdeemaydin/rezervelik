@@ -1360,14 +1360,11 @@
     "saving": "Saving...",
     "tabs": {
       "walkins": "Walk-ins",
-      "futureDates": "Future Dates",
       "addWalkIn": "Add Walk-In"
     },
     "empty": {
       "queueTitle": "Queue is currently empty",
-      "queueDesc": "Walk-ins will appear here.",
-      "futureTitle": "No Future Waitlists",
-      "futureDesc": "Guests waiting for fully booked dates will appear here."
+      "queueDesc": "Walk-ins will appear here."
     },
     "table": {
       "guest": "Guest",
@@ -1375,7 +1372,6 @@
       "waitTime": "Wait Time",
       "status": "Status",
       "actions": "Actions",
-      "date": "Date",
       "mElapsed": "m elapsed",
       "quoted": "Quoted"
     },

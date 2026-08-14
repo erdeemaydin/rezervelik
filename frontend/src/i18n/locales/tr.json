@@ -1360,14 +1360,11 @@
     "saving": "Kaydediliyor...",
     "tabs": {
       "walkins": "Bekleyenler",
-      "futureDates": "Gelecek Tarihler",
       "addWalkIn": "Bekleyen Ekle"
     },
     "empty": {
       "queueTitle": "Sıra şu anda boş",
-      "queueDesc": "Bekleyenler burada görünecektir.",
-      "futureTitle": "Gelecek Bekleme Listesi Yok",
-      "futureDesc": "Tamamen dolu tarihler için bekleyen misafirler burada görünecektir."
+      "queueDesc": "Bekleyenler burada görünecektir."
     },
     "table": {
       "guest": "Misafir",
@@ -1375,7 +1372,6 @@
       "waitTime": "Bekleme Süresi",
       "status": "Durum",
       "actions": "İşlemler",
-      "date": "Tarih",
       "mElapsed": "dk geçti",
       "quoted": "Verilen Süre"
     },

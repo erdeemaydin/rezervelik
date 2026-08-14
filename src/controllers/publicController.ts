@@ -143,7 +143,7 @@ export const getDayStatus = async (req: Request, res: Response) => {
 export const joinPublicWaitlist = async (req: Request, res: Response) => {
   try {
     const { slug } = req.params;
-    const { customerName, customerPhone, partySize, targetDate, notes } = req.body;
+    const { customerName, customerPhone, partySize, notes } = req.body;
 
     const parsedPartySize = parseInt(partySize);
     if (!customerName || !customerPhone || !partySize || !Number.isInteger(parsedPartySize) || parsedPartySize < 1) {
@@ -166,16 +166,18 @@ export const joinPublicWaitlist = async (req: Request, res: Response) => {
     }
 
     const config = restaurant.waitTimeConfig;
-    const isDateWaitlist = Boolean(targetDate);
 
-    // The date-based "notify me if a table opens up" waitlist (for fully-booked days)
-    // is a separate feature from the real-time walk-in queue, and isn't gated by it.
-    if (!isDateWaitlist && (!config || !config.isWaitlistOpen)) {
+    // The public waitlist is for real-time, same-day walk-ins only — a future
+    // date is a reservation, not a waitlist entry. This endpoint no longer
+    // accepts a `targetDate` at all (the old "notify me if a table opens up"
+    // date-based waitlist has been removed), so it's always gated by whether
+    // the live walk-in waitlist is open.
+    if (!config || !config.isWaitlistOpen) {
       return errorResponse(res, 'Waitlist is not currently open', 403);
     }
 
     let quotedWaitTime = null;
-    if (!isDateWaitlist && config?.isWaitTimeCalculated) {
+    if (config.isWaitTimeCalculated) {
       quotedWaitTime = config.peopleWaiting * config.waitTimePerPersonUpper; // Conservative estimate
 
       // Auto increment the people waiting so the next person gets a higher quote
@@ -183,7 +185,7 @@ export const joinPublicWaitlist = async (req: Request, res: Response) => {
         where: { id: config.id },
         data: { peopleWaiting: { increment: parsedPartySize } }
       });
-    } else if (!isDateWaitlist && config?.manualWaitTimeUpper) {
+    } else if (config.manualWaitTimeUpper) {
       quotedWaitTime = config.manualWaitTimeUpper;
     }
 
@@ -195,7 +197,10 @@ export const joinPublicWaitlist = async (req: Request, res: Response) => {
         partySize: parsedPartySize,
         quotedWaitTime,
         status: 'WAITING',
-        targetDate: targetDate || null,
+        // targetDate is intentionally never set from this public endpoint
+        // anymore — the column stays on the model only for legacy entries
+        // created before this change.
+        targetDate: null,
         notes: notes || null
       }
     });

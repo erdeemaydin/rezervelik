@@ -34,7 +34,7 @@ export default function PremiumLayout({ slug, initialRestaurant, initialView, me
 
   const [dayStatus, setDayStatus] = useState<any>(null);
   const [checkingDay, setCheckingDay] = useState(false);
-  const [isWaitlistSuccess, setIsWaitlistSuccess] = useState(false);
+
   const [isBookingSuccess, setIsBookingSuccess] = useState(false);
   const [isPossiblyFullyBooked, setIsPossiblyFullyBooked] = useState(false);
   const [confirmationCode, setConfirmationCode] = useState<string | null>(null);
@@ -93,19 +93,11 @@ export default function PremiumLayout({ slug, initialRestaurant, initialView, me
       return;
     }
 
+    // A fully booked day has no capacity left — future demand belongs to the
+    // reservation flow (retry another date) rather than a waitlist join; the
+    // walk-in waitlist is for real-time, same-day guests only.
     if (dayStatus?.daySetting?.isFullyBooked) {
-      try {
-        await axios.post(`${API_URL}/public/restaurant/${slug}/waitlist`, {
-          customerName: resForm.customerName,
-          customerPhone: resForm.customerPhone,
-          partySize: parseInt(resForm.guestCount),
-          targetDate: selectedDate,
-          notes: `Requested Time: ${selectedTime} - ${resForm.notes}`
-        });
-        setIsWaitlistSuccess(true);
-      } catch (err: any) {
-        toast.error(err.response?.data?.error || 'Failed to join waitlist');
-      }
+      toast.error('This day is fully booked. Please choose another date.');
       return;
     }
 
@@ -448,12 +440,6 @@ export default function PremiumLayout({ slug, initialRestaurant, initialView, me
                 </div>
               )}
             </div>
-          ) : isWaitlistSuccess ? (
-            <div className="text-center py-12 animate-in zoom-in rounded-[2rem] border border-[color:var(--line)] p-12" style={{ background: 'var(--panel-soft)' }}>
-              <CheckCircle2 className="w-16 h-16 text-[color:var(--moss)] mx-auto mb-6" />
-              <h3 className="text-2xl mb-4">Waitlist Joined</h3>
-              <p className="text-[color:var(--muted)] font-light text-base">We will notify you if a table becomes available.</p>
-            </div>
           ) : (
             <form onSubmit={handleBooking} className="space-y-10 p-8 md:p-12 rounded-[2rem] border border-[color:var(--line)]" style={{ background: 'var(--panel-soft)' }}>
               {restaurant.customization?.reservationInfoText && (
@@ -488,8 +474,8 @@ export default function PremiumLayout({ slug, initialRestaurant, initialView, me
                   <Clock className="w-6 h-6 shrink-0 text-amber-300" />
                   <div>
                     <span className="mb-1 block text-xs font-semibold uppercase tracking-widest text-amber-300">{selectedDateLabel}</span>
-                    <strong className="block mb-2 text-amber-200 text-lg">Fully Booked (Waitlist Open)</strong>
-                    We are fully booked for reservations on this day, but you can join our waitlist.
+                    <strong className="block mb-2 text-amber-200 text-lg">Fully Booked</strong>
+                    We are fully booked for reservations on this day. Please choose another date, or call us directly.
                   </div>
                 </div>
               ) : dayStatus?.daySetting?.isReservationEnabled === false ? (
@@ -565,10 +551,10 @@ export default function PremiumLayout({ slug, initialRestaurant, initialView, me
                 className="mt-6 space-y-3 text-sm text-[color:var(--fg)]/80"
               />
 
-              <button type="submit" disabled={checkingDay || (dayStatus?.daySetting?.isReservationEnabled === false && !dayStatus?.daySetting?.isFullyBooked)}
+              <button type="submit" disabled={checkingDay || dayStatus?.daySetting?.isFullyBooked || (dayStatus?.daySetting?.isReservationEnabled === false && !dayStatus?.daySetting?.isFullyBooked)}
                 className="w-full h-16 text-lg font-semibold tracking-[0.1em] uppercase rounded-2xl mt-8 disabled:opacity-50 transition-all hover:scale-[1.02] hover:brightness-110"
                 style={{ background: 'var(--moss)', color: 'var(--bg)' }}>
-                {dayStatus?.daySetting?.isFullyBooked ? 'Join Waitlist' : 'Request Table'}
+                {dayStatus?.daySetting?.isFullyBooked ? 'Fully Booked' : 'Request Table'}
               </button>
             </form>
           )}
