@@ -758,6 +758,7 @@
       "obsidian": "Obsidian (Dark / Clean)",
       "earth": "Earth (Warm / Rustic)",
       "crimson": "Crimson (Bold / Wine)",
+      "sage": "Sage (Fresh / Green)",
       "primaryColor": "Primary Brand Color (Hex)"
     },
     "banner": {
@@ -783,6 +784,12 @@
         "desc": "Optional restaurant-specific override of the privacy/disclosure notice linked from the reservation consent checkbox.",
         "placeholder": "Write your own privacy notice here — what data you collect, why, how long it's kept, and who it's shared with. Supports basic HTML.",
         "hint": "Leave blank to show guests the platform's generic default notice instead. This platform provides direction, not legal advice — review your own notice with a KVKK advisor before publishing it."
+      },
+      "social": {
+        "title": "Social & Website Links",
+        "desc": "Shown as icons in your public page's footer.",
+        "website": "Website",
+        "hint": "Leave any field blank to hide that icon."
       }
     },
     "rules": {
@@ -797,8 +804,11 @@
     },
     "preview": {
       "title": "Live Preview",
-      "desc": "Changes made here will immediately affect your public reservation page.",
-      "palette": "PALETTE"
+      "desc": "Your unsaved edits appear below as you make them. Nothing is public until you click Publish Changes.",
+      "palette": "PALETTE",
+      "refresh": "Reload preview",
+      "openNewTab": "Open public page in a new tab",
+      "unavailable": "Preview unavailable — could not determine your public page address."
     }
   },
   "reservations": {

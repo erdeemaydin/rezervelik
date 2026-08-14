@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Utensils, Calendar as CalendarIcon, Clock, ChevronRight, ChevronDown, ArrowLeft, MapPin, Phone, Info, Sparkles, CheckCircle2, XCircle, Flame, Leaf, Hourglass, AlertTriangle } from 'lucide-react';
+import { Utensils, Calendar as CalendarIcon, Clock, ChevronRight, ChevronDown, ArrowLeft, MapPin, Phone, Info, Sparkles, CheckCircle2, XCircle, Flame, Leaf, Hourglass, AlertTriangle, Camera, Share2, Globe } from 'lucide-react';
 import axios from 'axios';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
@@ -171,6 +171,24 @@ export default function ClassicLayout({ slug, initialRestaurant, initialView = '
       showLegal: false,
   };
 
+  // socialLinks is stored server-side as a raw JSON string (FrontendCustomization.socialLinks);
+  // parse defensively so a malformed/legacy value never breaks the public page.
+  const socialLinks = (() => {
+      const raw = customization.socialLinks;
+      if (typeof raw !== 'string' || !raw) return null;
+      try {
+          const parsed = JSON.parse(raw);
+          return {
+              instagram: typeof parsed.instagram === 'string' ? parsed.instagram : '',
+              facebook: typeof parsed.facebook === 'string' ? parsed.facebook : '',
+              website: typeof parsed.website === 'string' ? parsed.website : '',
+          };
+      } catch {
+          return null;
+      }
+  })();
+  const hasSocialLinks = !!(socialLinks && (socialLinks.instagram || socialLinks.facebook || socialLinks.website));
+
   const getFontClass = (type: string) => {
       switch(type) {
           case 'SERIF': return 'font-serif tracking-tight';
@@ -185,6 +203,7 @@ export default function ClassicLayout({ slug, initialRestaurant, initialView = '
       switch(preset) {
           case 'EARTH': return { bg: '#fdfbf7', text: '#292524', primary: '#5c4033', accent: '#d6d3d1' };
           case 'CRIMSON': return { bg: '#fffbfb', text: '#450a0a', primary: '#7f1d1d', accent: '#fecaca' };
+          case 'SAGE': return { bg: '#f6f8f4', text: '#1f2a1c', primary: '#4b6a4f', accent: '#d7e4d1' };
           case 'OBSIDIAN':
           default: return { bg: '#ffffff', text: '#0f172a', primary: '#0f172a', accent: '#e2e8f0' };
       }
@@ -342,6 +361,25 @@ export default function ClassicLayout({ slug, initialRestaurant, initialView = '
                     {restaurant.contactEmail && (
                       <a href={`mailto:${restaurant.contactEmail}`} className="flex items-center gap-2 hover:text-neutral-900">
                         <MapPin className="h-3.5 w-3.5" /> {restaurant.contactEmail}
+                      </a>
+                    )}
+                  </div>
+                )}
+                {hasSocialLinks && (
+                  <div className="flex items-center justify-center gap-4 text-neutral-500">
+                    {socialLinks!.instagram && (
+                      <a href={socialLinks!.instagram} target="_blank" rel="noopener noreferrer" aria-label="Instagram" className="hover:text-neutral-900">
+                        <Camera className="h-4 w-4" />
+                      </a>
+                    )}
+                    {socialLinks!.facebook && (
+                      <a href={socialLinks!.facebook} target="_blank" rel="noopener noreferrer" aria-label="Facebook" className="hover:text-neutral-900">
+                        <Share2 className="h-4 w-4" />
+                      </a>
+                    )}
+                    {socialLinks!.website && (
+                      <a href={socialLinks!.website} target="_blank" rel="noopener noreferrer" aria-label="Website" className="hover:text-neutral-900">
+                        <Globe className="h-4 w-4" />
                       </a>
                     )}
                   </div>

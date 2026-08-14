@@ -164,6 +164,7 @@ export default function NordicMinimalLayout({ slug, initialRestaurant, initialVi
     switch (preset) {
       case 'CRIMSON': return { accent: '#a8574a' };
       case 'EARTH': return { accent: '#8a7355' };
+      case 'SAGE': return { accent: '#7c9473' };
       case 'OBSIDIAN':
       default: return { accent: '#6b7a6a' };
     }
