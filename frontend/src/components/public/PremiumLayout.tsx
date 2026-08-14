@@ -178,6 +178,7 @@ export default function PremiumLayout({ slug, initialRestaurant, initialView, me
       case 'CRIMSON': return { bg: '#160f0e', panel: '#211514', panelSoft: '#291a18', text: '#f3e7e5', muted: '#cdb6b3', moss: '#e0a494', mossDeep: '#b06a58', line: 'rgba(243,231,229,0.12)' };
       case 'PEARL':   return { bg: '#0d1113', panel: '#141a1d', panelSoft: '#1a2226', text: '#e6edf0', muted: '#b6c2c8', moss: '#93c1b9', mossDeep: '#5c908a', line: 'rgba(230,237,240,0.12)' };
       case 'OBSIDIAN': return { bg: '#0f120f', panel: '#171c16', panelSoft: '#1d241c', text: '#e9ece4', muted: '#bcc4af', moss: '#aecb99', mossDeep: '#7a9a63', line: 'rgba(233,236,228,0.12)' };
+      case 'SAGE': return { bg: '#0e1310', panel: '#161d17', panelSoft: '#1c251d', text: '#e8ede6', muted: '#b9c4b4', moss: '#9fc98c', mossDeep: '#6f9a55', line: 'rgba(232,237,230,0.12)' };
       case 'EARTH':
       default:        return { bg: '#10130d', panel: '#191e12', panelSoft: '#1f2617', text: '#eceee2', muted: '#c6ccb5', moss: '#b6ce98', mossDeep: '#86a063', line: 'rgba(236,238,226,0.12)' };
     }

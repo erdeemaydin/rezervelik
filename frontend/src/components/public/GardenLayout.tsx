@@ -173,6 +173,7 @@ export default function GardenLayout({ slug, initialRestaurant, initialView, men
       switch(preset) {
           case 'CRIMSON': return { bg: '#fdf6f4', text: '#3d1f1a', accent: '#9a4a3c' };
           case 'PEARL': return { bg: '#f6f8fa', text: '#1f2937', accent: '#5b7fa6' };
+          case 'SAGE': return { bg: '#f5f7f2', text: '#283024', accent: '#7c9473' };
           case 'OBSIDIAN': return { bg: '#faf9f6', text: '#2c2c2c', accent: '#6b6459' };
           case 'EARTH':
           default: return { bg: '#fdfaf3', text: '#3d3524', accent: '#6f8a5c' };

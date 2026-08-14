@@ -174,6 +174,7 @@ export default function OldenLayout({ slug, initialRestaurant, initialView, menu
           case 'EARTH': return { bg: '#fdfbf7', text: '#292524', accent: '#5c4033' };
           case 'CRIMSON': return { bg: '#fffbfb', text: '#450a0a', accent: '#7f1d1d' };
           case 'PEARL': return { bg: '#f8fafc', text: '#0f172a', accent: '#1e3a8a' };
+          case 'SAGE': return { bg: '#f7faf5', text: '#1f2a1c', accent: '#4f7a52' };
           case 'OBSIDIAN':
           default: return { bg: '#fcfcfc', text: '#2c2c2c', accent: '#8b0000' };
       }

@@ -764,6 +764,7 @@
       "obsidian": "Obsidyen (Koyu / Sade)",
       "earth": "Toprak (Sıcak / Rustik)",
       "crimson": "Kızıl (Cesur / Şarap)",
+      "sage": "Adaçayı (Taze / Yeşil)",
       "primaryColor": "Ana Marka Rengi (Hex)"
     },
     "banner": {
@@ -789,6 +790,12 @@
         "desc": "Rezervasyon onay kutusundan bağlantı verilen aydınlatma metninin isteğe bağlı, restorana özel sürümü.",
         "placeholder": "Kendi aydınlatma metninizi buraya yazın — hangi verileri topladığınızı, nedenini, ne kadar süre saklandığını ve kimlerle paylaşıldığını. Temel HTML desteklenir.",
         "hint": "Boş bırakırsanız misafirlere platformun genel varsayılan metni gösterilir. Bu platform yön gösterir, hukuki tavsiye vermez — kendi metninizi yayınlamadan önce bir KVKK danışmanıyla gözden geçirin."
+      },
+      "social": {
+        "title": "Sosyal Medya ve Web Sitesi Bağlantıları",
+        "desc": "Herkese açık sayfanızın altbilgisinde simge olarak gösterilir.",
+        "website": "Web Sitesi",
+        "hint": "Bir simgeyi gizlemek için ilgili alanı boş bırakın."
       }
     },
     "rules": {
@@ -803,8 +810,11 @@
     },
     "preview": {
       "title": "Canlı Önizleme",
-      "desc": "Burada yapılan değişiklikler herkese açık rezervasyon sayfanızı anında etkileyecektir.",
-      "palette": "PALET"
+      "desc": "Kaydedilmemiş değişiklikleriniz aşağıda anında görünür. Değişiklikleri Yayınla'ya tıklamadan hiçbir şey herkese açık hale gelmez.",
+      "palette": "PALET",
+      "refresh": "Önizlemeyi yenile",
+      "openNewTab": "Herkese açık sayfayı yeni sekmede aç",
+      "unavailable": "Önizleme kullanılamıyor — herkese açık sayfa adresiniz belirlenemedi."
     }
   },
   "reservations": {

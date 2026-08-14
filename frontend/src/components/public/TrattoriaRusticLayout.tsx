@@ -170,6 +170,7 @@ export default function TrattoriaRusticLayout({ slug, initialRestaurant, initial
     switch (preset) {
       case 'CRIMSON': return { accent: '#b3452c', panel: '#f7e9d7' };
       case 'OBSIDIAN': return { accent: '#6b7a4f', panel: '#eef0e2' };
+      case 'SAGE': return { accent: '#7c9463', panel: '#eef0e2' };
       case 'EARTH':
       default: return { accent: '#c1652f', panel: '#f7e9d7' };
     }

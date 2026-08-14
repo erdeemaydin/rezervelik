@@ -167,6 +167,7 @@ export default function BoldEditorialLayout({ slug, initialRestaurant, initialVi
     switch (preset) {
       case 'CRIMSON': return { accent: '#ff2d2d' };
       case 'EARTH': return { accent: '#ffb703' };
+      case 'SAGE': return { accent: '#00d97e' };
       case 'OBSIDIAN':
       default: return { accent: '#eaff00' };
     }

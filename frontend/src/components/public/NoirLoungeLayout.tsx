@@ -171,6 +171,7 @@ export default function NoirLoungeLayout({ slug, initialRestaurant, initialView,
     switch (preset) {
       case 'CRIMSON': return { neon: '#ff3b5c', neonDeep: '#c41e3a' };
       case 'EARTH': return { neon: '#ffb020', neonDeep: '#d4941a' };
+      case 'SAGE': return { neon: '#7cfc8a', neonDeep: '#3fb85c' };
       case 'OBSIDIAN':
       default: return { neon: '#ff2e88', neonDeep: '#c81f68' };
     }
