@@ -63,7 +63,6 @@ export default function WaitlistPage() {
     // Waitlist queue state
     const [queue, setQueue] = useState<WaitlistEntry[]>([]);
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-    const [activeTab, setActiveTab] = useState<'walkin' | 'future'>('walkin');
     const [addForm, setAddForm] = useState({
         customerName: '', customerPhone: '', partySize: '2', quotedWaitTime: ''
     });
@@ -162,9 +161,6 @@ export default function WaitlistPage() {
         }
     };
 
-    const walkinQueue = queue.filter(e => !e.targetDate);
-    const futureQueue = queue.filter(e => !!e.targetDate);
-
     if (fetching) {
         return (
             <>
@@ -205,135 +201,100 @@ export default function WaitlistPage() {
                     <div>
                         <Card className="rounded-xl border-slate-200 shadow-sm overflow-hidden bg-white h-full">
                             <CardHeader className="p-6 bg-slate-50/50 border-b border-slate-200 flex flex-row items-center justify-between">
-                                <div className="flex items-center gap-3">
-                                    <Button variant="ghost" size="sm" onClick={() => setActiveTab('walkin')} className={cn("h-10 px-4 text-xs font-black uppercase rounded-lg transition-all", activeTab === 'walkin' ? "bg-white text-blue-600 shadow-sm border border-slate-200" : "text-slate-500 hover:text-slate-800")}>{t("waitTime.tabs.walkins")}</Button>
-                                    <Button variant="ghost" size="sm" onClick={() => setActiveTab('future')} className={cn("h-10 px-4 text-xs font-black uppercase rounded-lg transition-all", activeTab === 'future' ? "bg-white text-blue-600 shadow-sm border border-slate-200" : "text-slate-500 hover:text-slate-800")}>{t("waitTime.tabs.futureDates")}</Button>
-                                </div>
-                                {activeTab === 'walkin' && (
-                                    <Button onClick={() => setIsAddModalOpen(true)} className="bg-blue-600 hover:bg-blue-700 h-10 text-sm font-bold px-4 rounded-lg">
-                                        <Plus className="w-5 h-5 mr-2" /> {t("waitTime.tabs.addWalkIn")}
-                                    </Button>
-                                )}
+                                <div className="text-sm font-black uppercase tracking-widest text-slate-700">{t("waitTime.tabs.walkins")}</div>
+                                <Button onClick={() => setIsAddModalOpen(true)} className="bg-blue-600 hover:bg-blue-700 h-10 text-sm font-bold px-4 rounded-lg">
+                                    <Plus className="w-5 h-5 mr-2" /> {t("waitTime.tabs.addWalkIn")}
+                                </Button>
                             </CardHeader>
                             <CardContent className="p-0">
-                                {activeTab === 'walkin' ? (
-                                    walkinQueue.length === 0 ? (
-                                        <div className="flex flex-col items-center justify-center py-16 text-slate-400">
-                                            <Hourglass className="w-12 h-12 mb-4 text-slate-200" />
-                                            <p className="text-sm font-bold">{t("waitTime.empty.queueTitle")}</p>
-                                            <p className="text-xs">{t("waitTime.empty.queueDesc")}</p>
-                                        </div>
-                                    ) : (
-                                        <Table>
-                                        <TableHeader className="bg-slate-50">
-                                            <TableRow>
-                                                <TableHead className="text-[9px] font-black uppercase tracking-widest text-slate-500">{t("waitTime.table.guest")}</TableHead>
-                                                <TableHead className="text-[9px] font-black uppercase tracking-widest text-slate-500">{t("waitTime.table.party")}</TableHead>
-                                                <TableHead className="text-[9px] font-black uppercase tracking-widest text-slate-500">{t("waitTime.table.waitTime")}</TableHead>
-                                                <TableHead className="text-[9px] font-black uppercase tracking-widest text-slate-500">{t("waitTime.table.status")}</TableHead>
-                                                <TableHead className="text-right text-[9px] font-black uppercase tracking-widest text-slate-500">{t("waitTime.table.actions")}</TableHead>
-                                            </TableRow>
-                                        </TableHeader>
-                                        <TableBody>
-                                            {walkinQueue.map(entry => {
-                                                const joined = new Date(entry.joinedAt);
-                                                const elapsed = Math.floor((new Date().getTime() - joined.getTime()) / 60000);
-                                                
-                                                return (
-                                                    <TableRow key={entry.id} className="hover:bg-slate-50/50">
-                                                        <TableCell>
-                                                            <div className="font-bold text-slate-800 text-xs">{entry.customerName}</div>
-                                                            <div className="text-[9px] text-slate-400 font-mono">{entry.customerPhone}</div>
-                                                        </TableCell>
-                                                        <TableCell className="font-bold text-slate-700">{entry.partySize}</TableCell>
-                                                        <TableCell>
+                                {queue.length === 0 ? (
+                                    <div className="flex flex-col items-center justify-center py-16 text-slate-400">
+                                        <Hourglass className="w-12 h-12 mb-4 text-slate-200" />
+                                        <p className="text-sm font-bold">{t("waitTime.empty.queueTitle")}</p>
+                                        <p className="text-xs">{t("waitTime.empty.queueDesc")}</p>
+                                    </div>
+                                ) : (
+                                    <Table>
+                                    <TableHeader className="bg-slate-50">
+                                        <TableRow>
+                                            <TableHead className="text-[9px] font-black uppercase tracking-widest text-slate-500">{t("waitTime.table.guest")}</TableHead>
+                                            <TableHead className="text-[9px] font-black uppercase tracking-widest text-slate-500">{t("waitTime.table.party")}</TableHead>
+                                            <TableHead className="text-[9px] font-black uppercase tracking-widest text-slate-500">{t("waitTime.table.waitTime")}</TableHead>
+                                            <TableHead className="text-[9px] font-black uppercase tracking-widest text-slate-500">{t("waitTime.table.status")}</TableHead>
+                                            <TableHead className="text-right text-[9px] font-black uppercase tracking-widest text-slate-500">{t("waitTime.table.actions")}</TableHead>
+                                        </TableRow>
+                                    </TableHeader>
+                                    <TableBody>
+                                        {queue.map(entry => {
+                                            const joined = new Date(entry.joinedAt);
+                                            const elapsed = Math.floor((new Date().getTime() - joined.getTime()) / 60000);
+                                            // Legacy rows only: the date-based "notify me for a future day" waitlist
+                                            // has been removed (future demand now goes through reservations), so no
+                                            // entry created from today on will ever have a targetDate. Any row that
+                                            // still has one predates that change — keep it resolvable (Send Offer /
+                                            // Cancel) instead of crashing or hiding it.
+                                            const isLegacyDateEntry = !!entry.targetDate;
+
+                                            return (
+                                                <TableRow key={entry.id} className="hover:bg-slate-50/50">
+                                                    <TableCell>
+                                                        <div className="font-bold text-slate-800 text-xs">{entry.customerName}</div>
+                                                        <div className="text-[9px] text-slate-400 font-mono">{entry.customerPhone}</div>
+                                                    </TableCell>
+                                                    <TableCell className="font-bold text-slate-700">{entry.partySize}</TableCell>
+                                                    <TableCell>
+                                                        {isLegacyDateEntry ? (
+                                                            <div className="flex items-center gap-1.5">
+                                                                <CalendarIcon className="w-3 h-3 text-amber-500" />
+                                                                <span className="font-bold text-xs text-amber-700">{entry.targetDate}</span>
+                                                            </div>
+                                                        ) : (
                                                             <div className="flex flex-col">
                                                                 <span className={cn("font-bold text-xs", elapsed > (entry.quotedWaitTime || 0) ? "text-red-500" : "text-emerald-600")}>
                                                                     {elapsed} {t("waitTime.table.mElapsed")}
                                                                 </span>
                                                                 {entry.quotedWaitTime && <span className="text-[9px] text-slate-400">{t("waitTime.table.quoted")}: {entry.quotedWaitTime}m</span>}
                                                             </div>
-                                                        </TableCell>
-                                                        <TableCell>
-                                                            {entry.status === 'WAITING' ? (
-                                                                <Badge className="bg-amber-100 text-amber-800 border-0 hover:bg-amber-100 text-[9px] font-black">{t("waitTime.status.waiting")}</Badge>
-                                                            ) : (
-                                                                <Badge className="bg-blue-100 text-blue-800 border-0 hover:bg-blue-100 text-[9px] font-black">{t("waitTime.status.notified")}</Badge>
-                                                            )}
-                                                        </TableCell>
-                                                        <TableCell className="text-right space-x-1">
-                                                            {entry.status === 'WAITING' && (
-                                                                <Button variant="outline" size="sm" onClick={() => updateStatus(entry.id, 'NOTIFIED')} className="h-7 text-[10px] font-bold border-blue-200 text-blue-700 hover:bg-blue-50">
-                                                                    <MessageCircle className="w-3 h-3 mr-1" /> {t("waitTime.action.notify")}
-                                                                </Button>
-                                                            )}
-                                                            <Button variant="outline" size="sm" onClick={() => updateStatus(entry.id, 'SEATED')} className="h-7 text-[10px] font-bold border-emerald-200 text-emerald-700 hover:bg-emerald-50">
-                                                                <CheckCircle2 className="w-3 h-3 mr-1" /> {t("waitTime.action.seat")}
-                                                            </Button>
-                                                            <Button variant="ghost" size="icon" onClick={() => updateStatus(entry.id, 'CANCELED')} className="h-7 w-7 text-slate-400 hover:text-red-600 hover:bg-red-50">
-                                                                <XCircle className="w-4 h-4" />
-                                                            </Button>
-                                                        </TableCell>
-                                                    </TableRow>
-                                                )
-                                            })}
-                                        </TableBody>
-                                    </Table>
-                                    )
-                                ) : (
-                                    futureQueue.length === 0 ? (
-                                        <div className="flex flex-col items-center justify-center py-16 text-slate-400">
-                                            <CalendarIcon className="w-12 h-12 mb-4 text-slate-200" />
-                                            <p className="text-sm font-bold">{t("waitTime.empty.futureTitle")}</p>
-                                            <p className="text-xs">{t("waitTime.empty.futureDesc")}</p>
-                                        </div>
-                                    ) : (
-                                        <Table>
-                                            <TableHeader className="bg-slate-50">
-                                                <TableRow>
-                                                    <TableHead className="text-[9px] font-black uppercase tracking-widest text-slate-500">{t("waitTime.table.date")}</TableHead>
-                                                    <TableHead className="text-[9px] font-black uppercase tracking-widest text-slate-500">{t("waitTime.table.guest")}</TableHead>
-                                                    <TableHead className="text-[9px] font-black uppercase tracking-widest text-slate-500">{t("waitTime.table.party")}</TableHead>
-                                                    <TableHead className="text-[9px] font-black uppercase tracking-widest text-slate-500">{t("waitTime.table.status")}</TableHead>
-                                                    <TableHead className="text-right text-[9px] font-black uppercase tracking-widest text-slate-500">{t("waitTime.table.actions")}</TableHead>
-                                                </TableRow>
-                                            </TableHeader>
-                                            <TableBody>
-                                                {futureQueue.map(entry => (
-                                                    <TableRow key={entry.id} className="hover:bg-slate-50/50">
-                                                        <TableCell className="font-bold text-slate-800 text-xs">{entry.targetDate}</TableCell>
-                                                        <TableCell>
-                                                            <div className="font-bold text-slate-800 text-xs">{entry.customerName}</div>
-                                                            <div className="text-[9px] text-slate-400 font-mono">{entry.customerPhone}</div>
-                                                        </TableCell>
-                                                        <TableCell className="font-bold text-slate-700">{entry.partySize}</TableCell>
-                                                        <TableCell>
-                                                            {entry.status === 'WAITING' ? (
-                                                                <Badge className="bg-amber-100 text-amber-800 border-0 hover:bg-amber-100 text-[9px] font-black">{t("waitTime.status.waiting")}</Badge>
-                                                            ) : entry.status === 'OFFERED' ? (
-                                                                <Badge className="bg-purple-100 text-purple-800 border-0 hover:bg-purple-100 text-[9px] font-black">{t("waitTime.status.offerSent")}</Badge>
-                                                            ) : (
-                                                                <Badge className="bg-blue-100 text-blue-800 border-0 hover:bg-blue-100 text-[9px] font-black">{entry.status}</Badge>
-                                                            )}
-                                                        </TableCell>
-                                                        <TableCell className="text-right space-x-1">
-                                                            {entry.status === 'WAITING' && (
+                                                        )}
+                                                    </TableCell>
+                                                    <TableCell>
+                                                        {entry.status === 'WAITING' ? (
+                                                            <Badge className="bg-amber-100 text-amber-800 border-0 hover:bg-amber-100 text-[9px] font-black">{t("waitTime.status.waiting")}</Badge>
+                                                        ) : entry.status === 'OFFERED' ? (
+                                                            <Badge className="bg-purple-100 text-purple-800 border-0 hover:bg-purple-100 text-[9px] font-black">{t("waitTime.status.offerSent")}</Badge>
+                                                        ) : (
+                                                            <Badge className="bg-blue-100 text-blue-800 border-0 hover:bg-blue-100 text-[9px] font-black">{t("waitTime.status.notified")}</Badge>
+                                                        )}
+                                                    </TableCell>
+                                                    <TableCell className="text-right space-x-1">
+                                                        {entry.status === 'WAITING' && (
+                                                            isLegacyDateEntry ? (
                                                                 <Button variant="outline" size="sm" onClick={() => {
                                                                     setOfferForm(prev => ({...prev, entryId: entry.id}));
                                                                     setIsOfferModalOpen(true);
                                                                 }} className="h-7 text-[10px] font-bold border-purple-200 text-purple-700 hover:bg-purple-50">
                                                                     <MessageCircle className="w-3 h-3 mr-1" /> {t("waitTime.action.sendOffer")}
                                                                 </Button>
-                                                            )}
-                                                            <Button variant="ghost" size="icon" onClick={() => updateStatus(entry.id, 'CANCELED')} className="h-7 w-7 text-slate-400 hover:text-red-600 hover:bg-red-50">
-                                                                <XCircle className="w-4 h-4" />
+                                                            ) : (
+                                                                <Button variant="outline" size="sm" onClick={() => updateStatus(entry.id, 'NOTIFIED')} className="h-7 text-[10px] font-bold border-blue-200 text-blue-700 hover:bg-blue-50">
+                                                                    <MessageCircle className="w-3 h-3 mr-1" /> {t("waitTime.action.notify")}
+                                                                </Button>
+                                                            )
+                                                        )}
+                                                        {!isLegacyDateEntry && (
+                                                            <Button variant="outline" size="sm" onClick={() => updateStatus(entry.id, 'SEATED')} className="h-7 text-[10px] font-bold border-emerald-200 text-emerald-700 hover:bg-emerald-50">
+                                                                <CheckCircle2 className="w-3 h-3 mr-1" /> {t("waitTime.action.seat")}
                                                             </Button>
-                                                        </TableCell>
-                                                    </TableRow>
-                                                ))}
-                                            </TableBody>
-                                        </Table>
-                                    )
+                                                        )}
+                                                        <Button variant="ghost" size="icon" onClick={() => updateStatus(entry.id, 'CANCELED')} className="h-7 w-7 text-slate-400 hover:text-red-600 hover:bg-red-50">
+                                                            <XCircle className="w-4 h-4" />
+                                                        </Button>
+                                                    </TableCell>
+                                                </TableRow>
+                                            )
+                                        })}
+                                    </TableBody>
+                                </Table>
                                 )}
                             </CardContent>
                         </Card>

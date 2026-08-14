@@ -36,7 +36,7 @@ export default function ClassicLayout({ slug, initialRestaurant, initialView = '
 
   const [dayStatus, setDayStatus] = useState<any>(null);
   const [checkingDay, setCheckingDay] = useState(false);
-  const [isWaitlistSuccess, setIsWaitlistSuccess] = useState(false);
+
   const [isPossiblyFullyBooked, setIsPossiblyFullyBooked] = useState(false);
   const [confirmationCode, setConfirmationCode] = useState<string | null>(null);
 
@@ -91,21 +91,11 @@ export default function ClassicLayout({ slug, initialRestaurant, initialView = '
       return;
     }
 
+    // A fully booked day has no capacity left — future demand belongs to the
+    // reservation flow (retry another date) rather than a waitlist join; the
+    // walk-in waitlist is for real-time, same-day guests only.
     if (dayStatus?.daySetting?.isFullyBooked) {
-      try {
-        await axios.post(`${API_URL}/public/restaurant/${slug}/waitlist`, {
-          customerName: resForm.customerName,
-          customerPhone: resForm.customerPhone,
-          partySize: parseInt(resForm.guestCount),
-          targetDate: selectedDate,
-          notes: `Requested Time: ${selectedTime}`
-        });
-        setIsWaitlistSuccess(true);
-        setView('success');
-        setResForm({ customerName: '', customerPhone: '', customerEmail: '', guestCount: '2', notes: '', consentAccepted: false, marketingConsent: false });
-      } catch (err: any) {
-        toast.error(err.response?.data?.error || 'Failed to join waitlist');
-      }
+      toast.error('This day is fully booked. Please choose another date.');
       return;
     }
 
@@ -552,8 +542,8 @@ export default function ClassicLayout({ slug, initialRestaurant, initialView = '
                             <Clock className="h-5 w-5 shrink-0 mt-1" />
                             <div>
                                 <p className="mb-1 text-xs font-medium uppercase tracking-wide opacity-80">{selectedDateLabel}</p>
-                                <p className="mb-1.5 font-semibold leading-none">Fully Booked (Waitlist Open)</p>
-                                <p className="text-sm font-medium opacity-90">We are fully booked for reservations on this day, but you can join our online waitlist to be notified if a table opens up.</p>
+                                <p className="mb-1.5 font-semibold leading-none">Fully Booked</p>
+                                <p className="text-sm font-medium opacity-90">We are fully booked for reservations on this day. Please choose another date, or call us directly.</p>
                             </div>
                         </div>
                     ) : dayStatus?.daySetting?.isReservationEnabled === false ? (
@@ -651,9 +641,9 @@ export default function ClassicLayout({ slug, initialRestaurant, initialView = '
                           onMarketingConsentChange={(v) => setResForm({ ...resForm, marketingConsent: v })}
                         />
 
-                        <Button type="submit" disabled={checkingDay || (dayStatus && !dayStatus.daySetting?.isReservationEnabled && dayStatus.daySetting && !dayStatus.daySetting?.isFullyBooked)} className="h-16 w-full rounded-2xl bg-[var(--primary)] text-base font-semibold text-white hover:bg-[var(--primary-hover)] disabled:opacity-50">
+                        <Button type="submit" disabled={checkingDay || (dayStatus?.daySetting?.isFullyBooked) || (dayStatus && !dayStatus.daySetting?.isReservationEnabled && dayStatus.daySetting)} className="h-16 w-full rounded-2xl bg-[var(--primary)] text-base font-semibold text-white hover:bg-[var(--primary-hover)] disabled:opacity-50">
                             {checkingDay ? "Checking Availability..." :
-                             (dayStatus && dayStatus.daySetting?.isFullyBooked) ? "Join Waitlist for this Day" :
+                             (dayStatus && dayStatus.daySetting?.isFullyBooked) ? "Fully Booked" :
                              (dayStatus && !dayStatus.daySetting?.isReservationEnabled && dayStatus.daySetting) ? "Sold Out" : "Send Booking Request"}
                         </Button>
                     </form>
@@ -670,34 +660,26 @@ export default function ClassicLayout({ slug, initialRestaurant, initialView = '
                   <CheckCircle2 className="h-10 w-10" />
               </div>
               <h1 className="mb-4 text-center text-3xl font-semibold tracking-tight text-neutral-900 md:text-4xl">
-                  {isWaitlistSuccess ? "Added to Waitlist!" : "Reservation Request Sent!"}
+                  Reservation Request Sent!
               </h1>
               <div className="mb-12 max-w-lg text-center text-lg font-light leading-relaxed text-neutral-500">
-                  {isWaitlistSuccess ? (
-                      <>
-                          You&apos;ve successfully joined the waitlist for <span className="font-medium text-neutral-900">{new Date(`${selectedDate}T00:00:00`).toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' })}</span>. You will receive an SMS if a table becomes available.
-                      </>
-                  ) : (
-                      <>
-                          You are going to receive an SMS confirmation soon. We are excited that you chose <span className="font-medium text-neutral-900">{restaurant.name}</span>.
-                      </>
-                  )}
+                  You are going to receive an SMS confirmation soon. We are excited that you chose <span className="font-medium text-neutral-900">{restaurant.name}</span>.
                   <p className="mt-4 text-sm font-medium uppercase tracking-wide text-emerald-600">See you soon!</p>
               </div>
-              {!isWaitlistSuccess && confirmationCode && (
+              {confirmationCode && (
                   <div className="mb-8 flex flex-col items-center rounded-2xl border border-black/5 bg-neutral-50 px-8 py-5">
                       <span className="text-xs font-medium uppercase tracking-wide text-neutral-400">{t('public.confirmationCodeLabel')}</span>
                       <span className="mt-1 text-3xl font-semibold tracking-[0.2em] text-neutral-900">{confirmationCode}</span>
                       <span className="mt-2 max-w-xs text-center text-xs text-neutral-400">{t('public.confirmationCodeHint')}</span>
                   </div>
               )}
-              {!isWaitlistSuccess && isPossiblyFullyBooked && (
+              {isPossiblyFullyBooked && (
                   <div className="mb-8 max-w-md rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm font-medium text-amber-800">
                       Heads up — we may be fully booked around this time, so your table hasn&apos;t been assigned yet. Our team will confirm by phone shortly.
                   </div>
               )}
               <div className="flex flex-col gap-3 sm:flex-row">
-                  <Button onClick={() => { setView('menu'); setIsWaitlistSuccess(false); }} variant="outline" className="h-14 rounded-full border-black/10 px-8 text-base font-medium">
+                  <Button onClick={() => { setView('menu'); }} variant="outline" className="h-14 rounded-full border-black/10 px-8 text-base font-medium">
                       <Utensils className="mr-2 h-4 w-4" /> Explore Our Menu
                   </Button>
                   {menuOnly ? (
@@ -705,7 +687,7 @@ export default function ClassicLayout({ slug, initialRestaurant, initialView = '
                           Return to Home
                       </Button>
                   ) : (
-                      <Button onClick={() => { setView('welcome'); setIsWaitlistSuccess(false); }} className="h-14 rounded-full bg-[var(--primary)] px-8 text-base font-medium text-white hover:bg-[var(--primary-hover)]">
+                      <Button onClick={() => { setView('welcome'); }} className="h-14 rounded-full bg-[var(--primary)] px-8 text-base font-medium text-white hover:bg-[var(--primary-hover)]">
                           Return to Home
                       </Button>
                   )}

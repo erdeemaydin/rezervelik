@@ -29,7 +29,7 @@ export default function NordicMinimalLayout({ slug, initialRestaurant, initialVi
 
   const [dayStatus, setDayStatus] = useState<any>(null);
   const [checkingDay, setCheckingDay] = useState(false);
-  const [isWaitlistSuccess, setIsWaitlistSuccess] = useState(false);
+
   const [isBookingSuccess, setIsBookingSuccess] = useState(false);
   const [isPossiblyFullyBooked, setIsPossiblyFullyBooked] = useState(false);
   const [confirmationCode, setConfirmationCode] = useState<string | null>(null);
@@ -81,19 +81,11 @@ export default function NordicMinimalLayout({ slug, initialRestaurant, initialVi
       return;
     }
 
+    // A fully booked day has no capacity left — future demand belongs to the
+    // reservation flow (retry another date) rather than a waitlist join; the
+    // walk-in waitlist is for real-time, same-day guests only.
     if (dayStatus?.daySetting?.isFullyBooked) {
-      try {
-        await axios.post(`${API_URL}/public/restaurant/${slug}/waitlist`, {
-          customerName: resForm.customerName,
-          customerPhone: resForm.customerPhone,
-          partySize: parseInt(resForm.guestCount),
-          targetDate: selectedDate,
-          notes: `Requested Time: ${selectedTime} - ${resForm.notes}`
-        });
-        setIsWaitlistSuccess(true);
-      } catch (err: any) {
-        toast.error(err.response?.data?.error || 'Failed to join waitlist');
-      }
+      toast.error('This day is fully booked. Please choose another date.');
       return;
     }
 
@@ -382,12 +374,6 @@ export default function NordicMinimalLayout({ slug, initialRestaurant, initialVi
                     </div>
                   )}
                 </div>
-              ) : isWaitlistSuccess ? (
-                <div className="text-center py-14 animate-in fade-in border-t border-b" style={{ borderColor: 'var(--line)' }}>
-                  <CheckCircle2 className="w-10 h-10 mx-auto mb-6" style={{ color: 'var(--accent)' }} />
-                  <h3 className="text-xl font-light mb-4">Waitlist Joined</h3>
-                  <p className="text-[color:var(--muted)] font-light text-sm">We will notify you if a table becomes available.</p>
-                </div>
               ) : (
                 <form onSubmit={handleBooking} className="space-y-12">
                   {restaurant.customization?.reservationInfoText && (
@@ -425,8 +411,8 @@ export default function NordicMinimalLayout({ slug, initialRestaurant, initialVi
                       <Clock className="w-4 h-4 shrink-0 mt-0.5" />
                       <div>
                         <span className="mb-1 block text-[11px] uppercase tracking-widest">{selectedDateLabel}</span>
-                        <strong className="block mb-2 font-normal text-base">Fully Booked (Waitlist Open)</strong>
-                        We are fully booked for reservations on this day, but you can join our waitlist.
+                        <strong className="block mb-2 font-normal text-base">Fully Booked</strong>
+                        We are fully booked for reservations on this day. Please choose another date, or call us directly.
                       </div>
                     </div>
                   ) : dayStatus?.daySetting?.isReservationEnabled === false ? (
@@ -503,10 +489,10 @@ export default function NordicMinimalLayout({ slug, initialRestaurant, initialVi
                     className="mt-6 space-y-3 text-xs text-[color:var(--muted)]"
                   />
 
-                  <button type="submit" disabled={checkingDay || (dayStatus?.daySetting?.isReservationEnabled === false && !dayStatus?.daySetting?.isFullyBooked)}
+                  <button type="submit" disabled={checkingDay || dayStatus?.daySetting?.isFullyBooked || (dayStatus?.daySetting?.isReservationEnabled === false && !dayStatus?.daySetting?.isFullyBooked)}
                     className="w-full h-14 text-sm font-normal tracking-[0.25em] uppercase mt-8 disabled:opacity-40 transition-all hover:opacity-85"
                     style={{ background: 'var(--accent)', color: '#ffffff' }}>
-                    {dayStatus?.daySetting?.isFullyBooked ? 'Join Waitlist' : 'Reserve'}
+                    {dayStatus?.daySetting?.isFullyBooked ? 'Fully Booked' : 'Reserve'}
                   </button>
                 </form>
               )}

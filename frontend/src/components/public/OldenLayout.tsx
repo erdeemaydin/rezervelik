@@ -33,7 +33,7 @@ export default function OldenLayout({ slug, initialRestaurant, initialView, menu
 
   const [dayStatus, setDayStatus] = useState<any>(null);
   const [checkingDay, setCheckingDay] = useState(false);
-  const [isWaitlistSuccess, setIsWaitlistSuccess] = useState(false);
+
   const [isBookingSuccess, setIsBookingSuccess] = useState(false);
   const [isPossiblyFullyBooked, setIsPossiblyFullyBooked] = useState(false);
   const [confirmationCode, setConfirmationCode] = useState<string | null>(null);
@@ -94,19 +94,11 @@ export default function OldenLayout({ slug, initialRestaurant, initialView, menu
       return;
     }
 
+    // A fully booked day has no capacity left — future demand belongs to the
+    // reservation flow (retry another date) rather than a waitlist join; the
+    // walk-in waitlist is for real-time, same-day guests only.
     if (dayStatus?.daySetting?.isFullyBooked) {
-      try {
-        await axios.post(`${API_URL}/public/restaurant/${slug}/waitlist`, {
-          customerName: resForm.customerName,
-          customerPhone: resForm.customerPhone,
-          partySize: parseInt(resForm.guestCount),
-          targetDate: selectedDate,
-          notes: `Requested Time: ${selectedTime} - ${resForm.notes}`
-        });
-        setIsWaitlistSuccess(true);
-      } catch (err: any) {
-        toast.error(err.response?.data?.error || 'Failed to join waitlist');
-      }
+      toast.error('This day is fully booked. Please choose another date.');
       return;
     }
 
@@ -471,12 +463,6 @@ export default function OldenLayout({ slug, initialRestaurant, initialView, menu
                 </div>
               )}
             </div>
-          ) : isWaitlistSuccess ? (
-            <div className="text-center py-16 animate-in zoom-in bg-white shadow-xl rounded-2xl border border-[#e0e0e0]">
-              <CheckCircle2 className="w-20 h-20 text-[#4caf50] mx-auto mb-6" />
-              <h3 className="text-3xl font-serif mb-4 text-[#1a1a1a]">Waitlist Joined</h3>
-              <p className="text-[#555] font-sans text-lg">We will notify you if a table becomes available.</p>
-            </div>
           ) : (
             <form onSubmit={handleBooking} className="space-y-10 bg-white p-10 md:p-14 shadow-2xl rounded-3xl border border-[#e0e0e0]">
               {restaurant.customization?.reservationInfoText && (
@@ -513,8 +499,8 @@ export default function OldenLayout({ slug, initialRestaurant, initialView, menu
                   <Clock className="w-6 h-6 shrink-0 text-[#ff9800]" />
                   <div>
                     <span className="mb-1 block text-xs font-bold uppercase tracking-widest text-[#ff9800]">{selectedDateLabel}</span>
-                    <strong className="block mb-2 text-[#e65100] text-lg">Fully Booked (Waitlist Open)</strong>
-                    We are fully booked for reservations on this day, but you can join our waitlist.
+                    <strong className="block mb-2 text-[#e65100] text-lg">Fully Booked</strong>
+                    We are fully booked for reservations on this day. Please choose another date, or call us directly.
                   </div>
                 </div>
               ) : dayStatus?.daySetting?.isReservationEnabled === false ? (
@@ -598,10 +584,10 @@ export default function OldenLayout({ slug, initialRestaurant, initialView, menu
 
               <Button
                 type="submit"
-                disabled={checkingDay || (dayStatus?.daySetting?.isReservationEnabled === false && !dayStatus?.daySetting?.isFullyBooked)}
+                disabled={checkingDay || dayStatus?.daySetting?.isFullyBooked || (dayStatus?.daySetting?.isReservationEnabled === false && !dayStatus?.daySetting?.isFullyBooked)}
                 className="w-full h-16 bg-[var(--accent)] hover:bg-[var(--accent-hover)] text-white font-bold tracking-widest uppercase rounded-xl mt-8 disabled:opacity-50 text-lg transition-all hover:scale-[1.02]"
               >
-                {dayStatus?.daySetting?.isFullyBooked ? 'Join Waitlist' : 'Request Table'}
+                {dayStatus?.daySetting?.isFullyBooked ? 'Fully Booked' : 'Request Table'}
               </Button>
             </form>
           )}
