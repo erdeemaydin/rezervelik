@@ -6,24 +6,28 @@ import autoTable from 'jspdf-autotable';
 import { useTranslation } from "@/i18n/provider";
 
 export const PrintableMenuPDFGenerator = ({ menu, restaurantProfile }: { menu: any, restaurantProfile: any }) => {
-    const { t } = useTranslation();
+    const { t, locale } = useTranslation();
+    // Tenant's configured currency (RestaurantSettings.currency), not a hardcoded TL/TRY —
+    // restaurants can run in other currencies (see dashboard/settings).
+    const currency = restaurantProfile?.settings?.currency || 'TRY';
+    const localeTag = locale === 'tr' ? 'tr-TR' : 'en-US';
 
     const generatePDF = () => {
         const doc = new jsPDF();
-        
+
         // Header
         doc.setFont('helvetica', 'bold');
         doc.setFontSize(24);
         doc.text(restaurantProfile.name, 105, 20, { align: 'center' });
-        
+
         doc.setFontSize(14);
         doc.setFont('helvetica', 'normal');
         doc.text(menu.name, 105, 30, { align: 'center' });
-        
+
         if (menu.updatedAt) {
             doc.setFontSize(10);
             doc.setTextColor(150);
-            doc.text(`Son Fiyat Guncelleme: ${new Date(menu.updatedAt).toLocaleDateString('tr-TR')}`, 105, 38, { align: 'center' });
+            doc.text(`${t('menus.pdf.lastPriceUpdate')} ${new Date(menu.updatedAt).toLocaleDateString(localeTag)}`, 105, 38, { align: 'center' });
             doc.setTextColor(0);
         }
 
@@ -56,14 +60,20 @@ export const PrintableMenuPDFGenerator = ({ menu, restaurantProfile }: { menu: a
                 const desc = item.description || '';
                 const details = [];
                 if (item.calories) details.push(`${item.calories} kcal`);
-                if (item.containsAlcohol) details.push(`Alkol Icerir`);
-                if (item.containsPork) details.push(`Domuz Eti Icerir`);
+                if (item.containsAlcohol) details.push(t('menus.pdf.containsAlcohol'));
+                if (item.containsPork) details.push(t('menus.pdf.containsPork'));
                 if (item.dietaryTags) details.push(item.dietaryTags);
-                
+
                 const detailStr = details.length > 0 ? `\n[${details.join(' | ')}]` : '';
+                let priceStr: string;
+                try {
+                    priceStr = item.price.toLocaleString(localeTag, { style: 'currency', currency });
+                } catch {
+                    priceStr = `${item.price.toLocaleString(localeTag)} ${currency}`;
+                }
                 return [
                     `${item.name}\n${desc}${detailStr}`,
-                    `${item.price.toLocaleString('tr-TR')} TL`
+                    priceStr
                 ];
             });
 
@@ -93,7 +103,7 @@ export const PrintableMenuPDFGenerator = ({ menu, restaurantProfile }: { menu: a
         const pageCount = (doc as any).internal.getNumberOfPages();
         for (let i = 1; i <= pageCount; i++) {
             doc.setPage(i);
-            doc.text(`Sayfa ${i} / ${pageCount}`, 105, 290, { align: 'center' });
+            doc.text(`${t('menus.pdf.page')} ${i} / ${pageCount}`, 105, 290, { align: 'center' });
         }
 
         doc.save(`${restaurantProfile.name.replace(/\\s+/g, '_')}_Menu.pdf`);
@@ -101,7 +111,7 @@ export const PrintableMenuPDFGenerator = ({ menu, restaurantProfile }: { menu: a
 
     return (
         <Button size="sm" variant="outline" onClick={generatePDF} className="h-9 px-4 text-[10px] font-black uppercase border-slate-200 text-slate-600 shadow-sm bg-white hover:bg-slate-50">
-            <FileText className="w-3.5 h-3.5 mr-1.5" /> Menu PDF
+            <FileText className="w-3.5 h-3.5 mr-1.5" /> {t('menus.pdf.buttonLabel')}
         </Button>
     );
 };
