@@ -12,7 +12,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import {
   Users, Clock, Search, Calendar, Plus, Star, Phone, Check, X, Bell,
-  RefreshCw, Utensils, RotateCcw, Hash, Pencil, StickyNote
+  RefreshCw, RotateCcw, Hash, Pencil, StickyNote
 } from 'lucide-react';
 import api from '@/lib/api';
 import { toast } from 'sonner';
@@ -99,14 +99,11 @@ export default function HostConsolePage() {
   // refresh failure (e.g. a deploy restart) can fail silently instead of
   // interrupting a host who already has working data on screen.
   const hasLoadedOnce = useRef(false);
-
-  useEffect(() => {
-    fetchData();
-    const interval = setInterval(() => {
-      setTick(prev => prev + 1);
-    }, 30000); // Trigger re-render every 30 seconds for timers
-    return () => clearInterval(interval);
-  }, []);
+  // Gates the full-screen loading spinner to the very first load only — once
+  // the screen has data, later `loading` flips (manual refresh button) must
+  // not blank the list out from under a host who's mid-action, which is what
+  // was causing the "panel refreshes/flashes on every click" complaint.
+  const [initialLoadDone, setInitialLoadDone] = useState(false);
 
   // A host stand refetches constantly (every action, every 30s tick) and a
   // backend restart/blip is common during deploys — one failed round-trip
@@ -153,16 +150,52 @@ export default function HostConsolePage() {
         hasLoadedOnce.current = true;
       }
     } finally {
-      if (!isRetry) setLoading(false);
+      if (!isRetry) {
+        setLoading(false);
+        setInitialLoadDone(true);
+      }
     }
   };
+
+  // Lightweight background refresh used after a host action (confirm/seat/
+  // cancel, add walk-in, save reservation) and on the 30s auto-refresh tick.
+  // Only re-fetches the two lists that actually change from those actions
+  // (tables/categories don't), and never touches `loading`, so the row list
+  // stays mounted and visible the whole time instead of flashing to a spinner.
+  const refreshActivity = async () => {
+    try {
+      const [resRes, waitlistRes, waitlistHistoryRes] = await Promise.allSettled([
+        api.get('/reservations'),
+        api.get('/wait-time/entries'),
+        api.get('/wait-time/entries', { params: { history: 'true' } }),
+      ]);
+      if (resRes.status === 'fulfilled') setReservations(resRes.value.data.data);
+      if (waitlistRes.status === 'fulfilled') setWaitlist(waitlistRes.value.data.data);
+      if (waitlistHistoryRes.status === 'fulfilled') setWaitlistHistory(waitlistHistoryRes.value.data.data);
+    } catch (err) {
+      console.error('Failed background refresh', err);
+    }
+  };
+
+  useEffect(() => {
+    fetchData();
+    const interval = setInterval(() => {
+      setTick(prev => prev + 1);
+      // Keep data live in the background every 30s so a host doesn't have to
+      // hit refresh to see another device's changes; refreshActivity never
+      // touches `loading`, so this never blanks or flashes the list.
+      refreshActivity();
+    }, 30000);
+    return () => clearInterval(interval);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Revert reservation status
   const handleRevertResStatus = async (id: string, status: string) => {
     try {
       await api.put(`/reservations/${id}/status`, { status });
       toast.success(t("host.toastActionReverted"));
-      fetchData();
+      refreshActivity();
     } catch (err) {
       toast.error(t("host.toastRevertFailed"));
     }
@@ -196,7 +229,7 @@ export default function HostConsolePage() {
           }
         }
       });
-      fetchData();
+      refreshActivity();
     } catch (err) {
       toast.error(t("host.toastFailedUpdateStatus"));
     }
@@ -207,7 +240,7 @@ export default function HostConsolePage() {
     try {
       await api.put(`/wait-time/entries/${entryId}/status`, { status });
       toast.success(t("host.toastActionReverted"));
-      fetchData();
+      refreshActivity();
     } catch (err) {
       toast.error(t("host.toastRevertFailed"));
     }
@@ -241,7 +274,7 @@ export default function HostConsolePage() {
           }
         }
       });
-      fetchData();
+      refreshActivity();
     } catch (err) {
       toast.error(t("host.toastFailedUpdateStatus"));
     }
@@ -274,7 +307,7 @@ export default function HostConsolePage() {
         quotedWaitTime: '15',
         notes: ''
       });
-      fetchData();
+      refreshActivity();
     } catch (err: any) {
       toast.error(err.response?.data?.error || t("host.toastAddGuestFailed"));
     }
@@ -307,7 +340,7 @@ export default function HostConsolePage() {
       }
       setIsResModalOpen(false);
       setSelectedReservation(null);
-      fetchData();
+      refreshActivity();
     } catch (err: any) {
       toast.error(err.response?.data?.error || t("host.toastSaveResFailed"));
     }
@@ -524,7 +557,7 @@ export default function HostConsolePage() {
             <div className="flex flex-col sm:flex-row gap-2 h-full">
 
               {/* Hour Slot Navigator Panel (Left Side on iPad) */}
-              <div className="w-full sm:w-24 lg:w-28 shrink-0 bg-white border border-slate-200 rounded-lg p-1.5 flex sm:flex-col gap-1.5 overflow-x-auto sm:overflow-y-auto hide-scrollbar">
+              <div className="w-full sm:w-28 lg:w-32 shrink-0 bg-white border border-slate-200 rounded-lg p-1.5 flex sm:flex-col gap-1.5 overflow-x-auto sm:overflow-y-auto hide-scrollbar">
                 <div className="hidden sm:block text-[9px] font-black uppercase text-slate-400 tracking-wider mb-0.5 px-1.5">{t("host.filterByTime")}</div>
                 {hourSlots.map((hour) => {
                   const isActive = selectedHour === hour.value;
@@ -539,16 +572,16 @@ export default function HostConsolePage() {
                       key={hour.label}
                       onClick={() => setSelectedHour(hour.value)}
                       className={cn(
-                        "h-10 shrink-0 px-2 rounded-md font-black text-[11px] uppercase text-left transition-all flex items-center justify-between gap-1 border whitespace-nowrap active:scale-[0.97]",
+                        "h-10 min-w-0 shrink-0 px-2 rounded-md font-black text-[11px] uppercase text-left transition-all flex items-center justify-between gap-1 border active:scale-[0.97]",
                         isActive
                           ? "bg-slate-900 border-slate-900 text-white shadow-md shadow-slate-900/10"
                           : "bg-slate-50 border-slate-100 text-slate-600 hover:bg-slate-100"
                       )}
                     >
-                      <span>{hour.label}</span>
+                      <span className="min-w-0 flex-1 truncate">{hour.label}</span>
                       {resInHour > 0 && (
                         <span className={cn(
-                          "px-1.5 py-0 rounded-full text-[9px] font-black tracking-tight shrink-0",
+                          "min-w-[16px] text-center px-1 py-0 rounded-full text-[9px] font-black tracking-tight shrink-0",
                           isActive ? "bg-blue-600 text-white" : "bg-slate-200 text-slate-800"
                         )}>
                           {resInHour}
@@ -564,7 +597,7 @@ export default function HostConsolePage() {
                   old xl:flex-row card which never went horizontal on any iPad size).
                   Maximizes how many reservations are visible without scrolling. */}
               <div className="flex-1 min-h-0 overflow-y-auto pr-1 space-y-1.5">
-                {loading ? (
+                {loading && !initialLoadDone ? (
                   <div className="h-64 flex flex-col items-center justify-center gap-3">
                     <RefreshCw className="w-8 h-8 animate-spin text-blue-600" />
                     <div className="text-slate-400 text-xs font-black uppercase tracking-widest">{t("host.updatingTimeline")}</div>
@@ -585,48 +618,48 @@ export default function HostConsolePage() {
                       <div
                         key={res.id}
                         className={cn(
-                          "bg-white border rounded-lg shadow-sm h-20 px-3 flex items-center gap-3 transition-all hover:shadow-md",
+                          "bg-white border rounded-lg shadow-sm h-24 px-3 flex items-center gap-2 transition-all hover:shadow-md",
                           res.isVIP ? "border-amber-300 bg-amber-50/20" : "border-slate-200"
                         )}
                       >
                         {/* Status (top) + Time (bottom) */}
-                        <div className="w-14 shrink-0 flex flex-col items-center justify-center gap-1">
-                          <Badge className={cn("text-[7px] font-black uppercase px-1 py-0 rounded-sm border leading-tight shrink-0", getStatusBadgeClass(res.status))}>
+                        <div className="w-16 shrink-0 flex flex-col items-center justify-center gap-1">
+                          <Badge className={cn("text-[7px] font-black uppercase px-1 py-0 rounded-sm border leading-tight shrink-0 whitespace-nowrap", getStatusBadgeClass(res.status))}>
                             {res.status}
                           </Badge>
                           <div className="text-sm font-black text-slate-900 tracking-tight leading-tight">{formattedTime}</div>
                         </div>
 
-                        <div className="w-px h-10 bg-slate-100 shrink-0" />
+                        <div className="w-px h-14 bg-slate-100 shrink-0" />
 
                         {/* Confirmation code (top) + Name (bottom) — guests read the
                             code off their SMS, so it needs to be as scannable as the
                             name, and stacking keeps the row from getting crowded. */}
-                        <div className="flex-1 min-w-0 flex flex-col justify-center gap-0.5">
+                        <div className="flex-1 min-w-0 flex flex-col justify-center gap-1">
                           {res.confirmationCode && (
                             <span className="inline-flex items-center gap-1 bg-blue-50 text-blue-700 border border-blue-200 text-[10px] font-black font-mono tracking-widest px-1.5 py-0.5 rounded-sm shrink-0 w-fit">
                               <Hash className="w-2.5 h-2.5 stroke-[3]" />{res.confirmationCode}
                             </span>
                           )}
                           <div className="flex items-center gap-2 min-w-0">
-                            <span className="font-black text-slate-900 text-sm uppercase tracking-tight truncate">{res.customerName}</span>
+                            <span className="font-black text-slate-900 text-base uppercase tracking-tight truncate">{res.customerName}</span>
                             {res.isVIP && <Star className="w-3.5 h-3.5 text-amber-500 fill-amber-500 shrink-0" />}
                           </div>
                         </div>
 
                         {/* Guests */}
-                        <div className="hidden sm:flex items-center gap-1 text-xs font-bold text-slate-500 w-14 shrink-0">
+                        <div className="hidden sm:flex items-center gap-1 text-xs font-bold text-slate-500 w-10 shrink-0">
                           <Users className="w-3.5 h-3.5" /> {res.guestCount}
                         </div>
 
-                        {/* Table */}
-                        <div className="hidden sm:block w-20 shrink-0">
+                        {/* Table — identifier only, no icon, to keep this column tight */}
+                        <div className="hidden sm:block w-14 shrink-0">
                           {res.table ? (
-                            <span className="flex items-center gap-1 text-blue-600 bg-blue-50 px-2 py-1 rounded text-xs font-bold justify-center">
-                              <Utensils className="w-3.5 h-3.5" /> {res.table.identifier}
+                            <span className="block text-center text-blue-600 bg-blue-50 px-1 py-0.5 rounded text-[11px] font-bold truncate">
+                              {res.table.identifier}
                             </span>
                           ) : (
-                            <span className="block text-center text-[10px] font-bold text-slate-300 uppercase">{t("host.noTableAssigned")}</span>
+                            <span className="block text-center text-[9px] font-bold text-slate-300 uppercase">{t("host.noTableAssigned")}</span>
                           )}
                         </div>
 
@@ -637,43 +670,46 @@ export default function HostConsolePage() {
                           <span
                             title={res.notes || res.internalNote || ''}
                             className={cn(
-                              "hidden sm:flex h-8 w-8 rounded-lg items-center justify-center shrink-0",
+                              "hidden sm:flex h-7 w-7 rounded-lg items-center justify-center shrink-0",
                               res.internalNote ? "bg-amber-50 text-amber-700" : "bg-slate-100 text-slate-500"
                             )}
                           >
-                            <StickyNote className="w-4 h-4" />
+                            <StickyNote className="w-3.5 h-3.5" />
                           </span>
                         )}
 
-                        {/* Actions */}
-                        <div className="flex items-center gap-1.5 shrink-0">
+                        {/* Actions — icon-only below lg to leave more room for the name */}
+                        <div className="flex items-center gap-1 shrink-0">
                           <button
                             onClick={() => handleOpenEditRes(res)}
-                            className="h-12 w-12 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg transition-all flex items-center justify-center active:scale-[0.97]"
+                            className="h-9 w-9 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg transition-all flex items-center justify-center active:scale-[0.97] shrink-0"
                             title={t("host.detailsBtn")}
                           >
-                            <Pencil className="w-4 h-4" />
+                            <Pencil className="w-3.5 h-3.5" />
                           </button>
                           {res.status === 'PENDING' && (
                             <button
                               onClick={() => handleUpdateResStatus(res.id, 'CONFIRMED', res.status)}
-                              className="h-12 px-3 bg-blue-50 border border-blue-200 hover:bg-blue-100 text-blue-700 font-black uppercase text-[10px] tracking-wider rounded-lg transition-all flex items-center justify-center gap-1 active:scale-[0.97] whitespace-nowrap"
+                              className="h-9 px-2 bg-blue-50 border border-blue-200 hover:bg-blue-100 text-blue-700 font-black uppercase text-[9px] tracking-wider rounded-lg transition-all flex items-center justify-center gap-1 active:scale-[0.97] whitespace-nowrap shrink-0"
+                              title={t("host.confirmBtn")}
                             >
-                              {t("host.confirmBtn")}
+                              <Check className="w-3.5 h-3.5 lg:hidden stroke-[3]" />
+                              <span className="hidden lg:inline">{t("host.confirmBtn")}</span>
                             </button>
                           )}
                           <button
                             onClick={() => handleUpdateResStatus(res.id, 'COMPLETED', res.status)}
-                            className="h-12 px-4 bg-emerald-600 hover:bg-emerald-700 text-white font-black uppercase text-[10px] tracking-wider rounded-lg shadow-md shadow-emerald-600/10 transition-all flex items-center justify-center gap-1.5 active:scale-[0.97] whitespace-nowrap"
+                            className="h-9 px-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-black uppercase text-[9px] tracking-wider rounded-lg shadow-sm shadow-emerald-600/10 transition-all flex items-center justify-center gap-1 active:scale-[0.97] whitespace-nowrap shrink-0"
+                            title={t("host.seatBtn")}
                           >
-                            <Check className="w-4 h-4 stroke-[3]" /> {t("host.seatBtn")}
+                            <Check className="w-3.5 h-3.5 stroke-[3]" /> <span className="hidden lg:inline">{t("host.seatBtn")}</span>
                           </button>
                           <button
                             onClick={() => handleUpdateResStatus(res.id, 'NO_SHOW', res.status)}
-                            className="h-12 w-12 bg-rose-50 border border-rose-100 hover:bg-rose-100 text-rose-600 rounded-lg flex items-center justify-center transition-all shrink-0 active:scale-[0.97]"
+                            className="h-9 w-9 bg-rose-50 border border-rose-100 hover:bg-rose-100 text-rose-600 rounded-lg flex items-center justify-center transition-all shrink-0 active:scale-[0.97]"
                             title={t("host.noShowTitle")}
                           >
-                            <X className="w-5 h-5 stroke-[2.5]" />
+                            <X className="w-4 h-4 stroke-[2.5]" />
                           </button>
                         </div>
                       </div>
@@ -687,7 +723,7 @@ export default function HostConsolePage() {
           {/* 2. WAITLIST VIEW */}
           {activeTab === 'waitlist' && (
             <div className="h-full overflow-y-auto pr-1">
-              {loading ? (
+              {loading && !initialLoadDone ? (
                 <div className="h-64 flex flex-col items-center justify-center gap-3">
                   <RefreshCw className="w-8 h-8 animate-spin text-blue-600" />
                   <div className="text-slate-400 text-xs font-black uppercase tracking-widest">{t("host.updatingWaitlist")}</div>
@@ -708,13 +744,13 @@ export default function HostConsolePage() {
                       <div
                         key={entry.id}
                         className={cn(
-                          "bg-white border border-slate-200 rounded-lg shadow-sm h-16 px-3 flex items-center gap-3 transition-all hover:shadow-md",
+                          "bg-white border border-slate-200 rounded-lg shadow-sm h-24 px-3 flex items-center gap-2 transition-all hover:shadow-md",
                           entry.status === 'NOTIFIED' && "border-purple-300 bg-purple-50/20"
                         )}
                       >
                         {/* Elapsed/wait capsule */}
                         <div className={cn(
-                          "w-12 h-12 rounded-lg flex flex-col items-center justify-center text-white shrink-0 shadow-sm",
+                          "w-16 h-16 rounded-lg flex flex-col items-center justify-center text-white shrink-0 shadow-sm",
                           entry.targetDate
                             ? "bg-amber-600"
                             : isOvertime
@@ -723,19 +759,19 @@ export default function HostConsolePage() {
                                 ? "bg-purple-600"
                                 : "bg-blue-600"
                         )}>
-                          <span className="text-[7px] font-black uppercase opacity-75 tracking-wider leading-none mb-0.5">
+                          <span className="text-[8px] font-black uppercase opacity-75 tracking-wider leading-none mb-1">
                             {entry.targetDate ? t("host.bookWait") : t("host.waiting")}
                           </span>
-                          <span className="text-[11px] font-black tracking-tight leading-none">
+                          <span className="text-[13px] font-black tracking-tight leading-none">
                             {entry.targetDate ? t("host.date") : elapsed}
                           </span>
                         </div>
 
-                        <div className="w-px h-8 bg-slate-100 shrink-0" />
+                        <div className="w-px h-14 bg-slate-100 shrink-0" />
 
                         {/* Name + badges */}
                         <div className="flex-1 min-w-0 flex items-center gap-2">
-                          <span className="font-black text-slate-800 text-sm uppercase tracking-tight truncate">{entry.customerName}</span>
+                          <span className="font-black text-slate-800 text-base uppercase tracking-tight truncate">{entry.customerName}</span>
                           <Badge className={cn("text-[9px] font-black uppercase px-1.5 py-0.5 rounded-sm border shrink-0", getStatusBadgeClass(entry.status))}>
                             {entry.status}
                           </Badge>
@@ -752,41 +788,43 @@ export default function HostConsolePage() {
                         </div>
 
                         {/* Party size */}
-                        <div className="hidden sm:flex items-center gap-1 text-xs font-bold text-slate-500 w-14 shrink-0">
+                        <div className="hidden sm:flex items-center gap-1 text-xs font-bold text-slate-500 w-10 shrink-0">
                           <Users className="w-3.5 h-3.5" /> {entry.partySize}
                         </div>
 
                         {/* Phone */}
-                        <div className="hidden md:flex items-center gap-1 text-xs font-bold text-slate-500 w-32 shrink-0 truncate">
+                        <div className="hidden md:flex items-center gap-1 text-xs font-bold text-slate-500 w-28 shrink-0 truncate">
                           <Phone className="w-3.5 h-3.5 shrink-0" /> {entry.customerPhone}
                         </div>
 
                         {entry.notes && (
-                          <span title={entry.notes} className="hidden sm:flex h-8 w-8 rounded-lg items-center justify-center shrink-0 bg-slate-100 text-slate-500">
-                            <StickyNote className="w-4 h-4" />
+                          <span title={entry.notes} className="hidden sm:flex h-7 w-7 rounded-lg items-center justify-center shrink-0 bg-slate-100 text-slate-500">
+                            <StickyNote className="w-3.5 h-3.5" />
                           </span>
                         )}
 
-                        {/* Actions */}
-                        <div className="flex items-center gap-1.5 shrink-0">
+                        {/* Actions — icon-only below lg to leave more room for the name */}
+                        <div className="flex items-center gap-1 shrink-0">
                           <button
                             onClick={() => handleUpdateWaitlistStatus(entry.id, 'NOTIFIED', entry.status)}
-                            className="h-12 px-3 bg-purple-50 border border-purple-200 hover:bg-purple-100 text-purple-700 font-black uppercase text-[10px] tracking-wider rounded-lg transition-all flex items-center justify-center gap-1 active:scale-[0.97] whitespace-nowrap"
+                            className="h-9 px-2 bg-purple-50 border border-purple-200 hover:bg-purple-100 text-purple-700 font-black uppercase text-[9px] tracking-wider rounded-lg transition-all flex items-center justify-center gap-1 active:scale-[0.97] whitespace-nowrap shrink-0"
+                            title={t("host.notifyReadyBtn")}
                           >
-                            <Bell className="w-4 h-4 stroke-[2.5]" /> <span className="hidden lg:inline">{t("host.notifyReadyBtn")}</span>
+                            <Bell className="w-3.5 h-3.5 stroke-[2.5]" /> <span className="hidden lg:inline">{t("host.notifyReadyBtn")}</span>
                           </button>
                           <button
                             onClick={() => handleUpdateWaitlistStatus(entry.id, 'SEATED', entry.status)}
-                            className="h-12 px-4 bg-emerald-600 hover:bg-emerald-700 text-white font-black uppercase text-[10px] tracking-wider rounded-lg shadow-md shadow-emerald-600/10 transition-all flex items-center justify-center gap-1.5 active:scale-[0.97] whitespace-nowrap"
+                            className="h-9 px-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-black uppercase text-[9px] tracking-wider rounded-lg shadow-sm shadow-emerald-600/10 transition-all flex items-center justify-center gap-1 active:scale-[0.97] whitespace-nowrap shrink-0"
+                            title={t("host.seatGuestBtn")}
                           >
-                            <Check className="w-4 h-4 stroke-[3]" /> {t("host.seatGuestBtn")}
+                            <Check className="w-3.5 h-3.5 stroke-[3]" /> <span className="hidden lg:inline">{t("host.seatGuestBtn")}</span>
                           </button>
                           <button
                             onClick={() => handleUpdateWaitlistStatus(entry.id, 'CANCELED', entry.status)}
-                            className="h-12 w-12 bg-rose-50 border border-rose-100 hover:bg-rose-100 text-rose-600 rounded-lg flex items-center justify-center transition-all shrink-0 active:scale-[0.97]"
+                            className="h-9 w-9 bg-rose-50 border border-rose-100 hover:bg-rose-100 text-rose-600 rounded-lg flex items-center justify-center transition-all shrink-0 active:scale-[0.97]"
                             title={t("host.removeGuestTitle")}
                           >
-                            <X className="w-5 h-5 stroke-[2.5]" />
+                            <X className="w-4 h-4 stroke-[2.5]" />
                           </button>
                         </div>
                       </div>
