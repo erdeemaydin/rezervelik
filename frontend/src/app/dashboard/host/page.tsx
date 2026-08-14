@@ -585,32 +585,33 @@ export default function HostConsolePage() {
                       <div
                         key={res.id}
                         className={cn(
-                          "bg-white border rounded-lg shadow-sm h-16 px-3 flex items-center gap-3 transition-all hover:shadow-md",
+                          "bg-white border rounded-lg shadow-sm h-20 px-3 flex items-center gap-3 transition-all hover:shadow-md",
                           res.isVIP ? "border-amber-300 bg-amber-50/20" : "border-slate-200"
                         )}
                       >
-                        {/* Time */}
-                        <div className="w-12 shrink-0 text-center">
-                          <div className="text-[8px] font-black uppercase text-slate-400 tracking-wider leading-none">{t("host.time")}</div>
+                        {/* Status (top) + Time (bottom) */}
+                        <div className="w-14 shrink-0 flex flex-col items-center justify-center gap-1">
+                          <Badge className={cn("text-[7px] font-black uppercase px-1 py-0 rounded-sm border leading-tight shrink-0", getStatusBadgeClass(res.status))}>
+                            {res.status}
+                          </Badge>
                           <div className="text-sm font-black text-slate-900 tracking-tight leading-tight">{formattedTime}</div>
                         </div>
 
-                        <div className="w-px h-8 bg-slate-100 shrink-0" />
+                        <div className="w-px h-10 bg-slate-100 shrink-0" />
 
-                        {/* Name + badges */}
-                        <div className="flex-1 min-w-0 flex items-center gap-2">
-                          <span className="font-black text-slate-900 text-sm uppercase tracking-tight truncate">{res.customerName}</span>
-                          {res.isVIP && <Star className="w-3.5 h-3.5 text-amber-500 fill-amber-500 shrink-0" />}
-                          <Badge className={cn("text-[9px] font-black uppercase px-1.5 py-0.5 rounded-sm border shrink-0", getStatusBadgeClass(res.status))}>
-                            {res.status}
-                          </Badge>
-                          {/* Confirmation code: guests read this off their SMS, so it
-                              needs to be as scannable as the name — not a faint tag. */}
+                        {/* Confirmation code (top) + Name (bottom) — guests read the
+                            code off their SMS, so it needs to be as scannable as the
+                            name, and stacking keeps the row from getting crowded. */}
+                        <div className="flex-1 min-w-0 flex flex-col justify-center gap-0.5">
                           {res.confirmationCode && (
-                            <span className="hidden sm:inline-flex items-center gap-1 bg-blue-50 text-blue-700 border border-blue-200 text-[11px] font-black font-mono tracking-widest px-1.5 py-0.5 rounded-sm shrink-0">
+                            <span className="inline-flex items-center gap-1 bg-blue-50 text-blue-700 border border-blue-200 text-[10px] font-black font-mono tracking-widest px-1.5 py-0.5 rounded-sm shrink-0 w-fit">
                               <Hash className="w-2.5 h-2.5 stroke-[3]" />{res.confirmationCode}
                             </span>
                           )}
+                          <div className="flex items-center gap-2 min-w-0">
+                            <span className="font-black text-slate-900 text-sm uppercase tracking-tight truncate">{res.customerName}</span>
+                            {res.isVIP && <Star className="w-3.5 h-3.5 text-amber-500 fill-amber-500 shrink-0" />}
+                          </div>
                         </div>
 
                         {/* Guests */}
@@ -629,12 +630,11 @@ export default function HostConsolePage() {
                           )}
                         </div>
 
-                        {/* Notes indicator — full text stays in the Details dialog so the
-                            row never grows past one line. */}
+                        {/* Notes indicator — informational only; the pencil below is the
+                            single control that opens the details dialog. Full text
+                            stays in that dialog so the row never grows past one line. */}
                         {hasNote && (
-                          <button
-                            type="button"
-                            onClick={() => handleOpenEditRes(res)}
+                          <span
                             title={res.notes || res.internalNote || ''}
                             className={cn(
                               "hidden sm:flex h-8 w-8 rounded-lg items-center justify-center shrink-0",
@@ -642,7 +642,7 @@ export default function HostConsolePage() {
                             )}
                           >
                             <StickyNote className="w-4 h-4" />
-                          </button>
+                          </span>
                         )}
 
                         {/* Actions */}
