@@ -1091,32 +1091,50 @@ function ReservationTimeline({ tables, reservations, timelineDate, scrollRef, st
                     const overCap = typeof table.capacity === 'number' && r.guestCount > table.capacity;
                     const isDragging = drag?.id === r.id;
                     return (
+                      // Outer wrapper carries the timeline position and stays overflow-visible
+                      // so the over-capacity corner badge below can hang off the block's edge
+                      // instead of being clipped by the inner block's overflow-hidden — a thin
+                      // ring alone was easy to miss, especially on short/narrow blocks.
                       <div
                         key={r.id}
-                        onPointerDown={(e) => beginDrag(e, r, 'move')}
-                        title={`${r.customerName} · ${r.guestCount} ${t("reservations.pax")} · ${fmtTime(start)}${overCap ? ` · ${t("reservations.overCapacityHint")}` : ''}`}
-                        className={cn(
-                          "group absolute top-1.5 bottom-1.5 rounded-md border px-2 py-1 text-[10px] font-bold text-white overflow-hidden shadow-sm cursor-grab active:cursor-grabbing",
-                          statusStyle(r.status).block,
-                          overCap && 'ring-2 ring-red-500 ring-offset-1',
-                          isDragging && 'opacity-30'
-                        )}
+                        className={cn("absolute top-1.5 bottom-1.5", isDragging && 'opacity-30')}
                         style={{ left, width }}
                       >
-                        <div className="absolute left-0 top-0 bottom-0 w-2 cursor-ew-resize z-10" onPointerDown={(e) => beginDrag(e, r, 'resize-l')} />
-                        <div className="absolute right-0 top-0 bottom-0 w-2 cursor-ew-resize z-10" onPointerDown={(e) => beginDrag(e, r, 'resize-r')} />
-                        {/* Edit this booking. stopPropagation so it doesn't start a drag or create. */}
-                        <button
-                          type="button"
-                          onPointerDown={(e) => e.stopPropagation()}
-                          onClick={(e) => { e.stopPropagation(); onEdit(r); }}
-                          title={t("reservations.editBooking")}
-                          className="absolute top-0.5 right-0.5 z-20 w-4 h-4 rounded bg-black/20 hover:bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                        <div
+                          onPointerDown={(e) => beginDrag(e, r, 'move')}
+                          title={`${r.customerName} · ${r.guestCount} ${t("reservations.pax")} · ${fmtTime(start)}${overCap ? ` · ${t("reservations.overCapacityHint")}` : ''}`}
+                          className={cn(
+                            "group relative w-full h-full rounded-md border px-2 py-1 text-[10px] font-bold text-white overflow-hidden shadow-sm cursor-grab active:cursor-grabbing",
+                            statusStyle(r.status).block,
+                            overCap && 'ring-2 ring-red-500 ring-offset-1'
+                          )}
                         >
-                          <Edit2 className="w-2.5 h-2.5" />
-                        </button>
-                        <div className="truncate flex items-center gap-1 pr-4">{overCap && <AlertTriangle className="w-2.5 h-2.5 shrink-0" />}{r.customerName}</div>
-                        <div className="truncate opacity-80 text-[9px] font-medium">{r.guestCount} {t("reservations.pax")}</div>
+                          <div className="absolute left-0 top-0 bottom-0 w-2 cursor-ew-resize z-10" onPointerDown={(e) => beginDrag(e, r, 'resize-l')} />
+                          <div className="absolute right-0 top-0 bottom-0 w-2 cursor-ew-resize z-10" onPointerDown={(e) => beginDrag(e, r, 'resize-r')} />
+                          {/* Edit this booking. stopPropagation so it doesn't start a drag or create. */}
+                          <button
+                            type="button"
+                            onPointerDown={(e) => e.stopPropagation()}
+                            onClick={(e) => { e.stopPropagation(); onEdit(r); }}
+                            title={t("reservations.editBooking")}
+                            className="absolute top-0.5 right-0.5 z-20 w-4 h-4 rounded bg-black/20 hover:bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                          >
+                            <Edit2 className="w-2.5 h-2.5" />
+                          </button>
+                          <div className="truncate flex items-center gap-1 pr-4">{overCap && <AlertTriangle className="w-2.5 h-2.5 shrink-0" />}{r.customerName}</div>
+                          <div className="truncate opacity-80 text-[9px] font-medium">{r.guestCount} {t("reservations.pax")}</div>
+                        </div>
+                        {/* Always-visible over-capacity badge — doesn't depend on hover
+                            (unlike the title tooltip) and can't be squeezed out by a narrow
+                            block (unlike the inline icon+name, which truncates together). */}
+                        {overCap && (
+                          <div
+                            aria-hidden="true"
+                            className="absolute -top-1.5 -left-1.5 z-30 w-4 h-4 rounded-full bg-red-600 border-2 border-white shadow-md flex items-center justify-center animate-pulse pointer-events-none"
+                          >
+                            <AlertTriangle className="w-2.5 h-2.5 text-white stroke-[3]" />
+                          </div>
+                        )}
                       </div>
                     );
                   })}
