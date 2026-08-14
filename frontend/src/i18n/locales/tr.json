@@ -1672,7 +1672,11 @@
     "allCategories": "Tüm Kategoriler",
     "empty": "Henüz kayıtlı etkinlik yok.",
     "loading": "Etkinlikler yükleniyor…",
-    "refresh": "Yenile"
+    "refresh": "Yenile",
+    "detailCategory": "Kategori",
+    "detailIp": "IP Adresi",
+    "detailChanges": "Ayrıntılar / Değişiklikler",
+    "detailNoChanges": "Bu kayıt için ek ayrıntı kaydedilmemiş."
   },
   "themes": {
     "default": "Klasik Mavi",

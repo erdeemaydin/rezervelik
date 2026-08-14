@@ -57,6 +57,10 @@ interface NavItem {
   icon: any;
   perm?: string;
   feature?: string;
+  // Restricted to the ADMIN role regardless of the `manage_settings` permission
+  // string a MANAGER/STAFF might otherwise hold — audit trail visibility is a
+  // role guarantee, not a delegable permission.
+  adminOnly?: boolean;
 }
 
 // Read the last cached /settings response for the current tenant. Used to seed
@@ -99,7 +103,7 @@ const VERTICAL_ICONS: Record<string, { brand: any; catalog: any; resource: any }
 // be reached just by pasting its URL — the backend rejects the underlying data
 // calls too, this is the matching client-side guard. Longest prefix wins; routes
 // not listed (profile, scheduling) are open to any authenticated staff member.
-const ROUTE_PERMS: { prefix: string; perm: string; exact?: boolean }[] = [
+const ROUTE_PERMS: { prefix: string; perm: string; exact?: boolean; adminOnly?: boolean }[] = [
   { prefix: '/dashboard', perm: 'view_analytics', exact: true },
   { prefix: '/dashboard/analytics', perm: 'view_analytics' },
   { prefix: '/dashboard/payments', perm: 'view_payments' },
@@ -113,7 +117,7 @@ const ROUTE_PERMS: { prefix: string; perm: string; exact?: boolean }[] = [
   { prefix: '/dashboard/staff', perm: 'manage_staff' },
   { prefix: '/dashboard/customization', perm: 'manage_settings' },
   { prefix: '/dashboard/settings', perm: 'manage_settings' },
-  { prefix: '/dashboard/audit', perm: 'manage_settings' },
+  { prefix: '/dashboard/audit', perm: 'manage_settings', adminOnly: true },
 ];
 
 const requiredPermForPath = (path: string): string | undefined => {
@@ -123,6 +127,17 @@ const requiredPermForPath = (path: string): string | undefined => {
   if (matches.length === 0) return undefined;
   // Longest prefix wins so /dashboard/analytics beats the exact /dashboard rule.
   return matches.sort((a, b) => b.prefix.length - a.prefix.length)[0].perm;
+};
+
+// Mirrors requiredPermForPath's longest-prefix match, but for the ADMIN-only
+// gate (the audit trail today) — kept as a separate lookup since most routes
+// don't carry it.
+const requiresAdminOnly = (path: string): boolean => {
+  const matches = ROUTE_PERMS.filter(r =>
+    r.exact ? path === r.prefix : (path === r.prefix || path.startsWith(`${r.prefix}/`))
+  );
+  if (matches.length === 0) return false;
+  return !!matches.sort((a, b) => b.prefix.length - a.prefix.length)[0].adminOnly;
 };
 
 export default function AdminLayout({ children }: AdminLayoutProps) {
@@ -259,7 +274,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
       { name: t('admin.settings'), href: '/dashboard/settings', icon: Settings, perm: 'manage_settings' },
     ]},
     { section: t('admin.sectionCompliance'), items: [
-      { name: t('admin.auditLog'), href: '/dashboard/audit', icon: ScrollText, perm: 'manage_settings', feature: 'showAuditLogToTenant' },
+      { name: t('admin.auditLog'), href: '/dashboard/audit', icon: ScrollText, perm: 'manage_settings', feature: 'showAuditLogToTenant', adminOnly: true },
     ]}
   ];
 
@@ -294,13 +309,21 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
     return optIn ? tenantSettings[feature] === true : tenantSettings[feature] !== false;
   };
 
+  // Separate from hasPermission: adminOnly items/routes (the audit trail) are
+  // gated purely on role, so a MANAGER/STAFF holding the broader `manage_settings`
+  // permission string still can't see it — matches the backend's
+  // roleMiddleware(['ADMIN']) on GET /api/audit.
+  const canAccessItem = (item: NavItem) =>
+    hasPermission(item.perm) && hasFeature(item.feature) && (!item.adminOnly || user?.role === 'ADMIN');
+
   // Route-level authorization: if the current page needs a permission the user
   // lacks, bounce them to the first page they can open (or their profile). This
   // stops direct-URL access to dashboards they aren't assigned.
   useEffect(() => {
     if (!isMounted || !isAuthenticated || !user) return;
     const needed = requiredPermForPath(pathname);
-    if (needed && !hasPermission(needed)) {
+    const blockedByRole = requiresAdminOnly(pathname) && user.role !== 'ADMIN';
+    if (blockedByRole || (needed && !hasPermission(needed))) {
       // HOST staff work the host stand — send them there instead of whatever
       // happens to be first in nav order, even on a stale bookmark/deep link.
       if (user.role === 'HOST' && hasPermission('manage_reservations')) {
@@ -309,7 +332,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
       }
       const firstAllowed = navigation
         .flatMap(g => g.items)
-        .find(item => hasPermission(item.perm) && hasFeature(item.feature));
+        .find(item => canAccessItem(item));
       router.replace(firstAllowed ? firstAllowed.href : '/dashboard/profile');
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -341,13 +364,13 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
   // Don't mount the page (and let it fire its data request → 403) if the user
   // isn't allowed here; the effect above redirects them. Show chrome + spinner.
   const routeRequiredPerm = requiredPermForPath(pathname);
-  const routeAuthorized = !routeRequiredPerm || hasPermission(routeRequiredPerm);
+  const routeAuthorized = (!routeRequiredPerm || hasPermission(routeRequiredPerm)) && (!requiresAdminOnly(pathname) || user?.role === 'ADMIN');
 
   // Same section/permission/feature filtering the sidebar applies, flattened
   // into one searchable list for the command palette (Cmd/Ctrl+K).
   const paletteItems = navigation.flatMap(group =>
     group.items
-      .filter(item => hasPermission(item.perm) && hasFeature(item.feature))
+      .filter(item => canAccessItem(item))
       .map(item => ({ name: item.name, href: item.href, icon: item.icon, section: group.section }))
   );
 
@@ -427,7 +450,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
         <nav className="flex-1 overflow-y-auto py-6 scrollbar-none">
           <div className="px-3 space-y-8">
             {navigation.map((group) => {
-              const visibleItems = group.items.filter(item => hasPermission(item.perm) && hasFeature((item as any).feature));
+              const visibleItems = group.items.filter(item => canAccessItem(item));
               if (visibleItems.length === 0) return null;
 
               return (

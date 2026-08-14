@@ -3,7 +3,8 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { ScrollText, RefreshCw, ShieldAlert } from 'lucide-react';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { ScrollText, RefreshCw, ShieldAlert, ChevronRight } from 'lucide-react';
 import { useState, useEffect, useCallback } from 'react';
 import api from '@/lib/api';
 import { cn } from '@/lib/utils';
@@ -18,7 +19,10 @@ interface AuditLog {
   action: string;
   category: string;
   targetType: string | null;
+  targetId: string | null;
   targetLabel: string | null;
+  metadata: Record<string, unknown> | null;
+  ip: string | null;
 }
 
 const CATEGORIES = ['ALL', 'AUTH', 'SETTINGS', 'RESERVATION', 'PERMISSIONS', 'SUBSCRIPTION', 'TENANT'];
@@ -40,6 +44,7 @@ export default function TenantAuditPage() {
   const [loading, setLoading] = useState(true);
   const [forbidden, setForbidden] = useState(false);
   const [category, setCategory] = useState('ALL');
+  const [selectedLog, setSelectedLog] = useState<AuditLog | null>(null);
 
   const fetchLogs = useCallback(async () => {
     try {
@@ -118,15 +123,23 @@ export default function TenantAuditPage() {
                     <TableHead className="text-xs font-bold text-slate-500">{t('audit.colActor')}</TableHead>
                     <TableHead className="text-xs font-bold text-slate-500">{t('audit.colAction')}</TableHead>
                     <TableHead className="text-xs font-bold text-slate-500">{t('audit.colTarget')}</TableHead>
+                    <TableHead className="w-8" />
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {loading ? (
-                    <TableRow><TableCell colSpan={4} className="h-32 text-center text-xs font-bold text-slate-400">{t('audit.loading')}</TableCell></TableRow>
+                    <TableRow><TableCell colSpan={5} className="h-32 text-center text-xs font-bold text-slate-400">{t('audit.loading')}</TableCell></TableRow>
                   ) : logs.length === 0 ? (
-                    <TableRow><TableCell colSpan={4} className="h-32 text-center text-xs font-bold text-slate-400">{t('audit.empty')}</TableCell></TableRow>
+                    <TableRow><TableCell colSpan={5} className="h-32 text-center text-xs font-bold text-slate-400">{t('audit.empty')}</TableCell></TableRow>
                   ) : logs.map((log) => (
-                    <TableRow key={log.id} className="hover:bg-slate-50/80 transition-colors">
+                    <TableRow
+                      key={log.id}
+                      onClick={() => setSelectedLog(log)}
+                      role="button"
+                      tabIndex={0}
+                      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setSelectedLog(log); } }}
+                      className="hover:bg-slate-50/80 transition-colors cursor-pointer"
+                    >
                       <TableCell className="font-mono text-[11px] text-slate-500 whitespace-nowrap">{new Date(log.createdAt).toLocaleString()}</TableCell>
                       <TableCell>
                         <div className="font-semibold text-xs text-slate-800">{log.actorName || log.actorEmail || 'System'}</div>
@@ -141,6 +154,9 @@ export default function TenantAuditPage() {
                         </div>
                       </TableCell>
                       <TableCell className="text-xs text-slate-600">{log.targetLabel || log.targetType || '—'}</TableCell>
+                      <TableCell className="text-slate-300">
+                        <ChevronRight className="w-4 h-4" />
+                      </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
@@ -149,6 +165,66 @@ export default function TenantAuditPage() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Detail dialog — the list row is a compact summary; this is where the
+          actual before/after (log.metadata) and other raw fields are shown. */}
+      <Dialog open={!!selectedLog} onOpenChange={(open) => !open && setSelectedLog(null)}>
+        <DialogContent className="max-w-lg">
+          {selectedLog && (
+            <>
+              <DialogHeader>
+                <DialogTitle className="flex items-center gap-2">
+                  <ScrollText className="w-4 h-4 text-slate-500" />
+                  {selectedLog.action.replace(/_/g, ' ').toLowerCase()}
+                </DialogTitle>
+                <DialogDescription className="font-mono text-[11px]">
+                  {new Date(selectedLog.createdAt).toLocaleString()}
+                </DialogDescription>
+              </DialogHeader>
+
+              <div className="space-y-4 text-sm">
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <div className="text-[10px] font-black uppercase text-slate-400 tracking-wide">{t('audit.colActor')}</div>
+                    <div className="font-semibold text-slate-800">{selectedLog.actorName || selectedLog.actorEmail || 'System'}</div>
+                    {selectedLog.actorRole && <div className="text-[10px] text-slate-400 font-bold uppercase">{selectedLog.actorRole}</div>}
+                  </div>
+                  <div>
+                    <div className="text-[10px] font-black uppercase text-slate-400 tracking-wide">{t('audit.detailCategory')}</div>
+                    <Badge variant="outline" className={cn('text-[9px] font-black uppercase w-fit px-1.5 mt-0.5', categoryColor(selectedLog.category))}>
+                      {selectedLog.category}
+                    </Badge>
+                  </div>
+                  <div>
+                    <div className="text-[10px] font-black uppercase text-slate-400 tracking-wide">{t('audit.colTarget')}</div>
+                    <div className="text-slate-700">{selectedLog.targetLabel || selectedLog.targetType || '—'}</div>
+                    {selectedLog.targetId && <div className="text-[10px] text-slate-400 font-mono truncate">{selectedLog.targetId}</div>}
+                  </div>
+                  {selectedLog.ip && (
+                    <div>
+                      <div className="text-[10px] font-black uppercase text-slate-400 tracking-wide">{t('audit.detailIp')}</div>
+                      <div className="text-slate-700 font-mono text-xs">{selectedLog.ip}</div>
+                    </div>
+                  )}
+                </div>
+
+                <div>
+                  <div className="text-[10px] font-black uppercase text-slate-400 tracking-wide mb-1.5">{t('audit.detailChanges')}</div>
+                  {selectedLog.metadata && Object.keys(selectedLog.metadata).length > 0 ? (
+                    <pre className="bg-slate-50 border border-slate-200 rounded-lg p-3 text-[11px] font-mono text-slate-700 overflow-x-auto whitespace-pre-wrap break-words">
+                      {JSON.stringify(selectedLog.metadata, null, 2)}
+                    </pre>
+                  ) : (
+                    <div className="text-xs text-slate-400 italic bg-slate-50 border border-slate-100 rounded-lg p-3">
+                      {t('audit.detailNoChanges')}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
     </>
   );
 }

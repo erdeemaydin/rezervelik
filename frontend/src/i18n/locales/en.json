@@ -1672,7 +1672,11 @@
     "allCategories": "All Categories",
     "empty": "No activity recorded yet.",
     "loading": "Loading activity…",
-    "refresh": "Refresh"
+    "refresh": "Refresh",
+    "detailCategory": "Category",
+    "detailIp": "IP Address",
+    "detailChanges": "Details / Changes",
+    "detailNoChanges": "No additional detail was recorded for this entry."
   },
   "themes": {
     "default": "Classic Blue",
