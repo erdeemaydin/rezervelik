@@ -748,7 +748,7 @@ export default function ShiftAssigner({ viewMode = 'MONTHLY' }: { viewMode?: 'WE
 
         {/* DRAGGABLE STAFF SECTION — compact single strip (no big header/titles) */}
         {isAdminOrManager && (
-          <Card className="w-full">
+          <Card size="sm" className="w-full">
             <CardContent className="p-2.5">
               <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-1.5 text-xs font-black uppercase tracking-wide text-slate-600">
@@ -785,7 +785,7 @@ export default function ShiftAssigner({ viewMode = 'MONTHLY' }: { viewMode?: 'WE
         )}
 
         {/* MAIN ROSTER GRID */}
-        <Card className="flex-1 overflow-hidden">
+        <Card size="sm" className="flex-1 overflow-hidden">
           <CardHeader className="flex flex-col lg:flex-row items-start lg:items-center justify-between p-3 gap-2">
             <div className="flex items-baseline gap-2 flex-wrap">
               <CardTitle className="text-base">{t('scheduling.assigner.scheduleBuilder')}</CardTitle>

@@ -138,18 +138,20 @@ export default function AvailabilitySubmitter({ viewMode = 'MONTHLY' }: { viewMo
 
   return (
     <div className="space-y-4">
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
-          <div>
+      <Card size="sm" className="overflow-hidden">
+        <CardHeader className="flex flex-row flex-wrap items-center justify-between gap-2">
+          <div className="min-w-0">
             <CardTitle>{t('scheduling.availability.title')}</CardTitle>
             <CardDescription>{t('scheduling.availability.desc')}</CardDescription>
           </div>
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <Button variant="outline" size="icon" onClick={handlePrev}>
               <ChevronLeft className="h-4 w-4" />
             </Button>
-            <h3 className="text-sm font-semibold w-40 text-center">
-              {viewMode === 'WEEKLY' 
+            {/* min-w (not a fixed w-40) so a longer localized month/week label can
+                still grow instead of clipping, same fix as the host console header. */}
+            <h3 className="text-sm font-semibold min-w-[110px] text-center whitespace-nowrap px-1">
+              {viewMode === 'WEEKLY'
                 ? `${t('scheduling.mySchedule.weekOf')} ${days[0]?.formattedDate}`
                 : currentDate.toLocaleDateString(dateLocale, { month: 'long', year: 'numeric' })
               }
@@ -157,19 +159,23 @@ export default function AvailabilitySubmitter({ viewMode = 'MONTHLY' }: { viewMo
             <Button variant="outline" size="icon" onClick={handleNext}>
               <ChevronRight className="h-4 w-4" />
             </Button>
-            <Button onClick={handleSave} disabled={loading} className="bg-blue-600 hover:bg-blue-700 text-white ml-4">
+            <Button onClick={handleSave} disabled={loading} className="bg-blue-600 hover:bg-blue-700 text-white sm:ml-2">
               <Save className="h-4 w-4 mr-2" /> {t('scheduling.availability.saveChanges')}
             </Button>
           </div>
         </CardHeader>
-        <CardContent>
-          <div className="overflow-x-auto">
+        <CardContent className="p-0">
+          {/* Bounded + scrollable (like the roster grid in ShiftAssigner) so a full
+              month of days scrolls within this panel instead of pushing the whole
+              page down — that full-page scroll was the actual "empty space, still
+              have to scroll a lot" complaint for this tab. */}
+          <div className="overflow-auto max-h-[calc(100vh-360px)]">
             <table className="w-full text-sm text-left border-collapse">
-              <thead>
+              <thead className="sticky top-0 z-20">
                 <tr className="border-b bg-slate-50">
-                  <th className="px-4 py-3 font-bold text-slate-700 uppercase text-[10px] tracking-wider border-r sticky left-0 bg-slate-50 z-10">{t('scheduling.availability.date')}</th>
+                  <th className="px-3 py-2 font-bold text-slate-700 uppercase text-[10px] tracking-wider border-r sticky left-0 bg-slate-50 z-30">{t('scheduling.availability.date')}</th>
                   {shifts.map(shift => (
-                    <th key={shift.id} className="px-4 py-3 font-bold text-slate-700 uppercase text-[10px] tracking-wider text-center">
+                    <th key={shift.id} className="px-3 py-2 font-bold text-slate-700 uppercase text-[10px] tracking-wider text-center">
                       {shift.name}
                       <div className="text-[9px] font-normal text-slate-500 lowercase mt-0.5">{formatTimeRange(shift.startTime, shift.endTime)}</div>
                     </th>
@@ -179,7 +185,7 @@ export default function AvailabilitySubmitter({ viewMode = 'MONTHLY' }: { viewMo
               <tbody>
                 {days.map(day => (
                   <tr key={day.dateString} className="border-b hover:bg-slate-50/50 transition-colors">
-                    <td className="px-4 py-3 font-medium border-r sticky left-0 bg-white z-10 shadow-[1px_0_0_0_#e2e8f0]">
+                    <td className="px-3 py-2 font-medium border-r sticky left-0 bg-white z-10 shadow-[1px_0_0_0_#e2e8f0]">
                       <div className="flex flex-col">
                         <span className="text-sm">{day.formattedDate}</span>
                         <span className="text-[10px] text-slate-400 uppercase">{day.dayName}</span>
@@ -188,10 +194,10 @@ export default function AvailabilitySubmitter({ viewMode = 'MONTHLY' }: { viewMo
                     {shifts.map(shift => {
                       const isAvailable = availabilities[`${day.dateString}-${shift.id}`] || false;
                       return (
-                        <td key={shift.id} className="px-4 py-3 text-center">
+                        <td key={shift.id} className="px-3 py-2 text-center">
                           <div className="flex justify-center">
-                            <Checkbox 
-                              checked={isAvailable} 
+                            <Checkbox
+                              checked={isAvailable}
                               onCheckedChange={() => handleToggle(day.dateString, shift.id)}
                               className="h-5 w-5 data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600"
                             />
