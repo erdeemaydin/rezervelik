@@ -4,11 +4,23 @@ import { errorResponse } from '../utils/response';
 import prisma from '../config/prisma';
 import { parseCookies } from '../utils/cookies';
 import { TOKEN_COOKIE } from '../utils/authCookie';
+import { SystemPermissionKey } from '../config/systemPermissions';
 
 declare global {
   namespace Express {
     interface Request {
-      user?: { userId: string; restaurantId?: string | null; role: string; impersonatedBy?: string };
+      user?: {
+        userId: string;
+        restaurantId?: string | null;
+        role: string;
+        // Only meaningful when role === 'SUPER_ADMIN'. Set from the JWT by
+        // authMiddleware, then overwritten with a live DB value by
+        // requireActiveSuperAdmin for every /api/system/* request — see that
+        // function for why. Undefined/true is treated as root for any
+        // SUPER_ADMIN token minted before this field existed.
+        isRootAdmin?: boolean;
+        impersonatedBy?: string;
+      };
       // The raw bearer token this request authenticated with — only used by
       // the impersonate flow to stash the SUPER_ADMIN's own token server-side
       // before switching to the impersonated user's. Nothing else should need
@@ -37,8 +49,15 @@ export const authMiddleware = (req: Request, res: Response, next: NextFunction) 
   try {
     const decoded = verifyToken(token);
 
-    // Ensure the user's token matches the requested restaurantId if using multi-tenant middleware
-    if (decoded.role !== 'SUPER_ADMIN' && req.restaurantId && req.restaurantId !== decoded.restaurantId) {
+    // Only a full root SUPER_ADMIN (isRootAdmin !== false) may reach a tenant's
+    // scoped routes with an arbitrary X-Restaurant-ID and no restaurantId of
+    // their own — a restricted sub-admin has no tenant data access at all, only
+    // whatever the /api/system/* console grants them (see requireSystemPermission
+    // and requireRootSystemAdmin below). Without this check, any SUPER_ADMIN-role
+    // token — including a deliberately restricted sub-admin's — would bypass
+    // tenant scoping entirely on every tenant route in the app.
+    const isRootSuperAdmin = decoded.role === 'SUPER_ADMIN' && decoded.isRootAdmin !== false;
+    if (!isRootSuperAdmin && req.restaurantId && req.restaurantId !== decoded.restaurantId) {
       console.log(`[AuthMiddleware] Tenant mismatch. Request tenant: ${req.restaurantId}, Token tenant: ${decoded.restaurantId}`);
       return errorResponse(res, 'errors.unauthorized', 403);
     }
@@ -60,14 +79,63 @@ export const authMiddleware = (req: Request, res: Response, next: NextFunction) 
 // after authMiddleware + roleMiddleware(['SUPER_ADMIN']).
 export const requireActiveSuperAdmin = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const user = await prisma.user.findUnique({ where: { id: req.user!.userId }, select: { isActive: true } });
+    const user = await prisma.user.findUnique({ where: { id: req.user!.userId }, select: { isActive: true, isRootAdmin: true } });
     if (!user || !user.isActive) {
       return errorResponse(res, 'errors.unauthorized', 401);
     }
+    // Overwrite the JWT's (possibly stale) claim with the live DB value so a
+    // root admin who gets demoted to a restricted sub-admin mid-session loses
+    // root access on their very next /api/system/* request, same as isActive
+    // above — not after their token happens to expire.
+    req.user!.isRootAdmin = user.isRootAdmin;
     next();
   } catch {
     return errorResponse(res, 'errors.internal_error', 500);
   }
+};
+
+// Root-only gate for platform-administrator management (create/list/deactivate/
+// change permissions of other SUPER_ADMIN accounts). Deliberately not a
+// permission a sub-admin can ever be granted (see systemPermissions.ts) —
+// letting a sub-admin manage admin accounts would let it create a new root, or
+// grant itself more permissions, defeating the whole restriction. Mount after
+// requireActiveSuperAdmin so req.user.isRootAdmin reflects the live DB value.
+export const requireRootSystemAdmin = (req: Request, res: Response, next: NextFunction) => {
+  if (!req.user || req.user.isRootAdmin === false) {
+    return errorResponse(res, 'errors.forbidden', 403, { message: 'Root administrator access required' });
+  }
+  next();
+};
+
+// Per-capability gate for the rest of the /api/system/* console. A root admin
+// (isRootAdmin !== false) always passes; a restricted sub-admin only passes if
+// `key` is present in their (whitelisted, sys_*-namespaced) User.permissions.
+// Mount after requireActiveSuperAdmin.
+export const requireSystemPermission = (key: SystemPermissionKey) => {
+  return async (req: Request, res: Response, next: NextFunction) => {
+    if (!req.user) {
+      return errorResponse(res, 'errors.unauthorized', 401);
+    }
+    if (req.user.isRootAdmin !== false) {
+      return next();
+    }
+    try {
+      const user = await prisma.user.findUnique({
+        where: { id: req.user.userId },
+        select: { permissions: true },
+      });
+      if (!user) {
+        return errorResponse(res, 'errors.unauthorized', 401);
+      }
+      const perms = user.permissions ? user.permissions.split(',') : [];
+      if (!perms.includes(key)) {
+        return errorResponse(res, 'errors.forbidden', 403, { message: 'Missing required permission: ' + key });
+      }
+      next();
+    } catch {
+      return errorResponse(res, 'errors.internal_error', 500);
+    }
+  };
 };
 
 export const roleMiddleware = (roles: string[]) => {
@@ -88,8 +156,13 @@ export const requirePermission = (
       return errorResponse(res, 'errors.unauthorized', 401);
     }
 
-    // Super Admin and Tenant Admin have full access bypass
-    if (req.user.role === 'SUPER_ADMIN' || req.user.role === 'ADMIN') {
+    // Tenant ADMIN always bypasses; a SUPER_ADMIN only bypasses tenant-module
+    // checks (manage_reservations, manage_staff, ...) while acting as a full
+    // root admin. A restricted sub-admin (isRootAdmin === false) has no tenant
+    // module access at all — falls through to the permissions-string lookup
+    // below, where its permissions hold sys_* keys that will never match a
+    // tenant module key, so it correctly 403s instead of bypassing.
+    if (req.user.role === 'ADMIN' || (req.user.role === 'SUPER_ADMIN' && req.user.isRootAdmin !== false)) {
       return next();
     }
 

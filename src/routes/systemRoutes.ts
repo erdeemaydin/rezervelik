@@ -1,7 +1,13 @@
 import { Router } from 'express';
 import * as systemController from '../controllers/systemController';
 import * as auditController from '../controllers/auditController';
-import { authMiddleware, roleMiddleware, requireActiveSuperAdmin } from '../middlewares/auth';
+import {
+  authMiddleware,
+  roleMiddleware,
+  requireActiveSuperAdmin,
+  requireRootSystemAdmin,
+  requireSystemPermission,
+} from '../middlewares/auth';
 
 const router = Router();
 
@@ -22,23 +28,28 @@ router.use(authMiddleware);
 router.use(roleMiddleware(['SUPER_ADMIN']));
 router.use(requireActiveSuperAdmin);
 
-router.get('/tenants', systemController.getAllTenants);
-router.post('/tenants', systemController.createTenant);
-router.put('/tenants/:id/subscription', systemController.updateTenantSubscription);
-router.put('/tenants/:id/settings', systemController.updateTenantSettings);
-router.put('/users/:userId/permissions', systemController.updateTenantUserPermissions);
-router.post('/users/:userId/reset-link', systemController.createPasswordResetLink);
-router.put('/users/:userId/otp', systemController.setUserOtp);
+router.get('/tenants', requireSystemPermission('sys_manage_tenants'), systemController.getAllTenants);
+router.post('/tenants', requireSystemPermission('sys_manage_tenants'), systemController.createTenant);
+router.put('/tenants/:id/subscription', requireSystemPermission('sys_manage_subscriptions'), systemController.updateTenantSubscription);
+router.put('/tenants/:id/settings', requireSystemPermission('sys_manage_tenants'), systemController.updateTenantSettings);
+router.put('/users/:userId/permissions', requireSystemPermission('sys_manage_tenant_users'), systemController.updateTenantUserPermissions);
+router.post('/users/:userId/reset-link', requireSystemPermission('sys_manage_tenant_users'), systemController.createPasswordResetLink);
+router.put('/users/:userId/otp', requireSystemPermission('sys_manage_tenant_users'), systemController.setUserOtp);
 
-router.get('/settings/global', systemController.getGlobalSettings);
-router.put('/settings/global', systemController.updateGlobalSettings);
+router.get('/settings/global', requireSystemPermission('sys_manage_global_settings'), systemController.getGlobalSettings);
+router.put('/settings/global', requireSystemPermission('sys_manage_global_settings'), systemController.updateGlobalSettings);
 
-router.get('/admins', systemController.getSystemAdmins);
-router.post('/admins', systemController.createSystemAdmin);
-router.put('/admins/:id/active', systemController.setSystemAdminActive);
-router.get('/metrics', systemController.getSystemMetrics);
-router.get('/audit', auditController.getSystemAuditLogs);
+// Managing other platform administrators is root-only — never gated by a
+// grantable sys_* permission, so a sub-admin can never create a new root or
+// escalate its own/another admin's access. See requireRootSystemAdmin.
+router.get('/admins', requireRootSystemAdmin, systemController.getSystemAdmins);
+router.post('/admins', requireRootSystemAdmin, systemController.createSystemAdmin);
+router.put('/admins/:id/active', requireRootSystemAdmin, systemController.setSystemAdminActive);
+router.put('/admins/:id/permissions', requireRootSystemAdmin, systemController.updateSystemAdminPermissions);
 
-router.post('/tenants/:id/impersonate', systemController.impersonateTenant);
+router.get('/metrics', requireSystemPermission('sys_view_metrics'), systemController.getSystemMetrics);
+router.get('/audit', requireSystemPermission('sys_view_audit_log'), auditController.getSystemAuditLogs);
+
+router.post('/tenants/:id/impersonate', requireSystemPermission('sys_impersonate_tenants'), systemController.impersonateTenant);
 
 export default router;

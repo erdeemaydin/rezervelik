@@ -112,7 +112,7 @@ export const register = async (req: Request, res: Response) => {
       return { restaurant, user };
     });
 
-    const token = generateToken(result.user.id, result.restaurant.id, result.user.role);
+    const token = generateToken(result.user.id, result.restaurant.id, result.user.role, result.user.isRootAdmin);
     setAuthCookie(res, token);
 
     return successResponse(res, {
@@ -200,7 +200,7 @@ export const login = async (req: Request, res: Response) => {
     }
 
     console.log(`[Auth] Login successful: ${user.id} (${user.role})`);
-    const token = generateToken(user.id, user.restaurantId, user.role);
+    const token = generateToken(user.id, user.restaurantId, user.role, user.isRootAdmin);
     setAuthCookie(res, token);
 
     logAudit({
@@ -222,7 +222,8 @@ export const login = async (req: Request, res: Response) => {
         lastName: user.lastName,
         role: user.role,
         restaurantId: user.restaurantId,
-        permissions: user.permissions
+        permissions: user.permissions,
+        isRootAdmin: user.isRootAdmin
       },
       token
     });
@@ -274,7 +275,7 @@ export const loginVerifyOtp = async (req: Request, res: Response) => {
       await prisma.user.update({ where: { id: user.id }, data: { otpConfirmedAt: new Date() } });
     }
 
-    const token = generateToken(user.id, user.restaurantId, user.role);
+    const token = generateToken(user.id, user.restaurantId, user.role, user.isRootAdmin);
     setAuthCookie(res, token);
     return successResponse(res, {
       user: {
@@ -284,7 +285,8 @@ export const loginVerifyOtp = async (req: Request, res: Response) => {
         lastName: user.lastName,
         role: user.role,
         restaurantId: user.restaurantId,
-        permissions: user.permissions
+        permissions: user.permissions,
+        isRootAdmin: user.isRootAdmin
       },
       token
     });
@@ -458,7 +460,7 @@ export const completeSetup = async (req: Request, res: Response) => {
       }
     });
 
-    const authToken = generateToken(user.id, user.restaurantId, user.role);
+    const authToken = generateToken(user.id, user.restaurantId, user.role, user.isRootAdmin);
     setAuthCookie(res, authToken);
 
     return successResponse(res, {

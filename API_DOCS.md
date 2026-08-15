@@ -21,6 +21,30 @@
 ---
 
 ## 2. System Administration (Requires `SUPER_ADMIN` role)
+Every `SUPER_ADMIN` account has a `User.isRootAdmin` flag (default `true`). A **root**
+admin (`isRootAdmin: true`) has unrestricted access to everything below, exactly as
+before this field existed. A **restricted sub-admin** (`isRootAdmin: false`) only
+passes `requireSystemPermission(key)` on the routes it's been explicitly granted a
+matching `sys_*` key for on `User.permissions` (comma-separated, whitelisted server-side
+— see `src/config/systemPermissions.ts`); everything else 403s. Sub-admins also lose the
+SUPER_ADMIN tenant-route bypass entirely (`middlewares/auth.ts`) — they have zero access
+to any tenant-scoped `/api/*` endpoint, the same as an unrelated outside user, unless they
+impersonate a tenant (see `sys_impersonate_tenants` below).
+
+Managing other platform administrators (creating them, deactivating them, or changing
+their root/permission status) is **root-only** and is never a grantable `sys_*`
+permission — a sub-admin can never create a new root or escalate its own access.
+
+| `sys_*` permission | Gates |
+|---|---|
+| `sys_manage_tenants` | `GET/POST /tenants`, `PUT /tenants/:id/settings` |
+| `sys_manage_subscriptions` | `PUT /tenants/:id/subscription` |
+| `sys_manage_tenant_users` | `PUT /users/:userId/permissions`, `POST /users/:userId/reset-link`, `PUT /users/:userId/otp` — rejects `SUPER_ADMIN` targets even for a root-granted sub-admin; those three are root-only when the target is another platform administrator |
+| `sys_impersonate_tenants` | `POST /tenants/:id/impersonate` |
+| `sys_manage_global_settings` | `GET/PUT /settings/global` |
+| `sys_view_audit_log` | `GET /audit` |
+| `sys_view_metrics` | `GET /metrics` |
+
 ### `POST /api/system/setup-super-admin`
 *   **Description:** Initializes root admin (requires secure matching `SETUP_SECRET_TOKEN` environment variable).
 ### `GET /api/system/tenants`
@@ -32,7 +56,13 @@
 ### `PUT /api/system/tenants/:id/settings`
 *   **Description:** Toggles tenant feature flags (Waitlist, Scheduling, Payments, etc.) globally, and assigns `layoutStyle` (Design Architecture) to the tenant.
 ### `PUT /api/system/users/:userId/permissions`
-*   **Description:** Modifies a tenant user's granular module permissions.
+*   **Description:** Modifies a *tenant* user's granular module permissions. `400`s if the target isn't a tenant-scoped user (i.e. is itself a `SUPER_ADMIN`) — that column means something different for platform administrators and is only settable via `PUT /system/admins/:id/permissions` below.
+### `GET /api/system/admins` / `POST /api/system/admins` (root-only)
+*   **Description:** Lists / creates platform administrators. `POST` accepts `{ email, password, firstName, lastName, isRootAdmin?, permissions? }` — `isRootAdmin` defaults to `false` (restricted, zero capabilities) unless explicitly set `true`; `permissions` is an array of `sys_*` keys, silently filtered to the whitelist.
+### `PUT /api/system/admins/:id/active` (root-only)
+*   **Description:** Deactivates/reactivates a platform administrator. A root admin cannot deactivate their own account.
+### `PUT /api/system/admins/:id/permissions` (root-only)
+*   **Description:** Changes an existing platform administrator's `{ isRootAdmin, permissions }`. A root admin cannot remove root access from their own account (prevents a platform with zero root admins left).
 
 ---
 

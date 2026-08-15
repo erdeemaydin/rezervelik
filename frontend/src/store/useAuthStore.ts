@@ -10,6 +10,9 @@ interface User {
   role: string;
   restaurantId: string;
   permissions?: string | null;
+  // Only meaningful when role === 'SUPER_ADMIN': true/undefined = full
+  // platform root, false = a restricted sub-admin (see systemPermissions.ts).
+  isRootAdmin?: boolean;
 }
 
 interface AuthState {
