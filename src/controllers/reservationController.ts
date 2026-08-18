@@ -45,10 +45,13 @@ export const getReservations = async (req: Request, res: Response) => {
         table: true,
         category: true
       },
-      orderBy: [
-        { isVIP: 'desc' },
-        { startTime: 'asc' }
-      ],
+      // Ordered newest-first so the take cap below drops the OLDEST rows first, not the
+      // most recent/upcoming ones — the isVIP-first, startTime-ascending order this used to
+      // have would otherwise make an unbounded VIP or long-history tenant's take:3000 return
+      // only its earliest-ever reservations, silently hiding today's and future bookings.
+      // Both frontend consumers (dashboard/reservations, dashboard/host) already re-sort the
+      // array client-side for display, so API order here only matters for the cap.
+      orderBy: { startTime: 'desc' },
       // Safety cap: this table grows unbounded per-tenant over time (PRODUCTION_ROADMAP.md
       // estimates ~73k reservations/year for a busy restaurant); 3000 is generous headroom
       // for callers that don't pass a date range yet. Real pagination/date-filter UI for
