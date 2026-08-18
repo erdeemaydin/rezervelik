@@ -690,11 +690,18 @@ export const impersonateTenant = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
 
+    // Suspended/deactivated tenants must not be impersonable, even by SUPER_ADMIN.
+    const restaurant = await prisma.restaurant.findUnique({ where: { id }, select: { isActive: true } });
+    if (!restaurant || !restaurant.isActive) {
+      return errorResponse(res, 'errors.forbidden', 403, { message: 'Tenant is not active.' });
+    }
+
     // Find the primary admin of this restaurant
     const adminUser = await prisma.user.findFirst({
       where: {
         restaurantId: id,
-        role: 'ADMIN'
+        role: 'ADMIN',
+        isActive: true
       }
     });
 
