@@ -455,9 +455,16 @@ export const updateTenantUserPermissions = async (req: Request, res: Response) =
   }
 };
 
+// Bootstraps the very first SUPER_ADMIN account. Necessarily reachable without
+// a logged-in caller (there's no admin yet to log in as), so it's gated
+// entirely by SETUP_SECRET_TOKEN plus the hardening below instead of a normal
+// auth/role check: a timing-safe token comparison (not a plain !==, which
+// leaks how many leading characters matched), per-IP rate limiting wired in
+// systemRoutes.ts, and the same password policy every other account-creation
+// path enforces. See the comment on the token check below for the full
+// rationale (added after a security-audit pass found this endpoint
+// unprotected and unthrottled).
 export const createSuperAdmin = async (req: Request, res: Response) => {
-  // NOTE: In production, this should be a CLI script or heavily protected.
-  // We leave it open for initial setup, but ideally you check for a secret token.
   try {
     const { email, password, firstName, lastName, secretToken } = req.body;
 

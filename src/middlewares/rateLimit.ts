@@ -55,7 +55,7 @@ const isStaffRequest = (req: Request): boolean => {
   }
 };
 
-export const publicRateLimit = (opts: {
+interface RateLimitOptions {
   windowMs: number;
   max: number;
   keyPrefix: string;
@@ -69,7 +69,9 @@ export const publicRateLimit = (opts: {
   // entirely and throttle purely by IP. Defaults to true to preserve existing
   // behavior for tenant-scoped/public-guest routes.
   exemptAuthenticated?: boolean;
-}) => {
+}
+
+export const publicRateLimit = (opts: RateLimitOptions) => {
   return (req: Request, res: Response, next: NextFunction) => {
     if (opts.exemptAuthenticated !== false && isStaffRequest(req)) return next();
 
@@ -96,12 +98,7 @@ export const publicRateLimit = (opts: {
 // run, which would otherwise start failing unrelated tests with 429s. The
 // limiter's own logic (window expiry, the count cap, the staff bypass) is
 // covered directly against `publicRateLimit` in tests/api/public-rate-limit.test.ts.
-export const rateLimitOrNoop = (opts: {
-  windowMs: number;
-  max: number;
-  keyPrefix: string;
-  exemptAuthenticated?: boolean;
-}) =>
+export const rateLimitOrNoop = (opts: RateLimitOptions) =>
   process.env.NODE_ENV === 'test'
     ? (_req: Request, _res: Response, next: NextFunction) => next()
     : publicRateLimit(opts);

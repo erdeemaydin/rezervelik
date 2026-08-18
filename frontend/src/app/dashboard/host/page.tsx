@@ -47,6 +47,14 @@ interface WaitlistEntry {
   targetDate: string | null;
 }
 
+// Today's date as YYYY-MM-DD (UTC), matching the format the backend's
+// startDate/endDate reservation filters and WaitlistEntry.targetDate both
+// use. Called fresh at each use site (not memoized/hoisted to a constant)
+// so a host-stand tab left open across midnight still re-evaluates to the
+// correct day on its next fetch/filter, instead of freezing on whichever
+// day the page happened to load.
+const todayDateStr = () => new Date().toISOString().split('T')[0];
+
 export default function HostConsolePage() {
   const { t } = useTranslation();
   const confirm = useConfirm();
@@ -120,7 +128,7 @@ export default function HostConsolePage() {
       // The host stand only ever reads today's reservations (every consumer below
       // filters with `startsWith(todayStr)`), so ask the server to scope the query
       // to today instead of pulling the tenant's full reservation history.
-      const todayStr = new Date().toISOString().split('T')[0];
+      const todayStr = todayDateStr();
       const [resRes, waitlistRes, waitlistHistoryRes, tablesRes, catRes] = await Promise.allSettled([
         api.get('/reservations', { params: { startDate: todayStr, endDate: todayStr } }),
         api.get('/wait-time/entries'),
@@ -168,7 +176,7 @@ export default function HostConsolePage() {
   // stays mounted and visible the whole time instead of flashing to a spinner.
   const refreshActivity = async () => {
     try {
-      const todayStr = new Date().toISOString().split('T')[0];
+      const todayStr = todayDateStr();
       const [resRes, waitlistRes, waitlistHistoryRes] = await Promise.allSettled([
         api.get('/reservations', { params: { startDate: todayStr, endDate: todayStr } }),
         api.get('/wait-time/entries'),
@@ -322,8 +330,7 @@ export default function HostConsolePage() {
   const handleResSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const todayString = new Date().toISOString().split('T')[0];
-      const combinedDateTime = new Date(`${todayString}T${resForm.selectedTime}`);
+      const combinedDateTime = new Date(`${todayDateStr()}T${resForm.selectedTime}`);
       
       const payload = {
         customerName: resForm.customerName,
@@ -369,7 +376,7 @@ export default function HostConsolePage() {
 
   // Filtered lists
   const filteredReservations = useMemo(() => {
-    const todayStr = new Date().toISOString().split('T')[0];
+    const todayStr = todayDateStr();
     
     return reservations.filter(res => {
       // Host view only focuses on active/upcoming items for TODAY
@@ -398,7 +405,7 @@ export default function HostConsolePage() {
   }, [reservations, searchQuery, selectedHour]);
 
   const reservationsHistory = useMemo(() => {
-    const todayStr = new Date().toISOString().split('T')[0];
+    const todayStr = todayDateStr();
     return reservations.filter(res => {
       const isToday = res.startTime.startsWith(todayStr);
       const isResolved = ['COMPLETED', 'CANCELLED', 'NO_SHOW'].includes(res.status);
@@ -408,7 +415,7 @@ export default function HostConsolePage() {
 
   // Filter waitlist to walk-ins (targetDate === null) or today's date-specific waitlist
   const todayWaitlist = useMemo(() => {
-    const todayStr = new Date().toISOString().split('T')[0];
+    const todayStr = todayDateStr();
     return waitlist.filter(entry => entry.targetDate === null || entry.targetDate === todayStr);
   }, [waitlist]);
 
@@ -421,7 +428,7 @@ export default function HostConsolePage() {
   }, [todayWaitlist, searchQuery]);
 
   const filteredWaitlistHistory = useMemo(() => {
-    const todayStr = new Date().toISOString().split('T')[0];
+    const todayStr = todayDateStr();
     return waitlistHistory.filter(entry => entry.targetDate === null || entry.targetDate === todayStr);
   }, [waitlistHistory]);
 
@@ -486,7 +493,7 @@ export default function HostConsolePage() {
               >
                 <Calendar className="w-4 h-4 shrink-0" />
                 <span className="truncate min-w-0">{t("host.reservationsTab")}</span>
-                <span className="shrink-0">({reservations.filter(r => r.startTime.startsWith(new Date().toISOString().split('T')[0]) && r.status !== 'CANCELLED' && r.status !== 'COMPLETED').length})</span>
+                <span className="shrink-0">({reservations.filter(r => r.startTime.startsWith(todayDateStr()) && r.status !== 'CANCELLED' && r.status !== 'COMPLETED').length})</span>
               </button>
               <button
                 onClick={() => { setActiveTab('waitlist'); }}
@@ -574,7 +581,7 @@ export default function HostConsolePage() {
                 {hourSlots.map((hour) => {
                   const isActive = selectedHour === hour.value;
                   const resInHour = reservations.filter(r => {
-                    const isToday = r.startTime.startsWith(new Date().toISOString().split('T')[0]);
+                    const isToday = r.startTime.startsWith(todayDateStr());
                     const hourMatch = hour.value === 'all' || new Date(r.startTime).getHours() === hour.value;
                     return isToday && hourMatch && r.status !== 'CANCELLED' && r.status !== 'COMPLETED';
                   }).length;

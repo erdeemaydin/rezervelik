@@ -12,17 +12,19 @@ import { rateLimitOrNoop } from '../middlewares/rateLimit';
 
 const router = Router();
 
-// Open route for initial setup (in reality, protect this via CLI or secret env var).
-// Security-audit finding: this mints a SUPER_ADMIN account and was previously
-// callable at unlimited speed — combined with the secret-token check, that's
-// an unthrottled guessing oracle against the single most privileged account
-// in the system. Same tight per-IP window as /auth/login.
+// Bootstraps the initial SUPER_ADMIN — necessarily reachable with no logged-in
+// caller, so it's gated by SETUP_SECRET_TOKEN (checked timing-safely in
+// createSuperAdmin) plus the rate limit below, same tight per-IP window as
+// /auth/login. Security-audit finding: it used to be callable at unlimited
+// speed, which combined with the secret-token check made it an unthrottled
+// guessing oracle against the single most privileged account in the system.
+//
 // exemptAuthenticated: false — this route isn't mounted behind tenantMiddleware,
 // so req.restaurantId is never set here, which would otherwise make the shared
 // limiter's staff-bypass treat ANY valid JWT (including one from self-registering
 // a free account via POST /api/auth/register, on by default) as exempt and
-// reopen the unthrottled-guessing-oracle this limiter exists to close. This
-// route has no legitimate "staff" caller at all, so throttle by IP only.
+// reopen the same guessing-oracle gap. This route has no legitimate "staff"
+// caller at all, so throttle by IP only.
 const setupRateLimit = rateLimitOrNoop({
   windowMs: 15 * 60_000,
   max: 10,

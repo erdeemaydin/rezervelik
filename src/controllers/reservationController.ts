@@ -24,20 +24,35 @@ const isStaffRequest = (req: Request): boolean => {
   }
 };
 
+const ISO_DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+
+// Optional inclusive date-range filter for getReservations (YYYY-MM-DD, UTC day
+// boundaries — matches how callers already compute "today" via
+// `new Date().toISOString().split('T')[0]`, e.g. dashboard/host/page.tsx).
+// Returns an empty object (no filter applied) unless BOTH bounds are present
+// AND parse to real calendar dates, so:
+//   - existing no-params callers (the reservations list page) keep their
+//     current full-history behavior unchanged, and
+//   - a malformed-but-regex-shaped value like "2026-13-45" (passes the format
+//     check, but isn't a real date) can't reach Prisma as an Invalid Date and
+//     blow up the request with a 500 — it's just silently treated as "no filter".
+const parseDateRangeFilter = (startDate?: string, endDate?: string) => {
+  if (!startDate || !endDate || !ISO_DATE_RE.test(startDate) || !ISO_DATE_RE.test(endDate)) {
+    return {};
+  }
+  const gte = new Date(`${startDate}T00:00:00.000Z`);
+  const lte = new Date(`${endDate}T23:59:59.999Z`);
+  if (isNaN(gte.getTime()) || isNaN(lte.getTime())) {
+    return {};
+  }
+  return { startTime: { gte, lte } };
+};
+
 export const getReservations = async (req: Request, res: Response) => {
   try {
     const restaurantId = req.restaurantId!;
     const { startDate, endDate } = req.query as { startDate?: string; endDate?: string };
-
-    // Optional inclusive date-range filter (YYYY-MM-DD, UTC day boundaries — matches
-    // how callers already compute "today" via `new Date().toISOString().split('T')[0]`,
-    // e.g. dashboard/host/page.tsx). Only applied when BOTH bounds are present so
-    // existing no-params callers (reservations list page) keep their current
-    // full-history behavior unchanged.
-    const dateRangeValid = !!startDate && !!endDate && /^\d{4}-\d{2}-\d{2}$/.test(startDate) && /^\d{4}-\d{2}-\d{2}$/.test(endDate);
-    const dateFilter = dateRangeValid
-      ? { startTime: { gte: new Date(`${startDate}T00:00:00.000Z`), lte: new Date(`${endDate}T23:59:59.999Z`) } }
-      : {};
+    const dateFilter = parseDateRangeFilter(startDate, endDate);
 
     const reservations = await prisma.reservation.findMany({
       where: { restaurantId, ...dateFilter },
