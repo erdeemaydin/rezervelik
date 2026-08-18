@@ -57,10 +57,14 @@ describe('Menu rules', () => {
       .send({ items: [{ id: item.id, price: 222 }], scheduledFor: future });
     expect(scheduled.status).toBe(201);
 
-    // Price is not changed yet, and a scheduled job now exists.
+    // Price is not changed yet, and a scheduled (PENDING) job now exists.
+    // The immediate apply above also writes its own EXPLICIT_SET row (status
+    // APPLIED, added so immediate changes show up in history/undo the same as
+    // worker-applied ones) — filter to PENDING so this only counts the actual
+    // not-yet-applied scheduled job, not that unrelated history entry.
     expect((await prisma.menuItem.findUnique({ where: { id: item.id } }))!.price).toBe(150);
     const jobs = await prisma.scheduledPriceUpdate.findMany({
-      where: { restaurantId: a.restaurant.id, updateType: 'EXPLICIT_SET' },
+      where: { restaurantId: a.restaurant.id, updateType: 'EXPLICIT_SET', status: 'PENDING' },
     });
     expect(jobs).toHaveLength(1);
   });
