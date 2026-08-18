@@ -30,26 +30,75 @@ export const resolvePlaceId = (input?: string | null): string | null => {
   return null;
 };
 
+// Pull a business name and @lat,lng out of a full Maps URL, e.g.
+// .../maps/place/Some+Restaurant/@41.0082,28.9784,17z/data=... — used to bias
+// the Find Place From Text fallback below.
+const extractNameAndLocation = (url: string): { name: string | null; lat: number | null; lng: number | null } => {
+  const nameMatch = url.match(/\/maps\/place\/([^/@]+)/);
+  const name = nameMatch ? decodeURIComponent(nameMatch[1].replace(/\+/g, ' ')) : null;
+  const atMatch = url.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/);
+  return {
+    name,
+    lat: atMatch ? parseFloat(atMatch[1]) : null,
+    lng: atMatch ? parseFloat(atMatch[2]) : null,
+  };
+};
+
+// Almost every Maps URL a tenant actually pastes — the address-bar URL, or
+// "Share > Copy link" — encodes the place as a CID (`!1s0x…:0x…`), which
+// resolvePlaceId deliberately skips because the Details API doesn't accept it
+// as a place_id. Recover a real Place ID via Find Place From Text, using the
+// business name (and @lat,lng, if present) the URL already carries.
+const findPlaceIdByTextSearch = async (name: string, lat: number | null, lng: number | null): Promise<string | null> => {
+  const key = process.env.GOOGLE_PLACES_API_KEY;
+  if (!key) return null;
+
+  const params = new URLSearchParams({ input: name, inputtype: 'textquery', fields: 'place_id', key });
+  if (lat != null && lng != null) params.set('locationbias', `point:${lat},${lng}`);
+
+  try {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 5000);
+    const res = await fetch(`https://maps.googleapis.com/maps/api/place/findplacefromtext/json?${params.toString()}`, { signal: controller.signal });
+    clearTimeout(timer);
+    const body: any = await res.json();
+    return body?.candidates?.[0]?.place_id || null;
+  } catch {
+    return null;
+  }
+};
+
 // Google Maps *share* links (maps.app.goo.gl / goo.gl/maps) carry no Place ID
-// until the redirect is followed. Resolve those server-side, then re-run the
-// synchronous extractors on the expanded URL. Falls back to the sync result.
+// until the redirect is followed — expand those first. Then, for any full
+// Maps URL that still doesn't yield a direct match (the common CID case),
+// fall back to a name-based text search so a normal pasted link actually
+// resolves instead of silently leaving the tenant "not configured".
 export const resolvePlaceIdAsync = async (input?: string | null): Promise<string | null> => {
   const direct = resolvePlaceId(input);
   if (direct || !input) return direct;
 
   const raw = input.trim();
-  if (!/^https?:\/\/(maps\.app\.goo\.gl|goo\.gl\/maps)/i.test(raw)) return null;
+  let expanded = raw;
 
-  try {
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), 5000);
-    const res = await fetch(raw, { redirect: 'follow', signal: controller.signal });
-    clearTimeout(timer);
-    // The expanded URL usually contains a place_id or a ChIJ token.
-    return resolvePlaceId(res.url) || resolvePlaceId(decodeURIComponent(res.url));
-  } catch {
-    return null;
+  if (/^https?:\/\/(maps\.app\.goo\.gl|goo\.gl\/maps)/i.test(raw)) {
+    try {
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), 5000);
+      const res = await fetch(raw, { redirect: 'follow', signal: controller.signal });
+      clearTimeout(timer);
+      expanded = res.url;
+    } catch {
+      // Keep the original short link — the text-search fallback below still
+      // has a shot if it happens to expand client-side info isn't available.
+    }
+    const fromExpanded = resolvePlaceId(expanded) || resolvePlaceId(decodeURIComponent(expanded));
+    if (fromExpanded) return fromExpanded;
   }
+
+  if (!/^https?:\/\//i.test(expanded)) return null;
+  const { name, lat, lng } = extractNameAndLocation(decodeURIComponent(expanded));
+  if (!name) return null;
+  return findPlaceIdByTextSearch(name, lat, lng);
 };
 
 // GET /api/reviews — real Google reviews for this tenant.

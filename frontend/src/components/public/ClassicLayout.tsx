@@ -7,13 +7,14 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Utensils, Calendar as CalendarIcon, Clock, ChevronRight, ChevronDown, ArrowLeft, MapPin, Phone, Info, Sparkles, CheckCircle2, XCircle, Flame, Leaf, Hourglass, AlertTriangle } from 'lucide-react';
+import { Utensils, Calendar as CalendarIcon, Clock, ChevronRight, ChevronDown, ArrowLeft, MapPin, Phone, Info, Sparkles, CheckCircle2, XCircle, Flame, Leaf, Hourglass, AlertTriangle, Camera, Share2, Globe } from 'lucide-react';
 import axios from 'axios';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import { getTimeSuggestions } from '@/lib/reservationSuggestions';
 import ReservationCalendar from './ReservationCalendar';
+import ConsentFields from './ConsentFields';
 import { getTodayInTZ, zonedWallTimeToUTC, DEFAULT_TZ } from '@/lib/datetime';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || (typeof window !== 'undefined' ? `${window.location.protocol}//${window.location.hostname}:3000/api` : 'http://localhost:3000/api');
@@ -35,15 +36,22 @@ export default function ClassicLayout({ slug, initialRestaurant, initialView = '
 
   const [dayStatus, setDayStatus] = useState<any>(null);
   const [checkingDay, setCheckingDay] = useState(false);
-  const [isWaitlistSuccess, setIsWaitlistSuccess] = useState(false);
+
   const [isPossiblyFullyBooked, setIsPossiblyFullyBooked] = useState(false);
+  const [confirmationCode, setConfirmationCode] = useState<string | null>(null);
 
   const [resForm, setResForm] = useState({
     customerName: '',
     customerPhone: '',
     customerEmail: '',
     guestCount: '2',
-    notes: ''
+    notes: '',
+    // KVKK consent (PRODUCTION_ROADMAP.md §7.3): consentAccepted is the required
+    // booking consent, marketingConsent a separate optional WhatsApp/marketing
+    // opt-in. Both ride along in the `...resForm` spread already sent to
+    // POST /reservations, so no extra plumbing is needed beyond these two fields.
+    consentAccepted: false,
+    marketingConsent: false
   });
 
   const tz = restaurant?.settings?.timezone || DEFAULT_TZ;
@@ -78,21 +86,16 @@ export default function ClassicLayout({ slug, initialRestaurant, initialView = '
       return;
     }
 
+    if (!resForm.consentAccepted) {
+      toast.error(t('public.consent.required'));
+      return;
+    }
+
+    // A fully booked day has no capacity left — future demand belongs to the
+    // reservation flow (retry another date) rather than a waitlist join; the
+    // walk-in waitlist is for real-time, same-day guests only.
     if (dayStatus?.daySetting?.isFullyBooked) {
-      try {
-        await axios.post(`${API_URL}/public/restaurant/${slug}/waitlist`, {
-          customerName: resForm.customerName,
-          customerPhone: resForm.customerPhone,
-          partySize: parseInt(resForm.guestCount),
-          targetDate: selectedDate,
-          notes: `Requested Time: ${selectedTime}`
-        });
-        setIsWaitlistSuccess(true);
-        setView('success');
-        setResForm({ customerName: '', customerPhone: '', customerEmail: '', guestCount: '2', notes: '' });
-      } catch (err: any) {
-        toast.error(err.response?.data?.error || 'Failed to join waitlist');
-      }
+      toast.error('This day is fully booked. Please choose another date.');
       return;
     }
 
@@ -117,8 +120,9 @@ export default function ClassicLayout({ slug, initialRestaurant, initialView = '
         return;
       }
       setIsPossiblyFullyBooked(!!res.data?.data?.possiblyFullyBooked);
+      setConfirmationCode(res.data?.data?.confirmationCode || null);
       setView('success');
-      setResForm({ customerName: '', customerPhone: '', customerEmail: '', guestCount: '2', notes: '' });
+      setResForm({ customerName: '', customerPhone: '', customerEmail: '', guestCount: '2', notes: '', consentAccepted: false, marketingConsent: false });
     } catch (err: any) {
       toast.error(err.response?.data?.error || 'Failed to book');
     }
@@ -157,6 +161,24 @@ export default function ClassicLayout({ slug, initialRestaurant, initialView = '
       showLegal: false,
   };
 
+  // socialLinks is stored server-side as a raw JSON string (FrontendCustomization.socialLinks);
+  // parse defensively so a malformed/legacy value never breaks the public page.
+  const socialLinks = (() => {
+      const raw = customization.socialLinks;
+      if (typeof raw !== 'string' || !raw) return null;
+      try {
+          const parsed = JSON.parse(raw);
+          return {
+              instagram: typeof parsed.instagram === 'string' ? parsed.instagram : '',
+              facebook: typeof parsed.facebook === 'string' ? parsed.facebook : '',
+              website: typeof parsed.website === 'string' ? parsed.website : '',
+          };
+      } catch {
+          return null;
+      }
+  })();
+  const hasSocialLinks = !!(socialLinks && (socialLinks.instagram || socialLinks.facebook || socialLinks.website));
+
   const getFontClass = (type: string) => {
       switch(type) {
           case 'SERIF': return 'font-serif tracking-tight';
@@ -171,6 +193,7 @@ export default function ClassicLayout({ slug, initialRestaurant, initialView = '
       switch(preset) {
           case 'EARTH': return { bg: '#fdfbf7', text: '#292524', primary: '#5c4033', accent: '#d6d3d1' };
           case 'CRIMSON': return { bg: '#fffbfb', text: '#450a0a', primary: '#7f1d1d', accent: '#fecaca' };
+          case 'SAGE': return { bg: '#f6f8f4', text: '#1f2a1c', primary: '#4b6a4f', accent: '#d7e4d1' };
           case 'OBSIDIAN':
           default: return { bg: '#ffffff', text: '#0f172a', primary: '#0f172a', accent: '#e2e8f0' };
       }
@@ -328,6 +351,25 @@ export default function ClassicLayout({ slug, initialRestaurant, initialView = '
                     {restaurant.contactEmail && (
                       <a href={`mailto:${restaurant.contactEmail}`} className="flex items-center gap-2 hover:text-neutral-900">
                         <MapPin className="h-3.5 w-3.5" /> {restaurant.contactEmail}
+                      </a>
+                    )}
+                  </div>
+                )}
+                {hasSocialLinks && (
+                  <div className="flex items-center justify-center gap-4 text-neutral-500">
+                    {socialLinks!.instagram && (
+                      <a href={socialLinks!.instagram} target="_blank" rel="noopener noreferrer" aria-label="Instagram" className="hover:text-neutral-900">
+                        <Camera className="h-4 w-4" />
+                      </a>
+                    )}
+                    {socialLinks!.facebook && (
+                      <a href={socialLinks!.facebook} target="_blank" rel="noopener noreferrer" aria-label="Facebook" className="hover:text-neutral-900">
+                        <Share2 className="h-4 w-4" />
+                      </a>
+                    )}
+                    {socialLinks!.website && (
+                      <a href={socialLinks!.website} target="_blank" rel="noopener noreferrer" aria-label="Website" className="hover:text-neutral-900">
+                        <Globe className="h-4 w-4" />
                       </a>
                     )}
                   </div>
@@ -500,8 +542,8 @@ export default function ClassicLayout({ slug, initialRestaurant, initialView = '
                             <Clock className="h-5 w-5 shrink-0 mt-1" />
                             <div>
                                 <p className="mb-1 text-xs font-medium uppercase tracking-wide opacity-80">{selectedDateLabel}</p>
-                                <p className="mb-1.5 font-semibold leading-none">Fully Booked (Waitlist Open)</p>
-                                <p className="text-sm font-medium opacity-90">We are fully booked for reservations on this day, but you can join our online waitlist to be notified if a table opens up.</p>
+                                <p className="mb-1.5 font-semibold leading-none">Fully Booked</p>
+                                <p className="text-sm font-medium opacity-90">We are fully booked for reservations on this day. Please choose another date, or call us directly.</p>
                             </div>
                         </div>
                     ) : dayStatus?.daySetting?.isReservationEnabled === false ? (
@@ -531,6 +573,16 @@ export default function ClassicLayout({ slug, initialRestaurant, initialView = '
                                 <p className="text-sm font-medium opacity-90">This date requires manual staff review. You&apos;ll receive a notification once confirmed.</p>
                             </div>
                          </div>
+                    )}
+
+                    {dayStatus?.daySetting?.isCapacityFull && (
+                        <div className="flex items-start gap-3 rounded-3xl border border-amber-200 bg-amber-50 p-4 text-sm font-medium text-amber-800 animate-in fade-in duration-300">
+                            <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5" />
+                            <div>
+                                <p className="mb-0.5 font-semibold">{t('public.capacityFullTitle')}</p>
+                                <p>{t('public.capacityFullDesc')}</p>
+                            </div>
+                        </div>
                     )}
                 </div>
 
@@ -581,9 +633,17 @@ export default function ClassicLayout({ slug, initialRestaurant, initialView = '
                             </div>
                         </div>
 
-                        <Button type="submit" disabled={checkingDay || (dayStatus && !dayStatus.daySetting?.isReservationEnabled && dayStatus.daySetting && !dayStatus.daySetting?.isFullyBooked)} className="h-16 w-full rounded-2xl bg-[var(--primary)] text-base font-semibold text-white hover:bg-[var(--primary-hover)] disabled:opacity-50">
+                        <ConsentFields
+                          slug={slug}
+                          consentAccepted={resForm.consentAccepted}
+                          onConsentAcceptedChange={(v) => setResForm({ ...resForm, consentAccepted: v })}
+                          marketingConsent={resForm.marketingConsent}
+                          onMarketingConsentChange={(v) => setResForm({ ...resForm, marketingConsent: v })}
+                        />
+
+                        <Button type="submit" disabled={checkingDay || (dayStatus?.daySetting?.isFullyBooked) || (dayStatus && !dayStatus.daySetting?.isReservationEnabled && dayStatus.daySetting)} className="h-16 w-full rounded-2xl bg-[var(--primary)] text-base font-semibold text-white hover:bg-[var(--primary-hover)] disabled:opacity-50">
                             {checkingDay ? "Checking Availability..." :
-                             (dayStatus && dayStatus.daySetting?.isFullyBooked) ? "Join Waitlist for this Day" :
+                             (dayStatus && dayStatus.daySetting?.isFullyBooked) ? "Fully Booked" :
                              (dayStatus && !dayStatus.daySetting?.isReservationEnabled && dayStatus.daySetting) ? "Sold Out" : "Send Booking Request"}
                         </Button>
                     </form>
@@ -600,27 +660,26 @@ export default function ClassicLayout({ slug, initialRestaurant, initialView = '
                   <CheckCircle2 className="h-10 w-10" />
               </div>
               <h1 className="mb-4 text-center text-3xl font-semibold tracking-tight text-neutral-900 md:text-4xl">
-                  {isWaitlistSuccess ? "Added to Waitlist!" : "Reservation Request Sent!"}
+                  Reservation Request Sent!
               </h1>
               <div className="mb-12 max-w-lg text-center text-lg font-light leading-relaxed text-neutral-500">
-                  {isWaitlistSuccess ? (
-                      <>
-                          You&apos;ve successfully joined the waitlist for <span className="font-medium text-neutral-900">{new Date(`${selectedDate}T00:00:00`).toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' })}</span>. You will receive an SMS if a table becomes available.
-                      </>
-                  ) : (
-                      <>
-                          You are going to receive an SMS confirmation soon. We are excited that you chose <span className="font-medium text-neutral-900">{restaurant.name}</span>.
-                      </>
-                  )}
+                  You are going to receive an SMS confirmation soon. We are excited that you chose <span className="font-medium text-neutral-900">{restaurant.name}</span>.
                   <p className="mt-4 text-sm font-medium uppercase tracking-wide text-emerald-600">See you soon!</p>
               </div>
-              {!isWaitlistSuccess && isPossiblyFullyBooked && (
+              {confirmationCode && (
+                  <div className="mb-8 flex flex-col items-center rounded-2xl border border-black/5 bg-neutral-50 px-8 py-5">
+                      <span className="text-xs font-medium uppercase tracking-wide text-neutral-400">{t('public.confirmationCodeLabel')}</span>
+                      <span className="mt-1 text-3xl font-semibold tracking-[0.2em] text-neutral-900">{confirmationCode}</span>
+                      <span className="mt-2 max-w-xs text-center text-xs text-neutral-400">{t('public.confirmationCodeHint')}</span>
+                  </div>
+              )}
+              {isPossiblyFullyBooked && (
                   <div className="mb-8 max-w-md rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm font-medium text-amber-800">
                       Heads up — we may be fully booked around this time, so your table hasn&apos;t been assigned yet. Our team will confirm by phone shortly.
                   </div>
               )}
               <div className="flex flex-col gap-3 sm:flex-row">
-                  <Button onClick={() => { setView('menu'); setIsWaitlistSuccess(false); }} variant="outline" className="h-14 rounded-full border-black/10 px-8 text-base font-medium">
+                  <Button onClick={() => { setView('menu'); }} variant="outline" className="h-14 rounded-full border-black/10 px-8 text-base font-medium">
                       <Utensils className="mr-2 h-4 w-4" /> Explore Our Menu
                   </Button>
                   {menuOnly ? (
@@ -628,7 +687,7 @@ export default function ClassicLayout({ slug, initialRestaurant, initialView = '
                           Return to Home
                       </Button>
                   ) : (
-                      <Button onClick={() => { setView('welcome'); setIsWaitlistSuccess(false); }} className="h-14 rounded-full bg-[var(--primary)] px-8 text-base font-medium text-white hover:bg-[var(--primary-hover)]">
+                      <Button onClick={() => { setView('welcome'); }} className="h-14 rounded-full bg-[var(--primary)] px-8 text-base font-medium text-white hover:bg-[var(--primary-hover)]">
                           Return to Home
                       </Button>
                   )}

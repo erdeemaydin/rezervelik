@@ -27,6 +27,7 @@ export type AuditCategory =
   | 'SUBSCRIPTION'
   | 'PERMISSIONS'
   | 'RESERVATION'
+  | 'PAYMENT'
   | 'SYSTEM';
 
 interface AuditInput {
@@ -76,6 +77,15 @@ export const logAudit = async (input: AuditInput): Promise<void> => {
       }
     }
 
+    // When the acting session is an impersonated one (see
+    // systemController.impersonateTenant), fold the real SUPER_ADMIN's id
+    // into metadata automatically — every action taken during an
+    // impersonated session used to be indistinguishable from the tenant
+    // admin's own in every audit row after the initial IMPERSONATION_STARTED
+    // one. Callers never need to think about this; it rides on req.user.
+    const impersonatedBy = input.req?.user?.impersonatedBy;
+    const metadata = impersonatedBy ? { ...(input.metadata ?? {}), impersonatedBy } : (input.metadata ?? undefined);
+
     await prisma.auditLog.create({
       data: {
         actorId,
@@ -88,7 +98,7 @@ export const logAudit = async (input: AuditInput): Promise<void> => {
         targetType: input.targetType ?? null,
         targetId: input.targetId ?? null,
         targetLabel: input.targetLabel ?? null,
-        metadata: (input.metadata ?? undefined) as any,
+        metadata: metadata as any,
         ip: clientIp(input.req),
       },
     });

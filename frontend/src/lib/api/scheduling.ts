@@ -70,7 +70,7 @@ export const getAssignments = async (params: { startDate?: string; endDate?: str
   return data.data;
 };
 
-export const assignShift = async (payload: { shiftId: string; userId: string; date: string }) => {
+export const assignShift = async (payload: { shiftId: string; userId: string; date: string; force?: boolean }) => {
   const { data } = await api.post('/scheduling/assignments', payload);
   return data.data;
 };

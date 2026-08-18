@@ -13,6 +13,7 @@ import { Label } from '@/components/ui/label';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import { getTimeSuggestions } from '@/lib/reservationSuggestions';
 import ReservationCalendar from './ReservationCalendar';
+import ConsentFields from './ConsentFields';
 import { getTodayInTZ, zonedWallTimeToUTC, DEFAULT_TZ } from '@/lib/datetime';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || (typeof window !== 'undefined' ? `${window.location.protocol}//${window.location.hostname}:3000/api` : 'http://localhost:3000/api');
@@ -32,9 +33,10 @@ export default function GardenLayout({ slug, initialRestaurant, initialView, men
 
   const [dayStatus, setDayStatus] = useState<any>(null);
   const [checkingDay, setCheckingDay] = useState(false);
-  const [isWaitlistSuccess, setIsWaitlistSuccess] = useState(false);
+
   const [isBookingSuccess, setIsBookingSuccess] = useState(false);
   const [isPossiblyFullyBooked, setIsPossiblyFullyBooked] = useState(false);
+  const [confirmationCode, setConfirmationCode] = useState<string | null>(null);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const customization = restaurant?.customization || {};
@@ -48,7 +50,12 @@ export default function GardenLayout({ slug, initialRestaurant, initialView, men
     customerPhone: '',
     customerEmail: '',
     guestCount: '2',
-    notes: ''
+    notes: '',
+    // KVKK consent (PRODUCTION_ROADMAP.md §7.3): required booking consent +
+    // separate optional marketing opt-in. Both ride along in the `...resForm`
+    // spread already sent to POST /reservations.
+    consentAccepted: false,
+    marketingConsent: false
   });
 
   useEffect(() => {
@@ -82,19 +89,16 @@ export default function GardenLayout({ slug, initialRestaurant, initialView, men
       return;
     }
 
+    if (!resForm.consentAccepted) {
+      toast.error(t('public.consent.required'));
+      return;
+    }
+
+    // A fully booked day has no capacity left — future demand belongs to the
+    // reservation flow (retry another date) rather than a waitlist join; the
+    // walk-in waitlist is for real-time, same-day guests only.
     if (dayStatus?.daySetting?.isFullyBooked) {
-      try {
-        await axios.post(`${API_URL}/public/restaurant/${slug}/waitlist`, {
-          customerName: resForm.customerName,
-          customerPhone: resForm.customerPhone,
-          partySize: parseInt(resForm.guestCount),
-          targetDate: selectedDate,
-          notes: `Requested Time: ${selectedTime} - ${resForm.notes}`
-        });
-        setIsWaitlistSuccess(true);
-      } catch (err: any) {
-        toast.error(err.response?.data?.error || 'Failed to join waitlist');
-      }
+      toast.error('This day is fully booked. Please choose another date.');
       return;
     }
 
@@ -119,6 +123,7 @@ export default function GardenLayout({ slug, initialRestaurant, initialView, men
         return;
       }
       setIsPossiblyFullyBooked(!!res.data?.data?.possiblyFullyBooked);
+      setConfirmationCode(res.data?.data?.confirmationCode || null);
       setIsBookingSuccess(true);
     } catch (err: any) {
       toast.error(err.response?.data?.error || 'Failed to book');
@@ -160,6 +165,7 @@ export default function GardenLayout({ slug, initialRestaurant, initialView, men
       switch(preset) {
           case 'CRIMSON': return { bg: '#fdf6f4', text: '#3d1f1a', accent: '#9a4a3c' };
           case 'PEARL': return { bg: '#f6f8fa', text: '#1f2937', accent: '#5b7fa6' };
+          case 'SAGE': return { bg: '#f5f7f2', text: '#283024', accent: '#7c9473' };
           case 'OBSIDIAN': return { bg: '#faf9f6', text: '#2c2c2c', accent: '#6b6459' };
           case 'EARTH':
           default: return { bg: '#fdfaf3', text: '#3d3524', accent: '#6f8a5c' };
@@ -442,17 +448,18 @@ export default function GardenLayout({ slug, initialRestaurant, initialView, men
               <CheckCircle2 className="mx-auto mb-6 h-16 w-16 text-emerald-500" />
               <h3 className="mb-3 font-serif text-2xl">{isPossiblyFullyBooked ? 'Request Received' : 'Reservation Confirmed'}</h3>
               <p className="text-base opacity-60">We look forward to welcoming you.</p>
+              {confirmationCode && (
+                <div className="mx-auto mt-8 flex max-w-xs flex-col items-center rounded-2xl border border-black/5 bg-[#fdfaf3] px-6 py-4">
+                  <span className="text-[10px] font-semibold uppercase tracking-[0.2em] opacity-50">{t('public.confirmationCodeLabel')}</span>
+                  <span className="mt-1 text-2xl font-semibold tracking-[0.2em]" style={{ color: 'var(--accent)' }}>{confirmationCode}</span>
+                  <span className="mt-2 text-[10px] opacity-50">{t('public.confirmationCodeHint')}</span>
+                </div>
+              )}
               {isPossiblyFullyBooked && (
                 <div className="mx-auto mt-8 max-w-md rounded-2xl border border-amber-200 bg-amber-50 p-4 text-left text-sm text-amber-800">
                   Heads up — we may be fully booked around this time, so your table hasn&apos;t been assigned yet. Our team will confirm by phone shortly.
                 </div>
               )}
-            </div>
-          ) : isWaitlistSuccess ? (
-            <div className="rounded-[2rem] border border-black/5 bg-white p-12 text-center animate-in zoom-in">
-              <CheckCircle2 className="mx-auto mb-6 h-16 w-16 text-emerald-500" />
-              <h3 className="mb-3 font-serif text-2xl">Waitlist Joined</h3>
-              <p className="text-base opacity-60">We will notify you if a table becomes available.</p>
             </div>
           ) : (
             <form onSubmit={handleBooking} className="space-y-8 rounded-[2rem] border border-black/5 bg-white p-6 shadow-sm sm:p-10">
@@ -490,8 +497,8 @@ export default function GardenLayout({ slug, initialRestaurant, initialView, men
                   <Clock className="h-5 w-5 shrink-0 text-amber-500" />
                   <div>
                     <span className="mb-1 block text-xs font-semibold uppercase tracking-widest text-amber-600">{selectedDateLabel}</span>
-                    <strong className="mb-1 block text-base">Fully Booked (Waitlist Open)</strong>
-                    We are fully booked for reservations on this day, but you can join our waitlist.
+                    <strong className="mb-1 block text-base">Fully Booked</strong>
+                    We are fully booked for reservations on this day. Please choose another date, or call us directly.
                   </div>
                 </div>
               ) : dayStatus?.daySetting?.isReservationEnabled === false ? (
@@ -523,6 +530,16 @@ export default function GardenLayout({ slug, initialRestaurant, initialView, men
                 </div>
               ) : null}
 
+              {dayStatus?.daySetting?.isCapacityFull && (
+                <div className="rounded-2xl border-l-4 border-amber-500 bg-amber-50 p-4 text-sm text-amber-800 flex items-start gap-3">
+                  <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5 text-amber-500" />
+                  <div>
+                    <p className="mb-0.5 font-semibold text-amber-600">{t('public.capacityFullTitle')}</p>
+                    <p>{t('public.capacityFullDesc')}</p>
+                  </div>
+                </div>
+              )}
+
               <div className="space-y-6 border-t border-black/5 pt-8">
                 <div className="space-y-2">
                   <Label className="text-xs font-semibold uppercase tracking-widest opacity-60">Guests</Label>
@@ -544,12 +561,21 @@ export default function GardenLayout({ slug, initialRestaurant, initialView, men
                 </div>
               </div>
 
+              <ConsentFields
+                slug={slug}
+                consentAccepted={resForm.consentAccepted}
+                onConsentAcceptedChange={(v) => setResForm({ ...resForm, consentAccepted: v })}
+                marketingConsent={resForm.marketingConsent}
+                onMarketingConsentChange={(v) => setResForm({ ...resForm, marketingConsent: v })}
+                className="mt-2 space-y-3 text-sm opacity-80"
+              />
+
               <Button
                 type="submit"
-                disabled={checkingDay || dayStatus?.daySetting?.isReservationEnabled === false}
+                disabled={checkingDay || dayStatus?.daySetting?.isFullyBooked || (dayStatus?.daySetting?.isReservationEnabled === false && !dayStatus?.daySetting?.isFullyBooked)}
                 className="h-16 w-full rounded-2xl bg-[var(--accent)] text-base font-semibold uppercase tracking-widest text-white hover:bg-[var(--accent-hover)] disabled:opacity-50"
               >
-                {dayStatus?.daySetting?.isFullyBooked ? 'Join Waitlist' : 'Request Table'}
+                {dayStatus?.daySetting?.isFullyBooked ? 'Fully Booked' : 'Request Table'}
               </Button>
             </form>
           )}

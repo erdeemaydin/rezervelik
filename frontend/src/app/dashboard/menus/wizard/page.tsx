@@ -50,8 +50,11 @@ export default function MenuWizardPage() {
 
         for (const item of cat.items) {
           if (!item.name.trim()) continue;
-          await api.post(`/menus/categories/${categoryId}/items`, {
+          // Matches the actual registered route: POST /menus/items with
+          // categoryId in the body, not a nested /categories/:id/items path.
+          await api.post('/menus/items', {
             ...item,
+            categoryId,
             price: parseFloat(item.price) || 0
           });
         }

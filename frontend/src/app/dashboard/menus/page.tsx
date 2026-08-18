@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -65,7 +65,7 @@ interface Menu {
 }
 
 export default function MenuManagementPage() {
-  const { t } = useTranslation();
+  const { t, locale } = useTranslation();
   const confirm = useConfirm();
   const [menus, setMenus] = useState<Menu[]>([]);
   const [loading, setLoading] = useState(true);
@@ -79,6 +79,7 @@ export default function MenuManagementPage() {
   const [isItemDialogOpen, setIsItemDialogOpen] = useState(false);
 
   const [isEditMode, setIsEditMode] = useState(false);
+  const [isSavingMenu, setIsSavingMenu] = useState(false);
   const [deleteMenuId, setDeleteMenuId] = useState<string | null>(null);
   const [restaurantProfile, setRestaurantProfile] = useState<any>(null);
   const [isQRDialogOpen, setIsQRDialogOpen] = useState(false);
@@ -133,6 +134,20 @@ export default function MenuManagementPage() {
 
   const activeMenu = menus.find(m => m.id === activeMenuId);
 
+  // Format a dish price using the tenant's configured currency (RestaurantSettings.currency),
+  // not a hardcoded TRY — restaurants can run in other currencies (see settings page).
+  const formatPrice = useMemo(() => {
+    const currency = restaurantProfile?.settings?.currency || 'TRY';
+    const localeTag = locale === 'tr' ? 'tr-TR' : 'en-US';
+    return (price: number) => {
+      try {
+        return price.toLocaleString(localeTag, { style: 'currency', currency });
+      } catch {
+        return `${price.toLocaleString(localeTag)} ${currency}`;
+      }
+    };
+  }, [restaurantProfile, locale]);
+
   const toggleCategory = (id: string) => {
       const newSet = new Set(expandedCategories);
       if (newSet.has(id)) newSet.delete(id);
@@ -143,6 +158,8 @@ export default function MenuManagementPage() {
   // --- MENU ACTIONS ---
   const handleMenuSubmit = async (e: React.FormEvent) => {
       e.preventDefault();
+      if (isSavingMenu) return; // guards against double-click/double-submit races
+      setIsSavingMenu(true);
       try {
           if (isEditMode && editId) {
               await api.put(`/menus/${editId}`, menuForm);
@@ -154,7 +171,11 @@ export default function MenuManagementPage() {
           }
           setIsMenuDialogOpen(false);
           fetchMenus();
-      } catch (err) { toast.error(t('menus.toast.menuSaveFailed')); }
+      } catch (err: any) {
+          toast.error(err?.response?.data?.error || t('menus.toast.menuSaveFailed'));
+      } finally {
+          setIsSavingMenu(false);
+      }
   };
 
   const handleDeleteMenu = (id: string) => {
@@ -250,7 +271,10 @@ export default function MenuManagementPage() {
               await api.put(`/menus/items/${editId}`, payload);
               toast.success(t('menus.toast.itemUpdated'));
           } else {
-              await api.post(`/menus/categories/${itemForm.categoryId}/items`, payload);
+              // Matches the actual registered route: POST /menus/items with
+              // categoryId in the body (src/routes/menuRoutes.ts) — not a
+              // nested /categories/:categoryId/items path, which 404s.
+              await api.post('/menus/items', payload);
               toast.success(t('menus.toast.itemAdded'));
           }
           setIsItemDialogOpen(false);
@@ -331,7 +355,7 @@ export default function MenuManagementPage() {
                     </div>
                 </TableCell>
                 <TableCell className="text-right py-2">
-                    <span className="font-black text-blue-700 text-sm">{item.price.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}</span>
+                    <span className="font-black text-blue-700 text-sm">{formatPrice(item.price)}</span>
                 </TableCell>
                 <TableCell className="px-4 py-2 text-right">
                     <div className="flex justify-end gap-1">
@@ -544,8 +568,8 @@ export default function MenuManagementPage() {
                         </div>
                     </div>
                     <div className="p-4 bg-slate-50 border-t border-slate-100 flex justify-end gap-2">
-                        <Button type="button" variant="ghost" onClick={() => setIsMenuDialogOpen(false)} className="h-9 text-xs font-bold text-slate-400 uppercase">{t('menus.buttons.cancel')}</Button>
-                        <Button type="submit" className="h-9 bg-blue-600 hover:bg-blue-700 text-xs font-black uppercase px-6 rounded-sm">{t('menus.buttons.saveMenu')}</Button>
+                        <Button type="button" variant="ghost" onClick={() => setIsMenuDialogOpen(false)} disabled={isSavingMenu} className="h-9 text-xs font-bold text-slate-400 uppercase">{t('menus.buttons.cancel')}</Button>
+                        <Button type="submit" disabled={isSavingMenu} className="h-9 bg-blue-600 hover:bg-blue-700 text-xs font-black uppercase px-6 rounded-sm disabled:opacity-60">{isSavingMenu ? t('menus.buttons.saving') || '...' : t('menus.buttons.saveMenu')}</Button>
                     </div>
                 </form>
             </DialogContent>

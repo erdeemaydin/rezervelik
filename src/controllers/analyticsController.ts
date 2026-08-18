@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import prisma from '../config/prisma';
 import { successResponse, errorResponse } from '../utils/response';
+import { restaurantDateStr, restaurantMidnightUTC, restaurantHourAndDay } from '../utils/reservationConflict';
 
 /**
  * GET /analytics?period=30
@@ -119,16 +120,17 @@ export const getAnalytics = async (req: Request, res: Response) => {
           : 0;
 
     // ─── 4. Daily Trend ───
+    // Bucketed by the restaurant's own calendar day, not the server's/UTC's — see
+    // restaurantDateStr's doc comment.
     const dailyMap = new Map<string, { reservations: number; guests: number }>();
 
     // Initialize all days in the period
     for (let d = new Date(periodStart); d <= now; d = new Date(d.getTime() + 24 * 60 * 60 * 1000)) {
-      const dateStr = d.toISOString().split('T')[0];
-      dailyMap.set(dateStr, { reservations: 0, guests: 0 });
+      dailyMap.set(restaurantDateStr(d, settings?.timezone), { reservations: 0, guests: 0 });
     }
 
     currentReservations.forEach((r) => {
-      const dateStr = r.startTime.toISOString().split('T')[0];
+      const dateStr = restaurantDateStr(r.startTime, settings?.timezone);
       const entry = dailyMap.get(dateStr);
       if (entry) {
         entry.reservations += 1;
@@ -143,11 +145,12 @@ export const getAnalytics = async (req: Request, res: Response) => {
     }));
 
     // ─── 5. Peak Hours Heatmap ───
+    // dayOfWeek/hour resolved in the restaurant's own timezone — see
+    // restaurantHourAndDay's doc comment.
     const peakHoursMap = new Map<string, number>();
 
     currentReservations.forEach((r) => {
-      const dayOfWeek = r.startTime.getDay();
-      const hour = r.startTime.getHours();
+      const { dayOfWeek, hour } = restaurantHourAndDay(r.startTime, settings?.timezone);
       const key = `${dayOfWeek}-${hour}`;
       peakHoursMap.set(key, (peakHoursMap.get(key) || 0) + 1);
     });
@@ -257,7 +260,9 @@ export const getAnalytics = async (req: Request, res: Response) => {
     // Classify each distinct guest (by phone) who booked in the period by their
     // all-time reservation count at this restaurant:
     //   new = 1 total · returning = 2-4 · regular = 5+.
-    const periodPhones = [...new Set(currentReservations.map((r) => r.customerPhone).filter(Boolean))];
+    // customerPhone is nullable (anonymized reservations past the retention
+    // window have it nulled out) — excluded from this segmentation.
+    const periodPhones = [...new Set(currentReservations.map((r) => r.customerPhone).filter((p): p is string => !!p))];
     const lifetimeCounts = periodPhones.length
       ? await prisma.reservation.groupBy({
           by: ['customerPhone'],
@@ -269,7 +274,7 @@ export const getAnalytics = async (req: Request, res: Response) => {
     let returningCustomers = 0;
     let regularCustomers = 0;
     for (const row of lifetimeCounts) {
-      const total = row._count._all;
+      const total = row._count?._all ?? 0;
       if (total <= 1) newCustomers += 1;
       else if (total <= 4) returningCustomers += 1;
       else regularCustomers += 1;
@@ -337,15 +342,17 @@ export const getTodayStats = async (req: Request, res: Response) => {
   try {
     const restaurantId = req.restaurantId!;
     const now = new Date();
+    const settings = await prisma.restaurantSettings.findUnique({ where: { restaurantId }, select: { timezone: true } });
 
-    // Optional ?date=YYYY-MM-DD to view another day's stats (#2.1). Defaults to today.
-    const dateStr = req.query.date as string | undefined;
-    const anchor = dateStr && !isNaN(new Date(dateStr).getTime()) ? new Date(`${dateStr}T00:00:00`) : now;
-    const todayStart = new Date(anchor.getFullYear(), anchor.getMonth(), anchor.getDate());
+    // Optional ?date=YYYY-MM-DD to view another day's stats (#2.1). Defaults to
+    // today. "Today" and the day boundaries below are resolved in the restaurant's
+    // own timezone, not the server's — see restaurantMidnightUTC's doc comment.
+    const requestedDateStr = req.query.date as string | undefined;
+    const todaysDateStr = restaurantDateStr(now, settings?.timezone);
+    const effectiveDateStr = requestedDateStr && !isNaN(new Date(requestedDateStr).getTime()) ? requestedDateStr : todaysDateStr;
+    const todayStart = restaurantMidnightUTC(effectiveDateStr, settings?.timezone);
     const todayEnd = new Date(todayStart.getTime() + 24 * 60 * 60 * 1000);
-    const isToday = todayStart.getFullYear() === now.getFullYear()
-      && todayStart.getMonth() === now.getMonth()
-      && todayStart.getDate() === now.getDate();
+    const isToday = effectiveDateStr === todaysDateStr;
 
     // Fetch all of today's reservations in one query
     const todayReservations = await prisma.reservation.findMany({
@@ -390,7 +397,7 @@ export const getTodayStats = async (req: Request, res: Response) => {
     const hourMap = new Map<number, number>();
 
     todayReservations.forEach((r) => {
-      const hour = r.startTime.getHours();
+      const { hour } = restaurantHourAndDay(r.startTime, settings?.timezone);
       hourMap.set(hour, (hourMap.get(hour) || 0) + 1);
     });
 
@@ -411,7 +418,7 @@ export const getTodayStats = async (req: Request, res: Response) => {
         : 0;
 
     return successResponse(res, {
-      date: todayStart.toISOString().split('T')[0],
+      date: effectiveDateStr,
       isToday,
       todayReservations: todayReservationsCount,
       todayGuests,

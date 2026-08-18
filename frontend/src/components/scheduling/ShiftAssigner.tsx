@@ -299,7 +299,7 @@ export default function ShiftAssigner({ viewMode = 'MONTHLY' }: { viewMode?: 'WE
     loadData();
   }, [loadData]);
 
-  const handleAssign = async (shiftId: string, userId: string, date: string) => {
+  const handleAssign = async (shiftId: string, userId: string, date: string, force: boolean = false) => {
     // Prevent duplicate assignment in the UI first
     if (assignments.some(a => a.shiftId === shiftId && a.userId === userId && a.date === date)) {
       toast.warning(t('scheduling.assigner.alreadyAssigned'));
@@ -307,10 +307,28 @@ export default function ShiftAssigner({ viewMode = 'MONTHLY' }: { viewMode?: 'WE
     }
 
     try {
-      const newAssignment = await assignShift({ shiftId, userId, date });
+      const newAssignment = await assignShift({ shiftId, userId, date, force });
       toast.success(t('scheduling.assigner.assigned'));
       setAssignments(prev => [...prev, { ...newAssignment, user: staff.find(s => s.id === userId) }]);
     } catch (error: any) {
+      // The server now authoritatively enforces DOUBLE_SHIFT/CONSECUTIVE_REST/
+      // UNAVAILABLE (previously these were only ever computed client-side for
+      // display). Offer the same "assign anyway" override the UI already offers
+      // for the unavailable-staff case, driven by what the server actually found.
+      const violations = error.response?.data?.details?.violations as { type: string; message: string }[] | undefined;
+      if (error.response?.status === 409 && violations?.length && !force) {
+        const staffMember = staff.find(s => s.id === userId);
+        const ok = await confirm({
+          title: t('scheduling.assigner.forceTitle'),
+          description: violations.map(v => v.message).join(' '),
+          tone: 'danger',
+          confirmText: t('scheduling.assigner.forceConfirm'),
+        });
+        if (ok) {
+          await handleAssign(shiftId, userId, date, true);
+        }
+        return;
+      }
       toast.error(error.response?.data?.message || t('scheduling.assigner.assignFailed'));
     }
   };
@@ -433,7 +451,7 @@ export default function ShiftAssigner({ viewMode = 'MONTHLY' }: { viewMode?: 'WE
               date: current.date,
               shiftId: current.shiftId,
               type: 'UNAVAILABLE',
-              message: 'Staff marked this day/shift as Unavailable.'
+              message: t('scheduling.assigner.warnUnavailable')
             });
           }
         } else {
@@ -442,7 +460,7 @@ export default function ShiftAssigner({ viewMode = 'MONTHLY' }: { viewMode?: 'WE
             date: current.date,
             shiftId: current.shiftId,
             type: 'UNSPECIFIED',
-            message: 'Staff did not submit availability for this day.'
+            message: t('scheduling.assigner.warnUnspecified')
           });
         }
 
@@ -452,7 +470,7 @@ export default function ShiftAssigner({ viewMode = 'MONTHLY' }: { viewMode?: 'WE
           const diffHours = diffMs / (1000 * 60 * 60);
 
           if (current.date === next.date) {
-            const msg = `Double shift on same day (${current.shift?.name} & ${next.shift?.name}).`;
+            const msg = `${t('scheduling.assigner.warnDoubleShift')} (${current.shift?.name} & ${next.shift?.name}).`;
             warnings.push({
               userId,
               date: current.date,
@@ -470,7 +488,7 @@ export default function ShiftAssigner({ viewMode = 'MONTHLY' }: { viewMode?: 'WE
             });
           } else if (diffHours >= 0 && diffHours < 11) {
             const roundedHours = Math.round(diffHours * 10) / 10;
-            const msg = `Short rest warning: only ${roundedHours}h off between shifts (${current.shift?.name} and tomorrow's ${next.shift?.name}).`;
+            const msg = `${t('scheduling.assigner.warnConsecutiveRestPrefix')} ${roundedHours}${t('scheduling.assigner.warnConsecutiveRestSuffix')} (${current.shift?.name} ${t('scheduling.assigner.warnConsecutiveRestAnd')} ${next.shift?.name}).`;
             warnings.push({
               userId,
               date: current.date,
@@ -499,7 +517,7 @@ export default function ShiftAssigner({ viewMode = 'MONTHLY' }: { viewMode?: 'WE
     });
 
     return warningsMap;
-  }, [assignments, shifts, availabilities]);
+  }, [assignments, shifts, availabilities, t]);
 
   // Number of shifts each staff member has in the currently-displayed plan range,
   // shown live on their card (#6).
@@ -730,7 +748,7 @@ export default function ShiftAssigner({ viewMode = 'MONTHLY' }: { viewMode?: 'WE
 
         {/* DRAGGABLE STAFF SECTION — compact single strip (no big header/titles) */}
         {isAdminOrManager && (
-          <Card className="w-full">
+          <Card size="sm" className="w-full">
             <CardContent className="p-2.5">
               <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-1.5 text-xs font-black uppercase tracking-wide text-slate-600">
@@ -767,7 +785,7 @@ export default function ShiftAssigner({ viewMode = 'MONTHLY' }: { viewMode?: 'WE
         )}
 
         {/* MAIN ROSTER GRID */}
-        <Card className="flex-1 overflow-hidden">
+        <Card size="sm" className="flex-1 overflow-hidden">
           <CardHeader className="flex flex-col lg:flex-row items-start lg:items-center justify-between p-3 gap-2">
             <div className="flex items-baseline gap-2 flex-wrap">
               <CardTitle className="text-base">{t('scheduling.assigner.scheduleBuilder')}</CardTitle>
@@ -1178,7 +1196,7 @@ export default function ShiftAssigner({ viewMode = 'MONTHLY' }: { viewMode?: 'WE
                                                                 confirmText: t('scheduling.assigner.forceConfirm'),
                                                               });
                                                               if (ok) {
-                                                                handleAssign(shift.id, s.id, day.dateString);
+                                                                handleAssign(shift.id, s.id, day.dateString, true);
                                                                 setOpenPopoverCellId(null);
                                                               }
                                                             }}

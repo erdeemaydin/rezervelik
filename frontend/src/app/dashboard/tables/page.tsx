@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
+import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -73,6 +74,11 @@ export default function TablesPage() {
   const [tables, setTables] = useState<DiningTable[]>([]);
   const [floorElements, setFloorElements] = useState<FloorElement[]>([]);
   const [loading, setLoading] = useState(true);
+  // The tenant-wide booking mode (Settings > Reservations) silently controls how
+  // tables here behave — e.g. in MANUAL_AVAILABILITY, the isAvailable toggle below
+  // is what actually gates new bookings, not the reservation timeline. Surfacing it
+  // here so that behavior isn't invisible to whoever's on this page.
+  const [reservationLogic, setReservationLogic] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   
   const [isTableDialogOpen, setIsTableDialogOpen] = useState(false);
@@ -124,14 +130,16 @@ export default function TablesPage() {
   const fetchData = async () => {
     try {
       setLoading(true);
-      const [typesRes, tablesRes, elementsRes] = await Promise.all([
-        api.get('/table-types'), 
+      const [typesRes, tablesRes, elementsRes, settingsRes] = await Promise.all([
+        api.get('/table-types'),
         api.get('/tables'),
-        api.get('/floor-elements')
+        api.get('/floor-elements'),
+        api.get('/settings').catch(() => null),
       ]);
       setTableTypes(typesRes.data.data);
       setTables(tablesRes.data.data);
       setFloorElements(elementsRes.data.data);
+      setReservationLogic(settingsRes?.data?.data?.logic ?? null);
       if (selectedZoneId === 'all' && typesRes.data.data.length > 0) {
           setSelectedZoneId(typesRes.data.data[0].id);
       }
@@ -452,12 +460,24 @@ export default function TablesPage() {
   return (
     <>
       <div className="flex flex-col gap-4 h-full">
-        <div className="flex items-center justify-between">
-          <div>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="min-w-0">
             <h1 className="text-xl font-bold text-slate-800">{isRestaurant ? t("tables.pageTitle") : term('resourcePlural')}</h1>
             <p className="text-[10px] text-slate-400 uppercase tracking-[0.2em] font-black">{t("tables.pageSubtitle")}</p>
+            {reservationLogic && (
+              <Link href="/dashboard/settings" className="inline-flex items-center gap-1 mt-1 text-[10px] font-bold text-blue-600 hover:text-blue-700 hover:underline">
+                {t("admin.bookingMode")}: {
+                  reservationLogic === 'FIXED_SLOTS' ? t("settings.fixedTimeSlots")
+                  : reservationLogic === 'MANUAL_AVAILABILITY' ? t("admin.bookingModeManual")
+                  : t("settings.dynamicDuration")
+                } · {t("admin.editInSettings")}
+              </Link>
+            )}
           </div>
-          <div className="flex items-center gap-4">
+          {/* flex-wrap (not nowrap) so this cluster drops to its own row instead of
+              overflowing/clipping at iPad-portrait widths once edit mode adds the
+              zone/add-table/add-box buttons alongside the toggle. */}
+          <div className="flex flex-wrap items-center gap-2 sm:gap-4">
             {hasEditPermission && (
               <div className="flex items-center gap-2 bg-slate-50 border border-slate-200 px-3 py-1.5 rounded-md">
                  <Label htmlFor="edit-mode" className="text-xs font-bold text-slate-700 cursor-pointer flex items-center gap-1">
@@ -466,7 +486,7 @@ export default function TablesPage() {
                  <Switch id="edit-mode" checked={isFloorPlanEditMode} onCheckedChange={setIsFloorPlanEditMode} />
               </div>
             )}
-            
+
             {isFloorPlanEditMode && (
               <>
                 <Dialog open={isZoneDialogOpen} onOpenChange={setIsZoneDialogOpen}>
@@ -534,7 +554,11 @@ export default function TablesPage() {
           </div>
         </div>
 
-        <Tabs defaultValue="floor-plan" className="flex-1 flex flex-col h-[calc(100vh-150px)]">
+        {/* dvh (not vh): on iOS Safari (iPad included) 100vh extends behind the
+            collapsing toolbar, so a vh-based height either overflows or leaves the
+            canvas shorter than the visible area depending on scroll state — dvh
+            tracks the actually-visible viewport. */}
+        <Tabs defaultValue="floor-plan" className="flex-1 flex flex-col h-[calc(100dvh-150px)]">
             <div className="flex items-center justify-between mb-2">
                 <TabsList className="bg-slate-100/50">
                     <TabsTrigger value="floor-plan" className="text-xs font-bold"><LayoutGrid className="w-4 h-4 mr-2" /> {t("tables.floorPlan")}</TabsTrigger>
@@ -608,15 +632,17 @@ export default function TablesPage() {
                                 
                                 {isFloorPlanEditMode && (
                                     <>
-                                        <div 
-                                        className="absolute -top-2 -right-2 bg-blue-600 text-white p-1 rounded-full shadow-md cursor-pointer opacity-0 group-hover:opacity-100 transition-opacity z-50 hover:bg-blue-700"
+                                        {/* Always visible in edit mode — see the matching table-control
+                                            comment below for why (no hover on touch/iPad). */}
+                                        <div
+                                        className="absolute -top-2.5 -right-2.5 bg-blue-600 text-white p-1.5 rounded-full shadow-md cursor-pointer z-50 hover:bg-blue-700 active:scale-95 transition-transform"
                                         onClick={(e) => { e.stopPropagation(); handleOpenEditElement(el); }}
                                         onPointerDown={(e) => e.stopPropagation()}
                                         >
-                                            <Edit2 className="w-3 h-3" />
+                                            <Edit2 className="w-3.5 h-3.5" />
                                         </div>
-                                        <div 
-                                        className="absolute bottom-0 right-0 w-4 h-4 bg-slate-400/50 cursor-nwse-resize opacity-0 group-hover:opacity-100 transition-opacity z-50 rounded-tl-sm rounded-br-sm"
+                                        <div
+                                        className="absolute -bottom-1.5 -right-1.5 w-6 h-6 bg-slate-500/70 border-2 border-white cursor-nwse-resize z-50 rounded-full shadow-md touch-none"
                                         onPointerDown={(e) => handleResizeDown(e, el.id, 'element')}
                                         />
                                     </>
@@ -660,18 +686,22 @@ export default function TablesPage() {
                                         table.isAvailable ? 'bg-emerald-500' : 'bg-red-500'
                                     )} />
 
-                                    {/* Edit Button overlay */}
+                                    {/* Edit Button overlay — always visible (not hover-gated) once in
+                                        edit mode: opacity-0/group-hover has no equivalent on a touch
+                                        device, so on iPad this control was previously undiscoverable
+                                        and unusable. Also sized up from the old 16-20px hit target to
+                                        something reliably tappable. */}
                                     {isFloorPlanEditMode && (
                                       <>
                                         <div
-                                          className="absolute -top-2 -right-2 bg-blue-600 text-white p-1 rounded-full shadow-md cursor-pointer opacity-0 group-hover:opacity-100 transition-opacity z-50 hover:bg-blue-700"
+                                          className="absolute -top-2.5 -right-2.5 bg-blue-600 text-white p-1.5 rounded-full shadow-md cursor-pointer z-50 hover:bg-blue-700 active:scale-95 transition-transform"
                                           onClick={(e) => { e.stopPropagation(); handleOpenEditTable(table); }}
                                           onPointerDown={(e) => e.stopPropagation()} // Prevent drag start
                                         >
-                                          <Edit2 className="w-3 h-3" />
+                                          <Edit2 className="w-3.5 h-3.5" />
                                         </div>
                                         <div
-                                          className="absolute bottom-0 right-0 w-4 h-4 bg-slate-400/60 cursor-nwse-resize opacity-0 group-hover:opacity-100 transition-opacity z-50 rounded-tl-sm"
+                                          className="absolute -bottom-1.5 -right-1.5 w-6 h-6 bg-slate-500/80 border-2 border-white cursor-nwse-resize z-50 rounded-full shadow-md touch-none"
                                           onPointerDown={(e) => handleResizeDown(e, table.id, 'table')}
                                         />
                                       </>

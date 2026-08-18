@@ -23,9 +23,11 @@
     "configuration": "Configuration",
     "globalSettings": "Global Settings",
     "rootAuthority": "Root Authority",
+    "restrictedAdministrator": "Restricted Administrator",
     "logoutSystem": "Logout System",
     "systemManagement": "System Management",
-    "globalClusterActive": "Global Cluster: Active"
+    "globalClusterActive": "Global Cluster: Active",
+    "fetchTenantsError": "Failed to load tenants"
   },
   "admin": {
     "dashboard": "Dashboard",
@@ -46,12 +48,26 @@
     "customization": "Customization",
     "sectionOperations": "Operations",
     "sectionAdministration": "Administration",
+    "sectionPeople": "People",
+    "sectionBusiness": "Business Settings",
+    "sectionCompliance": "Compliance",
+    "bookingMode": "Booking Mode",
+    "bookingModeManual": "Manual Availability",
+    "editInSettings": "Edit in Settings",
     "systemOnline": "System Online",
     "zone": "Zone",
     "mainDiningRoom": "Main Dining Room",
     "logout": "Logout",
     "userSettings": "User Settings",
-    "auditLog": "Activity Log"
+    "auditLog": "Activity Log",
+    "impersonationBanner": "Viewing as {{name}} — changes here affect their account.",
+    "returnToAdmin": "Return to Admin",
+    "returnToAdminFailed": "Couldn't return to your admin session — please sign in again."
+  },
+  "commandPalette": {
+    "title": "Jump to page",
+    "placeholder": "Search pages... (Ctrl+K)",
+    "noResults": "No matching pages"
   },
   "timesheet": {
     "title": "Timesheet",
@@ -115,7 +131,36 @@
     "containsAlcohol": "Contains Alcohol",
     "containsPork": "Contains Pork Derivatives",
     "allergens": "Allergens",
-    "redirectingToPayment": "Reservation created — redirecting you to the secure payment page…"
+    "redirectingToPayment": "Reservation created — redirecting you to the secure payment page…",
+    "capacityFullTitle": "Near Full Capacity",
+    "capacityFullDesc": "This day is close to or at its booking capacity — your request may need manual review before it's confirmed.",
+    "confirmationCodeLabel": "Your confirmation code",
+    "confirmationCodeHint": "Give this to our host if we can't find your reservation by name.",
+    "consent": {
+      "bookingPrefix": "I have read and agree to the",
+      "privacyNoticeLinkText": "Privacy Notice",
+      "bookingSuffix": ", and I consent to my personal data being processed to create and manage this reservation.",
+      "marketing": "I would also like to receive booking reminders and offers via WhatsApp/SMS (optional).",
+      "required": "Please accept the data processing consent to continue."
+    },
+    "privacyNotice": {
+      "title": "Privacy Notice",
+      "intro": "This notice explains, in general terms, how your personal data is handled when you make a reservation. It is provided by the restaurant you are booking with, using this platform.",
+      "controllerTitle": "Who is responsible for your data",
+      "controllerBody": "The restaurant you are booking with is the data controller for the information you submit. This platform acts only as a data processor, handling your data on the restaurant's behalf and instructions.",
+      "whatTitle": "What data is collected",
+      "whatBody": "Typically: your name, phone number, and (if provided) email address, along with reservation details such as date, time, and party size.",
+      "whyTitle": "Why it's collected",
+      "whyBody": "To create, confirm, and manage your reservation, to contact you about it (e.g. confirmations, reminders, or changes), and — only if you separately opt in — to send you marketing messages.",
+      "howLongTitle": "How long it's kept",
+      "howLongBody": "Your data is kept for as long as needed to fulfill the reservation and for a limited retention period afterward, after which it is anonymized or deleted.",
+      "whoWithTitle": "Who it's shared with",
+      "whoWithBody": "Your data is shared only with service providers that help operate this platform and deliver reservation-related messages (e.g. SMS/WhatsApp delivery), and is not sold or shared for unrelated purposes.",
+      "rightsTitle": "Your rights",
+      "rightsBody": "You may contact the restaurant directly to request access to, correction of, or deletion of your personal data.",
+      "tenantOverrideNote": "This restaurant has provided its own notice below.",
+      "backLink": "Back"
+    }
   },
   "dashboard": {
     "loading": "Loading command center...",
@@ -285,7 +330,88 @@
     "reference": "Reference",
     "date": "Date",
     "loading": "Loading transactions…",
-    "empty": "No payments yet"
+    "empty": "No payments yet",
+    "actions": "Actions",
+    "refund": "Refund",
+    "refunding": "Refunding…",
+    "refundConfirmTitle": "Refund this deposit?",
+    "refundConfirmDesc": "The gateway will return the deposit to the guest's card. This cannot be undone.",
+    "refundSuccess": "Deposit refunded",
+    "refundFailed": "Refund failed",
+    "forfeited": "Forfeited (No-Shows)",
+    "forfeitedHint": "paid deposits kept on no-show",
+    "forfeitedBadge": "No-show"
+  },
+  "payGuest": {
+    "codeEntryTitle": "Continue with Payment Code",
+    "codeEntrySubtitle": "Enter the payment code from your reservation confirmation.",
+    "codePlaceholder": "E.G. K7P2M9QR",
+    "goToPayment": "Go to Payment",
+    "securityNote": "Your card details are only ever entered on the secure payment screen (PayTR). Staff will never ask for your card details by phone or SMS.",
+    "notFoundTitle": "Payment not found",
+    "notFoundDesc": "This payment link is invalid.",
+    "depositLabel": "Reservation Deposit",
+    "guestLabel": "Guest",
+    "partyLabel": "Party",
+    "dateLabel": "Date",
+    "timeLabel": "Time",
+    "amountDueLabel": "Deposit Due",
+    "paidTitle": "Payment Received",
+    "paidDesc": "Your reservation is confirmed. Thank you!",
+    "expiredTitle": "Link Expired",
+    "expiredDesc": "This payment link has expired. Please contact the restaurant.",
+    "failedTitle": "Payment Failed",
+    "failedDesc": "The payment could not be completed. You can check your card and try again.",
+    "iframeTitle": "Secure Payment",
+    "cardNoticeLine1": "Your card details are entered directly on PayTR's secure screen; this information is never sent to the restaurant or to us.",
+    "cardNoticeLine2": "Staff will never ask for your card details by phone or SMS.",
+    "secureFooter": "Secure payment"
+  },
+  "waitlistOffer": {
+    "notFoundTitle": "Offer Invalid",
+    "returnToRestaurant": "Return to Restaurant",
+    "confirmedTitle": "Reservation Confirmed",
+    "confirmedDesc": "Your table has been successfully booked from the waitlist! We look forward to seeing you.",
+    "backToRestaurant": "Back to Restaurant",
+    "declinedTitle": "Offer Declined",
+    "declinedDesc": "You have declined this reservation offer. We hope to see you another time.",
+    "badge": "Reservation Offer",
+    "greetingBefore": "Great news, ",
+    "greetingAfter": "! A table has opened up for you from the waitlist. Please review the details below and accept to confirm your reservation.",
+    "dateLabel": "Date",
+    "timeLabel": "Time",
+    "dinnerService": "Dinner Service",
+    "partySizeLabel": "Party Size",
+    "guestsSuffix": "Guests",
+    "expiresLabel": "Offer Expires",
+    "decline": "Decline",
+    "accept": "Accept Offer",
+    "notFoundOrExpired": "Offer not found or expired.",
+    "acceptFailed": "Failed to accept offer.",
+    "declineFailed": "Failed to decline offer."
+  },
+  "publicWaitlist": {
+    "pageTag": "Virtual Waitlist",
+    "restaurantNotFound": "Restaurant not found.",
+    "successTitle": "You're on the list!",
+    "successDesc": "We've reserved your spot. We will send you an SMS when your table is almost ready.",
+    "estimatedWaitLabel": "Estimated Wait",
+    "waitingForEstimate": "Waiting for estimate...",
+    "minsSuffix": "mins",
+    "closedTitle": "Waitlist Closed",
+    "closedDesc": "We are currently not accepting walk-ins to the virtual waitlist. Please see the host inside.",
+    "joinTitle": "Join the Queue",
+    "joinSubtitle": "Avoid standing in line. Grab a spot and go for a walk.",
+    "currentWaitPrefix": "Current wait is approx.",
+    "nameLabel": "Name",
+    "namePlaceholder": "John Doe",
+    "phoneLabel": "Mobile Number",
+    "phonePlaceholder": "+90 5XX XXX XX XX",
+    "phoneHint": "We will send an SMS when your table is ready.",
+    "partySizeLabel": "Party Size",
+    "joinButton": "Join Waitlist",
+    "joiningButton": "Joining...",
+    "joinFailed": "Failed to join waitlist"
   },
   "reviews": {
     "title": "Reviews & Feedback",
@@ -431,7 +557,13 @@
       "forceTitle": "Assign unavailable staff?",
       "forceDesc": "marked themselves as UNAVAILABLE for this shift. Assign them anyway?",
       "forceConfirm": "Force assign",
-      "force": "Force"
+      "force": "Force",
+      "warnUnavailable": "Staff marked this day/shift as Unavailable.",
+      "warnUnspecified": "Staff did not submit availability for this day.",
+      "warnDoubleShift": "Double shift on same day",
+      "warnConsecutiveRestPrefix": "Short rest warning: only",
+      "warnConsecutiveRestSuffix": "h off between shifts",
+      "warnConsecutiveRestAnd": "and tomorrow's"
     },
     "availability": {
       "loadFailed": "Failed to load availability data",
@@ -549,12 +681,7 @@
     "toast": {
       "appliedDaysPrefix": "Applied to ",
       "appliedDaysSuffix": " day(s)",
-      "updateFailed": "Failed to update settings",
-      "applyingFuture": "Applying settings to future days...",
-      "noNewDays": "No new days to update.",
-      "futureSuccessPrefix": "Successfully applied mode to ",
-      "futureSuccessSuffix": " future days.",
-      "futureFailed": "Failed to apply future settings"
+      "updateFailed": "Failed to update settings"
     },
     "badge": {
       "event": "Event"
@@ -567,12 +694,6 @@
     "header": {
       "title": "Calendar Master",
       "subtitle": "Operations Orchestrator"
-    },
-    "futureMode": {
-      "placeholder": "Set Future Default Mode",
-      "autoConfirm": "Auto-Confirm",
-      "standard": "Standard (Manual)",
-      "blackout": "Blackout"
     },
     "buttons": {
       "singleEdit": "Single Edit",
@@ -601,6 +722,14 @@
       "waitlistDesc": "Accept Date Waitlist Entries",
       "autoConfirm": "Auto-Confirm",
       "autoConfirmDesc": "Skip Review Queue",
+      "overbookingOverride": "Overbooking Override",
+      "overbookingOverrideDesc": "Override the restaurant-wide overbooking setting for this day",
+      "overbookingInherit": "Inherit restaurant setting",
+      "overbookingOn": "On for this day",
+      "overbookingOff": "Off for this day",
+      "overbookingOverrideMaxCovers": "Max extra guests (this day)",
+      "overbookingOverrideMaxReservations": "Max extra reservations (this day)",
+      "overbookingOverrideRequiresCaps": "Set both the max extra guests and max extra reservations for this day before turning overbooking on.",
       "clear": "Clear",
       "saveDaysPrefix": "Save ",
       "saveDaysSuffix": " Days",
@@ -636,6 +765,7 @@
       "obsidian": "Obsidian (Dark / Clean)",
       "earth": "Earth (Warm / Rustic)",
       "crimson": "Crimson (Bold / Wine)",
+      "sage": "Sage (Fresh / Green)",
       "primaryColor": "Primary Brand Color (Hex)"
     },
     "banner": {
@@ -655,6 +785,18 @@
         "title": "Legal / Terms",
         "desc": "Terms of service or privacy policy",
         "placeholder": "Write your legal terms here..."
+      },
+      "privacyNotice": {
+        "title": "Privacy Notice (KVKK Aydınlatma Metni)",
+        "desc": "Optional restaurant-specific override of the privacy/disclosure notice linked from the reservation consent checkbox.",
+        "placeholder": "Write your own privacy notice here — what data you collect, why, how long it's kept, and who it's shared with. Supports basic HTML.",
+        "hint": "Leave blank to show guests the platform's generic default notice instead. This platform provides direction, not legal advice — review your own notice with a KVKK advisor before publishing it."
+      },
+      "social": {
+        "title": "Social & Website Links",
+        "desc": "Shown as icons in your public page's footer.",
+        "website": "Website",
+        "hint": "Leave any field blank to hide that icon."
       }
     },
     "rules": {
@@ -669,8 +811,11 @@
     },
     "preview": {
       "title": "Live Preview",
-      "desc": "Changes made here will immediately affect your public reservation page.",
-      "palette": "PALETTE"
+      "desc": "Your unsaved edits appear below as you make them. Nothing is public until you click Publish Changes.",
+      "palette": "PALETTE",
+      "refresh": "Reload preview",
+      "openNewTab": "Open public page in a new tab",
+      "unavailable": "Preview unavailable — could not determine your public page address."
     }
   },
   "reservations": {
@@ -799,6 +944,13 @@
       "scanText": "Scan QR Code for Menu",
       "complianceText": "Allergen, calorie, and ingredient information is available in our digital menu."
     },
+    "pdf": {
+      "buttonLabel": "Menu PDF",
+      "lastPriceUpdate": "Last price update:",
+      "containsAlcohol": "Contains alcohol",
+      "containsPork": "Contains pork",
+      "page": "Page"
+    },
     "toast": {
       "valueRequired": "Value is required",
       "priceUpdateScheduled": "Price update scheduled",
@@ -846,6 +998,7 @@
       "addRootCategory": "Add Root Category",
       "cancel": "Cancel",
       "saveMenu": "Save Menu",
+      "saving": "Saving...",
       "saveCategory": "Save Category",
       "saveDishDetails": "Save Dish Details",
       "scheduleUpdate": "Schedule Update",
@@ -943,7 +1096,20 @@
       "schedule": "Schedule",
       "roundUpShort": "Round up",
       "pickSchedule": "Pick a date & time for the scheduled update",
-      "scheduledSuffix": "price change(s) scheduled"
+      "scheduledSuffix": "price change(s) scheduled",
+      "scheduledTitle": "Pending Scheduled Changes",
+      "historyTitle": "Recent Changes",
+      "itemsSuffix": "item(s)",
+      "editButton": "Edit",
+      "cancelButton": "Cancel",
+      "undoButton": "Undo",
+      "undoneBadge": "Undone",
+      "editingScheduled": "Editing a pending scheduled change — saving replaces it",
+      "cancelEdit": "Discard edit",
+      "cancelSuccess": "Scheduled change cancelled",
+      "cancelFailed": "Failed to cancel the scheduled change",
+      "undoSuccess": "Change undone",
+      "undoFailed": "Failed to undo the change"
     }
   },
   "host": {
@@ -973,8 +1139,6 @@
     "waitlistStatusCancelled": "cancelled",
     "waitlistStatusNoShow": "marked as no-show",
     "hostConsoleTitle": "Host Console",
-    "ipadMode": "iPad Mode",
-    "hostConsoleSubtitle": "Podium Service Desk • Active Floor Sync",
     "reservationsTab": "Reservations",
     "waitlistQueueTab": "Waitlist Queue",
     "bookTableBtn": "Book Table",
@@ -1063,6 +1227,12 @@
     "cancel": "Cancel"
   },
   "settings": {
+    "tabs": {
+      "reservations": "Reservations",
+      "scheduling": "Scheduling",
+      "payments": "Payments",
+      "appearance": "Appearance"
+    },
     "failedLoad": "Failed to load settings",
     "updatedSuccessfully": "Settings updated successfully",
     "failedSave": "Failed to save settings",
@@ -1096,6 +1266,7 @@
     "selectLogic": "Select logic",
     "dynamicDuration": "Dynamic Duration",
     "fixedTimeSlots": "Fixed Time Slots",
+    "manualAvailability": "Manual Availability",
     "calendarCustomization": "Calendar Customization",
     "calendarCustomizationDesc": "Manage global calendar behavior and bulk operations",
     "setFutureMode": "Set Future Default Mode",
@@ -1104,7 +1275,7 @@
     "standardBulk": "Standard (Manual Review)",
     "blackoutBulk": "Blackout (Close Bookings)",
     "bulkActionDesc": "This action allows you to mass-apply an operational mode to the next 365 days in your Calendar Master.",
-    "paymentsDeposits": "Payments & Deposits",
+    "paymentsDeposits": "Deposit Rules",
     "secureBookings": "Secure bookings with financial commitments",
     "enableDeposit": "Enable Deposit Payment",
     "depositAmount": "Deposit Amount",
@@ -1133,6 +1304,15 @@
     "openingHour": "Opening Hour",
     "closingHour": "Closing Hour",
     "openingHoursHint": "Service window (0–23). Bounds the booking time options and the analytics peak-hours heatmap.",
+    "overbooking": "Overbooking",
+    "overbookingDesc": "Soft-accept guest bookings when no table is free instead of turning them away",
+    "allowOverbooking": "Allow overbooking",
+    "allowOverbookingHint": "When no table is free for a guest's requested time but their party could fit somewhere in the restaurant, save the request as pending for manual review instead of hard-rejecting it. Off by default.",
+    "overbookingMaxExtraCovers": "Max extra guests",
+    "overbookingMaxExtraCoversHint": "Total extra covers allowed to queue as pending, per day.",
+    "overbookingMaxExtraReservations": "Max extra reservations",
+    "overbookingMaxExtraReservationsHint": "Total extra pending reservations allowed to queue, per day.",
+    "overbookingRequiresCaps": "Set both the max extra guests and max extra reservations to a number greater than 0 before enabling overbooking.",
     "defaultBreak": "Default break",
     "defaultBreakDesc": "Unpaid break deducted from a scheduled shift when no check-in/out is entered.",
     "privacyExplain": {
@@ -1142,7 +1322,8 @@
     },
     "logicExplain": {
       "DYNAMIC_DURATION": "A booking's end time is calculated automatically from the default duration set above (e.g. 90 minutes after the start time).",
-      "FIXED_SLOTS": "Bookings use fixed, pre-defined time slots. Each reservation occupies a set slot regardless of the duration field."
+      "FIXED_SLOTS": "Bookings use fixed, pre-defined time slots. Each reservation occupies the table for the default duration set above, starting from the slot's time.",
+      "MANUAL_AVAILABILITY": "No automatic time-based conflict checking. A table only blocks new bookings while staff mark it Occupied on the Tables page — clearing it (marking it Available again) is what frees it up for the next booking, not the clock."
     },
     "currencyManagedBySystem": "Set by platform admin",
     "currencyHint": "The currency is a platform-wide setting managed by the system administrator and cannot be changed here.",
@@ -1155,7 +1336,7 @@
       "HOST": "Host",
       "STAFF": "Staff"
     },
-    "appearance": "Appearance",
+    "appearance": "Dashboard Theme",
     "appearanceDesc": "Choose the dashboard color theme for your whole team.",
     "appearanceHint": "Everyone on your team sees this theme. Changes apply after you save."
   },
@@ -1180,6 +1361,8 @@
     "subtitle": "Manage walk-in queue and wait times",
     "config": {
       "title": "Waitlist Config",
+      "statusOpen": "Waitlist Open",
+      "statusClosed": "Waitlist Closed",
       "acceptPublic": "Accept Public Walk-ins (QR)",
       "acceptPublicDesc": "Allow guests to join via waitlist URL.",
       "displayEstimatedTime": "Display Estimated Time",
@@ -1201,14 +1384,11 @@
     "saving": "Saving...",
     "tabs": {
       "walkins": "Walk-ins",
-      "futureDates": "Future Dates",
       "addWalkIn": "Add Walk-In"
     },
     "empty": {
       "queueTitle": "Queue is currently empty",
-      "queueDesc": "Walk-ins will appear here.",
-      "futureTitle": "No Future Waitlists",
-      "futureDesc": "Guests waiting for fully booked dates will appear here."
+      "queueDesc": "Walk-ins will appear here."
     },
     "table": {
       "guest": "Guest",
@@ -1216,7 +1396,6 @@
       "waitTime": "Wait Time",
       "status": "Status",
       "actions": "Actions",
-      "date": "Date",
       "mElapsed": "m elapsed",
       "quoted": "Quoted"
     },
@@ -1513,7 +1692,11 @@
     "allCategories": "All Categories",
     "empty": "No activity recorded yet.",
     "loading": "Loading activity…",
-    "refresh": "Refresh"
+    "refresh": "Refresh",
+    "detailCategory": "Category",
+    "detailIp": "IP Address",
+    "detailChanges": "Details / Changes",
+    "detailNoChanges": "No additional detail was recorded for this entry."
   },
   "themes": {
     "default": "Classic Blue",

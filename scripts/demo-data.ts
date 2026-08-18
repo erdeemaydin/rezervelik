@@ -18,6 +18,10 @@
  * assignments across the range, timesheet entries for past days, and availability
  * for future days — so the staff, scheduling, and worked-hours dashboards fill up.
  *
+ * And a MENU: if the restaurant has no active menu, a small demo menu (4
+ * categories, 12 items, Turkish dishes) is created once so the digital menu
+ * pages have content. Skipped on reruns if an active menu already exists.
+ *
  * Demo rows are safely identifiable: reservations are tagged (internalNote starts
  * with "DEMO ·") and staff use an "@<slug>.demo.invalid" email, so `--clear`/reruns
  * only ever touch generated demo data — never real reservations or real staff.
@@ -25,6 +29,7 @@
  */
 import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcrypt';
+import { generateConfirmationCode } from '../src/utils/reservationConflict';
 
 const prisma = new PrismaClient();
 
@@ -235,6 +240,73 @@ async function main() {
     categories = await prisma.reservationCategory.findMany({ where: { restaurantId: restaurant.id }, select: { id: true } });
   }
 
+  // Menu: fill in a small demo menu if the restaurant has no active menu with actual
+  // items (an active-but-empty stub menu, e.g. one created blank via the dashboard,
+  // doesn't count). Populates the existing active menu if there is one, since only
+  // one active menu per restaurant is allowed; otherwise creates one.
+  let menuCreated = false;
+  const demoMenuCategories = [
+    {
+      name: 'Başlangıçlar',
+      order: 0,
+      items: [
+        { name: 'Mercimek Çorbası', description: 'Geleneksel kırmızı mercimek çorbası', price: 65, order: 0, dietaryTags: 'Vegan', isHighlight: true },
+        { name: 'Çoban Salata', description: 'Domates, salatalık, biber, soğan', price: 75, order: 1, dietaryTags: 'Vegan,Gluten-Free' },
+        { name: 'Sigara Böreği', description: 'Peynirli kızarmış börek (6 adet)', price: 95, order: 2, dietaryTags: 'Vegetarian', allergens: 'Gluten,Dairy' },
+      ],
+    },
+    {
+      name: 'Ana Yemekler',
+      order: 1,
+      items: [
+        { name: 'Izgara Levrek', description: 'Mevsim sebzeleri ile', price: 340, order: 0, isHighlight: true, allergens: 'Fish', spiceLevel: 0 },
+        { name: 'Adana Kebap', description: 'Acılı kıyma kebabı, közlenmiş biber ve domates', price: 285, order: 1, spiceLevel: 2 },
+        { name: 'Tavuk Şiş', description: 'Marine edilmiş tavuk göğsü, pilav eşliğinde', price: 230, order: 2 },
+        { name: 'Karnabahar Kavurma', description: 'Zeytinyağlı, közlenmiş karnabahar', price: 165, order: 3, dietaryTags: 'Vegan,Gluten-Free' },
+      ],
+    },
+    {
+      name: 'Tatlılar',
+      order: 2,
+      items: [
+        { name: 'Künefe', description: 'Antep fıstıklı, sıcak servis', price: 145, order: 0, isHighlight: true, allergens: 'Dairy,Nuts' },
+        { name: 'Sütlaç', description: 'Fırınlanmış geleneksel sütlaç', price: 95, order: 1, allergens: 'Dairy' },
+      ],
+    },
+    {
+      name: 'İçecekler',
+      order: 3,
+      items: [
+        { name: 'Ayran', price: 35, order: 0, dietaryTags: 'Vegetarian,Gluten-Free' },
+        { name: 'Taze Sıkılmış Portakal Suyu', price: 55, order: 1, dietaryTags: 'Vegan,Gluten-Free' },
+        { name: 'Türk Kahvesi', price: 65, order: 2, dietaryTags: 'Vegan,Gluten-Free' },
+      ],
+    },
+  ];
+
+  const existingActiveMenu = await prisma.menu.findFirst({ where: { restaurantId: restaurant.id, isActive: true } });
+  const existingMenuItemCount = existingActiveMenu
+    ? await prisma.menuItem.count({ where: { category: { menuId: existingActiveMenu.id } } })
+    : 0;
+  if (existingMenuItemCount === 0 && !dryRun) {
+    if (existingActiveMenu) {
+      for (const cat of demoMenuCategories) {
+        await prisma.menuCategory.create({
+          data: { menuId: existingActiveMenu.id, name: cat.name, order: cat.order, items: { create: cat.items } },
+        });
+      }
+    } else {
+      await prisma.menu.create({
+        data: {
+          restaurantId: restaurant.id,
+          name: 'Demo Menu',
+          categories: { create: demoMenuCategories.map((cat) => ({ name: cat.name, order: cat.order, items: { create: cat.items } })) },
+        },
+      });
+    }
+    menuCreated = true;
+  }
+
   // --clear: remove only previously-generated demo rows in this range.
   if (args.clear) {
     const rangeStart = zonedDate(+days[0].slice(0, 4), +days[0].slice(5, 7), +days[0].slice(8, 10), 0, 0, tz);
@@ -251,6 +323,18 @@ async function main() {
       console.log(`  − cleared ${delWaitlist.count} existing demo waitlist entries in range`);
     }
   }
+
+  // Real bookings get a confirmationCode from createReservation; demo rows are
+  // written straight via createMany so they need it generated here instead,
+  // deduped within this batch (existing rows aren't queried — a cross-run
+  // collision would just fail that one createMany, acceptable for demo data).
+  const usedCodes = new Set<string>();
+  const nextConfirmationCode = () => {
+    let code = generateConfirmationCode();
+    while (usedCodes.has(code)) code = generateConfirmationCode();
+    usedCodes.add(code);
+    return code;
+  };
 
   const now = Date.now();
   const todayISO = new Date(now).toISOString().slice(0, 10);
@@ -299,6 +383,7 @@ async function main() {
         isVIP: chance(0.1),
         notes: note || null,
         internalNote: `${DEMO_TAG} generated`,
+        confirmationCode: nextConfirmationCode(),
       });
       summary[status] = (summary[status] || 0) + 1;
     }
@@ -406,6 +491,8 @@ async function main() {
   console.log(`Days: ${days[0]}${days.length > 1 ? ` → ${days[days.length - 1]} (${days.length} days)` : ''}`);
   console.log(`Window: ${openHour}:00–${closeHour}:00 ${tz}`);
   console.log(dryRun ? '\n[dry-run] nothing written. Would create:' : '\n✅ Created:');
+
+  console.log(menuCreated ? '\nMenu: created "Demo Menu" (4 categories, 12 items)' : '\nMenu: skipped (restaurant already has an active menu)');
 
   console.log(`\nReservations: ${rows.length}`);
   for (const [s, n] of Object.entries(summary).sort((a, b) => b[1] - a[1])) console.log(`   ${s.padEnd(10)} ${n}`);

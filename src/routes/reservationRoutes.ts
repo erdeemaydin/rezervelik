@@ -1,11 +1,18 @@
 import { Router } from 'express';
 import * as reservationController from '../controllers/reservationController';
 import { authMiddleware, requirePermission } from '../middlewares/auth';
+import { rateLimitOrNoop } from '../middlewares/rateLimit';
 
 const router = Router();
 
-// Allow public to create reservations (assuming tenantMiddleware sets the restaurant ID context)
-router.post('/', reservationController.createReservation);
+// Allow public to create reservations (assuming tenantMiddleware sets the restaurant ID context).
+// Rate-limited for guest (unauthenticated) callers only — staff traffic on
+// this same path is unaffected.
+router.post(
+  '/',
+  rateLimitOrNoop({ windowMs: 60_000, max: 10, keyPrefix: 'reservation-create' }),
+  reservationController.createReservation
+);
 
 // Protect staff/management routes
 router.use(authMiddleware);
@@ -16,5 +23,10 @@ router.put('/:id', reservationController.updateReservation);
 router.patch('/:id/schedule', reservationController.updateReservationSchedule);
 router.put('/:id/status', reservationController.updateReservationStatus);
 router.delete('/:id', reservationController.deleteReservation);
+
+// KVKK data-subject deletion request (PROJECT_LOGIC.md §14): anonymizes every
+// Reservation/WaitlistEntry row for this phone number within the tenant. `:phone`
+// is the raw phone string as stored (client must URL-encode characters like "+").
+router.delete('/customer/:phone', reservationController.deleteCustomerData);
 
 export default router;

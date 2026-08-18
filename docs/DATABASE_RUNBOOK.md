@@ -50,6 +50,12 @@ app keeps running, point-in-time recovery, selective (per-table) restore, and re
 concurrent writes for many restaurants at once. SQLite is a single file with no
 concurrent-write story and no PITR — great for tests, not for a multi-tenant SaaS.
 
+**Connection pool sizing:** `.env.example`'s `DATABASE_URL` now pins Prisma's pool
+via `connection_limit`/`pool_timeout` query params instead of relying on Prisma's
+CPU-derived default — see the comment there for rationale. Treat it as a stopgap;
+PRODUCTION_ROADMAP.md §8 Phase 2's move to managed Postgres will likely bring its
+own pooling story.
+
 ---
 
 ## 2. Backups

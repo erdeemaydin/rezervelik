@@ -1,25 +1,32 @@
-// Single source of truth for the auth token/session on the client.
+// Non-sensitive session bookkeeping the SPA keeps client-side.
 //
-// The backend authenticates purely from the `Authorization: Bearer` header
-// (see src/middlewares/auth.ts): the token is never sent as a cookie, and the
-// cookie we used before was JS-set (not httpOnly), so it gave no XSS/CSRF
-// advantage over localStorage — the conventional storage for a Bearer-token
-// SPA. localStorage is also far more reliable than JS cookies on iOS Safari,
-// which silently drops them in Private Browsing / with "Block All Cookies".
+// The actual session credential (the JWT) is NOT stored here anymore — it
+// lives in an httpOnly cookie the browser attaches automatically and
+// JavaScript can never read (see src/utils/authCookie.ts on the backend, and
+// lib/api.ts's `withCredentials: true`). That closes off the classic
+// XSS-reads-localStorage token-theft vector. What's kept here is only the
+// cached user profile (email/name/role — not a secret) so the UI can render
+// instantly on reload without waiting on a round trip, plus a couple of tiny
+// UI-state flags. The backend's cookie check remains the actual source of
+// truth: if the cookie is missing/expired, the next API call 401s and the
+// axios interceptor clears this cache and redirects to /auth/login.
 //
-// This module is intentionally framework-agnostic (no React/Zustand imports) so
-// the axios interceptor can read the token without coupling to the store — that
-// coupling was fragile under Fast Refresh. Layers, in priority order:
-//   1. in-memory cache  — always correct for the lifetime of the tab, even when
+// This module is intentionally framework-agnostic (no React/Zustand imports)
+// so other modules can read it without coupling to the store — that coupling
+// was fragile under Fast Refresh. Layers, in priority order:
+//   1. in-memory cache — always correct for the lifetime of the tab, even when
 //      the browser blocks all persistent storage (private mode with quota 0).
-//   2. localStorage     — survives reloads/navigations.
-//   3. legacy cookie    — read once so pre-migration sessions aren't logged out.
+//   2. localStorage    — survives reloads/navigations.
 import Cookies from 'js-cookie';
 
 const KEYS = {
-  token: 'token',
   restaurantId: 'restaurantId',
   user: 'user',
+  // 'true' while a SUPER_ADMIN is impersonating a tenant — drives the
+  // "Viewing as X — Return to Admin" banner. Not sensitive; the real
+  // impersonation state (the stashed admin token) lives server-side in an
+  // httpOnly cookie the SPA never reads.
+  impersonating: 'impersonating',
 } as const;
 
 type Key = keyof typeof KEYS;
@@ -38,9 +45,9 @@ export function readAuth(key: Key): string | undefined {
       return value;
     }
   } catch {
-    // localStorage unavailable — fall through to the legacy cookie.
+    // localStorage unavailable for this tab; nothing further to fall back to.
   }
-  return Cookies.get(KEYS[key]);
+  return undefined;
 }
 
 export function writeAuth(key: Key, value: string): void {
@@ -62,6 +69,9 @@ export function clearAuth(): void {
     } catch {
       // ignore
     }
-    Cookies.remove(KEYS[k]); // also clear any legacy cookie left from before the migration
   });
+  // Clear the legacy pre-httpOnly-migration token cookie, if a browser still
+  // has one lying around from before this change shipped — it's inert now
+  // (the backend no longer reads it), but no reason to leave it sitting there.
+  if (hasWindow()) Cookies.remove('token');
 }

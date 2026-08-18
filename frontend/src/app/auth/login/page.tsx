@@ -40,6 +40,15 @@ interface OtpChallenge {
   otpSecret?: string;
 }
 
+// HOST staff work the host stand, not the back-office dashboard — land them
+// there directly instead of /dashboard (which they don't have view_analytics
+// for anyway, so AdminLayout's route guard would just bounce them elsewhere).
+const defaultRouteForRole = (role: string): string => {
+  if (role === 'SUPER_ADMIN') return '/system-admin/tenants';
+  if (role === 'HOST') return '/dashboard/host';
+  return '/dashboard';
+};
+
 export default function LoginPage() {
   const router = useRouter();
   const { t } = useTranslation();
@@ -58,7 +67,7 @@ export default function LoginPage() {
   // is in localStorage, not a readable cookie) — do it on the client instead.
   useEffect(() => {
     if (isAuthenticated && currentUser) {
-      router.replace(currentUser.role === 'SUPER_ADMIN' ? '/system-admin/tenants' : '/dashboard');
+      router.replace(defaultRouteForRole(currentUser.role));
     }
   }, [isAuthenticated, currentUser, router]);
 
@@ -72,11 +81,10 @@ export default function LoginPage() {
     defaultValues: { email: '', password: '' },
   });
 
-  const finishLogin = (token: string, user: any) => {
+  const finishLogin = (user: any) => {
     setRedirecting(true);
-    login(token, user);
-    if (user.role === 'SUPER_ADMIN') router.push('/system-admin/tenants');
-    else router.push('/dashboard');
+    login(user);
+    router.push(defaultRouteForRole(user.role));
   };
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
@@ -94,7 +102,7 @@ export default function LoginPage() {
           });
           return;
         }
-        finishLogin(data.token, data.user);
+        finishLogin(data.user);
       }
     } catch (err: any) {
       setError(getApiErrorMessage(err, t('auth.loginError')));
@@ -108,7 +116,7 @@ export default function LoginPage() {
       setError('');
       setOtpBusy(true);
       const res = await api.post('/auth/login/otp', { otpToken: challenge.otpToken, code: otpCode });
-      finishLogin(res.data.data.token, res.data.data.user);
+      finishLogin(res.data.data.user);
     } catch (err: any) {
       setError(getApiErrorMessage(err, t('auth.invalidCode')));
     } finally {

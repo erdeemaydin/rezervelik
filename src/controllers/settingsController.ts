@@ -46,7 +46,10 @@ export const updateSettings = async (req: Request, res: Response) => {
       openingHour,
       closingHour,
       defaultBreakMinutes,
-      dashboardTheme
+      dashboardTheme,
+      allowOverbooking,
+      overbookingMaxExtraCovers,
+      overbookingMaxExtraReservations
     } = req.body;
     // Note: `currency` is intentionally NOT read here — it is a root-admin-only
     // (system) setting. Tenant admins can view it but cannot change it.
@@ -72,6 +75,40 @@ export const updateSettings = async (req: Request, res: Response) => {
       return Math.min(23, Math.max(0, n));
     };
 
+    // Overbooking (see PROJECT_LOGIC.md / getEffectiveOverbookingConfig): the
+    // feature must only ever be "on" with both caps validly set, so we reject
+    // the whole request rather than silently saving a half-configured state.
+    const isPositiveInt = (n: unknown): n is number => Number.isInteger(n) && (n as number) > 0;
+
+    let overbookingCoversValue: number | undefined;
+    if (overbookingMaxExtraCovers !== undefined) {
+      const n = parseInt(overbookingMaxExtraCovers);
+      if (!isPositiveInt(n)) {
+        return errorResponse(res, 'errors.validation_error', 400, { message: 'overbookingMaxExtraCovers must be a positive integer' });
+      }
+      overbookingCoversValue = n;
+    }
+
+    let overbookingReservationsValue: number | undefined;
+    if (overbookingMaxExtraReservations !== undefined) {
+      const n = parseInt(overbookingMaxExtraReservations);
+      if (!isPositiveInt(n)) {
+        return errorResponse(res, 'errors.validation_error', 400, { message: 'overbookingMaxExtraReservations must be a positive integer' });
+      }
+      overbookingReservationsValue = n;
+    }
+
+    if (allowOverbooking === true) {
+      const existing = await prisma.restaurantSettings.findUnique({ where: { restaurantId } });
+      const resolvedCovers = overbookingCoversValue ?? existing?.overbookingMaxExtraCovers;
+      const resolvedReservations = overbookingReservationsValue ?? existing?.overbookingMaxExtraReservations;
+      if (!isPositiveInt(resolvedCovers) || !isPositiveInt(resolvedReservations)) {
+        return errorResponse(res, 'errors.validation_error', 400, {
+          message: 'Overbooking requires both overbookingMaxExtraCovers and overbookingMaxExtraReservations to be set as positive integers.'
+        });
+      }
+    }
+
     const settings = await prisma.restaurantSettings.update({
       where: { restaurantId },
       data: {
@@ -88,6 +125,9 @@ export const updateSettings = async (req: Request, res: Response) => {
         openingHour: openingHour != null ? clampHour(openingHour, 10) : undefined,
         closingHour: closingHour != null ? clampHour(closingHour, 23) : undefined,
         defaultBreakMinutes: defaultBreakMinutes != null ? Math.max(0, parseInt(defaultBreakMinutes) || 0) : undefined,
+        allowOverbooking,
+        overbookingMaxExtraCovers: overbookingCoversValue,
+        overbookingMaxExtraReservations: overbookingReservationsValue,
         ...(themeUpdate !== undefined ? { dashboardTheme: themeUpdate } : {})
       }
     });

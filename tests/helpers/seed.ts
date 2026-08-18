@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto';
 import bcrypt from 'bcrypt';
 import prisma from '../../src/config/prisma';
 import { generateToken } from '../../src/utils/jwt';
+import { getFeatureProfile } from '../../src/config/businessProfiles';
 
 export const TEST_PASSWORD = 'Password123!';
 
@@ -20,17 +21,27 @@ export interface SeededTenant {
   tokens: Record<'admin' | 'manager' | 'staff' | 'staffAnalytics' | 'host', string>;
 }
 
-/** Create one isolated tenant with a full role matrix and valid JWTs. */
-export async function seedTenant(opts: { staffScheduleView?: string } = {}): Promise<SeededTenant> {
+/**
+ * Create one isolated tenant with a full role matrix and valid JWTs.
+ * `businessType` (default RESTAURANT) seeds RestaurantSettings' feature flags
+ * from the real per-vertical profile (src/config/businessProfiles.ts) — the
+ * same defaults `systemController.createTenant` applies in production — so
+ * requireFeature-gated routes (events/vendors need WEDDING, etc.) behave the
+ * same in tests as they would for a real tenant of that vertical.
+ */
+export async function seedTenant(opts: { staffScheduleView?: string; businessType?: string } = {}): Promise<SeededTenant> {
   const suffix = randomUUID().slice(0, 8);
   const passwordHash = await bcrypt.hash(TEST_PASSWORD, 4); // low cost = fast tests
+  const businessType = opts.businessType || 'RESTAURANT';
+  const profile = getFeatureProfile(businessType);
 
   const restaurant = await prisma.restaurant.create({
     data: {
       slug: `t-${suffix}`,
       name: `Test Restaurant ${suffix}`,
       contactEmail: `owner-${suffix}@test.dev`,
-      settings: { create: { staffScheduleView: opts.staffScheduleView || 'OWN_ONLY' } },
+      businessType,
+      settings: { create: { staffScheduleView: opts.staffScheduleView || 'OWN_ONLY', ...profile } },
     },
   });
 

@@ -37,6 +37,9 @@ jobs:
           node-version: 20
           cache: npm
       - run: npm ci
+      - name: Dependency audit (blocking — backend is currently 0 vulnerabilities
+          at every severity; see PRODUCTION_ROADMAP.md §11)
+        run: npm audit --audit-level=moderate
       - name: Generate Prisma client
         run: npm run prisma:generate
       - name: Provision isolated test database
@@ -62,6 +65,10 @@ jobs:
           cache: npm
           cache-dependency-path: frontend/package-lock.json
       - run: npm ci
+      - name: Dependency audit (blocking — frontend is currently 0
+          vulnerabilities at every severity as of the next@16.3.0 upgrade;
+          see PRODUCTION_ROADMAP.md §11)
+        run: npm audit --audit-level=moderate
       - name: Lint
         run: npm run lint
       - name: Type-check

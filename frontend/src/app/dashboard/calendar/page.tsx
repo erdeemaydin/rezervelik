@@ -9,8 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
-import { Calendar as CalendarIcon, Save, Trash2, ChevronLeft, ChevronRight, Star, Settings2, Info, AlertCircle, Check, MousePointer2, Layers, ToggleLeft, ToggleRight, Timer, CalendarClock } from 'lucide-react';
+import { Calendar as CalendarIcon, Save, Trash2, ChevronLeft, ChevronRight, Star, Settings2, Info, AlertCircle, Check, MousePointer2, Layers, ToggleLeft, ToggleRight, Timer } from 'lucide-react';
 import api from '@/lib/api';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
@@ -23,7 +22,15 @@ interface DaySetting {
   isFullyBooked: boolean;
   autoConfirm: boolean;
   maxCapacityOverride: number | null;
+  allowOverbookingOverride: boolean | null;
+  overbookingMaxExtraCoversOverride: number | null;
+  overbookingMaxExtraReservationsOverride: number | null;
 }
+
+// Tri-state UI for allowOverbookingOverride (null = inherit the restaurant-wide
+// RestaurantSettings.allowOverbooking, not a checkbox — see getEffectiveOverbookingConfig).
+type OverbookingOverrideChoice = 'INHERIT' | 'ON' | 'OFF';
+const isPositiveInt = (n: unknown): n is number => Number.isInteger(n) && (n as number) > 0;
 
 export default function CalendarSettingsPage() {
   const { t } = useTranslation();
@@ -35,15 +42,14 @@ export default function CalendarSettingsPage() {
   const [isBulkMode, setIsBulkMode] = useState(false);
   const [selectedDays, setSelectedDays] = useState<Set<string>>(new Set());
 
-  // Future Reset Logic
-  const [futureModeAction, setFutureModeAction] = useState<string | null>(null);
-  const [isFutureDialogOpen, setIsFutureDialogOpen] = useState(false);
-
   const [form, setForm] = useState({
     eventTitle: '',
     isReservationEnabled: true,
     isFullyBooked: false,
-    autoConfirm: false
+    autoConfirm: false,
+    overbookingOverride: 'INHERIT' as OverbookingOverrideChoice,
+    overbookingMaxExtraCoversOverride: null as number | null,
+    overbookingMaxExtraReservationsOverride: null as number | null
   });
 
   useEffect(() => {
@@ -95,16 +101,29 @@ export default function CalendarSettingsPage() {
         eventTitle: existing?.eventTitle || '',
         isReservationEnabled: existing ? existing.isReservationEnabled : true,
         isFullyBooked: existing ? existing.isFullyBooked : false,
-        autoConfirm: existing ? existing.autoConfirm : false
+        autoConfirm: existing ? existing.autoConfirm : false,
+        overbookingOverride: existing?.allowOverbookingOverride === true ? 'ON' : existing?.allowOverbookingOverride === false ? 'OFF' : 'INHERIT',
+        overbookingMaxExtraCoversOverride: existing?.overbookingMaxExtraCoversOverride ?? null,
+        overbookingMaxExtraReservationsOverride: existing?.overbookingMaxExtraReservationsOverride ?? null
     });
   };
 
   const handleSave = async () => {
     if (selectedDays.size === 0) return;
+    // Mirrors the backend rule (resolveOverbookingOverride in daySettingController):
+    // turning the day-level override "on" requires both of its own caps.
+    if (form.overbookingOverride === 'ON' && (!isPositiveInt(form.overbookingMaxExtraCoversOverride) || !isPositiveInt(form.overbookingMaxExtraReservationsOverride))) {
+      toast.error(t("calendar.panel.overbookingOverrideRequiresCaps"));
+      return;
+    }
     try {
+      const { overbookingOverride, overbookingMaxExtraCoversOverride, overbookingMaxExtraReservationsOverride, ...rest } = form;
       await api.post('/day-settings/bulk', {
         dates: Array.from(selectedDays),
-        ...form
+        ...rest,
+        allowOverbookingOverride: overbookingOverride === 'ON' ? true : overbookingOverride === 'OFF' ? false : null,
+        overbookingMaxExtraCoversOverride: overbookingOverride === 'ON' ? overbookingMaxExtraCoversOverride : undefined,
+        overbookingMaxExtraReservationsOverride: overbookingOverride === 'ON' ? overbookingMaxExtraReservationsOverride : undefined
       });
       toast.success(`${t("calendar.toast.appliedDaysPrefix")}${selectedDays.size}${t("calendar.toast.appliedDaysSuffix")}`);
       if (isBulkMode) setSelectedDays(new Set());
@@ -112,54 +131,6 @@ export default function CalendarSettingsPage() {
     } catch (err) {
       toast.error(t("calendar.toast.updateFailed"));
     }
-  };
-
-  const handleFutureApply = async (overwriteAll: boolean) => {
-    if (!futureModeAction) return;
-    setIsFutureDialogOpen(false);
-    const modeToastId = toast.loading(t("calendar.toast.applyingFuture"));
-
-    const isReservationEnabled = futureModeAction !== 'BLACKOUT';
-    const autoConfirm = futureModeAction === 'AUTO_CONFIRM';
-
-    const today = new Date();
-    today.setHours(0,0,0,0);
-    const datesToUpdate = [];
-
-    // Generate next 365 days
-    for (let i = 0; i < 365; i++) {
-        const d = new Date(today);
-        d.setDate(d.getDate() + i);
-        const dateStr = formatLocalDate(d);
-
-        if (!overwriteAll && daySettings[dateStr]) {
-            continue; // Skip if it has manual settings already
-        }
-        datesToUpdate.push(dateStr);
-    }
-
-    if (datesToUpdate.length === 0) {
-        toast.dismiss(modeToastId);
-        toast.info(t("calendar.toast.noNewDays"));
-        setFutureModeAction(null);
-        return;
-    }
-
-    try {
-        await api.post('/day-settings/bulk', {
-            dates: datesToUpdate,
-            eventTitle: '', // clear event title on bulk future overwrite
-            isReservationEnabled,
-            autoConfirm
-        });
-        toast.dismiss(modeToastId);
-        toast.success(`${t("calendar.toast.futureSuccessPrefix")}${datesToUpdate.length}${t("calendar.toast.futureSuccessSuffix")}`);
-        fetchDaySettings();
-    } catch (err) {
-        toast.dismiss(modeToastId);
-        toast.error(t("calendar.toast.futureFailed"));
-    }
-    setFutureModeAction(null);
   };
 
   const renderCalendar = () => {
@@ -240,19 +211,6 @@ export default function CalendarSettingsPage() {
           </div>
           
           <div className="flex flex-col items-end gap-2">
-            <div className="flex items-center gap-4">
-                <Select value={futureModeAction || ''} onValueChange={(v) => { setFutureModeAction(v); setIsFutureDialogOpen(true); }}>
-                    <SelectTrigger className="h-10 w-[240px] text-xs font-black uppercase border-slate-200 shadow-sm bg-white">
-                        <CalendarClock className="w-4 h-4 mr-2 text-blue-600" />
-                        <SelectValue placeholder={t("calendar.futureMode.placeholder")} />
-                    </SelectTrigger>
-                    <SelectContent>
-                        <SelectItem value="AUTO_CONFIRM" className="text-xs font-bold"><div className="flex items-center text-emerald-700"><Check className="w-3 h-3 mr-2" /> {t("calendar.futureMode.autoConfirm")}</div></SelectItem>
-                        <SelectItem value="STANDARD" className="text-xs font-bold"><div className="flex items-center text-amber-700"><Timer className="w-3 h-3 mr-2" /> {t("calendar.futureMode.standard")}</div></SelectItem>
-                        <SelectItem value="BLACKOUT" className="text-xs font-bold"><div className="flex items-center text-red-700"><AlertCircle className="w-3 h-3 mr-2" /> {t("calendar.futureMode.blackout")}</div></SelectItem>
-                    </SelectContent>
-                </Select>
-            </div>
             <div className="flex items-center gap-6 mt-2">
                 <div className="flex items-center gap-2 bg-slate-100 p-1 rounded-md border border-slate-200">
                     <Button 
@@ -363,11 +321,47 @@ export default function CalendarSettingsPage() {
                                          <Label className="text-xs font-black text-slate-800 uppercase">{t("calendar.panel.autoConfirm")}</Label>
                                          <p className="text-[8px] text-slate-400 font-bold uppercase tracking-tighter">{t("calendar.panel.autoConfirmDesc")}</p>
                                      </div>
-                                     <Checkbox 
+                                     <Checkbox
                                          disabled={!form.isReservationEnabled}
-                                         checked={form.autoConfirm} 
-                                         onCheckedChange={(c) => setForm({...form, autoConfirm: !!c})} 
+                                         checked={form.autoConfirm}
+                                         onCheckedChange={(c) => setForm({...form, autoConfirm: !!c})}
                                      />
+                                 </div>
+
+                                 <div className="space-y-3 pt-2">
+                                     <div className="space-y-0.5">
+                                         <Label className="text-xs font-black text-slate-800 uppercase">{t("calendar.panel.overbookingOverride")}</Label>
+                                         <p className="text-[8px] text-slate-400 font-bold uppercase tracking-tighter">{t("calendar.panel.overbookingOverrideDesc")}</p>
+                                     </div>
+                                     <Select
+                                         value={form.overbookingOverride}
+                                         onValueChange={(v) => setForm(prev => ({ ...prev, overbookingOverride: (v || 'INHERIT') as OverbookingOverrideChoice }))}
+                                     >
+                                         <SelectTrigger className="h-9 text-xs font-bold rounded-sm w-full">
+                                             <SelectValue />
+                                         </SelectTrigger>
+                                         <SelectContent>
+                                             <SelectItem value="INHERIT" className="text-xs">{t("calendar.panel.overbookingInherit")}</SelectItem>
+                                             <SelectItem value="ON" className="text-xs">{t("calendar.panel.overbookingOn")}</SelectItem>
+                                             <SelectItem value="OFF" className="text-xs">{t("calendar.panel.overbookingOff")}</SelectItem>
+                                         </SelectContent>
+                                     </Select>
+                                     {form.overbookingOverride === 'ON' && (
+                                         <div className="grid grid-cols-1 gap-3 pt-1">
+                                             <div className="space-y-1">
+                                                 <Label className="text-[9px] font-black uppercase tracking-widest text-slate-400">{t("calendar.panel.overbookingOverrideMaxCovers")}</Label>
+                                                 <Input type="number" min="1" value={form.overbookingMaxExtraCoversOverride ?? ''}
+                                                     onChange={(e) => setForm(prev => ({ ...prev, overbookingMaxExtraCoversOverride: e.target.value === '' ? null : parseInt(e.target.value) }))}
+                                                     className="h-9 text-xs font-bold bg-slate-50 border-slate-200 rounded-sm" />
+                                             </div>
+                                             <div className="space-y-1">
+                                                 <Label className="text-[9px] font-black uppercase tracking-widest text-slate-400">{t("calendar.panel.overbookingOverrideMaxReservations")}</Label>
+                                                 <Input type="number" min="1" value={form.overbookingMaxExtraReservationsOverride ?? ''}
+                                                     onChange={(e) => setForm(prev => ({ ...prev, overbookingMaxExtraReservationsOverride: e.target.value === '' ? null : parseInt(e.target.value) }))}
+                                                     className="h-9 text-xs font-bold bg-slate-50 border-slate-200 rounded-sm" />
+                                             </div>
+                                         </div>
+                                     )}
                                  </div>
                              </div>
 

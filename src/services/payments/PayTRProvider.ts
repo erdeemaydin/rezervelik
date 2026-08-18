@@ -1,5 +1,5 @@
 import crypto from 'crypto';
-import { PaymentProvider, CreateCheckoutInput, CreateCheckoutResult, CallbackResult } from './types';
+import { PaymentProvider, CreateCheckoutInput, CreateCheckoutResult, CallbackResult, RefundInput, RefundResult } from './types';
 
 // PayTR adapter — hosted "iFrame API" flow.
 //
@@ -13,6 +13,7 @@ import { PaymentProvider, CreateCheckoutInput, CreateCheckoutResult, CallbackRes
 // are intentionally isolated here so a spec change is a one-file edit.
 const GET_TOKEN_URL = 'https://www.paytr.com/odeme/api/get-token';
 const IFRAME_BASE_URL = 'https://www.paytr.com/odeme/guvenli/';
+const REFUND_URL = 'https://www.paytr.com/odeme/iade';
 
 export class PayTRProvider implements PaymentProvider {
   readonly name = 'PAYTR';
@@ -115,5 +116,42 @@ export class PayTRProvider implements PaymentProvider {
 
   callbackAck(): string {
     return 'OK';
+  }
+
+  // PayTR's refund ("İade API") endpoint — like get-token/callback above, the
+  // exact hash formula is taken from PayTR's documentation but kept isolated
+  // here (and un-live-tested, same as those two) since we don't have merchant
+  // credentials to verify against; correct against the merchant panel before
+  // going live with real refunds.
+  async refund(input: RefundInput): Promise<RefundResult> {
+    if (!this.merchantId || !this.merchantKey || !this.merchantSalt) {
+      return { success: false, error: 'PayTR credentials are not configured (PAYTR_MERCHANT_ID/KEY/SALT)' };
+    }
+
+    const returnAmount = String(input.amountMinor); // kuruş, same integer convention as get-token
+    const hashStr = this.merchantId + input.merchantOid + returnAmount + this.merchantSalt;
+    const paytrToken = this.hmacBase64(hashStr);
+
+    const form = new URLSearchParams({
+      merchant_id: this.merchantId,
+      merchant_oid: input.merchantOid,
+      return_amount: returnAmount,
+      paytr_token: paytrToken,
+    });
+
+    try {
+      const resp = await fetch(REFUND_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: form.toString(),
+      });
+      const data: any = await resp.json().catch(() => ({}));
+      if (data?.status !== 'success') {
+        return { success: false, error: data?.err_msg || data?.reason || 'PayTR refund failed', raw: data };
+      }
+      return { success: true, providerRef: data?.return_id ? String(data.return_id) : undefined, raw: data };
+    } catch (e: any) {
+      return { success: false, error: e?.message };
+    }
   }
 }

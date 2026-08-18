@@ -22,7 +22,7 @@ interface AuditLog {
   restaurant?: { id: string; name: string; slug: string } | null;
 }
 
-const CATEGORIES = ['ALL', 'AUTH', 'TENANT', 'SETTINGS', 'SUBSCRIPTION', 'PERMISSIONS', 'RESERVATION', 'SYSTEM'];
+const CATEGORIES = ['ALL', 'AUTH', 'TENANT', 'SETTINGS', 'SUBSCRIPTION', 'PERMISSIONS', 'RESERVATION', 'PAYMENT', 'SYSTEM'];
 
 const categoryColor = (c: string) => {
   switch (c) {
@@ -32,6 +32,7 @@ const categoryColor = (c: string) => {
     case 'SUBSCRIPTION': return 'bg-purple-50 text-purple-700 border-purple-200';
     case 'PERMISSIONS': return 'bg-indigo-50 text-indigo-700 border-indigo-200';
     case 'RESERVATION': return 'bg-teal-50 text-teal-700 border-teal-200';
+    case 'PAYMENT': return 'bg-rose-50 text-rose-700 border-rose-200';
     default: return 'bg-slate-100 text-slate-600 border-slate-200';
   }
 };

@@ -1,6 +1,9 @@
 import crypto from 'crypto';
+import { Prisma } from '@prisma/client';
 import prisma from '../config/prisma';
 import { getPaymentProvider } from './payments';
+import { sendBookingConfirmation, formatReservationLabel } from './notificationService';
+import { restaurantDateStr } from '../utils/reservationConflict';
 
 export const PAYMENT_LINK_TTL_MS = 60 * 60 * 1000; // 1 hour (fallback default)
 
@@ -12,11 +15,14 @@ const MIN = 60 * 1000;
 //   - otherwise              -> 2 hours
 // The deadline is also capped at the reservation start time (paying after the
 // party's slot has begun is pointless).
-export function computePaymentDeadline(startTime: Date, now: Date = new Date()): Date {
+export function computePaymentDeadline(startTime: Date, now: Date = new Date(), timezone?: string | null): Date {
   const msUntilStart = startTime.getTime() - now.getTime();
-  const sameDay = startTime.getFullYear() === now.getFullYear()
-    && startTime.getMonth() === now.getMonth()
-    && startTime.getDate() === now.getDate();
+  // Compared in the restaurant's own timezone, not the server's — the server-local
+  // comparison this replaced could classify a reservation that's actually "today"
+  // for the tenant as a different day (or vice versa) near midnight, granting a
+  // 2h window instead of the intended 1h one (or vice versa). Not security-
+  // sensitive, just a minor deadline-generosity mismatch.
+  const sameDay = restaurantDateStr(startTime, timezone || undefined) === restaurantDateStr(now, timezone || undefined);
 
   let windowMs: number;
   if (msUntilStart < 2 * 60 * MIN) windowMs = 30 * MIN;
@@ -66,11 +72,13 @@ export interface CreatedPayment {
 // token is always fresh. Returns null if the deposit amount is not positive.
 export async function createPaymentForReservation(
   reservation: { id: string; restaurantId: string; startTime?: Date | string | null },
-  settings: { depositAmount?: number | null; currency?: string | null }
+  settings: { depositAmount?: number | null; currency?: string | null; timezone?: string | null },
+  tx?: Prisma.TransactionClient
 ): Promise<CreatedPayment | null> {
   const amountMinor = Math.round((settings.depositAmount || 0) * 100);
   if (amountMinor <= 0) return null;
 
+  const client = tx ?? prisma;
   const rawLinkToken = crypto.randomBytes(32).toString('hex');
   const code = genCode();
   const currency = toProviderCurrency(settings.currency);
@@ -78,10 +86,10 @@ export async function createPaymentForReservation(
   // flat TTL if we somehow don't have a start time.
   const startTime = reservation.startTime ? new Date(reservation.startTime) : null;
   const expiresAt = startTime
-    ? computePaymentDeadline(startTime)
+    ? computePaymentDeadline(startTime, new Date(), settings.timezone)
     : new Date(Date.now() + PAYMENT_LINK_TTL_MS);
 
-  const payment = await prisma.payment.create({
+  const payment = await client.payment.create({
     data: {
       restaurantId: reservation.restaurantId,
       reservationId: reservation.id,
@@ -106,6 +114,45 @@ export async function createPaymentForReservation(
     currency,
     expiresAt,
   };
+}
+
+export class RefundError extends Error {
+  constructor(message: string, public code: 'NOT_FOUND' | 'NOT_PAID' | 'PROVIDER_ERROR') {
+    super(message);
+  }
+}
+
+// Refund a paid deposit (e.g. staff cancelling a paid reservation within
+// policy). Tenant-scoped: only a Payment belonging to restaurantId can be
+// refunded. Only a currently-PAID payment can be refunded — this is not a
+// state machine with retries, so a second call on an already-REFUNDED
+// payment is rejected rather than silently re-issuing the refund.
+export async function refundPayment(paymentId: string, restaurantId: string, reason?: string) {
+  const payment = await prisma.payment.findFirst({ where: { id: paymentId, restaurantId } });
+  if (!payment) throw new RefundError('Payment not found', 'NOT_FOUND');
+  if (payment.status !== 'PAID') throw new RefundError('Only a paid deposit can be refunded', 'NOT_PAID');
+
+  const provider = getPaymentProvider();
+  const result = await provider.refund({
+    merchantOid: payment.merchantOid,
+    amountMinor: payment.amount,
+    currency: payment.currency,
+  });
+
+  if (!result.success) {
+    throw new RefundError(result.error || 'Refund failed at the payment gateway', 'PROVIDER_ERROR');
+  }
+
+  return prisma.payment.update({
+    where: { id: payment.id },
+    data: {
+      status: 'REFUNDED',
+      refundedAt: new Date(),
+      refundReason: reason || null,
+      rawRefund: result.raw ? JSON.stringify(result.raw) : null,
+      providerRef: result.providerRef || payment.providerRef,
+    },
+  });
 }
 
 // Look up a live payment by either the raw link token or the short code.
@@ -160,6 +207,19 @@ export async function applyCallback(body: Record<string, any>): Promise<{ ack: b
           })]
         : []),
     ]);
+
+    // Deposit paid -> the booking is now actually confirmed; let the guest know.
+    if (payment.reservationId) {
+      const reservation = await prisma.reservation.findUnique({ where: { id: payment.reservationId } });
+      if (reservation) {
+        const restaurant = await prisma.restaurant.findUnique({ where: { id: payment.restaurantId }, select: { name: true } });
+        await sendBookingConfirmation({
+          customerPhone: reservation.customerPhone,
+          restaurantName: restaurant?.name || 'Restaurant',
+          reservationLabel: formatReservationLabel(reservation.startTime, reservation.guestCount),
+        });
+      }
+    }
   } else {
     await prisma.payment.update({
       where: { id: payment.id },

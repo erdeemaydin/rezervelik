@@ -2,7 +2,8 @@ import { Request, Response } from 'express';
 import prisma from '../config/prisma';
 import { successResponse, errorResponse } from '../utils/response';
 import { getPaymentProvider, isMockProvider, MockProvider } from '../services/payments';
-import { applyCallback, findPaymentByRef } from '../services/paymentService';
+import { applyCallback, findPaymentByRef, refundPayment, RefundError } from '../services/paymentService';
+import { logAudit } from '../services/auditService';
 
 const clientIp = (req: Request) =>
   ((req.headers['x-forwarded-for'] as string)?.split(',')[0] || req.socket.remoteAddress || '').replace('::ffff:', '') || '85.34.78.112';
@@ -112,10 +113,41 @@ export const getPayments = async (req: Request, res: Response) => {
       where: { restaurantId },
       orderBy: { createdAt: 'desc' },
       take: 200,
-      include: { reservation: { select: { customerName: true, customerPhone: true, startTime: true, guestCount: true } } },
+      include: { reservation: { select: { customerName: true, customerPhone: true, startTime: true, guestCount: true, status: true } } },
     });
     return successResponse(res, payments);
   } catch (error) {
+    return errorResponse(res, 'errors.internal_error', 500);
+  }
+};
+
+// POST /api/payments/:id/refund  (admin — tenant-scoped)
+export const refundPaymentHandler = async (req: Request, res: Response) => {
+  try {
+    const restaurantId = req.restaurantId!;
+    const { id } = req.params;
+    const { reason } = req.body as { reason?: string };
+
+    const payment = await refundPayment(id, restaurantId, reason);
+
+    logAudit({
+      req,
+      restaurantId,
+      category: 'PAYMENT',
+      action: 'PAYMENT_REFUNDED',
+      targetType: 'Payment',
+      targetId: payment.id,
+      targetLabel: payment.merchantOid,
+      metadata: { amount: payment.amount, currency: payment.currency, reason: reason || null },
+    });
+
+    return successResponse(res, payment);
+  } catch (error: any) {
+    if (error instanceof RefundError) {
+      const status = error.code === 'NOT_FOUND' ? 404 : error.code === 'NOT_PAID' ? 400 : 502;
+      return errorResponse(res, 'errors.validation_error', status, { message: error.message });
+    }
+    console.error('Refund payment error', error);
     return errorResponse(res, 'errors.internal_error', 500);
   }
 };

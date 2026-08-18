@@ -22,10 +22,23 @@ const entryWorkedMinutes = (checkIn?: string | null, checkOut?: string | null, b
 };
 
 // Only ADMIN/MANAGER may act for other staff; everyone else is scoped to self.
-const resolveUserId = (req: Request, requested?: string): string => {
+//
+// Security-audit finding: this used to return `requested` verbatim for any
+// manager-tier caller with zero check that the requested user actually
+// belongs to the caller's restaurantId — an ADMIN of tenant A could stamp a
+// TimeEntry row (restaurantId: tenant A, userId: a guessed/known tenant-B
+// user id) that then shows up mixed into tenant A's own timesheet/worked-
+// hours views under a foreign identity. Verifies tenant membership via a DB
+// lookup (same pattern as schedulingController.assignShift's userId check)
+// and falls back to the caller's own id if the requested id isn't a real
+// member of this tenant, rather than trusting it blind.
+const resolveUserId = async (req: Request, requested?: string): Promise<string> => {
   const role = req.user?.role;
   const isManager = role === 'ADMIN' || role === 'MANAGER' || role === 'SUPER_ADMIN';
-  if (isManager && requested) return requested;
+  if (isManager && requested) {
+    const target = await prisma.user.findFirst({ where: { id: requested, restaurantId: req.restaurantId! }, select: { id: true } });
+    if (target) return target.id;
+  }
   return req.user!.userId;
 };
 
@@ -38,7 +51,7 @@ export const getTimeEntries = async (req: Request, res: Response) => {
     // Managers can request every staff member's entries at once (all=1) to drive
     // the shared schedule view; otherwise entries are scoped to a single user.
     const wantsAll = isManager && (all === '1' || all === 'true');
-    const targetUserId = wantsAll ? undefined : resolveUserId(req, userId);
+    const targetUserId = wantsAll ? undefined : await resolveUserId(req, userId);
 
     const entries = await prisma.timeEntry.findMany({
       where: {
@@ -63,21 +76,40 @@ export const upsertTimeEntry = async (req: Request, res: Response) => {
     const { date, shiftId, checkIn, checkOut, breakMinutes, note, userId } = req.body;
     if (!date) return errorResponse(res, 'errors.validation_error', 400, { message: 'date is required' });
 
-    const targetUserId = resolveUserId(req, userId);
+    const targetUserId = await resolveUserId(req, userId);
+    const normalizedShiftId: string | null = shiftId || null;
 
-    const entry = await prisma.timeEntry.upsert({
-      where: { userId_date_shiftId: { userId: targetUserId, date, shiftId: shiftId || null } },
-      create: {
-        restaurantId, userId: targetUserId, date, shiftId: shiftId || null,
-        checkIn: checkIn || null, checkOut: checkOut || null,
-        breakMinutes: breakMinutes ? parseInt(breakMinutes) : 0,
-        source: 'MANUAL', note: note || null,
-      },
-      update: {
-        checkIn: checkIn || null, checkOut: checkOut || null,
+    // Bug fix: this used to upsert via the userId_date_shiftId compound
+    // unique key, which 500s whenever shiftId is null — Prisma's generated
+    // whereUnique type for a compound key doesn't accept null on a nullable
+    // component (and Postgres itself doesn't treat repeated NULLs as
+    // colliding on a unique index either, so the compound constraint never
+    // actually enforced "one no-shift entry per user/date" in the first
+    // place). This is the everyday case for anyone logging hours not tied to
+    // a scheduled shift, so it wasn't an edge case in practice. Lock + manual
+    // find-then-write instead, uniformly for both the shiftId and no-shiftId
+    // cases, so concurrent submissions still can't create duplicate rows.
+    const entry = await prisma.$transaction(async (tx) => {
+      const lockKey = `time-entry:${targetUserId}:${date}:${normalizedShiftId || ''}`;
+      await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${lockKey}))`;
+
+      const existing = await tx.timeEntry.findFirst({
+        where: { userId: targetUserId, date, shiftId: normalizedShiftId },
+      });
+
+      const data = {
+        checkIn: checkIn || null,
+        checkOut: checkOut || null,
         breakMinutes: breakMinutes ? parseInt(breakMinutes) : 0,
         note: note || null,
-      },
+      };
+
+      if (existing) {
+        return tx.timeEntry.update({ where: { id: existing.id }, data });
+      }
+      return tx.timeEntry.create({
+        data: { restaurantId, userId: targetUserId, date, shiftId: normalizedShiftId, source: 'MANUAL', ...data },
+      });
     });
 
     return successResponse(res, entry);
@@ -94,7 +126,7 @@ export const deleteTimeEntry = async (req: Request, res: Response) => {
     const existing = await prisma.timeEntry.findFirst({ where: { id, restaurantId } });
     if (!existing) return errorResponse(res, 'errors.validation_error', 404, { message: 'Not found' });
     // Staff may only delete their own entries.
-    if (existing.userId !== resolveUserId(req, existing.userId)) {
+    if (existing.userId !== await resolveUserId(req, existing.userId)) {
       return errorResponse(res, 'errors.unauthorized', 403);
     }
     await prisma.timeEntry.delete({ where: { id } });

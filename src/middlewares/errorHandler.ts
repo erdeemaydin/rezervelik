@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import i18next from '../config/i18n';
 import { AppError } from '../utils/AppError';
+import Sentry from '../config/sentry';
 
 /**
  * 404 handler — mounted after all routes. Ensures an unknown path returns the
@@ -31,8 +32,14 @@ export const notFoundHandler = (req: Request, res: Response) => {
  *
  * Express identifies an error handler purely by its 4-arg signature, so `next`
  * must stay in the list even though it's unused.
+ *
+ * Every error that reaches here is also reported to Sentry (see
+ * src/config/sentry.ts) — a safe no-op when SENTRY_DSN is unset, so this never
+ * needs its own gating.
  */
 export const errorHandler = (err: any, req: Request, res: Response, _next: NextFunction) => {
+  Sentry.captureException(err);
+
   // Per-request translator (set in app.ts from Accept-Language); fall back to the
   // shared instance so this still works if i18n middleware didn't run.
   const t = (req as any).t || i18next.t.bind(i18next);

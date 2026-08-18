@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useTranslation } from "@/i18n/provider";
-import { Calendar as CalendarIcon, Clock, CheckCircle2, X, Menu, ChevronDown, ArrowLeft } from 'lucide-react';
+import { Calendar as CalendarIcon, Clock, CheckCircle2, X, Menu, ChevronDown, ArrowLeft, AlertTriangle } from 'lucide-react';
 import axios from 'axios';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
@@ -13,6 +13,7 @@ import { Label } from '@/components/ui/label';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import { getTimeSuggestions } from '@/lib/reservationSuggestions';
 import ReservationCalendar from './ReservationCalendar';
+import ConsentFields from './ConsentFields';
 import { getTodayInTZ, zonedWallTimeToUTC, DEFAULT_TZ } from '@/lib/datetime';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || (typeof window !== 'undefined' ? `${window.location.protocol}//${window.location.hostname}:3000/api` : 'http://localhost:3000/api');
@@ -32,9 +33,10 @@ export default function OldenLayout({ slug, initialRestaurant, initialView, menu
 
   const [dayStatus, setDayStatus] = useState<any>(null);
   const [checkingDay, setCheckingDay] = useState(false);
-  const [isWaitlistSuccess, setIsWaitlistSuccess] = useState(false);
+
   const [isBookingSuccess, setIsBookingSuccess] = useState(false);
   const [isPossiblyFullyBooked, setIsPossiblyFullyBooked] = useState(false);
+  const [confirmationCode, setConfirmationCode] = useState<string | null>(null);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const customization = restaurant?.customization || {};
@@ -48,7 +50,12 @@ export default function OldenLayout({ slug, initialRestaurant, initialView, menu
     customerPhone: '',
     customerEmail: '',
     guestCount: '2',
-    notes: ''
+    notes: '',
+    // KVKK consent (PRODUCTION_ROADMAP.md §7.3): required booking consent +
+    // separate optional marketing opt-in. Both ride along in the `...resForm`
+    // spread already sent to POST /reservations.
+    consentAccepted: false,
+    marketingConsent: false
   });
 
   useEffect(() => {
@@ -82,19 +89,16 @@ export default function OldenLayout({ slug, initialRestaurant, initialView, menu
       return;
     }
 
+    if (!resForm.consentAccepted) {
+      toast.error(t('public.consent.required'));
+      return;
+    }
+
+    // A fully booked day has no capacity left — future demand belongs to the
+    // reservation flow (retry another date) rather than a waitlist join; the
+    // walk-in waitlist is for real-time, same-day guests only.
     if (dayStatus?.daySetting?.isFullyBooked) {
-      try {
-        await axios.post(`${API_URL}/public/restaurant/${slug}/waitlist`, {
-          customerName: resForm.customerName,
-          customerPhone: resForm.customerPhone,
-          partySize: parseInt(resForm.guestCount),
-          targetDate: selectedDate,
-          notes: `Requested Time: ${selectedTime} - ${resForm.notes}`
-        });
-        setIsWaitlistSuccess(true);
-      } catch (err: any) {
-        toast.error(err.response?.data?.error || 'Failed to join waitlist');
-      }
+      toast.error('This day is fully booked. Please choose another date.');
       return;
     }
 
@@ -119,6 +123,7 @@ export default function OldenLayout({ slug, initialRestaurant, initialView, menu
         return;
       }
       setIsPossiblyFullyBooked(!!res.data?.data?.possiblyFullyBooked);
+      setConfirmationCode(res.data?.data?.confirmationCode || null);
       setIsBookingSuccess(true);
     } catch (err: any) {
       toast.error(err.response?.data?.error || 'Failed to book');
@@ -161,6 +166,7 @@ export default function OldenLayout({ slug, initialRestaurant, initialView, menu
           case 'EARTH': return { bg: '#fdfbf7', text: '#292524', accent: '#5c4033' };
           case 'CRIMSON': return { bg: '#fffbfb', text: '#450a0a', accent: '#7f1d1d' };
           case 'PEARL': return { bg: '#f8fafc', text: '#0f172a', accent: '#1e3a8a' };
+          case 'SAGE': return { bg: '#f7faf5', text: '#1f2a1c', accent: '#4f7a52' };
           case 'OBSIDIAN':
           default: return { bg: '#fcfcfc', text: '#2c2c2c', accent: '#8b0000' };
       }
@@ -444,17 +450,18 @@ export default function OldenLayout({ slug, initialRestaurant, initialView, menu
               <CheckCircle2 className="w-20 h-20 text-[#4caf50] mx-auto mb-6" />
               <h3 className="text-3xl font-serif mb-4 text-[#1a1a1a]">{isPossiblyFullyBooked ? 'Request Received' : 'Reservation Confirmed'}</h3>
               <p className="text-[#555] font-sans text-lg">We look forward to welcoming you.</p>
+              {confirmationCode && (
+                <div className="mx-auto mt-8 flex max-w-xs flex-col items-center rounded-xl border border-[#e0e0e0] bg-[#f9f9f9] px-6 py-4">
+                  <span className="text-[10px] font-sans font-bold uppercase tracking-[0.2em] text-[#888]">{t('public.confirmationCodeLabel')}</span>
+                  <span className="mt-1 text-2xl font-serif tracking-[0.2em] text-[var(--accent)]">{confirmationCode}</span>
+                  <span className="mt-2 text-[10px] font-sans text-[#888]">{t('public.confirmationCodeHint')}</span>
+                </div>
+              )}
               {isPossiblyFullyBooked && (
                 <div className="mx-auto mt-8 max-w-md rounded-xl border-l-4 border-[#ff9800] bg-[#fff3e0] p-4 text-left text-sm font-sans text-[#8a5a00]">
                   Heads up — we may be fully booked around this time, so your table hasn&apos;t been assigned yet. Our team will confirm by phone shortly.
                 </div>
               )}
-            </div>
-          ) : isWaitlistSuccess ? (
-            <div className="text-center py-16 animate-in zoom-in bg-white shadow-xl rounded-2xl border border-[#e0e0e0]">
-              <CheckCircle2 className="w-20 h-20 text-[#4caf50] mx-auto mb-6" />
-              <h3 className="text-3xl font-serif mb-4 text-[#1a1a1a]">Waitlist Joined</h3>
-              <p className="text-[#555] font-sans text-lg">We will notify you if a table becomes available.</p>
             </div>
           ) : (
             <form onSubmit={handleBooking} className="space-y-10 bg-white p-10 md:p-14 shadow-2xl rounded-3xl border border-[#e0e0e0]">
@@ -492,8 +499,8 @@ export default function OldenLayout({ slug, initialRestaurant, initialView, menu
                   <Clock className="w-6 h-6 shrink-0 text-[#ff9800]" />
                   <div>
                     <span className="mb-1 block text-xs font-bold uppercase tracking-widest text-[#ff9800]">{selectedDateLabel}</span>
-                    <strong className="block mb-2 text-[#e65100] text-lg">Fully Booked (Waitlist Open)</strong>
-                    We are fully booked for reservations on this day, but you can join our waitlist.
+                    <strong className="block mb-2 text-[#e65100] text-lg">Fully Booked</strong>
+                    We are fully booked for reservations on this day. Please choose another date, or call us directly.
                   </div>
                 </div>
               ) : dayStatus?.daySetting?.isReservationEnabled === false ? (
@@ -524,6 +531,16 @@ export default function OldenLayout({ slug, initialRestaurant, initialView, menu
                   </div>
                 </div>
               ) : null}
+
+              {dayStatus?.daySetting?.isCapacityFull && (
+                <div className="rounded-r-xl border-l-4 border-[#ff9800] bg-[#fff3e0] p-4 text-sm font-sans flex items-start gap-3">
+                  <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5 text-[#ff9800]" />
+                  <div>
+                    <p className="mb-0.5 font-bold text-[#e65100]">{t('public.capacityFullTitle')}</p>
+                    <p>{t('public.capacityFullDesc')}</p>
+                  </div>
+                </div>
+              )}
 
               <div className="space-y-8 pt-8 border-t border-[#e0e0e0]">
                 <div className="space-y-3">
@@ -556,12 +573,21 @@ export default function OldenLayout({ slug, initialRestaurant, initialView, menu
                 </div>
               </div>
 
+              <ConsentFields
+                slug={slug}
+                consentAccepted={resForm.consentAccepted}
+                onConsentAcceptedChange={(v) => setResForm({ ...resForm, consentAccepted: v })}
+                marketingConsent={resForm.marketingConsent}
+                onMarketingConsentChange={(v) => setResForm({ ...resForm, marketingConsent: v })}
+                className="mt-6 space-y-3 text-sm text-[#555]"
+              />
+
               <Button
                 type="submit"
-                disabled={checkingDay || dayStatus?.daySetting?.isReservationEnabled === false}
+                disabled={checkingDay || dayStatus?.daySetting?.isFullyBooked || (dayStatus?.daySetting?.isReservationEnabled === false && !dayStatus?.daySetting?.isFullyBooked)}
                 className="w-full h-16 bg-[var(--accent)] hover:bg-[var(--accent-hover)] text-white font-bold tracking-widest uppercase rounded-xl mt-8 disabled:opacity-50 text-lg transition-all hover:scale-[1.02]"
               >
-                {dayStatus?.daySetting?.isFullyBooked ? 'Join Waitlist' : 'Request Table'}
+                {dayStatus?.daySetting?.isFullyBooked ? 'Fully Booked' : 'Request Table'}
               </Button>
             </form>
           )}

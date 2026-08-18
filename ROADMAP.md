@@ -18,6 +18,7 @@
 - [x] **Interactive Floor Plan:** Visual drag-and-drop floor plan builder with per-table color and resize, scaling to any screen resolution via a fixed logical canvas.
 - [x] **Reservation Conflict Handling:** Table-conflict checks now respect the configurable reservation window, staff can knowingly override with a warning, and auto-confirm only fires when a table is actually free (soft "possibly fully booked" pending state otherwise).
 - [x] **Reservation Timeline:** Tables × time-of-day Gantt-style view added to the admin Reservations page.
+- [x] **KVKK consent & retention (PROJECT_LOGIC.md §14):** required booking-consent checkbox (server-enforced) + separate optional WhatsApp/marketing consent on the public booking form, a bilingual privacy notice page (`/r/[slug]/privacy`, tenant-overridable), and a daily retention/anonymization worker for `Reservation`/`WaitlistEntry` PII. Still open: data-processing-agreement template, VERBİS threshold check (PRODUCTION_ROADMAP.md §7.3).
 - [ ] **Advanced Analytics:** Charting daily revenue (from deposits), reservation drop-off rates, and table turnover times.
 
 ## Phase 3: Scaling & Guest Experience

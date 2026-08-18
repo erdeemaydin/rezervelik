@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import prisma from '../config/prisma';
 import { successResponse, errorResponse } from '../utils/response';
+import { INVALID, parseCount } from '../utils/numeric';
 
 export const getTables = async (req: Request, res: Response) => {
   try {
@@ -23,6 +24,12 @@ export const createTable = async (req: Request, res: Response) => {
     if (!tableTypeId || !identifier || !capacity) {
       return errorResponse(res, 'errors.validation_error', 400, { message: 'Required fields missing' });
     }
+    // Bug fix: `!capacity` only rejected 0/falsy — capacity: -5 is truthy and
+    // passed straight through into party-size-fit matching (findAvailableTable).
+    const parsedCapacity = parseCount(capacity, 0, 1);
+    if (parsedCapacity === INVALID) {
+      return errorResponse(res, 'errors.validation_error', 400, { message: 'capacity must be a positive integer' });
+    }
 
     const typeExists = await prisma.zone.findFirst({
       where: { id: tableTypeId, restaurantId }
@@ -35,7 +42,7 @@ export const createTable = async (req: Request, res: Response) => {
     const table = await prisma.bookableResource.create({
       data: {
         identifier,
-        capacity,
+        capacity: parsedCapacity,
         isAvailable: isAvailable ?? true,
         restaurantId,
         tableTypeId,
@@ -76,7 +83,13 @@ export const updateTable = async (req: Request, res: Response) => {
     const dataToUpdate: any = {};
     if (tableTypeId !== undefined) dataToUpdate.tableTypeId = tableTypeId;
     if (identifier !== undefined) dataToUpdate.identifier = identifier;
-    if (capacity !== undefined) dataToUpdate.capacity = capacity;
+    if (capacity !== undefined) {
+      const parsedCapacity = parseCount(capacity, 0, 1);
+      if (parsedCapacity === INVALID) {
+        return errorResponse(res, 'errors.validation_error', 400, { message: 'capacity must be a positive integer' });
+      }
+      dataToUpdate.capacity = parsedCapacity;
+    }
     if (isAvailable !== undefined) dataToUpdate.isAvailable = isAvailable;
     if (positionX !== undefined) dataToUpdate.positionX = positionX;
     if (positionY !== undefined) dataToUpdate.positionY = positionY;

@@ -55,6 +55,18 @@ export const updateTableType = async (req: Request, res: Response) => {
       if (parentId === id) return errorResponse(res, 'errors.validation_error', 400, { message: 'Cannot be parent of itself' });
       const parentExists = await prisma.zone.findFirst({ where: { id: parentId, restaurantId } });
       if (!parentExists) return errorResponse(res, 'errors.validation_error', 400, { message: 'Invalid parent zone' });
+
+      // Bug fix: only a direct self-parent (parentId === id) was rejected —
+      // a longer cycle (A's parent is B, B's parent is set to A) passed
+      // straight through. Walk the candidate parent's own ancestor chain.
+      let cursor: string | null = parentExists.parentId;
+      for (let depth = 0; cursor && depth < 20; depth++) {
+        if (cursor === id) {
+          return errorResponse(res, 'errors.validation_error', 400, { message: 'This would create a zone cycle' });
+        }
+        const ancestor: { parentId: string | null } | null = await prisma.zone.findUnique({ where: { id: cursor }, select: { parentId: true } });
+        cursor = ancestor?.parentId ?? null;
+      }
     }
 
     const dataToUpdate: any = {};
@@ -87,7 +99,13 @@ export const deleteTableType = async (req: Request, res: Response) => {
     await prisma.zone.delete({ where: { id } });
 
     return successResponse(res, { message: 'Deleted successfully' });
-  } catch (error) {
+  } catch (error: any) {
+    // Bug fix: deleting a zone that still has tables (BookableResource) or
+    // child zones assigned throws Prisma P2003 (FK constraint), which fell
+    // through to a raw 500 instead of a clean, actionable 400.
+    if (error?.code === 'P2003') {
+      return errorResponse(res, 'errors.validation_error', 400, { message: 'This zone still has tables or sub-zones assigned — remove them first' });
+    }
     return errorResponse(res, 'errors.internal_error', 500);
   }
 };

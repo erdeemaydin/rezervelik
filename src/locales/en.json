@@ -8,7 +8,10 @@
     "internal_error": "Internal server error",
     "tenant_required": "X-Restaurant-ID header is required",
     "table_conflict": "This table is already reserved for an overlapping time",
+    "menu_activation_conflict": "Another menu was just activated. Please refresh and try again.",
+    "schedule_violation": "This assignment conflicts with a scheduling rule (double shift, insufficient rest, or marked unavailable).",
     "fully_booked": "All tables are booked for this date and time. Please join the waitlist or pick another time.",
+    "day_capacity_exceeded": "This date has reached its maximum number of reservations. Please pick another date or join the waitlist.",
     "maintenance": "The platform is temporarily down for maintenance. Please try again shortly.",
     "route_not_found": "The requested resource was not found.",
     "invalid_json": "The request body is not valid JSON.",
@@ -20,7 +23,8 @@
     "setup_link_invalid": "This setup link is invalid or has expired.",
     "reset_link_invalid": "This password reset link is invalid or has expired.",
     "email_in_use": "This email address is already in use.",
-    "registration_disabled": "Public registration is currently disabled."
+    "registration_disabled": "Public registration is currently disabled.",
+    "consent_required": "Please accept the data processing consent to book a reservation."
   },
   "messages": {
     "reservation_created": "Reservation created successfully",
