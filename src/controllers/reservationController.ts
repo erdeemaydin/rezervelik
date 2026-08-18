@@ -27,8 +27,20 @@ const isStaffRequest = (req: Request): boolean => {
 export const getReservations = async (req: Request, res: Response) => {
   try {
     const restaurantId = req.restaurantId!;
+    const { startDate, endDate } = req.query as { startDate?: string; endDate?: string };
+
+    // Optional inclusive date-range filter (YYYY-MM-DD, UTC day boundaries — matches
+    // how callers already compute "today" via `new Date().toISOString().split('T')[0]`,
+    // e.g. dashboard/host/page.tsx). Only applied when BOTH bounds are present so
+    // existing no-params callers (reservations list page) keep their current
+    // full-history behavior unchanged.
+    const dateRangeValid = !!startDate && !!endDate && /^\d{4}-\d{2}-\d{2}$/.test(startDate) && /^\d{4}-\d{2}-\d{2}$/.test(endDate);
+    const dateFilter = dateRangeValid
+      ? { startTime: { gte: new Date(`${startDate}T00:00:00.000Z`), lte: new Date(`${endDate}T23:59:59.999Z`) } }
+      : {};
+
     const reservations = await prisma.reservation.findMany({
-      where: { restaurantId },
+      where: { restaurantId, ...dateFilter },
       include: {
         table: true,
         category: true
@@ -36,7 +48,12 @@ export const getReservations = async (req: Request, res: Response) => {
       orderBy: [
         { isVIP: 'desc' },
         { startTime: 'asc' }
-      ]
+      ],
+      // Safety cap: this table grows unbounded per-tenant over time (PRODUCTION_ROADMAP.md
+      // estimates ~73k reservations/year for a busy restaurant); 3000 is generous headroom
+      // for callers that don't pass a date range yet. Real pagination/date-filter UI for
+      // the full reservations management page is a future follow-up, not addressed here.
+      take: 3000
     });
 
     // Per-phone-number history: how many times this guest has visited/no-showed,

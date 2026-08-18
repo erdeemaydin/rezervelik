@@ -117,8 +117,12 @@ export default function HostConsolePage() {
       // Each resource is fetched independently: one flaky/slow endpoint (e.g. a
       // backend restart mid-request) must not wipe out the others that succeeded,
       // which is what Promise.all previously did by rejecting the whole batch.
+      // The host stand only ever reads today's reservations (every consumer below
+      // filters with `startsWith(todayStr)`), so ask the server to scope the query
+      // to today instead of pulling the tenant's full reservation history.
+      const todayStr = new Date().toISOString().split('T')[0];
       const [resRes, waitlistRes, waitlistHistoryRes, tablesRes, catRes] = await Promise.allSettled([
-        api.get('/reservations'),
+        api.get('/reservations', { params: { startDate: todayStr, endDate: todayStr } }),
         api.get('/wait-time/entries'),
         api.get('/wait-time/entries', { params: { history: 'true' } }),
         api.get('/tables'),
@@ -164,8 +168,9 @@ export default function HostConsolePage() {
   // stays mounted and visible the whole time instead of flashing to a spinner.
   const refreshActivity = async () => {
     try {
+      const todayStr = new Date().toISOString().split('T')[0];
       const [resRes, waitlistRes, waitlistHistoryRes] = await Promise.allSettled([
-        api.get('/reservations'),
+        api.get('/reservations', { params: { startDate: todayStr, endDate: todayStr } }),
         api.get('/wait-time/entries'),
         api.get('/wait-time/entries', { params: { history: 'true' } }),
       ]);
