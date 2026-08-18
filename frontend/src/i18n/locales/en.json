@@ -23,6 +23,7 @@
     "configuration": "Configuration",
     "globalSettings": "Global Settings",
     "rootAuthority": "Root Authority",
+    "restrictedAdministrator": "Restricted Administrator",
     "logoutSystem": "Logout System",
     "systemManagement": "System Management",
     "globalClusterActive": "Global Cluster: Active",

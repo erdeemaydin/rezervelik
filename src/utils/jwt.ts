@@ -14,6 +14,13 @@ export interface SessionTokenPayload {
   userId: string;
   restaurantId?: string | null;
   role: string;
+  // Only meaningful when role === 'SUPER_ADMIN': true = full platform root,
+  // false = a restricted sub-admin (see src/config/systemPermissions.ts).
+  // Carried in the token (like role) rather than re-fetched on every tenant
+  // request; requireActiveSuperAdmin re-checks it live against the DB on
+  // every /api/system/* request specifically, the same way it already does
+  // for isActive.
+  isRootAdmin?: boolean;
   // Set only on a token minted by the impersonate flow — the SUPER_ADMIN's own
   // user id, so audit-log entries written while impersonating can be traced
   // back to who was actually driving the session (see auditService).
@@ -24,9 +31,16 @@ export const generateToken = (
   userId: string,
   restaurantId: string | null | undefined,
   role: string,
+  isRootAdmin?: boolean,
   impersonatedBy?: string
 ) => {
-  const payload: SessionTokenPayload = { userId, restaurantId, role, ...(impersonatedBy ? { impersonatedBy } : {}) };
+  const payload: SessionTokenPayload = {
+    userId,
+    restaurantId,
+    role,
+    ...(role === 'SUPER_ADMIN' ? { isRootAdmin: isRootAdmin !== false } : {}),
+    ...(impersonatedBy ? { impersonatedBy } : {}),
+  };
   return jwt.sign(payload, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN, algorithm: 'HS256' });
 };
 

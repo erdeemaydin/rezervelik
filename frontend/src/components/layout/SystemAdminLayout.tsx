@@ -79,19 +79,28 @@ export default function SystemAdminLayout({ children }: SystemAdminLayoutProps) 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
 
+  // A restricted sub-admin (isRootAdmin === false) only sees nav entries for
+  // capabilities its `permissions` actually grants; a root admin (undefined
+  // counts as root — older tokens predate this field) sees everything.
+  // "Super Admins" (administrator management) is never shown to a sub-admin —
+  // that's root-only on the backend regardless of any granted permission.
+  const isRoot = user?.isRootAdmin !== false;
+  const perms = (user?.permissions || '').split(',');
+  const has = (key: string) => isRoot || perms.includes(key);
+
   const navigation = [
     { section: t('systemAdmin.globalOverview'), items: [
-      { name: t('systemAdmin.systemMetrics'), href: '/system-admin/dashboard', icon: BarChart3 },
-      { name: t('systemAdmin.tenantManagement'), href: '/system-admin/tenants', icon: Building2 },
-    ]},
+      has('sys_view_metrics') && { name: t('systemAdmin.systemMetrics'), href: '/system-admin/dashboard', icon: BarChart3 },
+      has('sys_manage_tenants') && { name: t('systemAdmin.tenantManagement'), href: '/system-admin/tenants', icon: Building2 },
+    ].filter(Boolean) as { name: string; href: string; icon: typeof BarChart3 }[] },
     { section: t('systemAdmin.userControl'), items: [
-      { name: t('systemAdmin.superAdmins'), href: '/system-admin/admins', icon: ShieldCheck },
-      { name: t('systemAdmin.activityAudit'), href: '/system-admin/audit', icon: Server },
-    ]},
+      isRoot && { name: t('systemAdmin.superAdmins'), href: '/system-admin/admins', icon: ShieldCheck },
+      has('sys_view_audit_log') && { name: t('systemAdmin.activityAudit'), href: '/system-admin/audit', icon: Server },
+    ].filter(Boolean) as { name: string; href: string; icon: typeof BarChart3 }[] },
     { section: t('systemAdmin.configuration'), items: [
-      { name: t('systemAdmin.globalSettings'), href: '/system-admin/settings', icon: Settings },
-    ]}
-  ];
+      has('sys_manage_global_settings') && { name: t('systemAdmin.globalSettings'), href: '/system-admin/settings', icon: Settings },
+    ].filter(Boolean) as { name: string; href: string; icon: typeof BarChart3 }[] },
+  ].filter((group) => group.items.length > 0);
 
   const handleLogout = async () => {
     // Await so the local "authenticated" cache is actually cleared before we
@@ -153,7 +162,9 @@ export default function SystemAdminLayout({ children }: SystemAdminLayoutProps) 
               <p className="text-xs font-bold text-white truncate">
                 {mounted ? `${user?.firstName || 'System'} ${user?.lastName || 'Admin'}` : 'System Admin'}
               </p>
-              <p className="text-[9px] text-emerald-500 font-black uppercase tracking-tighter">{t('systemAdmin.rootAuthority')}</p>
+              <p className="text-[9px] text-emerald-500 font-black uppercase tracking-tighter">
+                {isRoot ? t('systemAdmin.rootAuthority') : t('systemAdmin.restrictedAdministrator')}
+              </p>
             </div>
           </div>
 

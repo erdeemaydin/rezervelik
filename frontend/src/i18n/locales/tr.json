@@ -23,6 +23,7 @@
     "configuration": "Yapılandırma",
     "globalSettings": "Genel Ayarlar",
     "rootAuthority": "Kök Yetki",
+    "restrictedAdministrator": "Kısıtlı Yönetici",
     "logoutSystem": "Sistemden Çıkış",
     "systemManagement": "Sistem Yönetimi",
     "globalClusterActive": "Küresel Küme: Aktif",

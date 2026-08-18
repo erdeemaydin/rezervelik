@@ -593,3 +593,15 @@ throwaway dev-server compile-and-serve check, not actual browser screenshots.
 - Updated `PROJECT_LOGIC.md`, `API_DOCS.md`, `ROADMAP.md`, and `CLAUDE.md` to reflect all of the above.
 
 **Note on local test data:** two seeded dev accounts (`hello@rusticoven.com`, `admin@myrestaurant.com`) had their passwords reset to a known test value while verifying the admin dashboard changes in a browser. This only touches the local SQLite dev database, not any real credentials.
+
+## 2026-08-15
+
+**Restricted "sub-admin" platform accounts**
+- Added `User.isRootAdmin` (default `true`) so a `SUPER_ADMIN` account can be either a full root admin (unchanged behavior) or a restricted sub-admin scoped to a whitelisted set of `sys_*` capabilities (`src/config/systemPermissions.ts`), managed from a new Access Level dialog on the Super Admins page (`/system-admin/admins`). Managing other platform administrators stays root-only and is never a grantable permission.
+- Found and fixed two pre-existing privilege-escalation paths that a naive "just add a permissions field" implementation would have left wide open:
+  - `authMiddleware`'s tenant-mismatch bypass and `requirePermission`'s bypass (`src/middlewares/auth.ts`) were keyed on `role === 'SUPER_ADMIN'` alone, so *any* SUPER_ADMIN-role JWT — including a brand-new restricted sub-admin's — got unconditional, permission-less access to every tenant's data via an arbitrary `X-Restaurant-ID` header, on every tenant route in the app, not just `/api/system/*`. Both bypasses now also require `isRootAdmin !== false`.
+  - `PUT /system/users/:userId/permissions`, `POST /system/users/:userId/reset-link`, and `PUT /system/users/:userId/otp` previously let any caller with the relevant tenant permission act on *any* `userId`, including another `SUPER_ADMIN`'s. A sub-admin granted `sys_manage_tenant_users` could otherwise mint a password-reset link for a root admin, disable a root admin's 2FA, or overwrite a fellow admin's system permissions. All three now reject a `SUPER_ADMIN` target unless the actor is root.
+- Verified end-to-end via a full curl-based smoke test against a real Postgres-backed dev server (bootstrap root → create restricted sub-admin → confirm granted action succeeds, ungranted action 403s, admin management 403s, tenant-route access is fully blocked even with a spoofed `X-Restaurant-ID`, cross-admin reset-link/permission-escalation attempts are blocked, root's own last-root self-demotion is blocked, root's own access is unaffected).
+- Migration: `20260815170415_add_super_admin_sub_admin_permissions`. Docs updated: `API_DOCS.md` §2 (new `sys_*` permission table + endpoints), `PROJECT_LOGIC.md` §5.
+
+**Known limitation this session:** the new Access Level dialog UI (Add/Edit) was verified via `tsc --noEmit` + `eslint` + a dev-server compile check (page returns a normal redirect, not a 500), not an actual browser click-through — no way to drive a real logged-in browser session in this environment for this task.

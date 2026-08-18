@@ -41,6 +41,7 @@ The system supports three distinct operational modes, configurable per restauran
 - **JWT Authentication:** Secure token-based authentication for all staff members accessing the dashboard.
 - **UUIDs:** All publicly exposed IDs are UUIDs to prevent guessing and scraping.
 - **Production Security:** Registration is controlled by `globalSettings.publicRegistrationEnabled`. Super admin bootstrapping requires a securely injected server-side environment variable (`SETUP_SECRET_TOKEN`).
+- **Platform-level sub-admins:** `SUPER_ADMIN` is not all-or-nothing. `User.isRootAdmin` (default `true`) distinguishes a full **root** admin from a restricted **sub-admin**, whose access is limited to a whitelisted set of `sys_*` capabilities on `User.permissions` (see the table in `API_DOCS.md` §2 and `src/config/systemPermissions.ts`). A sub-admin has zero access to any tenant-scoped API and cannot manage other platform administrators under any circumstance — see `requireSystemPermission`/`requireRootSystemAdmin` in `src/middlewares/auth.ts`.
 
 ## 6. AI Menu Importer (Phase 2 Placeholder)
 - A decoupled service layer is planned. It will take an uploaded image, send it to an OCR/LLM provider, and return a structured JSON representing the menu categories and items.

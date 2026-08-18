@@ -316,6 +316,12 @@ model User {
   lastName     String
   role         String  @default("STAFF") // SUPER_ADMIN, ADMIN, MANAGER, STAFF
   permissions  String? // Comma-separated permission keys e.g. "manage_reservations,manage_menu"
+  // Meaningful only for role === SUPER_ADMIN. true = full platform root (every
+  // /api/system/* action, no restrictions). false = a restricted "sub-admin"
+  // scoped to whatever `permissions` (sys_* keys, see src/config/systemPermissions.ts)
+  // grants — see requireSystemPermission/requireRootSystemAdmin in middlewares/auth.ts.
+  // Defaults true so every pre-existing SUPER_ADMIN keeps full access unchanged.
+  isRootAdmin  Boolean @default(true)
   // Revocation switch — there was previously no way to disable a
   // compromised/offboarded account (SUPER_ADMIN most critically) through the
   // product, only directly in the DB. Checked at login (blocks new sessions)

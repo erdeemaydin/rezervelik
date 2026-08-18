@@ -16,6 +16,7 @@ import {
 import { generatePublicApiKey } from '../utils/publicApiKey';
 import { bustMaintenanceCache } from '../middlewares/maintenance';
 import { logAudit } from '../services/auditService';
+import { sanitizeSystemPermissions } from '../config/systemPermissions';
 
 // POST /system/users/:userId/reset-link (SUPER_ADMIN only)
 // Mints a single-use password reset link for any user. The raw token is returned
@@ -26,6 +27,15 @@ export const createPasswordResetLink = async (req: Request, res: Response) => {
 
     const user = await prisma.user.findUnique({ where: { id: userId } });
     if (!user) return errorResponse(res, 'errors.validation_error', 404, { message: 'User not found' });
+
+    // Minting a reset link for another platform administrator is root-only —
+    // sys_manage_tenant_users (the permission that gates this route for a
+    // sub-admin) only ever covers tenant-scoped users. Without this check a
+    // sub-admin could mint a reset link for a root account, or even its own,
+    // and use it to escalate.
+    if (user.role === 'SUPER_ADMIN' && req.user?.isRootAdmin === false) {
+      return errorResponse(res, 'errors.forbidden', 403, { message: 'Root administrator access required' });
+    }
 
     const { rawToken, tokenHash, expiresAt } = generateResetToken();
 
@@ -67,6 +77,12 @@ export const setUserOtp = async (req: Request, res: Response) => {
 
     const user = await prisma.user.findUnique({ where: { id: userId } });
     if (!user) return errorResponse(res, 'errors.validation_error', 404, { message: 'User not found' });
+
+    // Same rationale as createPasswordResetLink above — disabling 2FA on
+    // another platform administrator's account is root-only.
+    if (user.role === 'SUPER_ADMIN' && req.user?.isRootAdmin === false) {
+      return errorResponse(res, 'errors.forbidden', 403, { message: 'Root administrator access required' });
+    }
 
     const updated = await prisma.user.update({
       where: { id: user.id },
@@ -401,6 +417,19 @@ export const updateTenantUserPermissions = async (req: Request, res: Response) =
     const { userId } = req.params;
     const { permissions } = req.body;
 
+    // This route is scoped to tenant staff only — a platform administrator's
+    // `permissions` column holds sys_* system capabilities, not tenant module
+    // keys, and is only ever settable via the root-only admins endpoint.
+    // Without this check, sys_manage_tenant_users would let a sub-admin
+    // overwrite ANY SUPER_ADMIN's permissions column (including its own),
+    // which is a privilege-escalation path even though root itself doesn't
+    // consult this column.
+    const target = await prisma.user.findUnique({ where: { id: userId }, select: { role: true, restaurantId: true } });
+    if (!target) return errorResponse(res, 'errors.validation_error', 404, { message: 'User not found' });
+    if (target.role === 'SUPER_ADMIN' || !target.restaurantId) {
+      return errorResponse(res, 'errors.validation_error', 400, { message: 'This endpoint only manages tenant-scoped staff permissions' });
+    }
+
     const updatedUser = await prisma.user.update({
       where: { id: userId },
       data: {
@@ -516,6 +545,13 @@ export const createSystemAdmin = async (req: Request, res: Response) => {
       return errorResponse(res, 'errors.validation_error', 400, { message: 'Email already exists' });
     }
 
+    // Defaults to a restricted sub-admin with zero capabilities — root access
+    // must be explicitly opted into, never implicit. `permissions` is ignored
+    // entirely (left null) for a root admin, since root bypasses permission
+    // checks regardless of what the column holds.
+    const isRootAdmin = req.body.isRootAdmin === true;
+    const permissions = isRootAdmin ? null : sanitizeSystemPermissions(req.body.permissions);
+
     const hashedPassword = await bcrypt.hash(password, 10);
     const user = await prisma.user.create({
       data: {
@@ -523,10 +559,12 @@ export const createSystemAdmin = async (req: Request, res: Response) => {
         passwordHash: hashedPassword,
         firstName,
         lastName,
-        role: 'SUPER_ADMIN'
+        role: 'SUPER_ADMIN',
+        isRootAdmin,
+        permissions
         // restaurantId remains null — platform-level admin, not tenant-scoped
       },
-      select: { id: true, email: true, firstName: true, lastName: true, role: true, createdAt: true }
+      select: { id: true, email: true, firstName: true, lastName: true, role: true, isActive: true, isRootAdmin: true, permissions: true, createdAt: true }
     });
 
     logAudit({
@@ -536,11 +574,60 @@ export const createSystemAdmin = async (req: Request, res: Response) => {
       targetType: 'User',
       targetId: user.id,
       targetLabel: user.email,
+      metadata: { isRootAdmin, permissions },
     });
 
     return successResponse(res, user, undefined, 201);
   } catch (error) {
     console.error('Create system admin error:', error);
+    return errorResponse(res, 'errors.internal_error', 500);
+  }
+};
+
+// PUT /system/admins/:id/permissions (root-only)
+// Changes an existing platform administrator's root/restricted status and, for
+// a restricted sub-admin, which sys_* capabilities they hold. Root-only for the
+// same reason POST /admins is — letting anyone else touch this would let a
+// sub-admin mint itself (or another account) more access than it was granted.
+export const updateSystemAdminPermissions = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { isRootAdmin } = req.body;
+
+    if (typeof isRootAdmin !== 'boolean') {
+      return errorResponse(res, 'errors.validation_error', 400, { message: 'isRootAdmin must be a boolean' });
+    }
+    // Mirrors the "can't deactivate your own account" guard on setSystemAdminActive
+    // below — without it, the last remaining root admin could strand the
+    // platform with no one able to manage administrators at all.
+    if (id === req.user!.userId && !isRootAdmin) {
+      return errorResponse(res, 'errors.validation_error', 400, { message: 'You cannot remove root access from your own account' });
+    }
+
+    const target = await prisma.user.findFirst({ where: { id, role: 'SUPER_ADMIN' } });
+    if (!target) return errorResponse(res, 'errors.not_found', 404);
+
+    const permissions = isRootAdmin ? null : sanitizeSystemPermissions(req.body.permissions);
+
+    const updated = await prisma.user.update({
+      where: { id },
+      data: { isRootAdmin, permissions },
+      select: { id: true, email: true, firstName: true, lastName: true, role: true, isActive: true, isRootAdmin: true, permissions: true, createdAt: true },
+    });
+
+    logAudit({
+      req,
+      category: 'PERMISSIONS',
+      action: 'SYSTEM_ADMIN_PERMISSIONS_UPDATED',
+      targetType: 'User',
+      targetId: updated.id,
+      targetLabel: updated.email,
+      metadata: { isRootAdmin, permissions },
+    });
+
+    return successResponse(res, updated);
+  } catch (error) {
+    console.error('Update system admin permissions error:', error);
     return errorResponse(res, 'errors.internal_error', 500);
   }
 };
@@ -610,6 +697,8 @@ export const getSystemAdmins = async (req: Request, res: Response) => {
         lastName: true,
         role: true,
         isActive: true,
+        isRootAdmin: true,
+        permissions: true,
         createdAt: true
       }
     });
@@ -645,7 +734,7 @@ export const setSystemAdminActive = async (req: Request, res: Response) => {
     const updated = await prisma.user.update({
       where: { id },
       data: { isActive },
-      select: { id: true, email: true, firstName: true, lastName: true, role: true, isActive: true, createdAt: true },
+      select: { id: true, email: true, firstName: true, lastName: true, role: true, isActive: true, isRootAdmin: true, permissions: true, createdAt: true },
     });
 
     logAudit({
@@ -713,7 +802,7 @@ export const impersonateTenant = async (req: Request, res: Response) => {
     // real SUPER_ADMIN driving it (see logAudit, which reads this claim off
     // req.user) — previously the only trace was the single audit row below;
     // every subsequent action was indistinguishable from the tenant admin's own.
-    const token = generateToken(adminUser.id, adminUser.restaurantId, adminUser.role, req.user!.userId);
+    const token = generateToken(adminUser.id, adminUser.restaurantId, adminUser.role, adminUser.isRootAdmin, req.user!.userId);
     setAuthCookie(res, token);
     // Stash the SUPER_ADMIN's own current token server-side (also httpOnly)
     // so stop-impersonation can restore it without a fresh login. req.token is
