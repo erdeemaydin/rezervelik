@@ -11,7 +11,18 @@ const router = Router();
 // callable at unlimited speed — combined with the secret-token check, that's
 // an unthrottled guessing oracle against the single most privileged account
 // in the system. Same tight per-IP window as /auth/login.
-const setupRateLimit = rateLimitOrNoop({ windowMs: 15 * 60_000, max: 10, keyPrefix: 'setup-super-admin' });
+// exemptAuthenticated: false — this route isn't mounted behind tenantMiddleware,
+// so req.restaurantId is never set here, which would otherwise make the shared
+// limiter's staff-bypass treat ANY valid JWT (including one from self-registering
+// a free account via POST /api/auth/register, on by default) as exempt and
+// reopen the unthrottled-guessing-oracle this limiter exists to close. This
+// route has no legitimate "staff" caller at all, so throttle by IP only.
+const setupRateLimit = rateLimitOrNoop({
+  windowMs: 15 * 60_000,
+  max: 10,
+  keyPrefix: 'setup-super-admin',
+  exemptAuthenticated: false
+});
 router.post('/setup-super-admin', setupRateLimit, systemController.createSuperAdmin);
 
 // Requires a valid session but NOT specifically SUPER_ADMIN — while
