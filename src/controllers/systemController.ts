@@ -4,6 +4,7 @@ import bcrypt from 'bcrypt';
 import prisma from '../config/prisma';
 import { successResponse, errorResponse } from '../utils/response';
 import { generateResetToken, RESET_TOKEN_TTL_MS, generateHashedToken } from '../utils/resetToken';
+import { validatePassword } from '../utils/passwordPolicy';
 
 const SETUP_TOKEN_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
 import {
@@ -431,9 +432,30 @@ export const createSuperAdmin = async (req: Request, res: Response) => {
   try {
     const { email, password, firstName, lastName, secretToken } = req.body;
 
+    if (!email || !password || !firstName || !lastName) {
+      return errorResponse(res, 'errors.validation_error', 400, { message: 'Required fields missing' });
+    }
+
+    // Security-audit finding: this endpoint mints the highest-privilege
+    // account in the system (SUPER_ADMIN) and was gated only by a plain `!==`
+    // string comparison with zero rate limiting — a timing side-channel
+    // (leaking how many leading characters matched) combined with unlimited
+    // guesses. Every other secret comparison in this codebase (TOTP, PayTR
+    // callback hash) already uses crypto.timingSafeEqual; this one didn't.
+    // Route-level rate limiting is added alongside this in systemRoutes.ts.
     const envSecretToken = process.env.SETUP_SECRET_TOKEN;
-    if (!envSecretToken || secretToken !== envSecretToken) {
+    const providedToken = typeof secretToken === 'string' ? secretToken : '';
+    const tokenMatches =
+      !!envSecretToken &&
+      Buffer.byteLength(providedToken) === Buffer.byteLength(envSecretToken) &&
+      crypto.timingSafeEqual(Buffer.from(providedToken), Buffer.from(envSecretToken));
+    if (!tokenMatches) {
       return errorResponse(res, 'errors.unauthorized', 403, { message: 'Invalid or unconfigured setup token' });
+    }
+
+    const policy = validatePassword(password);
+    if (!policy.valid) {
+      return errorResponse(res, 'errors.password_policy', 400, { failed: policy.failed });
     }
 
     const existingUser = await prisma.user.findUnique({ where: { email } });

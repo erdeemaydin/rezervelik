@@ -2,11 +2,17 @@ import { Router } from 'express';
 import * as systemController from '../controllers/systemController';
 import * as auditController from '../controllers/auditController';
 import { authMiddleware, roleMiddleware, requireActiveSuperAdmin } from '../middlewares/auth';
+import { rateLimitOrNoop } from '../middlewares/rateLimit';
 
 const router = Router();
 
-// Open route for initial setup (in reality, protect this via CLI or secret env var)
-router.post('/setup-super-admin', systemController.createSuperAdmin);
+// Open route for initial setup (in reality, protect this via CLI or secret env var).
+// Security-audit finding: this mints a SUPER_ADMIN account and was previously
+// callable at unlimited speed — combined with the secret-token check, that's
+// an unthrottled guessing oracle against the single most privileged account
+// in the system. Same tight per-IP window as /auth/login.
+const setupRateLimit = rateLimitOrNoop({ windowMs: 15 * 60_000, max: 10, keyPrefix: 'setup-super-admin' });
+router.post('/setup-super-admin', setupRateLimit, systemController.createSuperAdmin);
 
 // Requires a valid session but NOT specifically SUPER_ADMIN — while
 // impersonating, the current session's role is the impersonated tenant
