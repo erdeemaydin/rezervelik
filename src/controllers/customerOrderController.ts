@@ -128,6 +128,29 @@ export const getOrderableMenu = async (req: Request, res: Response) => {
 };
 
 // ---------------------------------------------------------------------------
+// Delivery zones (anonymous, read-only) — orderPricingService resolves a
+// quote from an already-chosen zoneId rather than doing geo/radius matching
+// itself (see its file comment), so the customer flow needs to know which
+// zones exist and what they cost before the address step can offer a picker.
+// Only active zones, only the fields a customer needs to choose one.
+// ---------------------------------------------------------------------------
+
+export const listPublicDeliveryZones = async (req: Request, res: Response) => {
+  try {
+    const restaurantId = req.restaurantId!;
+    const zones = await prisma.deliveryZone.findMany({
+      where: { restaurantId, isActive: true },
+      orderBy: { name: 'asc' },
+      select: { id: true, name: true, deliveryFee: true, minOrderAmount: true },
+    });
+    return successResponse(res, zones);
+  } catch (error) {
+    console.error('[CustomerOrder] listPublicDeliveryZones error:', error);
+    return errorResponse(res, 'errors.internal_error', 500);
+  }
+};
+
+// ---------------------------------------------------------------------------
 // Quote (anonymous — happens before phone identification in the flow, per
 // spec §5: browse -> cart -> fulfillment/address -> identify by phone)
 // ---------------------------------------------------------------------------

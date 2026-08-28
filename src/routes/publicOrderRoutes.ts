@@ -27,6 +27,7 @@ router.post('/otp/verify', otpRateLimit('order-otp-verify'), customerOrderContro
 // flow (spec §5) — no customerAuth required, but both respect the tenant's
 // manual "closed for now" kill-switch.
 router.get('/menu', requireOnlineOrderingOpen, customerOrderController.getOrderableMenu);
+router.get('/zones', requireOnlineOrderingOpen, customerOrderController.listPublicDeliveryZones);
 router.post(
   '/quote',
   requireOnlineOrderingOpen,
