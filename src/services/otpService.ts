@@ -12,10 +12,18 @@ import { sendSms } from './messaging';
 
 const OTP_LENGTH = 6;
 const OTP_TTL_MS = 5 * 60_000; // 5 minutes
-const MAX_ATTEMPTS = 5;
+const MAX_ATTEMPTS = 5; // per individual challenge row
 const RESEND_COOLDOWN_MS = 60_000; // 60s between two requests for the same phone
 const MAX_REQUESTS_PER_WINDOW = 5; // per-phone cap, independent of the per-IP limiter
 const PER_PHONE_WINDOW_MS = 15 * 60_000;
+// Cumulative wrong-code guesses allowed across ALL challenges for a phone
+// within PER_PHONE_WINDOW_MS — not just the single most-recent row. Without
+// this, a resend (gated only by the 60s cooldown / 5-requests cap above)
+// mints a fresh attempts=0 row, so an attacker could get MAX_ATTEMPTS fresh
+// guesses per resend — up to 5x the per-request cap — before hitting
+// MAX_REQUESTS_PER_WINDOW. This cap is checked independently of, and in
+// addition to, the per-row MAX_ATTEMPTS check below.
+const MAX_ATTEMPTS_PER_WINDOW = 5;
 
 function generateCode(): string {
   // crypto.randomInt, not Math.random — this gates account access.
@@ -83,11 +91,31 @@ export interface VerifyOtpParams {
   code: string;
 }
 
-/** Verifies the most recent unconsumed challenge for this phone. Throws
- *  AppError on any failure (not found / expired / too many attempts / wrong
- *  code) — callers don't need to distinguish these beyond the i18n code. */
-export async function verifyOtp(params: VerifyOtpParams): Promise<void> {
+/**
+ * Validates the most recent unconsumed challenge for this phone WITHOUT
+ * consuming it — returns the challenge id on success. Throws AppError on any
+ * failure (not found / expired / too many attempts / wrong code), identically
+ * regardless of whether a Customer already exists for this phone: callers
+ * must run this before branching on any phone-specific state (e.g. "is this
+ * a new customer, so we need a name"), otherwise a caller that checks
+ * customer-existence before calling this creates a phone-enumeration oracle
+ * — an attacker who doesn't have a valid code could tell registered phones
+ * apart from unregistered ones purely from which error comes back, without
+ * ever proving they received the SMS. Split from consumeOtp() below
+ * specifically so a caller can validate the code, decide it needs more
+ * information from the user (see customerOrderController.verifyOtp), and let
+ * the user resubmit the *same* code again rather than burning it. */
+export async function checkOtp(params: VerifyOtpParams): Promise<{ challengeId: string }> {
   const { restaurantId, phone, code } = params;
+
+  const recentWindowStart = new Date(Date.now() - PER_PHONE_WINDOW_MS);
+  const windowAttempts = await prisma.otpChallenge.aggregate({
+    where: { restaurantId, phone, createdAt: { gte: recentWindowStart } },
+    _sum: { attempts: true },
+  });
+  if ((windowAttempts._sum.attempts || 0) >= MAX_ATTEMPTS_PER_WINDOW) {
+    throw new AppError('errors.otp_too_many_attempts', 429);
+  }
 
   const challenge = await prisma.otpChallenge.findFirst({
     where: { restaurantId, phone, consumedAt: null },
@@ -113,8 +141,24 @@ export async function verifyOtp(params: VerifyOtpParams): Promise<void> {
     throw new AppError('errors.otp_invalid', 400);
   }
 
+  return { challengeId: challenge.id };
+}
+
+/** Marks a challenge validated by checkOtp() as consumed — call once the
+ *  caller has decided it will actually act on the verified phone (not just
+ *  ask the user for more information). */
+export async function consumeOtp(challengeId: string): Promise<void> {
   await prisma.otpChallenge.update({
-    where: { id: challenge.id },
+    where: { id: challengeId },
     data: { consumedAt: new Date() },
   });
+}
+
+/** Convenience wrapper: validates and immediately consumes in one call. Use
+ *  checkOtp()/consumeOtp() separately instead when the caller needs to make
+ *  a decision (e.g. "do I have enough info to proceed") between validating
+ *  the code and committing to having used it. */
+export async function verifyOtp(params: VerifyOtpParams): Promise<void> {
+  const { challengeId } = await checkOtp(params);
+  await consumeOtp(challengeId);
 }

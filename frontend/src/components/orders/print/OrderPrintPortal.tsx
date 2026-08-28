@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { StaffOrder, StaffOrderItem } from '@/app/order-station/types';
 import { KitchenTicketTemplate, CourierSlipTemplate, CustomerReceiptTemplate, formatTRY } from './templates';
 import { tryPrintViaQz } from '@/lib/qzPrint';
@@ -67,16 +67,30 @@ export function PrintStyles() {
 // page.tsx instead of a single printJob value.
 export default function OrderPrintPortal({ job, onDone }: { job: PrintJob | null; onDone: () => void }) {
   const printingRef = useRef(false);
+  // Snapshot of the job actually being printed, rendered instead of the raw
+  // `job` prop. Without this, the DOM under #order-print-root is bound
+  // directly to whatever `job` the parent last passed — if the parent swaps
+  // to a second order while the first print's 80ms setTimeout (below) is
+  // still pending, the guard correctly refuses to START a second print
+  // cycle, but the already-scheduled window.print() call fires against
+  // whatever is CURRENTLY rendered, which by then is the second order's
+  // ticket. Pinning render to a snapshot taken the instant we lock
+  // printingRef keeps what's on screen (and thus what actually prints)
+  // stable for the duration of one print cycle, regardless of later prop
+  // changes.
+  const [activeJob, setActiveJob] = useState<PrintJob | null>(null);
 
   useEffect(() => {
     if (!job || printingRef.current) return;
     printingRef.current = true;
+    setActiveJob(job);
 
     let finished = false;
     const finish = () => {
       if (finished) return;
       finished = true;
       printingRef.current = false;
+      setActiveJob(null);
       window.removeEventListener('afterprint', finish);
       onDone();
     };
@@ -108,13 +122,13 @@ export default function OrderPrintPortal({ job, onDone }: { job: PrintJob | null
   return (
     <div id="order-print-portal-root">
       <PrintStyles />
-      {job && (
+      {activeJob && (
         <div id="order-print-root">
-          {job.templates.map((kind) => (
+          {activeJob.templates.map((kind) => (
             <div key={kind} className="print-doc pb-4">
-              {kind === 'kitchen' && <KitchenTicketTemplate order={job.order} />}
-              {kind === 'courier' && <CourierSlipTemplate order={job.order} />}
-              {kind === 'receipt' && <CustomerReceiptTemplate order={job.order} />}
+              {kind === 'kitchen' && <KitchenTicketTemplate order={activeJob.order} />}
+              {kind === 'courier' && <CourierSlipTemplate order={activeJob.order} />}
+              {kind === 'receipt' && <CustomerReceiptTemplate order={activeJob.order} />}
             </div>
           ))}
         </div>

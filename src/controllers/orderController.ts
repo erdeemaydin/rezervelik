@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import prisma from '../config/prisma';
 import { successResponse, errorResponse } from '../utils/response';
+import { AppError } from '../utils/AppError';
 import { logAudit } from '../services/auditService';
 import { subscribeToRestaurant, publishOrderEvent } from '../services/orderEvents';
 
@@ -8,6 +9,10 @@ import { subscribeToRestaurant, publishOrderEvent } from '../services/orderEvent
 // tenantMiddleware + authMiddleware + requirePermission('manage_orders') in
 // src/routes/orderRoutes.ts. Every query below is scoped by restaurantId —
 // this is the single most important thing to get right per CLAUDE.md.
+
+const VALID_ORDER_STATUSES = new Set([
+  'NEW', 'ACCEPTED', 'PREPARING', 'READY', 'OUT_FOR_DELIVERY', 'COMPLETED', 'CANCELLED', 'REJECTED',
+]);
 
 // ---------------------------------------------------------------------------
 // Board
@@ -20,6 +25,12 @@ export const listOrders = async (req: Request, res: Response) => {
     const statuses = typeof statusParam === 'string' && statusParam.length
       ? statusParam.split(',').map((s) => s.trim()).filter(Boolean)
       : undefined;
+    // An unrecognized status would otherwise reach Prisma's `status: { in }`
+    // filter, which throws on a value outside the OrderStatus enum — an
+    // unvalidated client param 500ing instead of cleanly 400ing.
+    if (statuses && statuses.some((s) => !VALID_ORDER_STATUSES.has(s))) {
+      return errorResponse(res, 'errors.validation_error', 400, { message: 'Unknown status value' });
+    }
 
     // Deviation (dashboard/orders history, not in the original Phase 1c
     // contract): optional createdAt range so the tenant-admin history view can
@@ -152,9 +163,26 @@ export const updateOrderStatus = async (req: Request, res: Response) => {
       return errorResponse(res, 'errors.order_invalid_transition', 400, { message: 'A delivery order must pass through OUT_FOR_DELIVERY before COMPLETED' });
     }
 
-    const updated = await prisma.order.update({
-      where: { id: order.id },
+    // Conditional write, not a plain update: the transition was validated
+    // against `order.status` as read above, but nothing stopped a second
+    // concurrent request (two staff tapping the same order, or a duplicate
+    // client retry) from reading the same stale status and both passing
+    // validation — an unconditional update() would let whichever commits
+    // last silently win (lost update), e.g. a CANCELLED overwriting an
+    // ACCEPTED with no error. Scoping the WHERE to the status we validated
+    // against makes the write itself atomic: only the request that's still
+    // acting on the current state can succeed.
+    const { count } = await prisma.order.updateMany({
+      where: { id: order.id, status: order.status },
       data: { status },
+    });
+    if (count === 0) {
+      return errorResponse(res, 'errors.order_status_conflict', 409, {
+        message: 'Order status changed since it was last read — refresh and retry',
+      });
+    }
+    const updated = await prisma.order.findUniqueOrThrow({
+      where: { id: order.id },
       include: { items: true },
     });
 
@@ -230,10 +258,15 @@ export const getCustomerDetail = async (req: Request, res: Response) => {
 export const getOrderSettings = async (req: Request, res: Response) => {
   try {
     const restaurantId = req.restaurantId!;
-    let settings = await prisma.orderSettings.findUnique({ where: { restaurantId } });
-    if (!settings) {
-      settings = await prisma.orderSettings.create({ data: { restaurantId } });
-    }
+    // upsert, not find-then-create: two concurrent first-ever GETs for the
+    // same tenant would otherwise both find null and both try to create,
+    // and the loser hits OrderSettings' restaurantId unique-constraint
+    // violation and 500s instead of just getting the row the winner made.
+    const settings = await prisma.orderSettings.upsert({
+      where: { restaurantId },
+      update: {},
+      create: { restaurantId },
+    });
     return successResponse(res, settings);
   } catch (error) {
     console.error('[Order] getOrderSettings error:', error);
@@ -261,8 +294,8 @@ export const updateOrderSettings = async (req: Request, res: Response) => {
       pickupEnabled,
       cashOnDeliveryEnabled,
       onlineCardEnabled,
-      maxConcurrentOrders: maxConcurrentOrders === null ? null : (maxConcurrentOrders !== undefined ? Number(maxConcurrentOrders) : undefined),
-      prepTimeMinutes: prepTimeMinutes !== undefined ? Number(prepTimeMinutes) : undefined,
+      maxConcurrentOrders: maxConcurrentOrders === null ? null : parseOptionalFiniteNumber(maxConcurrentOrders, 'maxConcurrentOrders'),
+      prepTimeMinutes: parseOptionalFiniteNumber(prepTimeMinutes, 'prepTimeMinutes'),
       orderHours,
     };
 
@@ -274,6 +307,7 @@ export const updateOrderSettings = async (req: Request, res: Response) => {
 
     return successResponse(res, settings);
   } catch (error) {
+    if (error instanceof AppError) return errorResponse(res, error.code, error.status, error.details);
     console.error('[Order] updateOrderSettings error:', error);
     return errorResponse(res, 'errors.internal_error', 500);
   }
@@ -294,6 +328,22 @@ export const listDeliveryZones = async (req: Request, res: Response) => {
   }
 };
 
+// Number(x) on a malformed value (e.g. "" or "abc") silently produces NaN,
+// which Prisma happily persists into a Float column — orderPricingService
+// then computes total = subtotal + NaN and meetsMinimum = subtotal >= NaN
+// (always false), permanently and silently breaking every order against
+// that zone. Returns undefined for "field not sent" (leave column
+// untouched on update / let the schema default apply on create) and throws
+// for "field sent but not a finite number".
+function parseOptionalFiniteNumber(value: unknown, field: string): number | undefined {
+  if (value === undefined || value === null) return undefined;
+  const n = Number(value);
+  if (!Number.isFinite(n)) {
+    throw new AppError('errors.validation_error', 400, { message: `${field} must be a number` });
+  }
+  return n;
+}
+
 export const createDeliveryZone = async (req: Request, res: Response) => {
   try {
     const restaurantId = req.restaurantId!;
@@ -303,21 +353,26 @@ export const createDeliveryZone = async (req: Request, res: Response) => {
       return errorResponse(res, 'errors.validation_error', 400, { message: 'name and deliveryFee are required' });
     }
 
+    const parsedDeliveryFee = parseOptionalFiniteNumber(deliveryFee, 'deliveryFee');
+    const parsedRadiusMeters = parseOptionalFiniteNumber(radiusMeters, 'radiusMeters');
+    const parsedMinOrderAmount = parseOptionalFiniteNumber(minOrderAmount, 'minOrderAmount');
+
     const zone = await prisma.deliveryZone.create({
       data: {
         restaurantId,
         name,
         matchType: matchType || 'RADIUS',
-        radiusMeters: radiusMeters !== undefined ? Number(radiusMeters) : undefined,
+        radiusMeters: parsedRadiusMeters,
         polygon,
-        deliveryFee: Number(deliveryFee),
-        minOrderAmount: minOrderAmount !== undefined ? Number(minOrderAmount) : undefined,
+        deliveryFee: parsedDeliveryFee!,
+        minOrderAmount: parsedMinOrderAmount,
         isActive: isActive !== undefined ? Boolean(isActive) : undefined,
         openHours,
       },
     });
     return successResponse(res, zone, undefined, 201);
   } catch (error) {
+    if (error instanceof AppError) return errorResponse(res, error.code, error.status, error.details);
     console.error('[Order] createDeliveryZone error:', error);
     return errorResponse(res, 'errors.internal_error', 500);
   }
@@ -337,16 +392,17 @@ export const updateDeliveryZone = async (req: Request, res: Response) => {
       data: {
         name,
         matchType,
-        radiusMeters: radiusMeters !== undefined ? Number(radiusMeters) : undefined,
+        radiusMeters: parseOptionalFiniteNumber(radiusMeters, 'radiusMeters'),
         polygon,
-        deliveryFee: deliveryFee !== undefined ? Number(deliveryFee) : undefined,
-        minOrderAmount: minOrderAmount !== undefined ? Number(minOrderAmount) : undefined,
+        deliveryFee: parseOptionalFiniteNumber(deliveryFee, 'deliveryFee'),
+        minOrderAmount: parseOptionalFiniteNumber(minOrderAmount, 'minOrderAmount'),
         isActive,
         openHours,
       },
     });
     return successResponse(res, zone);
   } catch (error) {
+    if (error instanceof AppError) return errorResponse(res, error.code, error.status, error.details);
     console.error('[Order] updateDeliveryZone error:', error);
     return errorResponse(res, 'errors.internal_error', 500);
   }

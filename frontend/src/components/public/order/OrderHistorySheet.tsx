@@ -7,11 +7,11 @@ import { useTranslation } from '@/i18n/provider';
 import { fetchMyOrders, type OrderRecord } from '@/lib/orderApi';
 import type { OrderTheme } from '@/lib/orderTheme';
 import PhoneIdentify from './PhoneIdentify';
-
-const formatTRY = (n: number) => n.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' });
+import { formatMoney } from '@/lib/currency';
 
 export default function OrderHistorySheet({
   theme,
+  currency,
   restaurantId,
   open,
   onOpenChange,
@@ -19,13 +19,15 @@ export default function OrderHistorySheet({
   onIdentified,
 }: {
   theme: OrderTheme;
+  currency: string;
   restaurantId: string;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   authed: boolean;
   onIdentified: (customer: { id: string; name: string; phone: string }) => void;
 }) {
-  const { t } = useTranslation();
+  const { t, locale } = useTranslation();
+  const formatPrice = (n: number) => formatMoney(n, currency, locale);
   const [orders, setOrders] = useState<OrderRecord[] | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -83,7 +85,7 @@ export default function OrderHistorySheet({
                   <p className="mt-1 text-xs" style={{ color: theme.muted }}>
                     {order.items.map((it) => `${it.quantity}× ${it.nameSnapshot}`).join(', ')}
                   </p>
-                  <p className="mt-1.5 text-sm font-bold" style={{ color: theme.text }}>{formatTRY(order.total)}</p>
+                  <p className="mt-1.5 text-sm font-bold" style={{ color: theme.text }}>{formatPrice(order.total)}</p>
                 </div>
               ))}
             </div>

@@ -47,7 +47,8 @@
     "order_below_minimum": "Your order is below the minimum for this delivery area.",
     "order_rate_limited": "Too many orders placed recently. Please wait a moment and try again.",
     "order_not_found": "Order not found.",
-    "order_invalid_transition": "That order status change is not allowed."
+    "order_invalid_transition": "That order status change is not allowed.",
+    "order_status_conflict": "This order's status was just changed by someone else. Refresh and try again."
   },
   "messages": {
     "reservation_created": "Reservation created successfully",

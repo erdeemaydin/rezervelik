@@ -8,12 +8,12 @@ import type { OrderableMenuCategory, OrderableMenuItem, CartEntry } from '@/lib/
 import type { OrderTheme } from '@/lib/orderTheme';
 import ItemCustomizeDialog from './ItemCustomizeDialog';
 import { cn } from '@/lib/utils';
-
-const formatTRY = (n: number) => n.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' });
+import { formatMoney } from '@/lib/currency';
 
 export default function MenuStep({
   categories,
   theme,
+  currency,
   cartCount,
   cartEstimatedTotal,
   onAddToCart,
@@ -21,12 +21,14 @@ export default function MenuStep({
 }: {
   categories: OrderableMenuCategory[];
   theme: OrderTheme;
+  currency: string;
   cartCount: number;
   cartEstimatedTotal: number;
   onAddToCart: (entry: CartEntry) => void;
   onOpenCart: () => void;
 }) {
-  const { t } = useTranslation();
+  const { t, locale } = useTranslation();
+  const formatPrice = (n: number) => formatMoney(n, currency, locale);
   const [activeItem, setActiveItem] = useState<OrderableMenuItem | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
 
@@ -70,7 +72,7 @@ export default function MenuStep({
                     <p className="mt-0.5 line-clamp-2 text-xs" style={{ color: theme.muted }}>{item.description}</p>
                   )}
                   <div className="mt-1.5 flex items-center gap-2">
-                    <span className="text-sm font-bold" style={{ color: theme.primary }}>{formatTRY(item.price)}</span>
+                    <span className="text-sm font-bold" style={{ color: theme.primary }}>{formatPrice(item.price)}</span>
                     {!!item.spiceLevel && item.spiceLevel > 0 && <Flame className="h-3.5 w-3.5 text-red-500" />}
                     {item.dietaryTags && <Leaf className="h-3.5 w-3.5 text-emerald-600" />}
                     {item.allergens && <AlertTriangle className="h-3.5 w-3.5 text-amber-500" />}
@@ -88,7 +90,7 @@ export default function MenuStep({
         </div>
       ))}
 
-      <ItemCustomizeDialog item={activeItem} theme={theme} open={dialogOpen} onOpenChange={setDialogOpen} onAdd={onAddToCart} />
+      <ItemCustomizeDialog item={activeItem} theme={theme} currency={currency} open={dialogOpen} onOpenChange={setDialogOpen} onAdd={onAddToCart} />
 
       {cartCount > 0 && (
         <div className="fixed inset-x-0 bottom-0 z-40 border-t p-3" style={{ backgroundColor: theme.surface, borderColor: theme.border }}>
@@ -103,7 +105,7 @@ export default function MenuStep({
                 <ShoppingBag className="h-4 w-4" />
                 {cartCount} {t('publicOrder.menu.itemsSuffix')}
               </span>
-              <span>{t('publicOrder.menu.viewCart')} · {formatTRY(cartEstimatedTotal)}</span>
+              <span>{t('publicOrder.menu.viewCart')} · {formatPrice(cartEstimatedTotal)}</span>
             </Button>
           </div>
         </div>

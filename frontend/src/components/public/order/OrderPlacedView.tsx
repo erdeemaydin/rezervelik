@@ -6,26 +6,28 @@ import { Button } from '@/components/ui/button';
 import { useTranslation } from '@/i18n/provider';
 import { fetchMyOrders, type OrderRecord } from '@/lib/orderApi';
 import type { OrderTheme } from '@/lib/orderTheme';
-
-const formatTRY = (n: number) => n.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' });
+import { formatMoney } from '@/lib/currency';
 
 const TERMINAL_STATUSES = ['COMPLETED', 'CANCELLED', 'REJECTED'];
 const POLL_MS = 15000;
 
 export default function OrderPlacedView({
   theme,
+  currency,
   restaurantId,
   order,
   onOrderAgain,
   onViewHistory,
 }: {
   theme: OrderTheme;
+  currency: string;
   restaurantId: string;
   order: OrderRecord;
   onOrderAgain: () => void;
   onViewHistory: () => void;
 }) {
-  const { t } = useTranslation();
+  const { t, locale } = useTranslation();
+  const formatPrice = (n: number) => formatMoney(n, currency, locale);
   const [current, setCurrent] = useState<OrderRecord>(order);
 
   useEffect(() => {
@@ -69,7 +71,7 @@ export default function OrderPlacedView({
         )}
         <div className="mt-3 flex items-center justify-between text-sm font-bold" style={{ color: theme.text }}>
           <span>{t('publicOrder.quote.total')}</span>
-          <span>{formatTRY(current.total)}</span>
+          <span>{formatPrice(current.total)}</span>
         </div>
       </div>
 

@@ -47,7 +47,8 @@
     "order_below_minimum": "Siparişiniz bu teslimat bölgesi için minimum tutarın altında.",
     "order_rate_limited": "Kısa süre içinde çok fazla sipariş verildi. Lütfen biraz bekleyip tekrar deneyin.",
     "order_not_found": "Sipariş bulunamadı.",
-    "order_invalid_transition": "Bu sipariş durumu değişikliğine izin verilmiyor."
+    "order_invalid_transition": "Bu sipariş durumu değişikliğine izin verilmiyor.",
+    "order_status_conflict": "Bu siparişin durumu az önce başka biri tarafından değiştirildi. Sayfayı yenileyip tekrar deneyin."
   },
   "messages": {
     "reservation_created": "Rezervasyon başarıyla oluşturuldu",

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { ChevronLeft, History, Loader2, AlertTriangle, StoreIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -38,8 +38,12 @@ type Step = 'menu' | 'checkout' | 'identify' | 'payment' | 'placed';
 const QUOTE_DEBOUNCE_MS = 400;
 
 export default function OrderExperience({ restaurant }: { restaurant: any }) {
-  const { t } = useTranslation();
+  const { t, locale } = useTranslation();
   const theme = getOrderTheme(restaurant.customization);
+  // Tenant's configured currency (RestaurantSettings.currency, already
+  // returned by GET /public/restaurant/:slug) — not a hardcoded 'TRY', same
+  // reasoning as dashboard/menus' formatPrice.
+  const currency = restaurant.settings?.currency || 'TRY';
 
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -64,6 +68,12 @@ export default function OrderExperience({ restaurant }: { restaurant: any }) {
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod | null>(null);
   const [customerNote, setCustomerNote] = useState('');
   const [placing, setPlacing] = useState(false);
+  // Synchronous re-entry guard, separate from the `placing` state: two rapid
+  // clicks/taps can both fire before React commits the disabled attribute
+  // the `placing` state drives, which would otherwise place two real,
+  // separately-charged orders for one user action. A ref updates immediately,
+  // not on the next render.
+  const placingRef = useRef(false);
   const [placeError, setPlaceError] = useState<string | null>(null);
   const [placedOrder, setPlacedOrder] = useState<OrderRecord | null>(null);
 
@@ -193,7 +203,8 @@ export default function OrderExperience({ restaurant }: { restaurant: any }) {
   };
 
   const handlePlaceOrder = async () => {
-    if (!paymentMethod) return;
+    if (!paymentMethod || placingRef.current) return;
+    placingRef.current = true;
     try {
       setPlacing(true);
       setPlaceError(null);
@@ -218,6 +229,7 @@ export default function OrderExperience({ restaurant }: { restaurant: any }) {
     } catch (err) {
       setPlaceError(orderApiErrorMessage(err, t('publicOrder.confirm.placeFailed')));
     } finally {
+      placingRef.current = false;
       setPlacing(false);
     }
   };
@@ -285,6 +297,7 @@ export default function OrderExperience({ restaurant }: { restaurant: any }) {
               <MenuStep
                 categories={categories}
                 theme={theme}
+                currency={currency}
                 cartCount={cartCount}
                 cartEstimatedTotal={cartEstimatedTotal}
                 onAddToCart={addToCart}
@@ -294,6 +307,7 @@ export default function OrderExperience({ restaurant }: { restaurant: any }) {
             {step === 'checkout' && settings && (
               <CartFulfillmentStep
                 theme={theme}
+                currency={currency}
                 cart={cart}
                 onUpdateQty={updateQty}
                 onRemove={removeFromCart}
@@ -324,6 +338,7 @@ export default function OrderExperience({ restaurant }: { restaurant: any }) {
             {step === 'payment' && settings && (
               <PaymentConfirmStep
                 theme={theme}
+                currency={currency}
                 settings={settings}
                 fulfillmentType={fulfillmentType}
                 paymentMethod={paymentMethod}
@@ -339,6 +354,7 @@ export default function OrderExperience({ restaurant }: { restaurant: any }) {
             {step === 'placed' && placedOrder && (
               <OrderPlacedView
                 theme={theme}
+                currency={currency}
                 restaurantId={restaurant.id}
                 order={placedOrder}
                 onOrderAgain={() => {
@@ -370,6 +386,7 @@ export default function OrderExperience({ restaurant }: { restaurant: any }) {
 
       <OrderHistorySheet
         theme={theme}
+        currency={currency}
         restaurantId={restaurant.id}
         open={historyOpen}
         onOpenChange={setHistoryOpen}

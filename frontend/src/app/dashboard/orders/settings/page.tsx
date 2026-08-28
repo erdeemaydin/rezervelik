@@ -158,7 +158,10 @@ export default function OrderSettingsPage() {
         pickupEnabled: form.pickupEnabled,
         cashOnDeliveryEnabled: form.cashOnDeliveryEnabled,
         maxConcurrentOrders: form.maxConcurrentOrders === '' ? null : Number(form.maxConcurrentOrders),
-        prepTimeMinutes: Number(form.prepTimeMinutes) || 20,
+        // `|| 20` would silently discard a legitimate 0 (the field allows
+        // min="0" to disable the buffer) since 0 is falsy — only fall back
+        // to 20 when the field is genuinely empty/non-numeric.
+        prepTimeMinutes: form.prepTimeMinutes !== '' && !Number.isNaN(Number(form.prepTimeMinutes)) ? Number(form.prepTimeMinutes) : 20,
         orderHours: form.orderHours,
       });
       toast.success(t('orders.settings.saved'));

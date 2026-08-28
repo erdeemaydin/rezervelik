@@ -692,7 +692,7 @@ export default function ClassicLayout({ slug, initialRestaurant, initialView = '
               )}
               <div className="flex flex-col gap-3 sm:flex-row">
                   {bookingOnly ? (
-                      <Button nativeButton={false} variant="outline" className="h-14 rounded-full border-black/10 px-8 text-base font-medium" render={<Link href={`/r/${slug}`} />}>
+                      <Button nativeButton={false} variant="outline" className="h-14 rounded-full border-black/10 px-8 text-base font-medium" render={<Link href={`/r/${slug}/menu`} />}>
                           <Utensils className="mr-2 h-4 w-4" /> Explore Our Menu
                       </Button>
                   ) : (

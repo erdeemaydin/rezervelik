@@ -7,11 +7,11 @@ import { Button } from '@/components/ui/button';
 import { useTranslation } from '@/i18n/provider';
 import type { OrderQuote, PaymentMethod, PublicOrderSettings, FulfillmentType } from '@/lib/orderApi';
 import type { OrderTheme } from '@/lib/orderTheme';
-
-const formatTRY = (n: number) => n.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' });
+import { formatMoney } from '@/lib/currency';
 
 export default function PaymentConfirmStep({
   theme,
+  currency,
   settings,
   fulfillmentType,
   paymentMethod,
@@ -24,6 +24,7 @@ export default function PaymentConfirmStep({
   onPlaceOrder,
 }: {
   theme: OrderTheme;
+  currency: string;
   settings: PublicOrderSettings;
   fulfillmentType: FulfillmentType;
   paymentMethod: PaymentMethod | null;
@@ -35,7 +36,8 @@ export default function PaymentConfirmStep({
   placeError: string | null;
   onPlaceOrder: () => void;
 }) {
-  const { t } = useTranslation();
+  const { t, locale } = useTranslation();
+  const formatPrice = (n: number) => formatMoney(n, currency, locale);
   const noMethodsAvailable = !settings.cashOnDeliveryEnabled && !settings.onlineCardEnabled;
 
   return (
@@ -97,22 +99,22 @@ export default function PaymentConfirmStep({
             {quote.lines.map((line) => (
               <div key={line.menuItemId + line.modifiers.map((m) => m.id).join(',')} className="flex justify-between gap-2" style={{ color: theme.muted }}>
                 <span className="min-w-0 truncate">{line.quantity}× {line.name}</span>
-                <span className="shrink-0">{formatTRY(line.lineTotal)}</span>
+                <span className="shrink-0">{formatPrice(line.lineTotal)}</span>
               </div>
             ))}
             <div className="mt-2 flex justify-between pt-2 border-t" style={{ borderColor: theme.border, color: theme.muted }}>
               <span>{t('publicOrder.quote.subtotal')}</span>
-              <span>{formatTRY(quote.subtotal)}</span>
+              <span>{formatPrice(quote.subtotal)}</span>
             </div>
             {fulfillmentType === 'DELIVERY' && (
               <div className="flex justify-between" style={{ color: theme.muted }}>
                 <span>{t('publicOrder.quote.deliveryFee')}</span>
-                <span>{formatTRY(quote.deliveryFee)}</span>
+                <span>{formatPrice(quote.deliveryFee)}</span>
               </div>
             )}
             <div className="flex justify-between text-base font-bold pt-1" style={{ color: theme.text }}>
               <span>{t('publicOrder.quote.total')}</span>
-              <span>{formatTRY(quote.total)}</span>
+              <span>{formatPrice(quote.total)}</span>
             </div>
             <p className="pt-1 text-xs" style={{ color: theme.muted }}>
               {t('publicOrder.confirm.prepTimePrefix')} ~{quote.prepTimeMinutes} {t('publicOrder.confirm.minutesSuffix')}
@@ -136,7 +138,7 @@ export default function PaymentConfirmStep({
         className="h-12 w-full text-sm font-bold text-white"
         style={{ backgroundColor: theme.primary }}
       >
-        {placing ? <Loader2 className="h-4 w-4 animate-spin" /> : quote ? `${t('publicOrder.confirm.placeOrderButton')} · ${formatTRY(quote.total)}` : t('publicOrder.confirm.placeOrderButton')}
+        {placing ? <Loader2 className="h-4 w-4 animate-spin" /> : quote ? `${t('publicOrder.confirm.placeOrderButton')} · ${formatPrice(quote.total)}` : t('publicOrder.confirm.placeOrderButton')}
       </Button>
     </div>
   );

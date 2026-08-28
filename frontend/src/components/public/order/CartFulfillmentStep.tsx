@@ -7,8 +7,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { useTranslation } from '@/i18n/provider';
 import type { CartEntry, FulfillmentType, OrderQuote, PublicDeliveryZone, PublicOrderSettings } from '@/lib/orderApi';
 import type { OrderTheme } from '@/lib/orderTheme';
-
-const formatTRY = (n: number) => n.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' });
+import { formatMoney } from '@/lib/currency';
 
 export interface AddressFormState {
   fullAddress: string;
@@ -18,6 +17,7 @@ export interface AddressFormState {
 
 export default function CartFulfillmentStep({
   theme,
+  currency,
   cart,
   onUpdateQty,
   onRemove,
@@ -34,6 +34,7 @@ export default function CartFulfillmentStep({
   quoteError,
 }: {
   theme: OrderTheme;
+  currency: string;
   cart: CartEntry[];
   onUpdateQty: (key: string, quantity: number) => void;
   onRemove: (key: string) => void;
@@ -49,7 +50,8 @@ export default function CartFulfillmentStep({
   quoteLoading: boolean;
   quoteError: string | null;
 }) {
-  const { t } = useTranslation();
+  const { t, locale } = useTranslation();
+  const formatPrice = (n: number) => formatMoney(n, currency, locale);
   const selectedZone = zones.find((z) => z.id === zoneId) || null;
   const bothFulfillmentTypesAvailable = settings.deliveryEnabled && settings.pickupEnabled;
 
@@ -63,7 +65,7 @@ export default function CartFulfillmentStep({
               <div className="min-w-0 flex-1">
                 <p className="text-sm font-semibold" style={{ color: theme.text }}>{line.name}</p>
                 {line.modifierSummary && <p className="text-xs" style={{ color: theme.muted }}>{line.modifierSummary}</p>}
-                <p className="mt-1 text-sm font-bold" style={{ color: theme.primary }}>{formatTRY(line.unitPriceEstimate * line.quantity)}</p>
+                <p className="mt-1 text-sm font-bold" style={{ color: theme.primary }}>{formatPrice(line.unitPriceEstimate * line.quantity)}</p>
               </div>
               <div className="flex items-center gap-2">
                 <div className="flex items-center gap-1.5 rounded-full border px-1.5 py-1" style={{ borderColor: theme.border }}>
@@ -157,8 +159,8 @@ export default function CartFulfillmentStep({
                   >
                     <span className="font-semibold">{zone.name}</span>
                     <span className="text-xs" style={{ color: theme.muted }}>
-                      {t('publicOrder.address.deliveryFeeLabel')} {formatTRY(zone.deliveryFee)}
-                      {zone.minOrderAmount > 0 && <> · {t('publicOrder.address.minOrderLabel')} {formatTRY(zone.minOrderAmount)}</>}
+                      {t('publicOrder.address.deliveryFeeLabel')} {formatPrice(zone.deliveryFee)}
+                      {zone.minOrderAmount > 0 && <> · {t('publicOrder.address.minOrderLabel')} {formatPrice(zone.minOrderAmount)}</>}
                     </span>
                   </button>
                 ))}
@@ -209,21 +211,21 @@ export default function CartFulfillmentStep({
           <div className="space-y-1.5 text-sm">
             <div className="flex justify-between" style={{ color: theme.muted }}>
               <span>{t('publicOrder.quote.subtotal')}</span>
-              <span>{formatTRY(quote.subtotal)}</span>
+              <span>{formatPrice(quote.subtotal)}</span>
             </div>
             {fulfillmentType === 'DELIVERY' && (
               <div className="flex justify-between" style={{ color: theme.muted }}>
                 <span>{t('publicOrder.quote.deliveryFee')}</span>
-                <span>{formatTRY(quote.deliveryFee)}</span>
+                <span>{formatPrice(quote.deliveryFee)}</span>
               </div>
             )}
             <div className="flex justify-between text-base font-bold pt-1" style={{ color: theme.text }}>
               <span>{t('publicOrder.quote.total')}</span>
-              <span>{formatTRY(quote.total)}</span>
+              <span>{formatPrice(quote.total)}</span>
             </div>
             {fulfillmentType === 'DELIVERY' && !quote.meetsMinimum && selectedZone && (
               <p className="pt-1 text-xs font-semibold text-amber-600">
-                {t('publicOrder.quote.belowMinimum')} {formatTRY(selectedZone.minOrderAmount)}
+                {t('publicOrder.quote.belowMinimum')} {formatPrice(selectedZone.minOrderAmount)}
               </p>
             )}
           </div>

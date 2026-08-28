@@ -48,6 +48,9 @@ export interface OrderQuote {
   total: number;
   zoneId?: string;
   meetsMinimum: boolean;
+  // Only set for DELIVERY — the resolved zone's minimum, so callers can
+  // report "below minimum" without mislabeling subtotal as the minimum.
+  minOrderAmount?: number;
   prepTimeMinutes: number;
   lines: PricedLine[];
 }
@@ -168,6 +171,7 @@ export async function computeOrderQuote(params: QuoteParams): Promise<OrderQuote
   let deliveryFee = 0;
   let meetsMinimum = true;
   let resolvedZoneId: string | undefined;
+  let resolvedMinOrderAmount: number | undefined;
 
   if (fulfillmentType === 'DELIVERY') {
     if (!params.zoneId) {
@@ -181,6 +185,7 @@ export async function computeOrderQuote(params: QuoteParams): Promise<OrderQuote
     }
     resolvedZoneId = zone.id;
     deliveryFee = zone.deliveryFee;
+    resolvedMinOrderAmount = zone.minOrderAmount;
     meetsMinimum = subtotal >= zone.minOrderAmount;
   }
 
@@ -192,6 +197,7 @@ export async function computeOrderQuote(params: QuoteParams): Promise<OrderQuote
     total,
     zoneId: resolvedZoneId,
     meetsMinimum,
+    minOrderAmount: resolvedMinOrderAmount,
     prepTimeMinutes: slowestPrepTime || defaultPrepTime,
     lines,
   };

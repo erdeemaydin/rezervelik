@@ -7,6 +7,7 @@ import { computeOrderQuote, CartLineInput } from '../services/orderPricingServic
 import { generateCustomerToken } from '../utils/jwt';
 import { setCustomerSessionCookie, issueTrustedDevice } from '../middlewares/customerAuth';
 import { publishOrderEvent } from '../services/orderEvents';
+import { isValidPhone } from '../utils/phone';
 
 // Public, customer-facing endpoints for online ordering — /api/public/order/*.
 // Mounted behind tenantMiddleware (like the guest reservation-create path in
@@ -25,8 +26,8 @@ const clientIp = (req: Request): string =>
 export const requestOtp = async (req: Request, res: Response) => {
   const restaurantId = req.restaurantId!;
   const phone = typeof req.body?.phone === 'string' ? req.body.phone.trim() : '';
-  if (!phone) {
-    return errorResponse(res, 'errors.validation_error', 400, { message: 'phone is required' });
+  if (!phone || !isValidPhone(phone)) {
+    return errorResponse(res, 'errors.validation_error', 400, { message: 'a valid phone is required' });
   }
 
   try {
@@ -46,24 +47,29 @@ export const verifyOtp = async (req: Request, res: Response) => {
   const name = typeof req.body?.name === 'string' ? req.body.name.trim() : undefined;
   const trustDevice = req.body?.trustDevice === true;
 
-  if (!phone || !code) {
-    return errorResponse(res, 'errors.validation_error', 400, { message: 'phone and code are required' });
+  if (!phone || !isValidPhone(phone) || !code) {
+    return errorResponse(res, 'errors.validation_error', 400, { message: 'a valid phone and code are required' });
   }
 
   try {
+    // Validate the code before looking at any phone-specific state (whether
+    // a Customer already exists) — checking existence first and branching
+    // the error message on it would let anyone probe which phone numbers
+    // have ordered here before, without ever proving they hold a valid code.
+    // checkOtp() doesn't consume the challenge, so if we end up needing a
+    // name below, the customer can resubmit this same code rather than
+    // burning it and waiting out the resend cooldown.
+    const { challengeId } = await otpService.checkOtp({ restaurantId, phone, code });
+
     let customer = await prisma.customer.findUnique({
       where: { restaurantId_phone: { restaurantId, phone } },
     });
 
-    // Check name-required-for-signup *before* consuming the OTP code — a
-    // customer who forgets their name on their very first verify shouldn't
-    // have to burn a one-time code (and wait out the resend cooldown) just
-    // to retry with it filled in.
     if (!customer && !name) {
       return errorResponse(res, 'errors.order_name_required', 400);
     }
 
-    await otpService.verifyOtp({ restaurantId, phone, code });
+    await otpService.consumeOtp(challengeId);
 
     if (!customer) {
       customer = await prisma.customer.create({
@@ -318,7 +324,7 @@ export const placeOrder = async (req: Request, res: Response) => {
     // Recompute everything server-side — the whole point of this call.
     const quote = await computeOrderQuote({ restaurantId, items, fulfillmentType, zoneId });
     if (fulfillmentType === 'DELIVERY' && !quote.meetsMinimum) {
-      return errorResponse(res, 'errors.order_below_minimum', 400, { minOrderAmount: quote.subtotal, total: quote.total });
+      return errorResponse(res, 'errors.order_below_minimum', 400, { minOrderAmount: quote.minOrderAmount, subtotal: quote.subtotal });
     }
 
     const readyBy = new Date(Date.now() + quote.prepTimeMinutes * 60_000);

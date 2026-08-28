@@ -8,32 +8,38 @@ import { useTranslation } from '@/i18n/provider';
 import type { OrderableMenuItem, CartEntry } from '@/lib/orderApi';
 import type { OrderTheme } from '@/lib/orderTheme';
 import { cn } from '@/lib/utils';
-
-const formatTRY = (n: number) => n.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' });
+import { formatMoney } from '@/lib/currency';
 
 export default function ItemCustomizeDialog({
   item,
   theme,
+  currency,
   open,
   onOpenChange,
   onAdd,
 }: {
   item: OrderableMenuItem | null;
   theme: OrderTheme;
+  currency: string;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onAdd: (entry: CartEntry) => void;
 }) {
-  const { t } = useTranslation();
+  const { t, locale } = useTranslation();
+  const formatPrice = (n: number) => formatMoney(n, currency, locale);
   const [selected, setSelected] = useState<Record<string, string[]>>({});
   const [quantity, setQuantity] = useState(1);
 
   useEffect(() => {
-    if (item) {
+    // Keyed on `open` too, not just `item` — reopening the SAME menu item
+    // (same object reference, since the menu list isn't refetched between
+    // opens) after closing wouldn't otherwise re-fire this effect, leaving
+    // the previous session's quantity/modifier selections stale.
+    if (open && item) {
       setSelected({});
       setQuantity(1);
     }
-  }, [item]);
+  }, [item, open]);
 
   const modifiers = item?.modifiers || [];
 
@@ -125,7 +131,7 @@ export default function ItemCustomizeDialog({
           </DialogHeader>
 
           <div className="mt-3 text-base font-semibold" style={{ color: theme.primary }}>
-            {formatTRY(item.price)}
+            {formatPrice(item.price)}
           </div>
 
           {modifiers.length > 0 && (
@@ -169,7 +175,7 @@ export default function ItemCustomizeDialog({
                           </span>
                           {opt.priceAdjust !== 0 && (
                             <span style={{ color: theme.muted }}>
-                              {opt.priceAdjust > 0 ? '+' : ''}{formatTRY(opt.priceAdjust)}
+                              {opt.priceAdjust > 0 ? '+' : ''}{formatPrice(opt.priceAdjust)}
                             </span>
                           )}
                         </button>
@@ -215,7 +221,7 @@ export default function ItemCustomizeDialog({
             className="w-full h-11 text-sm font-bold text-white"
             style={{ backgroundColor: theme.primary }}
           >
-            {t('publicOrder.item.addToCart')} · {formatTRY(unitPrice * quantity)}
+            {t('publicOrder.item.addToCart')} · {formatPrice(unitPrice * quantity)}
           </Button>
         </div>
       </DialogContent>
