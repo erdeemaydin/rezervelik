@@ -82,3 +82,35 @@ export const verifyOtpChallengeToken = (token: string) => {
   }
   return decoded;
 };
+
+// --- Customer (online-ordering) session tokens -----------------------------
+//
+// Deliberately a *separate* token family from the staff session token above,
+// not a `role: 'CUSTOMER'` value on the same shape — verifyToken() (staff)
+// rejects anything carrying a `purpose` claim, so a customer token can never
+// be replayed against a staff-only route, and verifyCustomerToken() below
+// requires `purpose === 'customer_session'` plus a `customerId`, so a staff
+// token (no `purpose`, no `customerId`) can never be replayed the other way
+// either. Same mutual-exclusion trick as the otp_challenge token above, just
+// long-lived enough to actually hold a session (see CUSTOMER_JWT_EXPIRES_IN).
+const CUSTOMER_JWT_EXPIRES_IN = (process.env.CUSTOMER_JWT_EXPIRES_IN || '12h') as SignOptions['expiresIn'];
+
+export interface CustomerTokenPayload {
+  customerId: string;
+  restaurantId: string;
+  phone: string;
+  purpose: 'customer_session';
+}
+
+export const generateCustomerToken = (customerId: string, restaurantId: string, phone: string): string => {
+  const payload: CustomerTokenPayload = { customerId, restaurantId, phone, purpose: 'customer_session' };
+  return jwt.sign(payload, JWT_SECRET, { expiresIn: CUSTOMER_JWT_EXPIRES_IN, algorithm: 'HS256' });
+};
+
+export const verifyCustomerToken = (token: string): CustomerTokenPayload => {
+  const decoded = jwt.verify(token, JWT_SECRET, { algorithms: ['HS256'] }) as Record<string, unknown>;
+  if (decoded.purpose !== 'customer_session' || typeof decoded.customerId !== 'string') {
+    throw new Error('Not a customer session token');
+  }
+  return decoded as unknown as CustomerTokenPayload;
+};

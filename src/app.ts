@@ -29,6 +29,8 @@ import paymentRoutes from './routes/paymentRoutes';
 import timeEntryRoutes from './routes/timeEntryRoutes';
 import auditRoutes from './routes/auditRoutes';
 import reviewRoutes from './routes/reviewRoutes';
+import publicOrderRoutes from './routes/publicOrderRoutes';
+import orderRoutes from './routes/orderRoutes';
 import path from 'path';
 
 const app = express();
@@ -94,6 +96,11 @@ app.use('/api', (req, res, next) => {
 
 // API Routes
 app.use('/api/public', publicRoutes);
+// Online-ordering customer surface. Behind tenantMiddleware (X-Restaurant-ID)
+// like the guest reservation-create path (POST /api/reservations below) —
+// the frontend already resolved the restaurant id from GET
+// /api/public/restaurant/:slug before hitting anything here.
+app.use('/api/public/order', tenantMiddleware, publicOrderRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/system', systemRoutes);
 app.use('/api/restaurants', tenantMiddleware, restaurantRoutes);
@@ -116,6 +123,7 @@ app.use('/api/payments', tenantMiddleware, paymentRoutes);
 app.use('/api/audit', tenantMiddleware, auditRoutes);
 app.use('/api/reviews', tenantMiddleware, reviewRoutes);
 app.use('/api/uploads', tenantMiddleware, uploadRoutes);
+app.use('/api/orders', tenantMiddleware, orderRoutes);
 
 // Unknown /api path → standard JSON 404 (not Express's HTML default).
 app.use('/api', notFoundHandler);
