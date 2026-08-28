@@ -26,7 +26,7 @@ const GALLERY_IMAGES = [
   'https://images.unsplash.com/photo-1543007631-283050bb3e8c?auto=format&fit=crop&q=80&w=800',
 ];
 
-export default function OldenLayout({ slug, initialRestaurant, initialView, menuOnly = false }: { slug: string, initialRestaurant: any, initialView?: string, menuOnly?: boolean }) {
+export default function OldenLayout({ slug, initialRestaurant, initialView, menuOnly = false, bookingOnly = false }: { slug: string, initialRestaurant: any, initialView?: string, menuOnly?: boolean, bookingOnly?: boolean }) {
   const { t } = useTranslation();
   const restaurant = initialRestaurant;
   const [scrolled, setScrolled] = useState(false);
@@ -136,13 +136,15 @@ export default function OldenLayout({ slug, initialRestaurant, initialView, menu
   };
 
   useEffect(() => {
-    if (menuOnly) return;
+    // menuOnly/bookingOnly pages render only their one relevant section, so
+    // there's nothing to scroll to — they already start on it.
+    if (menuOnly || bookingOnly) return;
     if (initialView === 'menu') {
       setTimeout(() => scrollToSection('menu'), 500);
     } else if (initialView === 'booking') {
       setTimeout(() => scrollToSection('reservations'), 500);
     }
-  }, [initialView, menuOnly]);
+  }, [initialView, menuOnly, bookingOnly]);
 
   if (!restaurant) return <div className="min-h-screen flex items-center justify-center bg-white text-black font-serif">Experience not found.</div>;
 
@@ -210,6 +212,23 @@ export default function OldenLayout({ slug, initialRestaurant, initialView, menu
             </div>
           </div>
         </header>
+      ) : bookingOnly ? (
+        <header className={cn(
+          "fixed w-full z-40 bg-white/95 backdrop-blur-md shadow-sm py-3",
+          customization.announcementText ? "top-10" : "top-0"
+        )}>
+          <div className="container mx-auto flex items-center justify-between px-6 lg:px-12">
+            <Button variant="ghost" nativeButton={false} className="px-0 text-sm font-semibold uppercase tracking-wider text-[#555] hover:bg-transparent hover:text-[var(--accent)]" render={<Link href={`/r/${slug}`} />}>
+              <ArrowLeft className="mr-2 h-4 w-4" /> {restaurant.name}
+            </Button>
+            <div className="flex items-center gap-4">
+              <LanguageSwitcher />
+              <Button nativeButton={false} className="rounded-sm bg-[var(--accent)] px-5 py-2 text-xs font-bold uppercase tracking-widest text-white hover:bg-[var(--accent-hover)]" render={<Link href={`/r/${slug}/menu`} />}>
+                {t('public.menu')}
+              </Button>
+            </div>
+          </div>
+        </header>
       ) : (
       <header className={cn(
         "fixed w-full z-40 transition-all duration-500",
@@ -240,7 +259,7 @@ export default function OldenLayout({ slug, initialRestaurant, initialView, menu
       )}
 
       {/* Mobile Menu Overlay */}
-      {!menuOnly && isMobileMenuOpen && (
+      {!menuOnly && !bookingOnly && isMobileMenuOpen && (
         <div className="fixed inset-0 z-30 bg-[#fcfcfc]/95 backdrop-blur-md flex flex-col items-center justify-center space-y-8 animate-in fade-in duration-300 lg:hidden">
           <button onClick={() => { setIsMobileMenuOpen(false); scrollToSection('about'); }} className="text-3xl font-serif tracking-widest text-[#2c2c2c]">{t('public.ourStory')}</button>
           <button onClick={() => { setIsMobileMenuOpen(false); scrollToSection('menu'); }} className="text-3xl font-serif tracking-widest text-[#2c2c2c]">{t('public.menu')}</button>
@@ -248,7 +267,7 @@ export default function OldenLayout({ slug, initialRestaurant, initialView, menu
         </div>
       )}
 
-      {!menuOnly && (
+      {!menuOnly && !bookingOnly && (
       <>
       {/* Hero Section */}
       <section className="relative h-screen w-full flex items-center justify-center overflow-hidden">
@@ -297,7 +316,8 @@ export default function OldenLayout({ slug, initialRestaurant, initialView, menu
       </>
       )}
 
-      {/* Menu Section */}
+      {/* Menu Section — hidden on a booking-only standalone page, mirroring how menuOnly hides Reservations */}
+      {!bookingOnly && (
       <section id="menu" className={cn("px-6 lg:px-12 container mx-auto bg-[#f4f4f4]/60", menuOnly ? "pt-28 pb-24" : "py-24 lg:py-32")}>
          <div className="text-center mb-20">
             <h3 className="mb-4 text-xl font-sans font-bold uppercase tracking-widest text-[var(--accent)]">Our Flavors</h3>
@@ -401,6 +421,7 @@ export default function OldenLayout({ slug, initialRestaurant, initialView, menu
             )}
          </div>
       </section>
+      )}
 
       {menuOnly && (
         <footer className="bg-[#1a1a1a] py-16 text-center text-[#f4f4f4]">
@@ -419,7 +440,7 @@ export default function OldenLayout({ slug, initialRestaurant, initialView, menu
         </footer>
       )}
 
-      {!menuOnly && (
+      {!menuOnly && !bookingOnly && (
       <>
       {/* Footer */}
       <footer className="bg-[#1a1a1a] py-24 text-center text-[#f4f4f4]">
@@ -436,8 +457,12 @@ export default function OldenLayout({ slug, initialRestaurant, initialView, menu
             </div>
          </div>
       </footer>
+      </>
+      )}
 
-      {/* Reservation Section */}
+      {/* Reservation Section — shown in full mode and on the bookingOnly standalone page */}
+      {!menuOnly && (
+      <>
       <section id="reservations" className="py-32 px-6 lg:px-12 bg-[#f4f4f4] border-t border-[#e0e0e0]">
         <div className="container mx-auto max-w-3xl">
           <div className="text-center mb-16">
@@ -593,6 +618,26 @@ export default function OldenLayout({ slug, initialRestaurant, initialView, menu
           )}
         </div>
       </section>
+
+      {bookingOnly && (
+        <footer className="bg-[#1a1a1a] py-16 text-center text-[#f4f4f4]">
+          <div className="container mx-auto px-6">
+            <h2 className="mb-6 font-serif text-2xl">{restaurant.name}</h2>
+            {hasContactInfo && (
+              <div className="flex flex-col items-center justify-center gap-4 font-sans text-sm uppercase tracking-widest opacity-80 md:flex-row md:gap-8">
+                {restaurant.contactPhone && <a href={`tel:${restaurant.contactPhone}`} className="hover:text-white">{restaurant.contactPhone}</a>}
+                {restaurant.contactEmail && <a href={`mailto:${restaurant.contactEmail}`} className="hover:text-white">{restaurant.contactEmail}</a>}
+              </div>
+            )}
+            <Button nativeButton={false} className="mt-8 rounded-sm bg-[var(--accent)] px-5 py-2 text-xs font-bold uppercase tracking-widest text-white hover:bg-[var(--accent-hover)]" render={<Link href={`/r/${slug}/menu`} />}>
+              {t('public.menu')}
+            </Button>
+            <div className="mt-10 border-t border-white/10 pt-6 text-xs opacity-50">
+              © {new Date().getFullYear()} {restaurant.name}
+            </div>
+          </div>
+        </footer>
+      )}
       </>
       )}
     </div>

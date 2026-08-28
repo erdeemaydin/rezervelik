@@ -22,7 +22,7 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || (typeof window !== 'undefined
 // structurally from every other one in the library.
 const ABOUT_IMAGE = 'https://images.unsplash.com/photo-1414235077428-338989a2e8c0?auto=format&fit=crop&q=80&w=1200';
 
-export default function NordicMinimalLayout({ slug, initialRestaurant, initialView, menuOnly = false }: { slug: string, initialRestaurant: any, initialView?: string, menuOnly?: boolean }) {
+export default function NordicMinimalLayout({ slug, initialRestaurant, initialView, menuOnly = false, bookingOnly = false }: { slug: string, initialRestaurant: any, initialView?: string, menuOnly?: boolean, bookingOnly?: boolean }) {
   const { t } = useTranslation();
   const restaurant = initialRestaurant;
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -123,13 +123,15 @@ export default function NordicMinimalLayout({ slug, initialRestaurant, initialVi
   };
 
   useEffect(() => {
-    if (menuOnly) return;
+    // menuOnly/bookingOnly pages render only their one relevant section, so
+    // there's nothing to scroll to — they already start on it.
+    if (menuOnly || bookingOnly) return;
     if (initialView === 'menu') {
       setTimeout(() => scrollToSection('menu'), 500);
     } else if (initialView === 'booking') {
       setTimeout(() => scrollToSection('reservations'), 500);
     }
-  }, [initialView, menuOnly]);
+  }, [initialView, menuOnly, bookingOnly]);
 
   if (!restaurant) return <div className="min-h-screen flex items-center justify-center bg-[#faf9f7] text-[#1c1c1a] font-medium">Experience not found.</div>;
 
@@ -217,6 +219,18 @@ export default function NordicMinimalLayout({ slug, initialRestaurant, initialVi
             </Link>
           </div>
         </nav>
+      ) : bookingOnly ? (
+        <nav className="w-full flex justify-between items-center px-6 md:px-16 py-8 border-b border-[color:var(--line)]">
+          <Link href={`/r/${slug}`} className="inline-flex items-center gap-2 text-xs tracking-[0.2em] uppercase text-[color:var(--muted)] hover:text-[color:var(--text)] transition-colors">
+            <ArrowLeft className="h-3.5 w-3.5" /> {restaurant.name}
+          </Link>
+          <div className="flex items-center gap-6">
+            <LanguageSwitcher />
+            <Link href={`/r/${slug}/menu`} className="text-xs tracking-[0.2em] uppercase border-b border-[color:var(--accent)] pb-0.5" style={{ color: 'var(--accent)' }}>
+              {t('public.menu')}
+            </Link>
+          </div>
+        </nav>
       ) : (
         <nav className="w-full flex items-center px-6 md:px-16 py-8 border-b border-[color:var(--line)] relative">
           <div className="hidden md:flex items-center gap-10 text-[11px] tracking-[0.25em] uppercase text-[color:var(--muted)]">
@@ -238,7 +252,7 @@ export default function NordicMinimalLayout({ slug, initialRestaurant, initialVi
         </nav>
       )}
 
-      {!menuOnly && isMobileMenuOpen && (
+      {!menuOnly && !bookingOnly && isMobileMenuOpen && (
         <div className="fixed inset-0 z-30 bg-[var(--bg)] flex flex-col items-center justify-center space-y-10 animate-in fade-in duration-300 md:hidden">
           <button onClick={() => { setIsMobileMenuOpen(false); scrollToSection('about'); }} className="text-xl tracking-widest uppercase">{t('public.ourStory')}</button>
           <button onClick={() => { setIsMobileMenuOpen(false); scrollToSection('menu'); }} className="text-xl tracking-widest uppercase">{t('public.menu')}</button>
@@ -248,7 +262,7 @@ export default function NordicMinimalLayout({ slug, initialRestaurant, initialVi
         </div>
       )}
 
-      {!menuOnly && (
+      {!menuOnly && !bookingOnly && (
         <>
           {/* Hero — no photo at all, just enormous whitespace + a thin rule. The defining structural difference in the library. */}
           <section className="min-h-[85vh] w-full flex flex-col items-center justify-center px-6 text-center">
@@ -276,7 +290,8 @@ export default function NordicMinimalLayout({ slug, initialRestaurant, initialVi
         </>
       )}
 
-      {/* Menu — a plain hairline-divided list, no cards, no boxes */}
+      {/* Menu — a plain hairline-divided list, no cards, no boxes. Hidden on a booking-only standalone page, mirroring how menuOnly hides Reservations */}
+      {!bookingOnly && (
       <section id="menu" className={cn("px-6 md:px-16", menuOnly ? "pt-24 pb-32" : "py-32")}>
         <div className="max-w-2xl mx-auto">
           <div className="text-center mb-20">
@@ -313,6 +328,7 @@ export default function NordicMinimalLayout({ slug, initialRestaurant, initialVi
           )}
         </div>
       </section>
+      )}
 
       {menuOnly && (
         <footer className="border-t border-[color:var(--line)] px-6 py-20 text-center md:px-16">
@@ -330,7 +346,7 @@ export default function NordicMinimalLayout({ slug, initialRestaurant, initialVi
         </footer>
       )}
 
-      {!menuOnly && (
+      {!menuOnly && !bookingOnly && (
         <>
           <section id="contact" className="py-32 px-6 md:px-16 text-center max-w-3xl mx-auto border-t border-[color:var(--line)]">
             <h2 className="text-2xl font-light tracking-tight mb-12">{restaurant.name}</h2>
@@ -348,7 +364,12 @@ export default function NordicMinimalLayout({ slug, initialRestaurant, initialVi
             )}
             <p className="mt-12 text-[11px] text-[color:var(--muted)]">© {new Date().getFullYear()} {restaurant.name}</p>
           </section>
+        </>
+      )}
 
+      {/* Reservations — shown in full mode and on the bookingOnly standalone page */}
+      {!menuOnly && (
+        <>
           <section id="reservations" className="py-32 px-6 md:px-16 border-t border-[color:var(--line)]">
             <div className="max-w-xl mx-auto">
               <div className="text-center mb-16">
@@ -498,6 +519,22 @@ export default function NordicMinimalLayout({ slug, initialRestaurant, initialVi
               )}
             </div>
           </section>
+
+          {bookingOnly && (
+            <footer className="border-t border-[color:var(--line)] px-6 py-20 text-center md:px-16">
+              <h2 className="mb-6 text-2xl font-light tracking-tight">{restaurant.name}</h2>
+              {hasContactInfo && (
+                <div className="flex flex-wrap items-center justify-center gap-x-10 gap-y-2 text-sm font-light text-[color:var(--muted)]">
+                  {restaurant.contactPhone && <a href={`tel:${restaurant.contactPhone}`} className="hover:text-[color:var(--text)]">{restaurant.contactPhone}</a>}
+                  {restaurant.contactEmail && <a href={`mailto:${restaurant.contactEmail}`} className="hover:text-[color:var(--text)]">{restaurant.contactEmail}</a>}
+                </div>
+              )}
+              <Link href={`/r/${slug}/menu`} className="inline-block mt-10 text-xs tracking-[0.3em] uppercase border-b pb-1" style={{ color: 'var(--accent)', borderColor: 'var(--accent)' }}>
+                {t('public.menu')}
+              </Link>
+              <p className="mt-12 text-[11px] text-[color:var(--muted)]">© {new Date().getFullYear()} {restaurant.name}</p>
+            </footer>
+          )}
         </>
       )}
     </div>

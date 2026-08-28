@@ -29,7 +29,7 @@ const WaveDivider = ({ color }: { color: string }) => (
   </svg>
 );
 
-export default function TrattoriaRusticLayout({ slug, initialRestaurant, initialView, menuOnly = false }: { slug: string, initialRestaurant: any, initialView?: string, menuOnly?: boolean }) {
+export default function TrattoriaRusticLayout({ slug, initialRestaurant, initialView, menuOnly = false, bookingOnly = false }: { slug: string, initialRestaurant: any, initialView?: string, menuOnly?: boolean, bookingOnly?: boolean }) {
   const { t } = useTranslation();
   const restaurant = initialRestaurant;
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -130,13 +130,15 @@ export default function TrattoriaRusticLayout({ slug, initialRestaurant, initial
   };
 
   useEffect(() => {
-    if (menuOnly) return;
+    // menuOnly/bookingOnly pages render only their one relevant section, so
+    // there's nothing to scroll to — they already start on it.
+    if (menuOnly || bookingOnly) return;
     if (initialView === 'menu') {
       setTimeout(() => scrollToSection('menu'), 500);
     } else if (initialView === 'booking') {
       setTimeout(() => scrollToSection('reservations'), 500);
     }
-  }, [initialView, menuOnly]);
+  }, [initialView, menuOnly, bookingOnly]);
 
   if (!restaurant) return <div className="min-h-screen flex items-center justify-center bg-[#fdf6ec] text-[#3d2b1f] font-medium">Experience not found.</div>;
 
@@ -222,6 +224,18 @@ export default function TrattoriaRusticLayout({ slug, initialRestaurant, initial
             </Link>
           </div>
         </nav>
+      ) : bookingOnly ? (
+        <nav className="w-full flex justify-between items-center px-6 md:px-12 py-5" style={{ background: 'var(--panel)' }}>
+          <Link href={`/r/${slug}`} className="inline-flex items-center gap-2 text-sm font-bold text-[color:var(--text)] hover:opacity-70 transition-opacity">
+            <ArrowLeft className="h-4 w-4" /> {restaurant.name}
+          </Link>
+          <div className="flex items-center gap-4">
+            <LanguageSwitcher />
+            <Link href={`/r/${slug}/menu`} className="rounded-full px-5 py-2 text-sm font-bold text-white" style={{ background: 'var(--accent)' }}>
+              {t('public.menu')}
+            </Link>
+          </div>
+        </nav>
       ) : (
         <nav className="w-full flex items-center px-6 md:px-12 py-5 relative" style={{ background: 'var(--panel)' }}>
           <div className="hidden md:flex items-center gap-6 text-sm font-bold">
@@ -244,7 +258,7 @@ export default function TrattoriaRusticLayout({ slug, initialRestaurant, initial
       )}
       <WaveDivider color="var(--panel)" />
 
-      {!menuOnly && isMobileMenuOpen && (
+      {!menuOnly && !bookingOnly && isMobileMenuOpen && (
         <div className="fixed inset-0 z-30 flex flex-col items-center justify-center space-y-8 animate-in fade-in duration-300 md:hidden" style={{ background: 'var(--panel)' }}>
           <button onClick={() => { setIsMobileMenuOpen(false); scrollToSection('about'); }} className="text-2xl font-black">{t('public.ourStory')}</button>
           <button onClick={() => { setIsMobileMenuOpen(false); scrollToSection('menu'); }} className="text-2xl font-black">{t('public.menu')}</button>
@@ -254,7 +268,7 @@ export default function TrattoriaRusticLayout({ slug, initialRestaurant, initial
         </div>
       )}
 
-      {!menuOnly && (
+      {!menuOnly && !bookingOnly && (
         <>
           {/* Hero — two-column welcome, not a full-bleed cinematic banner */}
           <section className="px-6 md:px-12 py-20 md:py-28 max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-14 items-center">
@@ -295,7 +309,8 @@ export default function TrattoriaRusticLayout({ slug, initialRestaurant, initial
         </>
       )}
 
-      {/* Menu — a warm chalkboard-style card, not a photo grid */}
+      {/* Menu — a warm chalkboard-style card, not a photo grid. Hidden on a booking-only standalone page, mirroring how menuOnly hides Reservations */}
+      {!bookingOnly && (
       <section id="menu" className={cn("px-6 md:px-12", menuOnly ? "pt-24 pb-28" : "py-24")}>
         <div className="max-w-3xl mx-auto">
           <div className="text-center mb-16">
@@ -332,6 +347,7 @@ export default function TrattoriaRusticLayout({ slug, initialRestaurant, initial
           )}
         </div>
       </section>
+      )}
 
       {menuOnly && (
         <footer className="px-6 py-16 text-center md:px-12" style={{ background: 'var(--panel)' }}>
@@ -349,7 +365,7 @@ export default function TrattoriaRusticLayout({ slug, initialRestaurant, initial
         </footer>
       )}
 
-      {!menuOnly && (
+      {!menuOnly && !bookingOnly && (
         <>
           <section id="contact" className="py-24 px-6 md:px-12 text-center max-w-4xl mx-auto">
             <h2 className="text-3xl font-black italic mb-10">{restaurant.name}</h2>
@@ -367,7 +383,12 @@ export default function TrattoriaRusticLayout({ slug, initialRestaurant, initial
             )}
             <p className="mt-10 text-xs text-[color:var(--muted)]">© {new Date().getFullYear()} {restaurant.name}</p>
           </section>
+        </>
+      )}
 
+      {/* Reservations — shown in full mode and on the bookingOnly standalone page */}
+      {!menuOnly && (
+        <>
           <WaveDivider color="var(--panel)" />
           <section id="reservations" className="py-24 px-6 md:px-12" style={{ background: 'var(--panel)' }}>
             <div className="max-w-2xl mx-auto">
@@ -518,6 +539,22 @@ export default function TrattoriaRusticLayout({ slug, initialRestaurant, initial
               )}
             </div>
           </section>
+
+          {bookingOnly && (
+            <footer className="px-6 py-16 text-center md:px-12" style={{ background: 'var(--panel)' }}>
+              <h2 className="mb-6 text-2xl font-black italic">{restaurant.name}</h2>
+              {hasContactInfo && (
+                <div className="flex flex-wrap items-center justify-center gap-x-8 gap-y-2 text-sm text-[color:var(--muted)]">
+                  {restaurant.contactPhone && <a href={`tel:${restaurant.contactPhone}`} className="hover:opacity-70">{restaurant.contactPhone}</a>}
+                  {restaurant.contactEmail && <a href={`mailto:${restaurant.contactEmail}`} className="hover:opacity-70">{restaurant.contactEmail}</a>}
+                </div>
+              )}
+              <Link href={`/r/${slug}/menu`} className="inline-block mt-8 rounded-full px-6 py-2.5 text-sm font-bold text-white" style={{ background: 'var(--accent)' }}>
+                {t('public.menu')}
+              </Link>
+              <p className="mt-10 text-xs text-[color:var(--muted)]">© {new Date().getFullYear()} {restaurant.name}</p>
+            </footer>
+          )}
         </>
       )}
     </div>

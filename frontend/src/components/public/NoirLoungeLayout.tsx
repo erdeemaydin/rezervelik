@@ -21,7 +21,7 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || (typeof window !== 'undefined
 const HERO_IMAGE_FALLBACK = 'https://images.unsplash.com/photo-1470337458703-46ad1756a187?auto=format&fit=crop&q=80&w=2000';
 const ABOUT_IMAGE = 'https://images.unsplash.com/photo-1572116469696-31de0f17cc34?auto=format&fit=crop&q=80&w=1200';
 
-export default function NoirLoungeLayout({ slug, initialRestaurant, initialView, menuOnly = false }: { slug: string, initialRestaurant: any, initialView?: string, menuOnly?: boolean }) {
+export default function NoirLoungeLayout({ slug, initialRestaurant, initialView, menuOnly = false, bookingOnly = false }: { slug: string, initialRestaurant: any, initialView?: string, menuOnly?: boolean, bookingOnly?: boolean }) {
   const { t } = useTranslation();
   const restaurant = initialRestaurant;
   const [scrolled, setScrolled] = useState(false);
@@ -129,13 +129,15 @@ export default function NoirLoungeLayout({ slug, initialRestaurant, initialView,
   };
 
   useEffect(() => {
-    if (menuOnly) return;
+    // menuOnly/bookingOnly pages render only their one relevant section, so
+    // there's nothing to scroll to — they already start on it.
+    if (menuOnly || bookingOnly) return;
     if (initialView === 'menu') {
       setTimeout(() => scrollToSection('menu'), 500);
     } else if (initialView === 'booking') {
       setTimeout(() => scrollToSection('reservations'), 500);
     }
-  }, [initialView, menuOnly]);
+  }, [initialView, menuOnly, bookingOnly]);
 
   if (!restaurant) return <div className="min-h-screen flex items-center justify-center bg-black text-white font-medium">Experience not found.</div>;
 
@@ -237,6 +239,19 @@ export default function NoirLoungeLayout({ slug, initialRestaurant, initialView,
             </Link>
           </div>
         </nav>
+      ) : bookingOnly ? (
+        <nav className={cn("fixed w-full z-40 flex justify-between items-center px-6 md:px-12 py-5", navBg, customization.announcementText ? "top-9" : "top-0")}
+          style={{ boxShadow: '0 1px 0 0 var(--neon)' }}>
+          <Link href={`/r/${slug}`} className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-[0.25em] text-[color:var(--muted)] hover:text-white transition-colors">
+            <ArrowLeft className="h-4 w-4" /> {restaurant.name}
+          </Link>
+          <div className="flex items-center gap-4">
+            <LanguageSwitcher />
+            <Link href={`/r/${slug}/menu`} className="rounded-full px-5 py-2 text-xs font-bold uppercase tracking-[0.25em] transition-all hover:brightness-110" style={{ background: 'var(--neon)', color: '#08080b' }}>
+              {t('public.menu')}
+            </Link>
+          </div>
+        </nav>
       ) : (
         <nav className={cn("fixed w-full z-40 flex items-center px-6 md:px-12 py-5 transition-all duration-300", navBg, customization.announcementText ? "top-9" : "top-0")}
           style={{ boxShadow: scrolled ? '0 1px 0 0 var(--neon)' : 'none' }}>
@@ -259,7 +274,7 @@ export default function NoirLoungeLayout({ slug, initialRestaurant, initialView,
         </nav>
       )}
 
-      {!menuOnly && isMobileMenuOpen && (
+      {!menuOnly && !bookingOnly && isMobileMenuOpen && (
         <div className="fixed inset-0 z-30 bg-black flex flex-col items-center justify-center space-y-8 animate-in fade-in duration-300 md:hidden">
           <button onClick={() => { setIsMobileMenuOpen(false); scrollToSection('vibe'); }} className="text-2xl font-black uppercase tracking-widest">The Vibe</button>
           <button onClick={() => { setIsMobileMenuOpen(false); scrollToSection('menu'); }} className="text-2xl font-black uppercase tracking-widest">{t('public.menu')}</button>
@@ -268,7 +283,7 @@ export default function NoirLoungeLayout({ slug, initialRestaurant, initialView,
         </div>
       )}
 
-      {!menuOnly && (
+      {!menuOnly && !bookingOnly && (
         <>
           {/* Hero — heavy vignette + glowing title, no scroll-fade nav like the editorial layout */}
           <section className="relative h-screen w-full flex items-center justify-center overflow-hidden">
@@ -308,7 +323,8 @@ export default function NoirLoungeLayout({ slug, initialRestaurant, initialView,
         </>
       )}
 
-      {/* Menu — two-column masonry of glass cards, not a single stacked list */}
+      {/* Menu — two-column masonry of glass cards, not a single stacked list. Hidden on a booking-only standalone page, mirroring how menuOnly hides Reservations */}
+      {!bookingOnly && (
       <section id="menu" className={cn("px-6 md:px-12", menuOnly ? "pt-32 pb-32" : "py-32")} style={{ background: 'var(--panel)' }}>
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-20 flex flex-col items-center gap-3">
@@ -351,6 +367,7 @@ export default function NoirLoungeLayout({ slug, initialRestaurant, initialView,
           )}
         </div>
       </section>
+      )}
 
       {menuOnly && (
         <footer className="border-t border-[color:var(--line)] px-6 py-16 text-center md:px-12">
@@ -368,7 +385,7 @@ export default function NoirLoungeLayout({ slug, initialRestaurant, initialView,
         </footer>
       )}
 
-      {!menuOnly && (
+      {!menuOnly && !bookingOnly && (
         <>
           <section id="contact" className="py-32 px-6 md:px-12 text-center max-w-4xl mx-auto border-t border-[color:var(--line)]">
             <h2 className="text-3xl font-black uppercase tracking-tight mb-12">{restaurant.name}</h2>
@@ -386,7 +403,12 @@ export default function NoirLoungeLayout({ slug, initialRestaurant, initialView,
             )}
             <p className="mt-12 text-xs text-[color:var(--muted)]/70">© {new Date().getFullYear()} {restaurant.name}</p>
           </section>
+        </>
+      )}
 
+      {/* Reservations — shown in full mode and on the bookingOnly standalone page */}
+      {!menuOnly && (
+        <>
           <section id="reservations" className="py-32 px-6 md:px-12 border-t border-[color:var(--line)]">
             <div className="max-w-3xl mx-auto">
               <div className="text-center mb-16 flex flex-col items-center gap-3">
@@ -536,6 +558,22 @@ export default function NoirLoungeLayout({ slug, initialRestaurant, initialView,
               )}
             </div>
           </section>
+
+          {bookingOnly && (
+            <footer className="border-t border-[color:var(--line)] px-6 py-16 text-center md:px-12">
+              <h2 className="mb-6 text-2xl font-black uppercase tracking-tight">{restaurant.name}</h2>
+              {hasContactInfo && (
+                <div className="flex flex-wrap items-center justify-center gap-x-8 gap-y-2 text-sm font-light text-[color:var(--muted)]">
+                  {restaurant.contactPhone && <a href={`tel:${restaurant.contactPhone}`} className="hover:text-white">{restaurant.contactPhone}</a>}
+                  {restaurant.contactEmail && <a href={`mailto:${restaurant.contactEmail}`} className="hover:text-white">{restaurant.contactEmail}</a>}
+                </div>
+              )}
+              <Link href={`/r/${slug}/menu`} className="inline-block mt-8 rounded-full px-6 py-2.5 text-xs font-black uppercase tracking-[0.25em] transition-all hover:brightness-110" style={{ background: 'var(--neon)', color: '#08080b' }}>
+                {t('public.menu')}
+              </Link>
+              <p className="mt-10 text-xs text-[color:var(--muted)]/70">© {new Date().getFullYear()} {restaurant.name}</p>
+            </footer>
+          )}
         </>
       )}
     </div>

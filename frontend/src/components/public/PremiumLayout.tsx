@@ -27,7 +27,7 @@ const GALLERY_IMAGES = [
   'https://images.unsplash.com/photo-1414235077428-338989a2e8c0?auto=format&fit=crop&q=80&w=800',
 ];
 
-export default function PremiumLayout({ slug, initialRestaurant, initialView, menuOnly = false }: { slug: string, initialRestaurant: any, initialView?: string, menuOnly?: boolean }) {
+export default function PremiumLayout({ slug, initialRestaurant, initialView, menuOnly = false, bookingOnly = false }: { slug: string, initialRestaurant: any, initialView?: string, menuOnly?: boolean, bookingOnly?: boolean }) {
   const { t } = useTranslation();
   const restaurant = initialRestaurant;
   const [scrolled, setScrolled] = useState(false);
@@ -135,13 +135,15 @@ export default function PremiumLayout({ slug, initialRestaurant, initialView, me
   };
 
   useEffect(() => {
-    if (menuOnly) return;
+    // menuOnly/bookingOnly pages render only their one relevant section, so
+    // there's nothing to scroll to — they already start on it.
+    if (menuOnly || bookingOnly) return;
     if (initialView === 'menu') {
       setTimeout(() => scrollToSection('menu'), 500);
     } else if (initialView === 'booking') {
       setTimeout(() => scrollToSection('reservations'), 500);
     }
-  }, [initialView, menuOnly]);
+  }, [initialView, menuOnly, bookingOnly]);
 
   if (!restaurant) return <div className="min-h-screen flex items-center justify-center bg-[#10130d] text-[#ECEEE2] font-medium">Experience not found.</div>;
 
@@ -245,6 +247,18 @@ export default function PremiumLayout({ slug, initialRestaurant, initialView, me
             </Link>
           </div>
         </nav>
+      ) : bookingOnly ? (
+        <nav className={cn("fixed w-full z-40 flex justify-between items-center px-6 md:px-12 py-5", navBg, customization.announcementText ? "top-11" : "top-0")}>
+          <Link href={`/r/${slug}`} className="inline-flex items-center gap-2 text-xs font-medium uppercase tracking-[0.2em] text-[color:var(--muted)] hover:text-[var(--text)] transition-colors">
+            <ArrowLeft className="h-4 w-4" /> {restaurant.name}
+          </Link>
+          <div className="flex items-center gap-4">
+            <LanguageSwitcher />
+            <Link href={`/r/${slug}/menu`} className="rounded-full border border-[color:var(--moss)] px-5 py-2 text-xs font-medium uppercase tracking-[0.2em] text-[color:var(--moss)] hover:bg-[color:var(--moss)] hover:text-[var(--bg)] transition-colors">
+              {t('public.menu')}
+            </Link>
+          </div>
+        </nav>
       ) : (
       <nav className={cn("fixed w-full z-40 flex items-center px-6 md:px-12 py-6 transition-all duration-500", scrolled ? navBg : "bg-transparent", customization.announcementText ? "top-11" : "top-0")}>
         {/* Left links */}
@@ -270,7 +284,7 @@ export default function PremiumLayout({ slug, initialRestaurant, initialView, me
       )}
 
       {/* Mobile Menu Overlay */}
-      {!menuOnly && isMobileMenuOpen && (
+      {!menuOnly && !bookingOnly && isMobileMenuOpen && (
         <div className="fixed inset-0 z-30 backdrop-blur-xl flex flex-col items-center justify-center space-y-8 animate-in fade-in duration-300 md:hidden" style={{ background: 'var(--bg)' }}>
           <button onClick={() => { setIsMobileMenuOpen(false); scrollToSection('about'); }} className="text-2xl tracking-widest">{t('public.ourStory')}</button>
           <button onClick={() => { setIsMobileMenuOpen(false); scrollToSection('menu'); }} className="text-2xl tracking-widest">{t('public.menu')}</button>
@@ -279,7 +293,7 @@ export default function PremiumLayout({ slug, initialRestaurant, initialView, me
         </div>
       )}
 
-      {!menuOnly && (
+      {!menuOnly && !bookingOnly && (
       <>
       {/* Hero */}
       <section className="relative h-screen w-full flex items-center justify-center overflow-hidden">
@@ -332,7 +346,8 @@ export default function PremiumLayout({ slug, initialRestaurant, initialView, me
       </>
       )}
 
-      {/* Menu */}
+      {/* Menu — hidden on a booking-only standalone page, mirroring how menuOnly hides Reservations */}
+      {!bookingOnly && (
       <section id="menu" className={cn("px-6 md:px-12", menuOnly ? "pt-32 pb-32" : "py-32")}>
         <div className="max-w-4xl mx-auto">
           <div className="text-center mb-24 flex flex-col items-center gap-3">
@@ -378,6 +393,7 @@ export default function PremiumLayout({ slug, initialRestaurant, initialView, me
           )}
         </div>
       </section>
+      )}
 
       {menuOnly && (
         <footer className="border-t border-[color:var(--line)] px-6 py-16 text-center md:px-12">
@@ -395,7 +411,7 @@ export default function PremiumLayout({ slug, initialRestaurant, initialView, me
         </footer>
       )}
 
-      {!menuOnly && (
+      {!menuOnly && !bookingOnly && (
       <>
       {/* Contact */}
       <section id="contact" className="py-32 px-6 md:px-12 text-center max-w-4xl mx-auto border-t border-[color:var(--line)]">
@@ -414,8 +430,12 @@ export default function PremiumLayout({ slug, initialRestaurant, initialView, me
         )}
         <p className="mt-12 text-xs text-[color:var(--muted)]/70">© {new Date().getFullYear()} {restaurant.name}</p>
       </section>
+      </>
+      )}
 
-      {/* Reservations */}
+      {/* Reservations — shown in full mode and on the bookingOnly standalone page */}
+      {!menuOnly && (
+      <>
       <section id="reservations" className="py-32 px-6 md:px-12 border-t border-[color:var(--line)]" style={{ background: 'var(--panel)' }}>
         <div className="max-w-3xl mx-auto">
           <div className="text-center mb-16 flex flex-col items-center gap-3">
@@ -561,6 +581,22 @@ export default function PremiumLayout({ slug, initialRestaurant, initialView, me
           )}
         </div>
       </section>
+
+      {bookingOnly && (
+        <footer className="border-t border-[color:var(--line)] px-6 py-16 text-center md:px-12">
+          <h2 className="mb-6 text-2xl">{restaurant.name}</h2>
+          {hasContactInfo && (
+            <div className="flex flex-wrap items-center justify-center gap-x-8 gap-y-2 text-sm font-light text-[color:var(--muted)]">
+              {restaurant.contactPhone && <a href={`tel:${restaurant.contactPhone}`} className="hover:text-[var(--text)]">{restaurant.contactPhone}</a>}
+              {restaurant.contactEmail && <a href={`mailto:${restaurant.contactEmail}`} className="hover:text-[var(--text)]">{restaurant.contactEmail}</a>}
+            </div>
+          )}
+          <Link href={`/r/${slug}/menu`} className="inline-block mt-8 rounded-full border border-[color:var(--moss)] px-6 py-2.5 text-xs font-medium uppercase tracking-[0.2em] text-[color:var(--moss)] hover:bg-[color:var(--moss)] hover:text-[var(--bg)] transition-colors">
+            {t('public.menu')}
+          </Link>
+          <p className="mt-10 text-xs text-[color:var(--muted)]/70">© {new Date().getFullYear()} {restaurant.name}</p>
+        </footer>
+      )}
       </>
       )}
     </div>

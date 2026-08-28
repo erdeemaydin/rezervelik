@@ -29,10 +29,11 @@ const GALLERY_IMAGES = [
 
 type ViewState = 'welcome' | 'menu' | 'booking' | 'success';
 
-export default function ClassicLayout({ slug, initialRestaurant, initialView = 'welcome', menuOnly = false }: { slug: string, initialRestaurant: any, initialView?: string, menuOnly?: boolean }) {
+export default function ClassicLayout({ slug, initialRestaurant, initialView = 'welcome', menuOnly = false, bookingOnly = false }: { slug: string, initialRestaurant: any, initialView?: string, menuOnly?: boolean, bookingOnly?: boolean }) {
   const { t } = useTranslation();
   const restaurant = initialRestaurant;
-  const [view, setView] = useState<ViewState>(menuOnly ? 'menu' : (initialView as ViewState));
+  // bookingOnly takes precedence over menuOnly if both were ever passed together (only one is ever true in practice).
+  const [view, setView] = useState<ViewState>(bookingOnly ? 'booking' : (menuOnly ? 'menu' : (initialView as ViewState)));
 
   const [dayStatus, setDayStatus] = useState<any>(null);
   const [checkingDay, setCheckingDay] = useState(false);
@@ -489,9 +490,20 @@ export default function ClassicLayout({ slug, initialRestaurant, initialView = '
       {view === 'booking' && (
         <div className="animate-in fade-in duration-300 min-h-screen flex flex-col" style={{ backgroundColor: palette.bg }}>
           <header className="bg-white/85 backdrop-blur-xl border-b border-black/5 px-4 h-16 flex items-center justify-between shrink-0 sm:px-6">
-            <Button variant="ghost" onClick={() => setView(menuOnly ? 'menu' : 'welcome')} className="font-medium text-neutral-500 hover:text-neutral-900">
-                <ArrowLeft className="mr-2 h-4 w-4" /> Back
-            </Button>
+            {bookingOnly ? (
+                <Button
+                    variant="ghost"
+                    nativeButton={false}
+                    className="font-medium text-neutral-500 hover:text-neutral-900"
+                    render={<Link href={`/r/${slug}`} />}
+                >
+                    <ArrowLeft className="mr-2 h-4 w-4" /> {restaurant.name}
+                </Button>
+            ) : (
+                <Button variant="ghost" onClick={() => setView(menuOnly ? 'menu' : 'welcome')} className="font-medium text-neutral-500 hover:text-neutral-900">
+                    <ArrowLeft className="mr-2 h-4 w-4" /> Back
+                </Button>
+            )}
 
             <div className="flex flex-col items-center">
                 <div className="text-base font-semibold tracking-tight text-neutral-900">Secure Your Table</div>
@@ -679,10 +691,16 @@ export default function ClassicLayout({ slug, initialRestaurant, initialView = '
                   </div>
               )}
               <div className="flex flex-col gap-3 sm:flex-row">
-                  <Button onClick={() => { setView('menu'); }} variant="outline" className="h-14 rounded-full border-black/10 px-8 text-base font-medium">
-                      <Utensils className="mr-2 h-4 w-4" /> Explore Our Menu
-                  </Button>
-                  {menuOnly ? (
+                  {bookingOnly ? (
+                      <Button nativeButton={false} variant="outline" className="h-14 rounded-full border-black/10 px-8 text-base font-medium" render={<Link href={`/r/${slug}`} />}>
+                          <Utensils className="mr-2 h-4 w-4" /> Explore Our Menu
+                      </Button>
+                  ) : (
+                      <Button onClick={() => { setView('menu'); }} variant="outline" className="h-14 rounded-full border-black/10 px-8 text-base font-medium">
+                          <Utensils className="mr-2 h-4 w-4" /> Explore Our Menu
+                      </Button>
+                  )}
+                  {menuOnly || bookingOnly ? (
                       <Button nativeButton={false} className="h-14 rounded-full bg-[var(--primary)] px-8 text-base font-medium text-white hover:bg-[var(--primary-hover)]" render={<Link href={`/r/${slug}`} />}>
                           Return to Home
                       </Button>

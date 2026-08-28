@@ -24,7 +24,7 @@ const ABOUT_IMAGE = 'https://images.unsplash.com/photo-1550966871-3ed3cdb5ed0c?a
 // "large" so the grid always reads as asymmetric, never a uniform list.
 const tileSpan = (i: number) => (i % 5 === 0 ? 'md:col-span-2 md:row-span-2' : '');
 
-export default function BoldEditorialLayout({ slug, initialRestaurant, initialView, menuOnly = false }: { slug: string, initialRestaurant: any, initialView?: string, menuOnly?: boolean }) {
+export default function BoldEditorialLayout({ slug, initialRestaurant, initialView, menuOnly = false, bookingOnly = false }: { slug: string, initialRestaurant: any, initialView?: string, menuOnly?: boolean, bookingOnly?: boolean }) {
   const { t } = useTranslation();
   const restaurant = initialRestaurant;
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -125,13 +125,15 @@ export default function BoldEditorialLayout({ slug, initialRestaurant, initialVi
   };
 
   useEffect(() => {
-    if (menuOnly) return;
+    // menuOnly/bookingOnly pages render only their one relevant section, so
+    // there's nothing to scroll to — they already start on it.
+    if (menuOnly || bookingOnly) return;
     if (initialView === 'menu') {
       setTimeout(() => scrollToSection('menu'), 500);
     } else if (initialView === 'booking') {
       setTimeout(() => scrollToSection('reservations'), 500);
     }
-  }, [initialView, menuOnly]);
+  }, [initialView, menuOnly, bookingOnly]);
 
   if (!restaurant) return <div className="min-h-screen flex items-center justify-center bg-white text-black font-black uppercase">Experience not found.</div>;
 
@@ -219,6 +221,18 @@ export default function BoldEditorialLayout({ slug, initialRestaurant, initialVi
             </Link>
           </div>
         </nav>
+      ) : bookingOnly ? (
+        <nav className="w-full flex justify-between items-center px-6 md:px-12 py-6 border-b-4" style={{ borderColor: 'var(--line)' }}>
+          <Link href={`/r/${slug}`} className="inline-flex items-center gap-2 text-sm font-black uppercase tracking-tight hover:opacity-60 transition-opacity">
+            <ArrowLeft className="h-4 w-4" /> {restaurant.name}
+          </Link>
+          <div className="flex items-center gap-4">
+            <LanguageSwitcher />
+            <Link href={`/r/${slug}/menu`} className="px-5 py-2 text-xs font-black uppercase tracking-widest" style={{ background: 'var(--accent)', color: '#000' }}>
+              {t('public.menu')}
+            </Link>
+          </div>
+        </nav>
       ) : (
         <nav className="w-full flex items-center px-6 md:px-12 py-6 border-b-4 relative" style={{ borderColor: 'var(--line)' }}>
           <div className="hidden md:flex items-center gap-8 text-xs font-black uppercase tracking-widest">
@@ -240,7 +254,7 @@ export default function BoldEditorialLayout({ slug, initialRestaurant, initialVi
         </nav>
       )}
 
-      {!menuOnly && isMobileMenuOpen && (
+      {!menuOnly && !bookingOnly && isMobileMenuOpen && (
         <div className="fixed inset-0 z-30 bg-white flex flex-col items-center justify-center space-y-8 animate-in fade-in duration-300 md:hidden">
           <button onClick={() => { setIsMobileMenuOpen(false); scrollToSection('about'); }} className="text-3xl font-black uppercase">{t('public.ourStory')}</button>
           <button onClick={() => { setIsMobileMenuOpen(false); scrollToSection('menu'); }} className="text-3xl font-black uppercase">{t('public.menu')}</button>
@@ -250,7 +264,7 @@ export default function BoldEditorialLayout({ slug, initialRestaurant, initialVi
         </div>
       )}
 
-      {!menuOnly && (
+      {!menuOnly && !bookingOnly && (
         <>
           {/* Hero — asymmetric magazine cover: giant type dominates, photo is a small tucked-in tile, not full-bleed */}
           <section className="grid grid-cols-1 md:grid-cols-5 min-h-[90vh]">
@@ -285,7 +299,8 @@ export default function BoldEditorialLayout({ slug, initialRestaurant, initialVi
         </>
       )}
 
-      {/* Menu — asymmetric bento grid, the layout's structural signature */}
+      {/* Menu — asymmetric bento grid, the layout's structural signature. Hidden on a booking-only standalone page, mirroring how menuOnly hides Reservations */}
+      {!bookingOnly && (
       <section id="menu" className={cn("px-6 md:px-12 border-t-4", menuOnly ? "pt-16 pb-28" : "py-28")} style={{ borderColor: 'var(--line)' }}>
         <div className="max-w-6xl mx-auto">
           <div className="mb-16 flex items-end justify-between flex-wrap gap-4">
@@ -333,6 +348,7 @@ export default function BoldEditorialLayout({ slug, initialRestaurant, initialVi
           )}
         </div>
       </section>
+      )}
 
       {menuOnly && (
         <footer className="border-t-4 px-6 py-16 text-center md:px-12" style={{ borderColor: 'var(--line)' }}>
@@ -350,7 +366,7 @@ export default function BoldEditorialLayout({ slug, initialRestaurant, initialVi
         </footer>
       )}
 
-      {!menuOnly && (
+      {!menuOnly && !bookingOnly && (
         <>
           <section id="contact" className="py-28 px-6 md:px-12 text-center max-w-4xl mx-auto border-t-4" style={{ borderColor: 'var(--line)' }}>
             <h2 className="text-4xl font-black uppercase tracking-tighter mb-12">{restaurant.name}</h2>
@@ -368,7 +384,12 @@ export default function BoldEditorialLayout({ slug, initialRestaurant, initialVi
             )}
             <p className="mt-12 text-xs text-[color:var(--muted)]">© {new Date().getFullYear()} {restaurant.name}</p>
           </section>
+        </>
+      )}
 
+      {/* Reservations — shown in full mode and on the bookingOnly standalone page */}
+      {!menuOnly && (
+        <>
           <section id="reservations" className="py-28 px-6 md:px-12 border-t-4" style={{ borderColor: 'var(--line)', background: 'var(--text)', color: 'var(--bg)' }}>
             <div className="max-w-2xl mx-auto">
               <div className="mb-16">
@@ -517,6 +538,22 @@ export default function BoldEditorialLayout({ slug, initialRestaurant, initialVi
               )}
             </div>
           </section>
+
+          {bookingOnly && (
+            <footer className="border-t-4 px-6 py-16 text-center md:px-12" style={{ borderColor: 'var(--line)' }}>
+              <h2 className="mb-6 text-3xl font-black uppercase tracking-tighter">{restaurant.name}</h2>
+              {hasContactInfo && (
+                <div className="flex flex-wrap items-center justify-center gap-x-8 gap-y-2 text-sm font-light text-[color:var(--muted)]">
+                  {restaurant.contactPhone && <a href={`tel:${restaurant.contactPhone}`} className="hover:opacity-60">{restaurant.contactPhone}</a>}
+                  {restaurant.contactEmail && <a href={`mailto:${restaurant.contactEmail}`} className="hover:opacity-60">{restaurant.contactEmail}</a>}
+                </div>
+              )}
+              <Link href={`/r/${slug}/menu`} className="inline-block mt-8 px-6 py-2.5 text-xs font-black uppercase tracking-widest" style={{ background: 'var(--accent)', color: '#000' }}>
+                {t('public.menu')}
+              </Link>
+              <p className="mt-10 text-xs text-[color:var(--muted)]">© {new Date().getFullYear()} {restaurant.name}</p>
+            </footer>
+          )}
         </>
       )}
     </div>

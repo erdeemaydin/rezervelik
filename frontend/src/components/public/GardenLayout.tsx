@@ -26,7 +26,7 @@ const GALLERY_IMAGES = [
   'https://images.unsplash.com/photo-1592861956120-e524fc739696?auto=format&fit=crop&q=80&w=800',
 ];
 
-export default function GardenLayout({ slug, initialRestaurant, initialView, menuOnly = false }: { slug: string, initialRestaurant: any, initialView?: string, menuOnly?: boolean }) {
+export default function GardenLayout({ slug, initialRestaurant, initialView, menuOnly = false, bookingOnly = false }: { slug: string, initialRestaurant: any, initialView?: string, menuOnly?: boolean, bookingOnly?: boolean }) {
   const { t } = useTranslation();
   const restaurant = initialRestaurant;
   const [scrolled, setScrolled] = useState(false);
@@ -136,13 +136,15 @@ export default function GardenLayout({ slug, initialRestaurant, initialView, men
   };
 
   useEffect(() => {
-    if (menuOnly) return;
+    // menuOnly/bookingOnly pages render only their one relevant section, so
+    // there's nothing to scroll to — they already start on it.
+    if (menuOnly || bookingOnly) return;
     if (initialView === 'menu') {
       setTimeout(() => scrollToSection('menu'), 500);
     } else if (initialView === 'booking') {
       setTimeout(() => scrollToSection('reservations'), 500);
     }
-  }, [initialView, menuOnly]);
+  }, [initialView, menuOnly, bookingOnly]);
 
   if (!restaurant) return <div className="min-h-screen flex items-center justify-center bg-[#fdfaf3] text-[#3d3524] font-medium">Experience not found.</div>;
 
@@ -243,6 +245,21 @@ export default function GardenLayout({ slug, initialRestaurant, initialView, men
             </Button>
           </div>
         </nav>
+      ) : bookingOnly ? (
+        <nav className={cn(
+          "fixed w-full z-40 flex items-center justify-between px-6 md:px-12 py-4 bg-white/90 backdrop-blur-md border-b border-black/5",
+          customization.announcementText ? "top-9" : "top-0"
+        )}>
+          <Button variant="ghost" nativeButton={false} className="px-0 text-sm font-medium opacity-70 hover:opacity-100 hover:bg-transparent" render={<Link href={`/r/${slug}`} />}>
+            <ArrowLeft className="mr-2 h-4 w-4" /> {restaurant.name}
+          </Button>
+          <div className="flex items-center gap-3">
+            <LanguageSwitcher />
+            <Button nativeButton={false} className="rounded-full bg-[var(--accent)] px-5 py-2 text-xs font-semibold uppercase tracking-widest text-white hover:bg-[var(--accent-hover)]" render={<Link href={`/r/${slug}/menu`} />}>
+              {t('public.menu')}
+            </Button>
+          </div>
+        </nav>
       ) : (
       <nav className={cn(
         "fixed w-full z-40 flex items-center justify-between px-6 md:px-12 py-5 transition-all duration-500",
@@ -275,7 +292,7 @@ export default function GardenLayout({ slug, initialRestaurant, initialView, men
       </nav>
       )}
 
-      {!menuOnly && isMobileMenuOpen && (
+      {!menuOnly && !bookingOnly && isMobileMenuOpen && (
         <div className="fixed inset-0 z-30 bg-[#fdfaf3]/97 backdrop-blur-md flex flex-col items-center justify-center space-y-8 animate-in fade-in duration-300 md:hidden">
           <button onClick={() => { setIsMobileMenuOpen(false); scrollToSection('about'); }} className="text-2xl font-serif">{t('public.ourStory')}</button>
           <button onClick={() => { setIsMobileMenuOpen(false); scrollToSection('menu'); }} className="text-2xl font-serif">{t('public.menu')}</button>
@@ -284,7 +301,7 @@ export default function GardenLayout({ slug, initialRestaurant, initialView, men
         </div>
       )}
 
-      {!menuOnly && (
+      {!menuOnly && !bookingOnly && (
       <>
       {/* Hero */}
       <section className="relative h-screen w-full flex items-center justify-center overflow-hidden">
@@ -351,6 +368,8 @@ export default function GardenLayout({ slug, initialRestaurant, initialView, men
       </>
       )}
 
+      {/* Menu — hidden on a booking-only standalone page, mirroring how menuOnly hides Reservations */}
+      {!bookingOnly && (
       <section id="menu" className={cn("px-6 md:px-12", menuOnly ? "pt-28 pb-24" : "py-20 md:py-28")}>
         <div className="mx-auto max-w-5xl">
           <div className="mb-16 text-center">
@@ -398,6 +417,7 @@ export default function GardenLayout({ slug, initialRestaurant, initialView, men
           )}
         </div>
       </section>
+      )}
 
       {menuOnly && (
         <footer className="border-t border-black/5 px-6 py-14 text-center md:px-12">
@@ -415,7 +435,7 @@ export default function GardenLayout({ slug, initialRestaurant, initialView, men
         </footer>
       )}
 
-      {!menuOnly && (
+      {!menuOnly && !bookingOnly && (
       <>
       {/* Contact / Footer */}
       <section id="contact" className="mx-auto max-w-4xl border-t border-black/5 px-6 py-20 text-center md:px-12">
@@ -434,8 +454,12 @@ export default function GardenLayout({ slug, initialRestaurant, initialView, men
         )}
         <p className="mt-14 text-xs opacity-40">© {new Date().getFullYear()} {restaurant.name}</p>
       </section>
+      </>
+      )}
 
-      {/* Reservations */}
+      {/* Reservations — shown in full mode and on the bookingOnly standalone page */}
+      {!menuOnly && (
+      <>
       <section id="reservations" className="px-6 py-24 md:px-12" style={{ backgroundColor: accentColor + '0f' }}>
         <div className="mx-auto max-w-3xl">
           <div className="mb-14 text-center">
@@ -581,6 +605,22 @@ export default function GardenLayout({ slug, initialRestaurant, initialView, men
           )}
         </div>
       </section>
+
+      {bookingOnly && (
+        <footer className="border-t border-black/5 px-6 py-14 text-center md:px-12">
+          <h2 className="mb-4 font-serif text-2xl">{restaurant.name}</h2>
+          {hasContactInfo && (
+            <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-sm opacity-70">
+              {restaurant.contactPhone && <a href={`tel:${restaurant.contactPhone}`} className="hover:text-[var(--accent)]">{restaurant.contactPhone}</a>}
+              {restaurant.contactEmail && <a href={`mailto:${restaurant.contactEmail}`} className="hover:text-[var(--accent)]">{restaurant.contactEmail}</a>}
+            </div>
+          )}
+          <Button nativeButton={false} className="mt-8 rounded-full bg-[var(--accent)] px-6 py-2 text-xs font-semibold uppercase tracking-widest text-white hover:bg-[var(--accent-hover)]" render={<Link href={`/r/${slug}/menu`} />}>
+            {t('public.menu')}
+          </Button>
+          <p className="mt-8 text-xs opacity-40">© {new Date().getFullYear()} {restaurant.name}</p>
+        </footer>
+      )}
       </>
       )}
     </div>
