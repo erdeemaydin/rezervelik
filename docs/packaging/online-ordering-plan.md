@@ -176,8 +176,16 @@ reservation link stays on-brand. This touches all 8 layout components in
 `frontend/src/components/public/`, dispatched from `r/[slug]/book/page.tsx` the same way
 `r/[slug]/menu/page.tsx` dispatches on `layoutStyle` today.
 
-`r/[slug]/order` (§1d above) should follow the **same on-brand pattern** for consistency, once
-built — not a fourth, differently-styled variant.
+**Correction (2026-08-28, same day):** `r/[slug]/order` (§1d above) should NOT follow the
+8-layout-component pattern — on reflection that's the wrong fit for a multi-step, stateful
+cart/checkout flow. `menu`/`book` are each a single self-contained section reused inside 8
+existing layout files; a checkout flow (menu → cart → address → OTP → payment → confirm) is
+meaningfully more complex, and duplicating that state machine 8 times is a maintenance trap, not
+a branding win. Precedent from real commercial sites: checkout is normally **one consistent,
+trustworthy UI with the tenant's brand tokens applied** (colors, logo, typography pulled from
+`restaurant.customization`), not a structurally different checkout per visual theme — same
+principle Shopify/most e-commerce checkouts follow. Build `r/[slug]/order` as a single themed
+flow, not a ninth layout component.
 
 **Explicitly out of scope for this round:** embedding these features into a tenant's *own*
 existing website (`docs/packaging/`'s Track B — JS/iframe widget, hardened public API,
