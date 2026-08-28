@@ -1838,5 +1838,127 @@
     "comingSoonTitle": "Sipariş istasyonu yakında",
     "comingSoonMessage": "Mutfak sipariş panosu henüz hazır değil. Hesabınız doğru şekilde ayarlandı — yayına girdiğinde tekrar kontrol edin.",
     "logout": "Çıkış yap"
+  },
+  "publicOrder": {
+    "restaurantNotFound": "Restoran bulunamadı.",
+    "notAvailable": "Bu restoran için online sipariş kullanılamıyor.",
+    "loadFailed": "Menü yüklenemedi. Lütfen tekrar deneyin.",
+    "closed": {
+      "title": "Şu anda sipariş alınmıyor",
+      "description": "Şu anda online sipariş kabul etmiyoruz. Lütfen daha sonra tekrar kontrol edin."
+    },
+    "nav": {
+      "back": "Geri",
+      "continue": "Devam Et",
+      "myOrders": "Siparişlerim",
+      "step": {
+        "menu": "Menü",
+        "checkout": "Sepet ve Teslimat",
+        "identify": "Telefon Doğrulama",
+        "payment": "Ödeme",
+        "placed": "Sipariş Alındı"
+      }
+    },
+    "menu": {
+      "empty": "Şu anda online siparişe açık ürün bulunmuyor.",
+      "itemsSuffix": "ürün",
+      "viewCart": "Sepeti Gör",
+      "addedToast": "Sepete eklendi"
+    },
+    "item": {
+      "required": "Zorunlu",
+      "optional": "İsteğe Bağlı",
+      "quantity": "Adet",
+      "decrease": "Adedi azalt",
+      "increase": "Adedi artır",
+      "addToCart": "Sepete Ekle"
+    },
+    "cart": {
+      "title": "Siparişiniz",
+      "remove": "Kaldır"
+    },
+    "fulfillment": {
+      "title": "Paket Servis mi, Gel-Al mı?",
+      "delivery": "Paket Servis",
+      "pickup": "Gel-Al",
+      "onlyOneAvailable": "Şu anda yalnızca bir sipariş türü kullanılabilir."
+    },
+    "address": {
+      "zoneLabel": "Teslimat Bölgesi",
+      "noZones": "Henüz teslimat bölgesi tanımlanmamış.",
+      "deliveryFeeLabel": "Ücret:",
+      "minOrderLabel": "Min. sipariş:",
+      "fullAddressLabel": "Teslimat Adresi",
+      "fullAddressPlaceholder": "Sokak, bina, kat, daire numarası…",
+      "neighborhoodLabel": "Mahalle",
+      "neighborhoodPlaceholder": "örn. Kadıköy",
+      "noteLabel": "Kurye için not",
+      "notePlaceholder": "örn. Zili iki kez çalın"
+    },
+    "quote": {
+      "calculating": "Toplam hesaplanıyor…",
+      "subtotal": "Ara Toplam",
+      "deliveryFee": "Teslimat Ücreti",
+      "total": "Toplam",
+      "belowMinimum": "Bu bölge için minimum sipariş tutarı:",
+      "waiting": "Toplamı görmek için sepete ürün ekleyin.",
+      "failed": "Toplam hesaplanamadı. Lütfen tekrar deneyin."
+    },
+    "identify": {
+      "title": "Telefon Numaranızı Doğrulayın",
+      "phoneLabel": "Cep Telefonu",
+      "phonePlaceholder": "+90 5XX XXX XX XX",
+      "sendCodeButton": "Kod Gönder",
+      "codeSentTo": "6 haneli kodu şu numaraya gönderdik:",
+      "codeLabel": "Doğrulama Kodu",
+      "codePlaceholder": "······",
+      "trustDeviceLabel": "Bu cihazı hatırla, bir dahaki sefere kod istemeyeyim",
+      "verifyButton": "Doğrula ve Devam Et",
+      "changePhoneButton": "Telefon numarasını değiştir",
+      "resendButton": "Kodu Tekrar Gönder",
+      "resendPrefix": "Tekrar gönder:",
+      "nameSubtitle": "İlk siparişiniz — adınızı öğrenebilir miyiz?",
+      "nameLabel": "Adınız",
+      "namePlaceholder": "Ad Soyad",
+      "requestFailed": "Kod gönderilemedi. Lütfen tekrar deneyin.",
+      "verifyFailed": "Kod doğrulanamadı. Lütfen tekrar deneyin."
+    },
+    "payment": {
+      "title": "Ödeme Yöntemi",
+      "cashOnDelivery": "Kapıda Ödeme",
+      "onlineCard": "Online Kart ile Öde",
+      "noneAvailable": "Şu anda kullanılabilir ödeme yöntemi yok.",
+      "noteLabel": "Mutfak için not (isteğe bağlı)",
+      "notePlaceholder": "örn. Soğansız olsun lütfen"
+    },
+    "confirm": {
+      "summaryTitle": "Sipariş Özeti",
+      "prepTimePrefix": "Yaklaşık hazırlanma süresi:",
+      "minutesSuffix": "dk",
+      "placeOrderButton": "Siparişi Ver",
+      "placeFailed": "Siparişiniz alınamadı. Lütfen tekrar deneyin."
+    },
+    "placed": {
+      "title": "Siparişiniz Alındı!",
+      "orderNumberPrefix": "Sipariş",
+      "statusLabel": "Durum",
+      "readyByPrefix": "Tahmini hazır olma saati:",
+      "viewHistoryButton": "Siparişlerim",
+      "orderAgainButton": "Tekrar Sipariş Ver"
+    },
+    "history": {
+      "title": "Siparişlerim",
+      "empty": "Henüz geçmiş siparişiniz yok."
+    },
+    "status": {
+      "NEW": "Alındı",
+      "ACCEPTED": "Onaylandı",
+      "PREPARING": "Hazırlanıyor",
+      "READY": "Hazır",
+      "OUT_FOR_DELIVERY": "Yolda",
+      "COMPLETED": "Tamamlandı",
+      "CANCELLED": "İptal Edildi",
+      "REJECTED": "Reddedildi"
+    }
   }
 }

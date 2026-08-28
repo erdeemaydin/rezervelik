@@ -23,6 +23,12 @@ const otpRateLimit = (keyPrefix: string) =>
 router.post('/otp/request', otpRateLimit('order-otp-request'), customerOrderController.requestOtp);
 router.post('/otp/verify', otpRateLimit('order-otp-verify'), customerOrderController.verifyOtp);
 
+// Order settings (fulfillment/payment-method flags + open/closed state) are
+// deliberately NOT gated by requireOnlineOrderingOpen — the frontend needs to
+// read onlineOrderingOpen itself to render a "closed right now" state instead
+// of 403ing before it can tell why.
+router.get('/settings', customerOrderController.getPublicOrderSettings);
+
 // Menu browsing and price quoting happen before phone identification in the
 // flow (spec §5) — no customerAuth required, but both respect the tenant's
 // manual "closed for now" kill-switch.

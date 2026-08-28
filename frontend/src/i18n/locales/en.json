@@ -1838,5 +1838,127 @@
     "comingSoonTitle": "Order station coming soon",
     "comingSoonMessage": "The kitchen order board isn't ready yet. Your account is set up correctly — check back once it launches.",
     "logout": "Log out"
+  },
+  "publicOrder": {
+    "restaurantNotFound": "Restaurant not found.",
+    "notAvailable": "Online ordering isn't available for this restaurant.",
+    "loadFailed": "Couldn't load the menu. Please try again.",
+    "closed": {
+      "title": "Not taking orders right now",
+      "description": "We're not accepting online orders at the moment. Please check back soon."
+    },
+    "nav": {
+      "back": "Back",
+      "continue": "Continue",
+      "myOrders": "My orders",
+      "step": {
+        "menu": "Menu",
+        "checkout": "Cart & delivery",
+        "identify": "Verify your phone",
+        "payment": "Payment",
+        "placed": "Order placed"
+      }
+    },
+    "menu": {
+      "empty": "Nothing available for online ordering right now.",
+      "itemsSuffix": "items",
+      "viewCart": "View cart",
+      "addedToast": "Added to cart"
+    },
+    "item": {
+      "required": "Required",
+      "optional": "Optional",
+      "quantity": "Quantity",
+      "decrease": "Decrease quantity",
+      "increase": "Increase quantity",
+      "addToCart": "Add to cart"
+    },
+    "cart": {
+      "title": "Your order",
+      "remove": "Remove"
+    },
+    "fulfillment": {
+      "title": "Delivery or pickup?",
+      "delivery": "Delivery",
+      "pickup": "Pickup",
+      "onlyOneAvailable": "Only one order type is available right now."
+    },
+    "address": {
+      "zoneLabel": "Delivery area",
+      "noZones": "No delivery areas are set up yet.",
+      "deliveryFeeLabel": "Fee:",
+      "minOrderLabel": "Min. order:",
+      "fullAddressLabel": "Delivery address",
+      "fullAddressPlaceholder": "Street, building, floor, apartment number…",
+      "neighborhoodLabel": "Neighborhood",
+      "neighborhoodPlaceholder": "e.g. Kadıköy",
+      "noteLabel": "Note for the courier",
+      "notePlaceholder": "e.g. Ring the bell twice"
+    },
+    "quote": {
+      "calculating": "Calculating your total…",
+      "subtotal": "Subtotal",
+      "deliveryFee": "Delivery fee",
+      "total": "Total",
+      "belowMinimum": "Minimum order for this area is",
+      "waiting": "Add items to see your total.",
+      "failed": "Couldn't calculate your total. Please try again."
+    },
+    "identify": {
+      "title": "Verify your phone number",
+      "phoneLabel": "Mobile number",
+      "phonePlaceholder": "+90 5XX XXX XX XX",
+      "sendCodeButton": "Send code",
+      "codeSentTo": "We sent a 6-digit code to",
+      "codeLabel": "Verification code",
+      "codePlaceholder": "······",
+      "trustDeviceLabel": "Remember this device so I skip the code next time",
+      "verifyButton": "Verify & continue",
+      "changePhoneButton": "Change phone number",
+      "resendButton": "Resend code",
+      "resendPrefix": "Resend in",
+      "nameSubtitle": "First time ordering here — what's your name?",
+      "nameLabel": "Your name",
+      "namePlaceholder": "John Doe",
+      "requestFailed": "Couldn't send the code. Please try again.",
+      "verifyFailed": "That code didn't work. Please try again."
+    },
+    "payment": {
+      "title": "Payment method",
+      "cashOnDelivery": "Cash on delivery",
+      "onlineCard": "Pay by card online",
+      "noneAvailable": "No payment methods are available right now.",
+      "noteLabel": "Note for the kitchen (optional)",
+      "notePlaceholder": "e.g. No onions, please"
+    },
+    "confirm": {
+      "summaryTitle": "Order summary",
+      "prepTimePrefix": "Ready in about",
+      "minutesSuffix": "min",
+      "placeOrderButton": "Place order",
+      "placeFailed": "Couldn't place your order. Please try again."
+    },
+    "placed": {
+      "title": "Order placed!",
+      "orderNumberPrefix": "Order",
+      "statusLabel": "Status",
+      "readyByPrefix": "Ready by",
+      "viewHistoryButton": "My orders",
+      "orderAgainButton": "Order again"
+    },
+    "history": {
+      "title": "My orders",
+      "empty": "No past orders yet."
+    },
+    "status": {
+      "NEW": "Received",
+      "ACCEPTED": "Accepted",
+      "PREPARING": "Preparing",
+      "READY": "Ready",
+      "OUT_FOR_DELIVERY": "Out for delivery",
+      "COMPLETED": "Completed",
+      "CANCELLED": "Cancelled",
+      "REJECTED": "Rejected"
+    }
   }
 }

@@ -128,6 +128,51 @@ export const getOrderableMenu = async (req: Request, res: Response) => {
 };
 
 // ---------------------------------------------------------------------------
+// Order settings (anonymous, read-only) — deviation from the original brief:
+// there was no public read of OrderSettings' payment-method/fulfillment flags,
+// but the customer UI needs to know which fulfillment types and payment
+// methods are actually enabled *before* showing them as choices (never offer
+// a method the backend will reject with order_payment_method_disabled /
+// order_fulfillment_disabled). Kept read-only and minimal, mirroring the
+// listPublicDeliveryZones pattern below. Deliberately NOT gated by
+// requireOnlineOrderingOpen (unlike /menu and /zones) — the customer flow
+// needs to render an "we're closed right now" state from `onlineOrderingOpen`
+// itself, so this must stay reachable while that flag is false.
+// ---------------------------------------------------------------------------
+
+export const getPublicOrderSettings = async (req: Request, res: Response) => {
+  try {
+    const restaurantId = req.restaurantId!;
+    const settings = await prisma.orderSettings.findUnique({
+      where: { restaurantId },
+      select: {
+        onlineOrderingOpen: true,
+        deliveryEnabled: true,
+        pickupEnabled: true,
+        cashOnDeliveryEnabled: true,
+        onlineCardEnabled: true,
+        prepTimeMinutes: true,
+      },
+    });
+
+    // No row yet = tenant never configured it; mirror the schema defaults
+    // (see requireOnlineOrderingOpen's comment for the same fallback logic)
+    // rather than telling the customer UI everything is disabled.
+    return successResponse(res, settings ?? {
+      onlineOrderingOpen: true,
+      deliveryEnabled: true,
+      pickupEnabled: true,
+      cashOnDeliveryEnabled: true,
+      onlineCardEnabled: false,
+      prepTimeMinutes: 20,
+    });
+  } catch (error) {
+    console.error('[CustomerOrder] getPublicOrderSettings error:', error);
+    return errorResponse(res, 'errors.internal_error', 500);
+  }
+};
+
+// ---------------------------------------------------------------------------
 // Delivery zones (anonymous, read-only) — orderPricingService resolves a
 // quote from an already-chosen zoneId rather than doing geo/radius matching
 // itself (see its file comment), so the customer flow needs to know which
