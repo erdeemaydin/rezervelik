@@ -30,7 +30,8 @@ import {
   HeartPulse,
   Package,
   Armchair,
-  ScrollText
+  ScrollText,
+  ShoppingBag
 } from 'lucide-react';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useFormatStore } from '@/store/useFormatStore';
@@ -115,6 +116,7 @@ const ROUTE_PERMS: { prefix: string; perm: string; exact?: boolean; adminOnly?: 
   { prefix: '/dashboard/menus', perm: 'manage_menu' },
   { prefix: '/dashboard/wait-time', perm: 'manage_settings' },
   { prefix: '/dashboard/staff', perm: 'manage_staff' },
+  { prefix: '/dashboard/orders', perm: 'manage_orders' },
   { prefix: '/dashboard/customization', perm: 'manage_settings' },
   { prefix: '/dashboard/settings', perm: 'manage_settings' },
   { prefix: '/dashboard/audit', perm: 'manage_settings', adminOnly: true },
@@ -259,6 +261,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
       { name: isRestaurant ? t('admin.menuManagement') : term('catalog'), href: '/dashboard/menus', icon: vIcon.catalog, perm: 'manage_menu', feature: 'hasMenuFeature' },
       { name: t('admin.waitlist'), href: '/dashboard/wait-time', icon: Clock, perm: 'manage_settings', feature: 'hasWaitTimeFeature' },
       { name: t('admin.staffSchedule'), href: '/dashboard/scheduling', icon: Calendar, feature: 'hasShiftFeature' },
+      { name: t('admin.orders'), href: '/dashboard/orders', icon: ShoppingBag, perm: 'manage_orders', feature: 'hasOnlineOrdering' },
     ]},
     // Administration used to be one flat, unrelated grab-bag (payments ledger,
     // staff records, reviews, branding, audit log, and settings all side by side).
@@ -301,7 +304,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
   // Vendors showing on a RESTAURANT). Every other flag is a legacy default-ON
   // feature that only hides when explicitly false, so a failed /settings request
   // doesn't strip a restaurant's core modules.
-  const OPT_IN_FEATURES = ['hasEventPipeline', 'hasVendors', 'hasInstallmentPlans', 'hasGuestList', 'showAuditLogToTenant'];
+  const OPT_IN_FEATURES = ['hasEventPipeline', 'hasVendors', 'hasInstallmentPlans', 'hasGuestList', 'showAuditLogToTenant', 'hasOnlineOrdering'];
   const hasFeature = (feature?: string) => {
     if (!feature) return true;
     // Hide feature-gated items until we actually know the tenant's entitlements,

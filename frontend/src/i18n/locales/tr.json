@@ -102,6 +102,7 @@
     "menuWizard": "Menü Sihirbazı",
     "reviews": "Değerlendirmeler",
     "staffSchedule": "Personel Planlaması",
+    "orders": "Siparişler",
     "timesheet": "Mesai Takibi",
     "staffMembers": "Personeller",
     "payments": "Ödemeler",
@@ -1050,8 +1051,14 @@
       "dishInfo": "Yemek Bilgisi",
       "tagsSpecs": "Etiketler / Özellikler",
       "price": "Fiyat",
+      "onlineOrdering": "Online Sipariş",
       "actions": "İşlemler",
       "noItems": "Bu kategoride ürün bulunmamaktadır."
+    },
+    "onlineOrdering": {
+      "prepTimePlaceholder": "Hazırlık (dk)",
+      "updated": "Online sipariş ayarı kaydedildi",
+      "updateFailed": "Online sipariş ayarı kaydedilemedi"
     },
     "buttons": {
       "addDish": "Kategoriye Yemek Ekle",
@@ -1895,6 +1902,209 @@
       "paidLabel": "Ödendi",
       "unpaidLabel": "Ödenmedi",
       "thankYou": "Siparişiniz için teşekkür ederiz!"
+    }
+  },
+  "orders": {
+    "title": "Siparişler",
+    "subtitle": "Online sipariş geçmişi ve müşteri dizini",
+    "settingsBtn": "Sipariş Ayarları",
+    "tabs": {
+      "history": "Sipariş Geçmişi",
+      "customers": "Müşteriler"
+    },
+    "filters": {
+      "today": "Bugün",
+      "thisWeek": "Bu Hafta",
+      "thisMonth": "Bu Ay",
+      "allTime": "Tüm Zamanlar",
+      "custom": "Özel",
+      "picker": "Tarih Seç",
+      "statusAll": "Tüm Durumlar"
+    },
+    "searchPlaceholder": "Sipariş no, müşteri adı veya telefon ile ara",
+    "table": {
+      "orderNumber": "Sipariş",
+      "customer": "Müşteri",
+      "fulfillment": "Teslimat Şekli",
+      "status": "Durum",
+      "total": "Toplam",
+      "placedAt": "Sipariş Zamanı",
+      "actions": "İşlemler",
+      "loading": "Siparişler yükleniyor…",
+      "noOrders": "Seçili filtrelerle eşleşen sipariş yok",
+      "view": "Görüntüle"
+    },
+    "status": {
+      "NEW": "Yeni",
+      "ACCEPTED": "Kabul Edildi",
+      "PREPARING": "Hazırlanıyor",
+      "READY": "Hazır",
+      "OUT_FOR_DELIVERY": "Yolda",
+      "COMPLETED": "Tamamlandı",
+      "CANCELLED": "İptal Edildi",
+      "REJECTED": "Reddedildi"
+    },
+    "fulfillment": {
+      "DELIVERY": "Paket Servis",
+      "PICKUP": "Gel-Al"
+    },
+    "paymentMethod": {
+      "CASH_ON_DELIVERY": "Kapıda Ödeme",
+      "ONLINE_CARD": "Online Kart"
+    },
+    "paymentStatus": {
+      "UNPAID": "Ödenmedi",
+      "PAID": "Ödendi",
+      "REFUNDED": "İade Edildi"
+    },
+    "detail": {
+      "title": "Sipariş",
+      "items": "Ürünler",
+      "quantity": "Adet",
+      "unitPrice": "Birim Fiyat",
+      "modifiers": "Ek Seçenekler",
+      "subtotal": "Ara Toplam",
+      "deliveryFee": "Teslimat Ücreti",
+      "total": "Toplam",
+      "address": "Teslimat Adresi",
+      "noAddress": "Kayıtlı adres yok (gel-al siparişi)",
+      "customerNote": "Müşteri Notu",
+      "noNote": "Müşteri not bırakmamış",
+      "prepTime": "Hazırlık Süresi",
+      "minutesSuffix": "dk",
+      "readyBy": "Hazır Olma Zamanı",
+      "paymentMethod": "Ödeme Yöntemi",
+      "paymentStatus": "Ödeme Durumu",
+      "placedAt": "Sipariş Zamanı",
+      "customer": "Müşteri",
+      "close": "Kapat"
+    },
+    "customers": {
+      "searchPlaceholder": "İsim veya telefon ile ara",
+      "table": {
+        "name": "İsim",
+        "phone": "Telefon",
+        "orderCount": "Sipariş",
+        "joined": "Müşteri Olma Tarihi",
+        "actions": "İşlemler",
+        "loading": "Müşteriler yükleniyor…",
+        "noCustomers": "Henüz müşteri yok",
+        "view": "Görüntüle"
+      }
+    },
+    "customerDetail": {
+      "title": "Müşteri",
+      "phoneVerified": "Telefon doğrulandı",
+      "phoneNotVerified": "Telefon doğrulanmadı",
+      "addresses": "Kayıtlı Adresler",
+      "noAddresses": "Kayıtlı adres yok",
+      "orderHistory": "Sipariş Geçmişi",
+      "noOrders": "Henüz sipariş yok",
+      "close": "Kapat"
+    },
+    "errors": {
+      "loadFailed": "Siparişler yüklenemedi",
+      "loadCustomersFailed": "Müşteriler yüklenemedi",
+      "loadCustomerDetailFailed": "Müşteri bilgileri yüklenemedi"
+    },
+    "settings": {
+      "title": "Sipariş Ayarları",
+      "subtitle": "Teslimat, gel-al, ödeme yöntemleri ve kapasiteyi yapılandırın",
+      "tabs": {
+        "general": "Genel",
+        "zones": "Teslimat Bölgeleri"
+      },
+      "saveBtn": "Değişiklikleri Kaydet",
+      "saved": "Sipariş ayarları kaydedildi",
+      "saveFailed": "Sipariş ayarları kaydedilemedi",
+      "loadFailed": "Sipariş ayarları yüklenemedi",
+      "killSwitch": {
+        "title": "Online Sipariş",
+        "statusOpen": "AÇIK — sipariş alınıyor",
+        "statusClosed": "KAPALI — sipariş alınmıyor",
+        "descOpen": "Müşteriler şu anda sipariş verebilir. Kapanış saatinde veya yoğunlukta yeni siparişleri anında durdurmak için bunu kapatın.",
+        "descClosed": "Sipariş alımı kapalı. Siz tekrar açana kadar müşteriler yeni sipariş veremez."
+      },
+      "fulfillment": {
+        "title": "Teslimat Şekilleri",
+        "delivery": "Paket Servis",
+        "deliveryDesc": "Müşterilerin paket servis siparişi vermesine izin ver",
+        "pickup": "Gel-Al",
+        "pickupDesc": "Müşterilerin gel-al siparişi vermesine izin ver"
+      },
+      "payment": {
+        "title": "Ödeme Yöntemleri",
+        "cod": "Kapıda Ödeme",
+        "codDesc": "Sipariş vardığında yerinde ödeme al",
+        "card": "Online Kart Ödemesi",
+        "cardDesc": "Ödeme ekranında kartla öde",
+        "comingSoon": "Yakında",
+        "cardHint": "Online kart ödemesi henüz kurulmamış bir ödeme altyapısı entegrasyonu (Faz 2) gerektiriyor. Müşterilerin ödeme ekranında sessizce başarısız olacak bir yöntemi seçememesi için bu kapalı tutuluyor."
+      },
+      "capacity": {
+        "title": "Kapasite ve Zamanlama",
+        "maxConcurrent": "Maksimum Eşzamanlı Sipariş",
+        "maxConcurrentHint": "Sınırsız için boş bırakın",
+        "prepTime": "Varsayılan Hazırlık Süresi (dakika)",
+        "prepTimeHint": "Bir menü ürününün kendi hazırlık süresi yoksa kullanılır"
+      },
+      "hours": {
+        "title": "Sipariş Saatleri",
+        "desc": "Bir günü tamamen kapatmak için o günü \"Kapalı\" bırakın",
+        "closed": "Kapalı",
+        "open": "Açılış",
+        "close": "Kapanış",
+        "days": {
+          "mon": "Pazartesi",
+          "tue": "Salı",
+          "wed": "Çarşamba",
+          "thu": "Perşembe",
+          "fri": "Cuma",
+          "sat": "Cumartesi",
+          "sun": "Pazar"
+        }
+      },
+      "zones": {
+        "title": "Teslimat Bölgeleri",
+        "addBtn": "Bölge Ekle",
+        "table": {
+          "name": "Bölge",
+          "matchType": "Tip",
+          "fee": "Teslimat Ücreti",
+          "minOrder": "Min. Sipariş",
+          "active": "Aktif",
+          "actions": "İşlemler",
+          "loading": "Bölgeler yükleniyor…",
+          "noZones": "Henüz teslimat bölgesi tanımlanmadı"
+        },
+        "matchType": {
+          "RADIUS": "Yarıçap",
+          "AREA": "Bölge / Mahalle"
+        },
+        "dialog": {
+          "createTitle": "Yeni Teslimat Bölgesi",
+          "editTitle": "Teslimat Bölgesini Düzenle",
+          "name": "Bölge Adı",
+          "namePlaceholder": "örn. Şehir Merkezi",
+          "matchType": "Eşleştirme Tipi",
+          "radiusMeters": "Yarıçap (metre)",
+          "deliveryFee": "Teslimat Ücreti",
+          "minOrderAmount": "Minimum Sipariş Tutarı",
+          "active": "Bölge aktif",
+          "save": "Bölgeyi Kaydet"
+        },
+        "confirm": {
+          "deleteTitle": "Bu teslimat bölgesi silinsin mi?"
+        },
+        "toast": {
+          "created": "Teslimat bölgesi oluşturuldu",
+          "updated": "Teslimat bölgesi güncellendi",
+          "deleted": "Teslimat bölgesi silindi",
+          "saveFailed": "Teslimat bölgesi kaydedilemedi",
+          "deleteFailed": "Teslimat bölgesi silinemedi",
+          "loadFailed": "Teslimat bölgeleri yüklenemedi"
+        }
+      }
     }
   },
   "publicOrder": {

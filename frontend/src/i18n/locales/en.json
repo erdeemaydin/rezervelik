@@ -102,6 +102,7 @@
     "menuWizard": "Menu Wizard",
     "reviews": "Reviews",
     "staffSchedule": "Staff Schedule",
+    "orders": "Orders",
     "timesheet": "Timesheet",
     "staffMembers": "Staff Members",
     "payments": "Payments",
@@ -1050,8 +1051,14 @@
       "dishInfo": "Dish Information",
       "tagsSpecs": "Tags / Specs",
       "price": "Price",
+      "onlineOrdering": "Online Ordering",
       "actions": "Actions",
       "noItems": "No items in this category."
+    },
+    "onlineOrdering": {
+      "prepTimePlaceholder": "Prep (min)",
+      "updated": "Online-ordering setting saved",
+      "updateFailed": "Couldn't save the online-ordering setting"
     },
     "buttons": {
       "addDish": "Add Dish to Category",
@@ -1895,6 +1902,209 @@
       "paidLabel": "Paid",
       "unpaidLabel": "Unpaid",
       "thankYou": "Thank you for your order!"
+    }
+  },
+  "orders": {
+    "title": "Orders",
+    "subtitle": "Online order history and customer directory",
+    "settingsBtn": "Order Settings",
+    "tabs": {
+      "history": "Order History",
+      "customers": "Customers"
+    },
+    "filters": {
+      "today": "Today",
+      "thisWeek": "This Week",
+      "thisMonth": "This Month",
+      "allTime": "All Time",
+      "custom": "Custom",
+      "picker": "Pick a date",
+      "statusAll": "All Statuses"
+    },
+    "searchPlaceholder": "Search by order #, customer name or phone",
+    "table": {
+      "orderNumber": "Order",
+      "customer": "Customer",
+      "fulfillment": "Fulfillment",
+      "status": "Status",
+      "total": "Total",
+      "placedAt": "Placed",
+      "actions": "Actions",
+      "loading": "Loading orders…",
+      "noOrders": "No orders match the current filters",
+      "view": "View"
+    },
+    "status": {
+      "NEW": "New",
+      "ACCEPTED": "Accepted",
+      "PREPARING": "Preparing",
+      "READY": "Ready",
+      "OUT_FOR_DELIVERY": "Out for Delivery",
+      "COMPLETED": "Completed",
+      "CANCELLED": "Cancelled",
+      "REJECTED": "Rejected"
+    },
+    "fulfillment": {
+      "DELIVERY": "Delivery",
+      "PICKUP": "Pickup"
+    },
+    "paymentMethod": {
+      "CASH_ON_DELIVERY": "Cash on Delivery",
+      "ONLINE_CARD": "Online Card"
+    },
+    "paymentStatus": {
+      "UNPAID": "Unpaid",
+      "PAID": "Paid",
+      "REFUNDED": "Refunded"
+    },
+    "detail": {
+      "title": "Order",
+      "items": "Items",
+      "quantity": "Qty",
+      "unitPrice": "Unit Price",
+      "modifiers": "Modifiers",
+      "subtotal": "Subtotal",
+      "deliveryFee": "Delivery Fee",
+      "total": "Total",
+      "address": "Delivery Address",
+      "noAddress": "No address on file (pickup order)",
+      "customerNote": "Customer Note",
+      "noNote": "No note left by the customer",
+      "prepTime": "Prep Time",
+      "minutesSuffix": "min",
+      "readyBy": "Ready By",
+      "paymentMethod": "Payment Method",
+      "paymentStatus": "Payment Status",
+      "placedAt": "Placed At",
+      "customer": "Customer",
+      "close": "Close"
+    },
+    "customers": {
+      "searchPlaceholder": "Search by name or phone",
+      "table": {
+        "name": "Name",
+        "phone": "Phone",
+        "orderCount": "Orders",
+        "joined": "Customer Since",
+        "actions": "Actions",
+        "loading": "Loading customers…",
+        "noCustomers": "No customers yet",
+        "view": "View"
+      }
+    },
+    "customerDetail": {
+      "title": "Customer",
+      "phoneVerified": "Phone verified",
+      "phoneNotVerified": "Phone not verified",
+      "addresses": "Saved Addresses",
+      "noAddresses": "No saved addresses",
+      "orderHistory": "Order History",
+      "noOrders": "No orders yet",
+      "close": "Close"
+    },
+    "errors": {
+      "loadFailed": "Couldn't load orders",
+      "loadCustomersFailed": "Couldn't load customers",
+      "loadCustomerDetailFailed": "Couldn't load this customer's details"
+    },
+    "settings": {
+      "title": "Order Settings",
+      "subtitle": "Configure delivery, pickup, payment methods and capacity",
+      "tabs": {
+        "general": "General",
+        "zones": "Delivery Zones"
+      },
+      "saveBtn": "Save Changes",
+      "saved": "Order settings saved",
+      "saveFailed": "Couldn't save order settings",
+      "loadFailed": "Couldn't load order settings",
+      "killSwitch": {
+        "title": "Online Ordering",
+        "statusOpen": "OPEN — accepting orders",
+        "statusClosed": "CLOSED — not accepting orders",
+        "descOpen": "Customers can place orders right now. Flip this off to stop taking new orders immediately (e.g. at closing time or during a rush).",
+        "descClosed": "Ordering is closed. Customers cannot place new orders until you turn this back on."
+      },
+      "fulfillment": {
+        "title": "Fulfillment Methods",
+        "delivery": "Delivery",
+        "deliveryDesc": "Allow customers to order for delivery",
+        "pickup": "Pickup",
+        "pickupDesc": "Allow customers to order for pickup (gel-al)"
+      },
+      "payment": {
+        "title": "Payment Methods",
+        "cod": "Cash on Delivery",
+        "codDesc": "Collect payment in person when the order arrives",
+        "card": "Online Card Payment",
+        "cardDesc": "Pay by card at checkout",
+        "comingSoon": "Coming soon",
+        "cardHint": "Online card payment requires a payment-gateway integration (Phase 2) that hasn't been built yet. This stays off so customers can't choose a payment method that would silently fail at checkout."
+      },
+      "capacity": {
+        "title": "Capacity & Timing",
+        "maxConcurrent": "Max Concurrent Orders",
+        "maxConcurrentHint": "Leave empty for unlimited",
+        "prepTime": "Default Prep Time (minutes)",
+        "prepTimeHint": "Used when a menu item doesn't set its own prep time"
+      },
+      "hours": {
+        "title": "Order Hours",
+        "desc": "Leave a day closed to stop accepting orders on that day entirely",
+        "closed": "Closed",
+        "open": "Open",
+        "close": "Close",
+        "days": {
+          "mon": "Monday",
+          "tue": "Tuesday",
+          "wed": "Wednesday",
+          "thu": "Thursday",
+          "fri": "Friday",
+          "sat": "Saturday",
+          "sun": "Sunday"
+        }
+      },
+      "zones": {
+        "title": "Delivery Zones",
+        "addBtn": "Add Zone",
+        "table": {
+          "name": "Zone",
+          "matchType": "Type",
+          "fee": "Delivery Fee",
+          "minOrder": "Min. Order",
+          "active": "Active",
+          "actions": "Actions",
+          "loading": "Loading zones…",
+          "noZones": "No delivery zones configured yet"
+        },
+        "matchType": {
+          "RADIUS": "Radius",
+          "AREA": "Area / Neighborhood"
+        },
+        "dialog": {
+          "createTitle": "New Delivery Zone",
+          "editTitle": "Edit Delivery Zone",
+          "name": "Zone Name",
+          "namePlaceholder": "e.g. City Center",
+          "matchType": "Match Type",
+          "radiusMeters": "Radius (meters)",
+          "deliveryFee": "Delivery Fee",
+          "minOrderAmount": "Minimum Order Amount",
+          "active": "Zone is active",
+          "save": "Save Zone"
+        },
+        "confirm": {
+          "deleteTitle": "Delete this delivery zone?"
+        },
+        "toast": {
+          "created": "Delivery zone created",
+          "updated": "Delivery zone updated",
+          "deleted": "Delivery zone deleted",
+          "saveFailed": "Couldn't save the delivery zone",
+          "deleteFailed": "Couldn't delete the delivery zone",
+          "loadFailed": "Couldn't load delivery zones"
+        }
+      }
     }
   },
   "publicOrder": {

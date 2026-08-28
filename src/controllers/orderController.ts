@@ -21,14 +21,40 @@ export const listOrders = async (req: Request, res: Response) => {
       ? statusParam.split(',').map((s) => s.trim()).filter(Boolean)
       : undefined;
 
+    // Deviation (dashboard/orders history, not in the original Phase 1c
+    // contract): optional createdAt range so the tenant-admin history view can
+    // filter by day/week/etc. server-side instead of only within whatever the
+    // take-limited batch happens to contain — same reasoning as every other
+    // date-range filter in this codebase. Both bounds are optional and
+    // additive; the order-station board (which never sends them) is
+    // unaffected. `take` also bumped 200 -> 500 and made overridable via
+    // `limit` (capped at 1000) to match reservationController.listReservations'
+    // "fetch a large bounded batch, let the client filter/sort" convention
+    // rather than true pagination, since no other list endpoint in this
+    // codebase paginates either.
+    const fromParam = req.query.from;
+    const toParam = req.query.to;
+    const createdAt: { gte?: Date; lte?: Date } = {};
+    if (typeof fromParam === 'string' && fromParam) createdAt.gte = new Date(fromParam);
+    if (typeof toParam === 'string' && toParam) createdAt.lte = new Date(toParam);
+
+    const limitParam = req.query.limit;
+    const take = typeof limitParam === 'string' && limitParam.length
+      ? Math.min(1000, Math.max(1, parseInt(limitParam, 10) || 500))
+      : 500;
+
     const orders = await prisma.order.findMany({
-      where: { restaurantId, ...(statuses ? { status: { in: statuses as any } } : {}) },
+      where: {
+        restaurantId,
+        ...(statuses ? { status: { in: statuses as any } } : {}),
+        ...(createdAt.gte || createdAt.lte ? { createdAt } : {}),
+      },
       orderBy: { createdAt: 'desc' },
       include: {
         items: true,
         customer: { select: { id: true, name: true, phone: true } },
       },
-      take: 200,
+      take,
     });
 
     return successResponse(res, orders);
