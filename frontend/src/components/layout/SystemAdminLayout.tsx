@@ -31,6 +31,9 @@ interface SystemAdminLayoutProps {
 // (no default→chosen flash) before the /system/settings/global request returns.
 const SYSTEM_THEME_CACHE = 'systemDashboardTheme';
 
+type NavItem = { name: string; href: string; icon: typeof BarChart3 };
+const compactNavItems = (items: (NavItem | false)[]): NavItem[] => items.filter(Boolean) as NavItem[];
+
 export default function SystemAdminLayout({ children }: SystemAdminLayoutProps) {
   const pathname = usePathname();
   const router = useRouter();
@@ -85,21 +88,21 @@ export default function SystemAdminLayout({ children }: SystemAdminLayoutProps) 
   // "Super Admins" (administrator management) is never shown to a sub-admin —
   // that's root-only on the backend regardless of any granted permission.
   const isRoot = user?.isRootAdmin !== false;
-  const perms = (user?.permissions || '').split(',');
+  const perms = (user?.permissions || '').split(',').filter(Boolean);
   const has = (key: string) => isRoot || perms.includes(key);
 
   const navigation = [
-    { section: t('systemAdmin.globalOverview'), items: [
+    { section: t('systemAdmin.globalOverview'), items: compactNavItems([
       has('sys_view_metrics') && { name: t('systemAdmin.systemMetrics'), href: '/system-admin/dashboard', icon: BarChart3 },
       has('sys_manage_tenants') && { name: t('systemAdmin.tenantManagement'), href: '/system-admin/tenants', icon: Building2 },
-    ].filter(Boolean) as { name: string; href: string; icon: typeof BarChart3 }[] },
-    { section: t('systemAdmin.userControl'), items: [
+    ]) },
+    { section: t('systemAdmin.userControl'), items: compactNavItems([
       isRoot && { name: t('systemAdmin.superAdmins'), href: '/system-admin/admins', icon: ShieldCheck },
       has('sys_view_audit_log') && { name: t('systemAdmin.activityAudit'), href: '/system-admin/audit', icon: Server },
-    ].filter(Boolean) as { name: string; href: string; icon: typeof BarChart3 }[] },
-    { section: t('systemAdmin.configuration'), items: [
+    ]) },
+    { section: t('systemAdmin.configuration'), items: compactNavItems([
       has('sys_manage_global_settings') && { name: t('systemAdmin.globalSettings'), href: '/system-admin/settings', icon: Settings },
-    ].filter(Boolean) as { name: string; href: string; icon: typeof BarChart3 }[] },
+    ]) },
   ].filter((group) => group.items.length > 0);
 
   const handleLogout = async () => {

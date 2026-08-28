@@ -16,10 +16,10 @@ export interface SessionTokenPayload {
   role: string;
   // Only meaningful when role === 'SUPER_ADMIN': true = full platform root,
   // false = a restricted sub-admin (see src/config/systemPermissions.ts).
-  // Carried in the token (like role) rather than re-fetched on every tenant
-  // request; requireActiveSuperAdmin re-checks it live against the DB on
-  // every /api/system/* request specifically, the same way it already does
-  // for isActive.
+  // Carried in the token so non-SUPER_ADMIN requests never pay a DB lookup for
+  // it; authMiddleware re-checks it live against the DB on every SUPER_ADMIN
+  // request specifically (tenant-scoped routes included, not just
+  // /api/system/*), the same way it already does for isActive.
   isRootAdmin?: boolean;
   // Set only on a token minted by the impersonate flow — the SUPER_ADMIN's own
   // user id, so audit-log entries written while impersonating can be traced

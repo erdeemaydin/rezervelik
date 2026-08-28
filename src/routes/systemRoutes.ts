@@ -4,7 +4,6 @@ import * as auditController from '../controllers/auditController';
 import {
   authMiddleware,
   roleMiddleware,
-  requireActiveSuperAdmin,
   requireRootSystemAdmin,
   requireSystemPermission,
 } from '../middlewares/auth';
@@ -41,11 +40,11 @@ router.post('/setup-super-admin', setupRateLimit, systemController.createSuperAd
 router.post('/stop-impersonation', authMiddleware, systemController.stopImpersonation);
 
 // The rest are protected for SUPER_ADMIN only — and, unlike every other role,
-// re-checked live against the DB on every request so deactivating one
-// (below) takes effect immediately rather than waiting for the token to expire.
+// re-checked live against the DB on every request (in authMiddleware) so
+// deactivating one (below) takes effect immediately rather than waiting for
+// the token to expire.
 router.use(authMiddleware);
 router.use(roleMiddleware(['SUPER_ADMIN']));
-router.use(requireActiveSuperAdmin);
 
 router.get('/tenants', requireSystemPermission('sys_manage_tenants'), systemController.getAllTenants);
 router.post('/tenants', requireSystemPermission('sys_manage_tenants'), systemController.createTenant);

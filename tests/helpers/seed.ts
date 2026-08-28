@@ -3,11 +3,19 @@ import bcrypt from 'bcrypt';
 import prisma from '../../src/config/prisma';
 import { generateToken } from '../../src/utils/jwt';
 import { getFeatureProfile } from '../../src/config/businessProfiles';
+import { assertTestDatabaseUrl } from '../setup/assertTestDatabaseUrl.mjs';
 
 export const TEST_PASSWORD = 'Password123!';
 
-/** Wipe all data. Deleting tenants cascades their child rows; users covers SUPER_ADMINs. */
+/**
+ * Wipe all data. Deleting tenants cascades their child rows; users covers SUPER_ADMINs.
+ * Re-checks DATABASE_URL right before the deletes (belt-and-braces alongside the
+ * same check in tests/setup/test-env.ts) since this is the actual destructive
+ * operation — a caller that imports resetDb() outside the normal vitest
+ * setupFiles path must not be able to skip the guard.
+ */
 export async function resetDb() {
+  assertTestDatabaseUrl(process.env.DATABASE_URL!);
   await prisma.user.deleteMany();
   await prisma.restaurant.deleteMany();
 }

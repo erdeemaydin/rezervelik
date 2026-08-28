@@ -11,6 +11,7 @@
 //
 // It NEVER touches dev or production data — it only ever talks to the test URL.
 import { execSync } from 'node:child_process';
+import { assertTestDatabaseUrl } from './assertTestDatabaseUrl.mjs';
 
 // Keep this default in sync with tests/setup/test-env.ts.
 const DEFAULT_TEST_DB_URL =
@@ -21,6 +22,12 @@ const IMAGE = 'docker.io/library/postgres:16-alpine';
 
 const explicitUrl = process.env.TEST_DATABASE_URL || process.env.DATABASE_URL;
 const url = explicitUrl || DEFAULT_TEST_DB_URL;
+
+// `prisma migrate reset --force` below drops every object in this database.
+// Refuse to run it against anything whose name doesn't unmistakably look like
+// a disposable test database — an env var pointed at the wrong place must
+// fail loudly here, not drop real data.
+assertTestDatabaseUrl(url);
 
 const run = (cmd, opts = {}) =>
   execSync(cmd, { stdio: 'inherit', ...opts });

@@ -18,6 +18,14 @@ import { bustMaintenanceCache } from '../middlewares/maintenance';
 import { logAudit } from '../services/auditService';
 import { sanitizeSystemPermissions } from '../config/systemPermissions';
 
+// A platform-administrator account (role SUPER_ADMIN) is never a valid target
+// for a tenant/user-management endpoint — its `permissions` column holds
+// sys_* system capabilities, not tenant data, and it's reachable only through
+// the root-only /admins endpoints. Centralized here so every tenant-user-scoped
+// admin action (present and future) enforces this the same way instead of
+// hand-rolling the role check.
+const isPlatformAdminAccount = (user: { role: string }) => user.role === 'SUPER_ADMIN';
+
 // POST /system/users/:userId/reset-link (SUPER_ADMIN only)
 // Mints a single-use password reset link for any user. The raw token is returned
 // exactly once here; only its SHA-256 hash is persisted.
@@ -33,7 +41,7 @@ export const createPasswordResetLink = async (req: Request, res: Response) => {
     // sub-admin) only ever covers tenant-scoped users. Without this check a
     // sub-admin could mint a reset link for a root account, or even its own,
     // and use it to escalate.
-    if (user.role === 'SUPER_ADMIN' && req.user?.isRootAdmin === false) {
+    if (isPlatformAdminAccount(user) && req.user?.isRootAdmin === false) {
       return errorResponse(res, 'errors.forbidden', 403, { message: 'Root administrator access required' });
     }
 
@@ -80,7 +88,7 @@ export const setUserOtp = async (req: Request, res: Response) => {
 
     // Same rationale as createPasswordResetLink above — disabling 2FA on
     // another platform administrator's account is root-only.
-    if (user.role === 'SUPER_ADMIN' && req.user?.isRootAdmin === false) {
+    if (isPlatformAdminAccount(user) && req.user?.isRootAdmin === false) {
       return errorResponse(res, 'errors.forbidden', 403, { message: 'Root administrator access required' });
     }
 
@@ -426,7 +434,7 @@ export const updateTenantUserPermissions = async (req: Request, res: Response) =
     // consult this column.
     const target = await prisma.user.findUnique({ where: { id: userId }, select: { role: true, restaurantId: true } });
     if (!target) return errorResponse(res, 'errors.validation_error', 404, { message: 'User not found' });
-    if (target.role === 'SUPER_ADMIN' || !target.restaurantId) {
+    if (isPlatformAdminAccount(target) || !target.restaurantId) {
       return errorResponse(res, 'errors.validation_error', 400, { message: 'This endpoint only manages tenant-scoped staff permissions' });
     }
 
@@ -721,9 +729,10 @@ export const getSystemAdmins = async (req: Request, res: Response) => {
 // compromised/offboarded SysAdmin credential through the product at all,
 // only directly in the DB. Deactivating blocks new logins immediately
 // (authController.login) and any already-issued token on its very next
-// system-admin request (requireActiveSuperAdmin below) — unlike a tenant
-// staff token, which is stateless until it expires, this one is checked live
-// specifically because SUPER_ADMIN is the highest-privilege role in the system.
+// request of any kind (authMiddleware re-checks isActive live for every
+// SUPER_ADMIN request) — unlike a tenant staff token, which is stateless
+// until it expires, this one is checked live specifically because SUPER_ADMIN
+// is the highest-privilege role in the system.
 export const setSystemAdminActive = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;

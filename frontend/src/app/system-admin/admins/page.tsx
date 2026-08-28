@@ -15,6 +15,7 @@ import api from '@/lib/api';
 import { toast } from 'sonner';
 import { useConfirm } from '@/components/ui/confirm-dialog';
 import { useAuthStore } from '@/store/useAuthStore';
+import { useTranslation } from '@/i18n/provider';
 import { SYSTEM_PERMISSIONS, SystemPermissionKey } from '@/lib/systemPermissions';
 
 const splitPermissions = (raw?: string | null): SystemPermissionKey[] =>
@@ -42,7 +43,51 @@ function PermissionPicker({ value, onChange }: { value: SystemPermissionKey[]; o
   );
 }
 
+// Shared by the Add and Edit-permissions dialogs — the root/restricted switch
+// plus (when restricted) the permission picker.
+function RootAccessSection({
+  isRoot,
+  onToggleRoot,
+  toggleDisabled,
+  permissions,
+  onPermissionsChange,
+  warning,
+}: {
+  isRoot: boolean;
+  onToggleRoot: (checked: boolean) => void;
+  toggleDisabled?: boolean;
+  permissions: SystemPermissionKey[];
+  onPermissionsChange: (next: SystemPermissionKey[]) => void;
+  warning?: React.ReactNode;
+}) {
+  const { t } = useTranslation();
+  return (
+    <>
+      <div className="flex items-center justify-between rounded-md border border-slate-200 p-3">
+        <div>
+          <p className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+            {isRoot ? <ShieldCheck className="w-3.5 h-3.5 text-red-600" /> : <Lock className="w-3.5 h-3.5 text-blue-600" />}
+            {isRoot ? t('systemAdmin.admins.rootAdministrator') : t('systemAdmin.admins.restrictedAdministratorLabel')}
+          </p>
+          <p className="text-[10px] text-slate-400">
+            {isRoot ? t('systemAdmin.admins.rootAdminDescription') : t('systemAdmin.admins.restrictedAdminDescription')}
+          </p>
+        </div>
+        <Switch checked={isRoot} disabled={toggleDisabled} onCheckedChange={onToggleRoot} />
+      </div>
+      {warning}
+      {!isRoot && (
+        <div className="grid gap-1.5">
+          <Label className="text-[10px] font-black uppercase text-slate-400">{t('systemAdmin.admins.permissionsLabel')}</Label>
+          <PermissionPicker value={permissions} onChange={onPermissionsChange} />
+        </div>
+      )}
+    </>
+  );
+}
+
 export default function SystemAdminsPage() {
+  const { t } = useTranslation();
   const confirm = useConfirm();
   const currentUserId = useAuthStore((s) => s.user?.id);
   const [admins, setAdmins] = useState<any[]>([]);
@@ -58,11 +103,11 @@ export default function SystemAdminsPage() {
     const willDeactivate = admin.isActive !== false;
     if (willDeactivate) {
       const ok = await confirm({
-        title: 'Deactivate this administrator?',
-        description: 'They will be signed out immediately and unable to log in again until reactivated.',
-        details: [{ label: 'Admin', value: admin.email }],
-        confirmText: 'Deactivate',
-        cancelText: 'Cancel',
+        title: t('systemAdmin.admins.deactivateConfirmTitle'),
+        description: t('systemAdmin.admins.deactivateConfirmDescription'),
+        details: [{ label: t('systemAdmin.admins.adminLabel'), value: admin.email }],
+        confirmText: t('systemAdmin.admins.deactivateButton'),
+        cancelText: t('systemAdmin.admins.cancel'),
         tone: 'danger',
       });
       if (!ok) return;
@@ -71,9 +116,9 @@ export default function SystemAdminsPage() {
       setActiveLoadingId(admin.id);
       const res = await api.put(`/system/admins/${admin.id}/active`, { isActive: !willDeactivate });
       setAdmins((prev) => prev.map((a) => (a.id === admin.id ? res.data.data : a)));
-      toast.success(willDeactivate ? 'Administrator deactivated' : 'Administrator reactivated');
+      toast.success(willDeactivate ? t('systemAdmin.admins.toastAdminDeactivated') : t('systemAdmin.admins.toastAdminReactivated'));
     } catch (err: any) {
-      toast.error(err.response?.data?.details?.message || 'Failed to update administrator');
+      toast.error(err.response?.data?.details?.message || t('systemAdmin.admins.toastUpdateFailed'));
     } finally {
       setActiveLoadingId(null);
     }
@@ -95,18 +140,18 @@ export default function SystemAdminsPage() {
     e.preventDefault();
     if (addSaving) return;
     if (addForm.password.length < 8) {
-      toast.error('Password must be at least 8 characters');
+      toast.error(t('systemAdmin.admins.toastPasswordTooShort'));
       return;
     }
     try {
       setAddSaving(true);
       const res = await api.post('/system/admins', { ...addForm, permissions: addPermissions });
       setAdmins((prev) => [...prev, res.data.data]);
-      toast.success('Administrator added');
+      toast.success(t('systemAdmin.admins.toastAdminAdded'));
       setAddOpen(false);
       resetAddForm();
     } catch (err: any) {
-      toast.error(err.response?.data?.details?.message || err.response?.data?.message || 'Failed to add administrator');
+      toast.error(err.response?.data?.details?.message || err.response?.data?.message || t('systemAdmin.admins.toastAddFailed'));
     } finally {
       setAddSaving(false);
     }
@@ -135,10 +180,10 @@ export default function SystemAdminsPage() {
         permissions: editPermissions,
       });
       setAdmins((prev) => prev.map((a) => (a.id === editTarget.id ? res.data.data : a)));
-      toast.success('Access level updated');
+      toast.success(t('systemAdmin.admins.toastAccessUpdated'));
       setEditTarget(null);
     } catch (err: any) {
-      toast.error(err.response?.data?.details?.message || 'Failed to update access level');
+      toast.error(err.response?.data?.details?.message || t('systemAdmin.admins.toastAccessUpdateFailed'));
     } finally {
       setEditSaving(false);
     }
@@ -153,7 +198,7 @@ export default function SystemAdminsPage() {
       setResetExpiryMins(res.data.data.expiresInMinutes ?? null);
       setResetOpen(true);
     } catch (err) {
-      toast.error('Failed to generate reset link');
+      toast.error(t('systemAdmin.admins.toastResetLinkFailed'));
     } finally {
       setResetLoadingId(null);
     }
@@ -165,7 +210,7 @@ export default function SystemAdminsPage() {
         const res = await api.get('/system/admins');
         setAdmins(res.data.data);
       } catch (err) {
-        toast.error('Failed to load admins');
+        toast.error(t('systemAdmin.admins.toastLoadFailed'));
       } finally {
         setLoading(false);
       }
@@ -178,11 +223,11 @@ export default function SystemAdminsPage() {
       <div className="flex flex-col gap-6">
         <div className="flex justify-between items-center">
           <div>
-            <h1 className="text-2xl font-bold text-slate-800">Super Admins</h1>
-            <p className="text-xs text-slate-500 font-medium">Manage platform administrators and their access levels.</p>
+            <h1 className="text-2xl font-bold text-slate-800">{t('systemAdmin.superAdmins')}</h1>
+            <p className="text-xs text-slate-500 font-medium">{t('systemAdmin.admins.pageSubtitle')}</p>
           </div>
           <Button onClick={() => setAddOpen(true)} className="bg-emerald-600 hover:bg-emerald-700 text-xs font-bold shadow-sm">
-            <Plus className="w-3.5 h-3.5 mr-1.5" /> Add Administrator
+            <Plus className="w-3.5 h-3.5 mr-1.5" /> {t('systemAdmin.admins.addAdministrator')}
           </Button>
         </div>
 
@@ -190,25 +235,25 @@ export default function SystemAdminsPage() {
           <CardHeader className="border-b border-slate-100 bg-slate-50/50 p-4">
             <div className="flex items-center gap-2">
               <ShieldCheck className="w-4 h-4 text-emerald-600" />
-              <CardTitle className="text-sm font-bold uppercase tracking-widest text-slate-700">Access Roster</CardTitle>
+              <CardTitle className="text-sm font-bold uppercase tracking-widest text-slate-700">{t('systemAdmin.admins.accessRoster')}</CardTitle>
             </div>
           </CardHeader>
           <CardContent className="p-0">
             <Table>
               <TableHeader>
                 <TableRow className="bg-slate-50/50 hover:bg-slate-50/50">
-                  <TableHead className="text-xs font-bold text-slate-500">Name</TableHead>
-                  <TableHead className="text-xs font-bold text-slate-500">Email</TableHead>
-                  <TableHead className="text-xs font-bold text-slate-500">Access Level</TableHead>
-                  <TableHead className="text-xs font-bold text-slate-500">Status</TableHead>
-                  <TableHead className="text-xs font-bold text-slate-500">Created At</TableHead>
-                  <TableHead className="text-xs font-bold text-slate-500 text-right">Actions</TableHead>
+                  <TableHead className="text-xs font-bold text-slate-500">{t('systemAdmin.admins.colName')}</TableHead>
+                  <TableHead className="text-xs font-bold text-slate-500">{t('systemAdmin.admins.colEmail')}</TableHead>
+                  <TableHead className="text-xs font-bold text-slate-500">{t('systemAdmin.admins.colAccessLevel')}</TableHead>
+                  <TableHead className="text-xs font-bold text-slate-500">{t('systemAdmin.admins.colStatus')}</TableHead>
+                  <TableHead className="text-xs font-bold text-slate-500">{t('systemAdmin.admins.colCreatedAt')}</TableHead>
+                  <TableHead className="text-xs font-bold text-slate-500 text-right">{t('systemAdmin.admins.colActions')}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {loading ? (
                   <TableRow>
-                    <TableCell colSpan={6} className="h-32 text-center text-xs font-bold text-slate-400">Loading administrators...</TableCell>
+                    <TableCell colSpan={6} className="h-32 text-center text-xs font-bold text-slate-400">{t('systemAdmin.admins.loadingAdmins')}</TableCell>
                   </TableRow>
                 ) : admins.map((admin) => {
                   const isSelf = admin.id === currentUserId;
@@ -221,32 +266,32 @@ export default function SystemAdminsPage() {
                     <TableCell className="text-xs text-slate-500">{admin.email}</TableCell>
                     <TableCell>
                       <Badge className={isRoot ? 'bg-red-50 text-red-700 border-red-200' : 'bg-blue-50 text-blue-700 border-blue-200'}>
-                        {isRoot ? 'Root' : `Restricted · ${grantedCount} ${grantedCount === 1 ? 'permission' : 'permissions'}`}
+                        {isRoot ? t('systemAdmin.admins.root') : `${t('systemAdmin.admins.restricted')} · ${grantedCount} ${grantedCount === 1 ? t('systemAdmin.admins.permission') : t('systemAdmin.admins.permissions')}`}
                       </Badge>
                     </TableCell>
                     <TableCell>
                       <Badge className={isActive ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-slate-100 text-slate-500 border-slate-200'}>
-                        {isActive ? 'Active' : 'Deactivated'}
+                        {isActive ? t('systemAdmin.active') : t('systemAdmin.admins.deactivated')}
                       </Badge>
                     </TableCell>
                     <TableCell className="text-xs text-slate-500">{new Date(admin.createdAt).toLocaleDateString()}</TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-1">
                         <Button variant="ghost" size="sm" onClick={() => openEditDialog(admin)} className="h-7 text-[10px] font-bold text-slate-500 hover:text-blue-600 hover:bg-blue-50 px-2">
-                          <Settings2 className="w-3.5 h-3.5 mr-1.5" /> Access
+                          <Settings2 className="w-3.5 h-3.5 mr-1.5" /> {t('systemAdmin.admins.accessButton')}
                         </Button>
                         <Button variant="ghost" size="sm" disabled={resetLoadingId === admin.id} onClick={() => handleGenerateReset(admin)} className="h-7 text-[10px] font-bold text-slate-500 hover:text-amber-600 hover:bg-amber-50 px-2">
-                          <KeyRound className="w-3.5 h-3.5 mr-1.5" /> {resetLoadingId === admin.id ? 'Generating…' : 'Reset Link'}
+                          <KeyRound className="w-3.5 h-3.5 mr-1.5" /> {resetLoadingId === admin.id ? t('systemAdmin.admins.generatingEllipsis') : t('systemAdmin.admins.resetLinkButton')}
                         </Button>
                         <Button
                           variant="ghost" size="sm"
                           disabled={activeLoadingId === admin.id || isSelf}
-                          title={isSelf ? "You can't deactivate your own account" : undefined}
+                          title={isSelf ? t('systemAdmin.admins.cannotDeactivateSelf') : undefined}
                           onClick={() => handleToggleActive(admin)}
                           className={`h-7 text-[10px] font-bold px-2 ${isActive ? 'text-slate-500 hover:text-red-600 hover:bg-red-50' : 'text-slate-500 hover:text-emerald-600 hover:bg-emerald-50'}`}
                         >
                           {isActive ? <ShieldOff className="w-3.5 h-3.5 mr-1.5" /> : <ShieldCheck className="w-3.5 h-3.5 mr-1.5" />}
-                          {activeLoadingId === admin.id ? 'Updating…' : isActive ? 'Deactivate' : 'Reactivate'}
+                          {activeLoadingId === admin.id ? t('systemAdmin.admins.updatingEllipsis') : isActive ? t('systemAdmin.admins.deactivateButton') : t('systemAdmin.admins.reactivateButton')}
                         </Button>
                       </div>
                     </TableCell>
@@ -264,56 +309,43 @@ export default function SystemAdminsPage() {
           <form onSubmit={handleCreateAdmin}>
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2 text-base font-bold">
-                <ShieldCheck className="w-4 h-4 text-emerald-600" /> Add Administrator
+                <ShieldCheck className="w-4 h-4 text-emerald-600" /> {t('systemAdmin.admins.addAdministrator')}
               </DialogTitle>
               <DialogDescription className="text-xs">
-                Create a new platform-level administrator, with either full <span className="font-bold text-slate-700">root</span> access or a restricted set of capabilities.
+                {t('systemAdmin.admins.addDialogDescription')}
               </DialogDescription>
             </DialogHeader>
             <div className="grid gap-4 mt-4">
               <div className="grid grid-cols-2 gap-3">
                 <div className="grid gap-1.5">
-                  <Label className="text-[10px] font-black uppercase text-slate-400">First Name</Label>
+                  <Label className="text-[10px] font-black uppercase text-slate-400">{t('systemAdmin.admins.firstName')}</Label>
                   <Input required value={addForm.firstName} onChange={(e) => setAddForm({ ...addForm, firstName: e.target.value })} className="h-9 text-sm" />
                 </div>
                 <div className="grid gap-1.5">
-                  <Label className="text-[10px] font-black uppercase text-slate-400">Last Name</Label>
+                  <Label className="text-[10px] font-black uppercase text-slate-400">{t('systemAdmin.admins.lastName')}</Label>
                   <Input required value={addForm.lastName} onChange={(e) => setAddForm({ ...addForm, lastName: e.target.value })} className="h-9 text-sm" />
                 </div>
               </div>
               <div className="grid gap-1.5">
-                <Label className="text-[10px] font-black uppercase text-slate-400">Email</Label>
+                <Label className="text-[10px] font-black uppercase text-slate-400">{t('systemAdmin.admins.colEmail')}</Label>
                 <Input required type="email" value={addForm.email} onChange={(e) => setAddForm({ ...addForm, email: e.target.value })} className="h-9 text-sm" />
               </div>
               <div className="grid gap-1.5">
-                <Label className="text-[10px] font-black uppercase text-slate-400">Password</Label>
-                <Input required type="password" minLength={8} value={addForm.password} onChange={(e) => setAddForm({ ...addForm, password: e.target.value })} placeholder="At least 8 characters" className="h-9 text-sm" />
+                <Label className="text-[10px] font-black uppercase text-slate-400">{t('systemAdmin.admins.password')}</Label>
+                <Input required type="password" minLength={8} value={addForm.password} onChange={(e) => setAddForm({ ...addForm, password: e.target.value })} placeholder={t('systemAdmin.admins.passwordPlaceholder')} className="h-9 text-sm" />
               </div>
 
-              <div className="flex items-center justify-between rounded-md border border-slate-200 p-3 mt-1">
-                <div>
-                  <p className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
-                    {addForm.isRootAdmin ? <ShieldCheck className="w-3.5 h-3.5 text-red-600" /> : <Lock className="w-3.5 h-3.5 text-blue-600" />}
-                    {addForm.isRootAdmin ? 'Root administrator' : 'Restricted administrator'}
-                  </p>
-                  <p className="text-[10px] text-slate-400">
-                    {addForm.isRootAdmin ? 'Unrestricted access to every platform action.' : 'Only the capabilities checked below.'}
-                  </p>
-                </div>
-                <Switch checked={addForm.isRootAdmin} onCheckedChange={(c) => setAddForm({ ...addForm, isRootAdmin: c })} />
-              </div>
-
-              {!addForm.isRootAdmin && (
-                <div className="grid gap-1.5">
-                  <Label className="text-[10px] font-black uppercase text-slate-400">Permissions</Label>
-                  <PermissionPicker value={addPermissions} onChange={setAddPermissions} />
-                </div>
-              )}
+              <RootAccessSection
+                isRoot={addForm.isRootAdmin}
+                onToggleRoot={(c) => setAddForm({ ...addForm, isRootAdmin: c })}
+                permissions={addPermissions}
+                onPermissionsChange={setAddPermissions}
+              />
             </div>
             <div className="mt-6 flex justify-end gap-2">
-              <Button type="button" variant="ghost" disabled={addSaving} onClick={() => setAddOpen(false)} className="h-9 text-xs font-bold text-slate-400">Cancel</Button>
+              <Button type="button" variant="ghost" disabled={addSaving} onClick={() => setAddOpen(false)} className="h-9 text-xs font-bold text-slate-400">{t('systemAdmin.admins.cancel')}</Button>
               <Button type="submit" disabled={addSaving} className="h-9 bg-emerald-600 hover:bg-emerald-700 text-xs font-bold px-6 disabled:opacity-60">
-                {addSaving ? 'Adding…' : 'Add Administrator'}
+                {addSaving ? t('systemAdmin.admins.addingEllipsis') : t('systemAdmin.admins.addAdministrator')}
               </Button>
             </div>
           </form>
@@ -326,44 +358,28 @@ export default function SystemAdminsPage() {
             <form onSubmit={handleSavePermissions}>
               <DialogHeader>
                 <DialogTitle className="flex items-center gap-2 text-base font-bold">
-                  <Settings2 className="w-4 h-4 text-blue-600" /> Access Level
+                  <Settings2 className="w-4 h-4 text-blue-600" /> {t('systemAdmin.admins.colAccessLevel')}
                 </DialogTitle>
                 <DialogDescription className="text-xs">
-                  Change what <span className="font-bold text-slate-700">{editTarget.email}</span> can do.
+                  {t('systemAdmin.admins.editDescriptionPrefix')} <span className="font-bold text-slate-700">{editTarget.email}</span> {t('systemAdmin.admins.editDescriptionSuffix')}
                 </DialogDescription>
               </DialogHeader>
               <div className="grid gap-4 mt-4">
-                <div className="flex items-center justify-between rounded-md border border-slate-200 p-3">
-                  <div>
-                    <p className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
-                      {editIsRoot ? <ShieldCheck className="w-3.5 h-3.5 text-red-600" /> : <Lock className="w-3.5 h-3.5 text-blue-600" />}
-                      {editIsRoot ? 'Root administrator' : 'Restricted administrator'}
-                    </p>
-                    <p className="text-[10px] text-slate-400">
-                      {editIsRoot ? 'Unrestricted access to every platform action.' : 'Only the capabilities checked below.'}
-                    </p>
-                  </div>
-                  <Switch
-                    checked={editIsRoot}
-                    disabled={editTarget.id === currentUserId && editIsRoot}
-                    onCheckedChange={setEditIsRoot}
-                  />
-                </div>
-                {editTarget.id === currentUserId && editIsRoot && (
-                  <p className="text-[10px] text-amber-600 font-bold -mt-2">You can&apos;t remove root access from your own account.</p>
-                )}
-
-                {!editIsRoot && (
-                  <div className="grid gap-1.5">
-                    <Label className="text-[10px] font-black uppercase text-slate-400">Permissions</Label>
-                    <PermissionPicker value={editPermissions} onChange={setEditPermissions} />
-                  </div>
-                )}
+                <RootAccessSection
+                  isRoot={editIsRoot}
+                  onToggleRoot={setEditIsRoot}
+                  toggleDisabled={editTarget.id === currentUserId && editIsRoot}
+                  permissions={editPermissions}
+                  onPermissionsChange={setEditPermissions}
+                  warning={editTarget.id === currentUserId && editIsRoot ? (
+                    <p className="text-[10px] text-amber-600 font-bold -mt-2">{t('systemAdmin.admins.cannotRemoveOwnRoot')}</p>
+                  ) : undefined}
+                />
               </div>
               <div className="mt-6 flex justify-end gap-2">
-                <Button type="button" variant="ghost" disabled={editSaving} onClick={() => setEditTarget(null)} className="h-9 text-xs font-bold text-slate-400">Cancel</Button>
+                <Button type="button" variant="ghost" disabled={editSaving} onClick={() => setEditTarget(null)} className="h-9 text-xs font-bold text-slate-400">{t('systemAdmin.admins.cancel')}</Button>
                 <Button type="submit" disabled={editSaving} className="h-9 bg-blue-600 hover:bg-blue-700 text-xs font-bold px-6 disabled:opacity-60">
-                  {editSaving ? 'Saving…' : 'Save Access Level'}
+                  {editSaving ? t('systemAdmin.admins.savingEllipsis') : t('systemAdmin.admins.saveAccessLevel')}
                 </Button>
               </div>
             </form>
@@ -375,20 +391,20 @@ export default function SystemAdminsPage() {
         <DialogContent maxWidth="sm:max-w-md" className="p-6">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-base font-bold">
-              <KeyRound className="w-4 h-4 text-amber-500" /> Password Reset Link
+              <KeyRound className="w-4 h-4 text-amber-500" /> {t('systemAdmin.admins.resetDialogTitle')}
             </DialogTitle>
             <DialogDescription className="text-xs">
-              Single-use link for <span className="font-bold text-slate-700">{resetTarget}</span>. Share it securely — anyone with the link can set a new password.
+              {t('systemAdmin.admins.resetDialogDescriptionPrefix')} <span className="font-bold text-slate-700">{resetTarget}</span>{t('systemAdmin.admins.resetDialogDescriptionSuffix')}
             </DialogDescription>
           </DialogHeader>
           <div className="flex items-center gap-2 mt-2">
             <Input readOnly value={resetLink || ''} className="h-9 text-[10px] font-mono border-slate-200 bg-slate-50" onFocus={(e) => e.target.select()} />
-            <Button type="button" size="sm" onClick={() => { if (resetLink) { navigator.clipboard.writeText(resetLink); toast.success('Copied to clipboard!'); } }} className="h-9 shrink-0 bg-slate-900 hover:bg-slate-800 text-white">
+            <Button type="button" size="sm" onClick={() => { if (resetLink) { navigator.clipboard.writeText(resetLink); toast.success(t('systemAdmin.admins.copiedToClipboard')); } }} className="h-9 shrink-0 bg-slate-900 hover:bg-slate-800 text-white">
               <Copy className="w-3.5 h-3.5" />
             </Button>
           </div>
           <p className="text-[9px] text-amber-600 font-bold uppercase tracking-wide">
-            {resetExpiryMins ? `Expires in ${resetExpiryMins} minutes · ` : ''}Single use
+            {resetExpiryMins ? `${t('systemAdmin.admins.expiresInPrefix')} ${resetExpiryMins} ${t('systemAdmin.admins.expiresInSuffix')} · ` : ''}{t('systemAdmin.admins.singleUse')}
           </p>
         </DialogContent>
       </Dialog>
