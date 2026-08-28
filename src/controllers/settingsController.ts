@@ -17,12 +17,17 @@ export const getSettings = async (req: Request, res: Response) => {
     // dashboard can pick per-vertical terminology labels without a SUPER_ADMIN call.
     const restaurant = await prisma.restaurant.findUnique({
       where: { id: restaurantId },
-      select: { businessType: true },
+      select: { businessType: true, hasOnlineOrdering: true },
     });
     return successResponse(res, {
       ...settings,
       measurementSystem: global?.measurementSystem || 'METRIC',
       businessType: restaurant?.businessType || 'RESTAURANT',
+      // Commercial add-on flag (lives on Restaurant, not RestaurantSettings —
+      // see docs/packaging/README.md). Surfaced here the same way
+      // businessType is above, so AdminLayout's opt-in feature gating
+      // (hasFeature('hasOnlineOrdering')) has something to read.
+      hasOnlineOrdering: restaurant?.hasOnlineOrdering === true,
     });
   } catch (error) {
     return errorResponse(res, 'errors.internal_error', 500);
