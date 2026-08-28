@@ -47,6 +47,10 @@ model Restaurant {
   // Publishable key ("pk_live_...") that scopes public widget/SDK calls to this
   // tenant WITHOUT exposing the internal restaurant UUID. Rotatable by the SysAdmin.
   publicApiKey           String?   @unique
+  //
+  // "Online Ordering" package: delivery (paket servisi) + pickup (gel-al) ordering
+  // for the tenant's own menu. See docs/packaging/online-ordering-spec.md.
+  hasOnlineOrdering      Boolean   @default(false)
 
   createdAt             DateTime               @default(now())
   updatedAt             DateTime               @updatedAt
@@ -72,6 +76,13 @@ model Restaurant {
   vendors               Vendor[]
   eventVendors          EventVendor[]
   auditLogs             AuditLog[]
+  orderSettings         OrderSettings?
+  orderCounter          OrderCounter?
+  customers             Customer[]
+  customerAddresses     CustomerAddress[]
+  otpChallenges         OtpChallenge[]
+  deliveryZones         DeliveryZone[]
+  orders                Order[]
 }
 
 model FrontendCustomization {
@@ -683,6 +694,11 @@ model MenuItem {
   // booking window instead of the tenant's default duration. Null for menu dishes.
   durationMinutes Int?
 
+  // Online ordering (add-on, gated by Restaurant.hasOnlineOrdering). Distinct
+  // from durationMinutes above (appointment-vertical service length).
+  isOrderableOnline Boolean @default(false)
+  prepTimeMinutes   Int? // kitchen prep time for this item when ordered online
+
   // Regulation Fields
   ingredients     String?
   calories        Int?
@@ -699,6 +715,7 @@ model MenuItem {
   pairedWith   MenuItemPairing[]  @relation("PairedItems")
   reservations Reservation[]
   events       Event[]            @relation("EventPackage")
+  orderItems   OrderItem[]
 
   @@index([categoryId])
 }
@@ -980,4 +997,239 @@ model EventVendor {
   @@unique([eventId, vendorId])
   @@index([restaurantId])
   @@index([eventId])
+}
+
+// ---------------------------------------------------------------------------
+// Online ordering (Phase 0 + Phase 1a schema). Delivery (paket servisi) +
+// pickup (gel-al) ordering against the tenant's own menu, gated by
+// Restaurant.hasOnlineOrdering. Customer identity here is intentionally a
+// separate model from the staff `User` and from `Guest` (event-RSVP only) —
+// never mix these. See docs/packaging/online-ordering-spec.md and
+// docs/packaging/online-ordering-plan.md (Phase 0 / Phase 1a).
+// ---------------------------------------------------------------------------
+
+// Tenant-wide online-ordering configuration. 1:1 with Restaurant.
+model OrderSettings {
+  restaurantId          String  @id
+  onlineOrderingOpen    Boolean @default(true) // manual kill-switch
+  deliveryEnabled       Boolean @default(true)
+  pickupEnabled         Boolean @default(true)
+  cashOnDeliveryEnabled Boolean @default(true)
+  onlineCardEnabled     Boolean @default(false) // Phase 2 (marketplace sub-merchant)
+  maxConcurrentOrders   Int? // capacity throttle; null = unlimited
+  prepTimeMinutes       Int     @default(20) // default prep time when a menu item doesn't set its own
+  orderHours            Json? // per-day open/close windows
+
+  updatedAt  DateTime   @updatedAt
+  restaurant Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+}
+
+// Race-safe per-tenant continuous order-number sequence. Order-creation code
+// (a later phase) increments this inside a transaction (SELECT ... FOR UPDATE
+// or an atomic UPDATE ... SET lastNumber = lastNumber + 1 RETURNING
+// lastNumber) — deliberately NOT COUNT(*), which would collide/duplicate
+// under concurrent inserts.
+model OrderCounter {
+  restaurantId String @id
+  lastNumber   Int    @default(0)
+
+  restaurant Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+}
+
+// Online-ordering customer identity. Phone is the primary identity (SMS-OTP
+// verified before first order); password/email are optional, for cross-device
+// login. Distinct from the staff `User` model and from `Guest` (event-RSVP
+// only, unrelated identity) — never mix these.
+model Customer {
+  id              String    @id @default(uuid())
+  restaurantId    String
+  phone           String
+  phoneVerifiedAt DateTime?
+  name            String
+  email           String?
+  passwordHash    String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  restaurant     Restaurant        @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  addresses      CustomerAddress[]
+  trustedDevices TrustedDevice[]
+  orders         Order[]
+
+  @@unique([restaurantId, phone])
+  @@index([restaurantId])
+}
+
+model CustomerAddress {
+  id           String  @id @default(uuid())
+  customerId   String
+  restaurantId String
+  label        String? // e.g. "Home", "Work"
+  neighborhood String? // mahalle
+  fullAddress  String
+  lat          Float?
+  lng          Float?
+  zoneId       String?
+  note         String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  customer   Customer      @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  restaurant Restaurant    @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  zone       DeliveryZone? @relation(fields: [zoneId], references: [id])
+
+  @@index([restaurantId])
+  @@index([customerId])
+  @@index([zoneId])
+}
+
+// Long-lived, revocable httpOnly device token so a returning customer skips
+// OTP on a known device. Only the hash of the raw token is stored, same
+// pattern as User.setupTokenHash/resetTokenHash — never the raw token.
+model TrustedDevice {
+  id         String    @id @default(uuid())
+  customerId String
+  tokenHash  String
+  userAgent  String?
+  lastUsedAt DateTime?
+  revokedAt  DateTime?
+
+  createdAt DateTime @default(now())
+
+  customer Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  @@unique([tokenHash])
+  @@index([customerId])
+}
+
+// SMS-OTP challenge (Netgsm, via src/services/messaging). Hashed at rest —
+// never the raw code — attempt-capped and rate-limited per-phone + per-IP by
+// the (later) otpService.
+model OtpChallenge {
+  id           String    @id @default(uuid())
+  restaurantId String
+  phone        String
+  codeHash     String
+  purpose      String // e.g. "LOGIN", "VERIFY_PHONE"
+  attempts     Int       @default(0)
+  expiresAt    DateTime
+  consumedAt   DateTime?
+  ip           String
+
+  createdAt DateTime @default(now())
+
+  restaurant Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+
+  @@index([restaurantId])
+  @@index([restaurantId, phone])
+}
+
+model DeliveryZone {
+  id             String  @id @default(uuid())
+  restaurantId   String
+  name           String
+  matchType      String  @default("RADIUS") // RADIUS, AREA
+  radiusMeters   Float?
+  polygon        Json?
+  deliveryFee    Float
+  minOrderAmount Float   @default(0)
+  isActive       Boolean @default(true)
+  openHours      Json?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  restaurant Restaurant        @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  addresses  CustomerAddress[]
+  orders     Order[]
+
+  @@index([restaurantId])
+}
+
+enum FulfillmentType {
+  DELIVERY
+  PICKUP
+}
+
+enum OrderStatus {
+  NEW
+  ACCEPTED
+  PREPARING
+  READY
+  OUT_FOR_DELIVERY
+  COMPLETED
+  CANCELLED
+  REJECTED
+}
+
+enum PaymentMethod {
+  CASH_ON_DELIVERY
+  ONLINE_CARD
+}
+
+enum PaymentStatus {
+  UNPAID
+  PAID
+  REFUNDED
+}
+
+model Order {
+  id           String @id @default(uuid())
+  restaurantId String
+  customerId   String
+  orderNumber  Int // per-tenant continuous sequence — see OrderCounter, never COUNT(*)
+
+  fulfillmentType FulfillmentType
+  status          OrderStatus   @default(NEW)
+  paymentMethod   PaymentMethod
+  paymentStatus   PaymentStatus @default(UNPAID)
+
+  addressSnapshot Json?
+  zoneId          String?
+  deliveryFee     Float     @default(0)
+  subtotal        Float
+  total           Float
+  prepTimeMinutes Int?
+  readyBy         DateTime?
+  customerNote    String?
+  // Nullable, no relation yet — Phase 2 wires this to the existing Payment
+  // model (marketplace sub-merchant flow). Left as a plain column for now.
+  paymentId       String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  restaurant Restaurant    @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  customer   Customer      @relation(fields: [customerId], references: [id])
+  zone       DeliveryZone? @relation(fields: [zoneId], references: [id])
+  items      OrderItem[]
+
+  @@unique([restaurantId, orderNumber])
+  @@index([restaurantId])
+  @@index([customerId])
+  @@index([zoneId])
+}
+
+// Line-item snapshot — name/price captured at order time so order history and
+// printed slips stay correct even after the tenant edits or deletes the
+// underlying MenuItem/price later (never join live MenuItem for historical
+// totals). menuItemId is optional with the default SET NULL behavior (same
+// convention as Reservation.serviceId/Event.packageId elsewhere in this file)
+// specifically so a later menu-item deletion never touches order history.
+model OrderItem {
+  id                String  @id @default(uuid())
+  orderId           String
+  menuItemId        String?
+  nameSnapshot      String
+  unitPrice         Float
+  quantity          Int
+  modifiersSnapshot Json?
+
+  order    Order     @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  menuItem MenuItem? @relation(fields: [menuItemId], references: [id])
+
+  @@index([orderId])
+  @@index([menuItemId])
 }
