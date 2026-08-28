@@ -223,9 +223,9 @@ export default function CartFulfillmentStep({
               <span>{t('publicOrder.quote.total')}</span>
               <span>{formatPrice(quote.total)}</span>
             </div>
-            {fulfillmentType === 'DELIVERY' && !quote.meetsMinimum && selectedZone && (
+            {fulfillmentType === 'DELIVERY' && !quote.meetsMinimum && quote.minOrderAmount != null && (
               <p className="pt-1 text-xs font-semibold text-amber-600">
-                {t('publicOrder.quote.belowMinimum')} {formatPrice(selectedZone.minOrderAmount)}
+                {t('publicOrder.quote.belowMinimum')} {formatPrice(quote.minOrderAmount)}
               </p>
             )}
           </div>

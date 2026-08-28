@@ -1,4 +1,5 @@
 import { Request, Response } from 'express';
+import { OrderStatus } from '@prisma/client';
 import prisma from '../config/prisma';
 import { successResponse, errorResponse } from '../utils/response';
 import { AppError } from '../utils/AppError';
@@ -10,9 +11,10 @@ import { subscribeToRestaurant, publishOrderEvent } from '../services/orderEvent
 // src/routes/orderRoutes.ts. Every query below is scoped by restaurantId —
 // this is the single most important thing to get right per CLAUDE.md.
 
-const VALID_ORDER_STATUSES = new Set([
-  'NEW', 'ACCEPTED', 'PREPARING', 'READY', 'OUT_FOR_DELIVERY', 'COMPLETED', 'CANCELLED', 'REJECTED',
-]);
+// Derived from the generated Prisma enum, not hand-duplicated — a future
+// migration adding/renaming a status stays in sync automatically instead of
+// this Set silently drifting from prisma/schema.prisma's source of truth.
+const VALID_ORDER_STATUSES = new Set<string>(Object.values(OrderStatus));
 
 // ---------------------------------------------------------------------------
 // Board

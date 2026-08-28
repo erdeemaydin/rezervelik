@@ -109,18 +109,22 @@ export async function checkOtp(params: VerifyOtpParams): Promise<{ challengeId: 
   const { restaurantId, phone, code } = params;
 
   const recentWindowStart = new Date(Date.now() - PER_PHONE_WINDOW_MS);
-  const windowAttempts = await prisma.otpChallenge.aggregate({
-    where: { restaurantId, phone, createdAt: { gte: recentWindowStart } },
-    _sum: { attempts: true },
-  });
+  // Neither read depends on the other's result — run them together. This is
+  // a hot path (retried on every wrong-code guess), so the extra sequential
+  // round-trip isn't free.
+  const [windowAttempts, challenge] = await Promise.all([
+    prisma.otpChallenge.aggregate({
+      where: { restaurantId, phone, createdAt: { gte: recentWindowStart } },
+      _sum: { attempts: true },
+    }),
+    prisma.otpChallenge.findFirst({
+      where: { restaurantId, phone, consumedAt: null },
+      orderBy: { createdAt: 'desc' },
+    }),
+  ]);
   if ((windowAttempts._sum.attempts || 0) >= MAX_ATTEMPTS_PER_WINDOW) {
     throw new AppError('errors.otp_too_many_attempts', 429);
   }
-
-  const challenge = await prisma.otpChallenge.findFirst({
-    where: { restaurantId, phone, consumedAt: null },
-    orderBy: { createdAt: 'desc' },
-  });
 
   if (!challenge) {
     throw new AppError('errors.otp_invalid', 400);
@@ -152,13 +156,4 @@ export async function consumeOtp(challengeId: string): Promise<void> {
     where: { id: challengeId },
     data: { consumedAt: new Date() },
   });
-}
-
-/** Convenience wrapper: validates and immediately consumes in one call. Use
- *  checkOtp()/consumeOtp() separately instead when the caller needs to make
- *  a decision (e.g. "do I have enough info to proceed") between validating
- *  the code and committing to having used it. */
-export async function verifyOtp(params: VerifyOtpParams): Promise<void> {
-  const { challengeId } = await checkOtp(params);
-  await consumeOtp(challengeId);
 }

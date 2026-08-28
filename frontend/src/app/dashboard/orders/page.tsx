@@ -441,9 +441,11 @@ export default function OrdersPage() {
                             </div>
                           )}
                         </div>
-                        <div className="text-xs font-black text-slate-700">
-                          {formatPrice((it.unitPrice + (it.modifiersSnapshot || []).reduce((sum, m) => sum + m.priceAdjust, 0)) * it.quantity)}
-                        </div>
+                        {/* OrderItem.unitPrice already bakes in modifier price adjustments
+                            (src/services/orderPricingService.ts: unitPrice = menuItem.price +
+                            modifierTotal) — modifiersSnapshot is for display only here, don't
+                            re-add its priceAdjust or this double-counts. */}
+                        <div className="text-xs font-black text-slate-700">{formatPrice(it.unitPrice * it.quantity)}</div>
                       </div>
                     ))}
                   </div>

@@ -136,7 +136,11 @@ export function CustomerReceiptTemplate({ order }: { order: StaffOrder }) {
       <div className="space-y-2">
         {order.items.map((item) => {
           const mods = formatModifiers(item, true);
-          const lineTotal = item.unitPrice * item.quantity + (item.modifiersSnapshot || []).reduce((sum, m) => sum + m.priceAdjust, 0) * item.quantity;
+          // item.unitPrice already bakes in modifier price adjustments
+          // (src/services/orderPricingService.ts: unitPrice = menuItem.price +
+          // modifierTotal) — modifiersSnapshot is for display only (the "+ Extra
+          // cheese (+₺10)" line below), re-adding its priceAdjust here double-counts.
+          const lineTotal = item.unitPrice * item.quantity;
           return (
             <div key={item.id} className="text-[12px] leading-tight">
               <div className="flex justify-between font-bold">

@@ -131,6 +131,12 @@ export interface OrderQuote {
   total: number;
   zoneId?: string;
   meetsMinimum: boolean;
+  // Only set for DELIVERY — the resolved zone's minimum, straight from the
+  // backend's authoritative quote. Prefer this over a separately-fetched
+  // zone's minOrderAmount (which can be stale, or absent if the zone was
+  // deactivated/isn't in the current active-zones list) when reporting why
+  // a quote is below minimum.
+  minOrderAmount?: number;
   prepTimeMinutes: number;
   lines: QuotedLine[];
 }
