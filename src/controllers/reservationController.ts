@@ -120,6 +120,14 @@ export const createReservation = async (req: Request, res: Response) => {
     }
 
     const start = new Date(startTime);
+    // This is the public (unauthenticated) booking endpoint — a malformed
+    // startTime (e.g. a non-date string) previously reached restaurantDateStr()
+    // a few lines down, which throws a RangeError on an Invalid Date and fell
+    // through to the generic 500 handler instead of a clean 400. Any anonymous
+    // caller could trigger this.
+    if (isNaN(start.getTime())) {
+      return errorResponse(res, 'errors.validation_error', 400, { message: 'Invalid startTime' });
+    }
     const partySize = parseInt(guestCount);
     if (!Number.isInteger(partySize) || partySize < 1) {
       return errorResponse(res, 'errors.validation_error', 400, { message: 'Invalid guestCount' });
@@ -438,7 +446,23 @@ export const updateReservation = async (req: Request, res: Response) => {
     if (!(await verifyCategoryOwnership(restaurantId, finalCategoryId))) {
       return errorResponse(res, 'errors.validation_error', 400, { message: 'Category not found' });
     }
+    // Neither startTime nor guestCount were ever validated here — an invalid/missing
+    // startTime produces an Invalid Date that later blows up inside the transaction
+    // (Prisma rejects it on the DateTime column), and a non-numeric guestCount
+    // parses to NaN and fails the same way on the Int column. Both previously fell
+    // through to the generic 500 handler instead of a clean 400, unlike
+    // createReservation which already validates both.
+    if (!startTime) {
+      return errorResponse(res, 'errors.validation_error', 400, { message: 'startTime is required' });
+    }
     const start = new Date(startTime);
+    if (isNaN(start.getTime())) {
+      return errorResponse(res, 'errors.validation_error', 400, { message: 'Invalid startTime' });
+    }
+    const partySize = parseInt(guestCount);
+    if (!Number.isInteger(partySize) || partySize < 1) {
+      return errorResponse(res, 'errors.validation_error', 400, { message: 'Invalid guestCount' });
+    }
 
     const settings = await prisma.restaurantSettings.findUnique({ where: { restaurantId } });
 
@@ -486,7 +510,7 @@ export const updateReservation = async (req: Request, res: Response) => {
             customerName,
             customerEmail,
             customerPhone,
-            guestCount: parseInt(guestCount),
+            guestCount: partySize,
             startTime: start,
             endTime,
             notes,
@@ -612,9 +636,18 @@ export const updateReservationSchedule = async (req: Request, res: Response) => 
       return errorResponse(res, 'errors.validation_error', 400, { message: 'Table not found' });
     }
     const start = new Date(startTime);
+    // A garbage startTime/endTime (e.g. dragging produced a malformed ISO string)
+    // previously reached Prisma as an Invalid Date and crashed with a generic 500
+    // instead of a clean 400 — same class of gap as create/updateReservation above.
+    if (isNaN(start.getTime())) {
+      return errorResponse(res, 'errors.validation_error', 400, { message: 'Invalid startTime' });
+    }
     let end: Date;
     if (endTime) {
       end = new Date(endTime);
+      if (isNaN(end.getTime())) {
+        return errorResponse(res, 'errors.validation_error', 400, { message: 'Invalid endTime' });
+      }
     } else if (existingRes.endTime) {
       // Preserve the reservation's current duration when only the start moved.
       const dur = new Date(existingRes.endTime).getTime() - new Date(existingRes.startTime).getTime();
