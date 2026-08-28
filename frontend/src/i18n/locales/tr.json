@@ -1835,9 +1835,67 @@
     "adminSignInHint": "Platform yöneticileri bakım sırasında da giriş yapabilir."
   },
   "orderStation": {
-    "comingSoonTitle": "Sipariş istasyonu yakında",
-    "comingSoonMessage": "Mutfak sipariş panosu henüz hazır değil. Hesabınız doğru şekilde ayarlandı — yayına girdiğinde tekrar kontrol edin.",
-    "logout": "Çıkış yap"
+    "logout": "Çıkış yap",
+    "title": "Sipariş İstasyonu",
+    "connectionLive": "Canlı",
+    "connectionReconnecting": "Yeniden bağlanıyor…",
+    "refreshBtn": "Yenile",
+    "soundOnTitle": "Ses açık — kapatmak için dokunun",
+    "soundOffTitle": "Ses kapalı — açmak için dokunun",
+    "loadFailed": "Siparişler yüklenemedi. Tekrar deneniyor…",
+    "statusUpdateFailed": "Sipariş güncellenemedi. Lütfen tekrar deneyin.",
+    "statusUpdated": "#{number} numaralı sipariş {status} olarak işaretlendi",
+    "emptyColumn": "Sipariş yok",
+    "columns": {
+      "NEW": "Yeni",
+      "ACCEPTED": "Kabul Edildi",
+      "PREPARING": "Hazırlanıyor",
+      "READY": "Hazır",
+      "OUT_FOR_DELIVERY": "Yolda"
+    },
+    "card": {
+      "unknownCustomer": "Misafir",
+      "itemsSuffix": "ürün",
+      "advanceTo": "{status} olarak işaretle",
+      "rejectBtn": "Reddet",
+      "cancelBtn": "İptal Et",
+      "minutesAgo": "{minutes} dk önce",
+      "justNow": "Az önce"
+    },
+    "print": {
+      "kitchenTicket": "Mutfak fişi",
+      "courierSlip": "Kurye fişi",
+      "receipt": "Fiş"
+    },
+    "cancelDialog": {
+      "rejectTitle": "#{number} numaralı siparişi reddet",
+      "cancelTitle": "#{number} numaralı siparişi iptal et",
+      "description": "Bu işlem geri alınamaz. Neden, siparişin denetim kaydına işlenir.",
+      "reasonLabel": "Neden (isteğe bağlı)",
+      "reasonPlaceholder": "Örn. Stok tükendi, müşteri talebi",
+      "confirmBtn": "Onayla",
+      "closeBtn": "Vazgeç"
+    },
+    "ticket": {
+      "orderLabel": "Sipariş",
+      "noteLabel": "Not",
+      "noItems": "Ürün yok",
+      "kitchenHeading": "Mutfak Fişi",
+      "courierHeading": "Kurye Fişi",
+      "receiptHeading": "Fiş",
+      "customerLabel": "Müşteri",
+      "phoneLabel": "Telefon",
+      "addressLabel": "Teslimat adresi",
+      "codLabel": "Kapıda tahsil edilecek",
+      "mapCaption": "Yol tarifi için taratın",
+      "subtotalLabel": "Ara toplam",
+      "deliveryFeeLabel": "Teslimat ücreti",
+      "totalLabel": "Toplam",
+      "paymentMethodLabel": "Ödeme yöntemi",
+      "paidLabel": "Ödendi",
+      "unpaidLabel": "Ödenmedi",
+      "thankYou": "Siparişiniz için teşekkür ederiz!"
+    }
   },
   "publicOrder": {
     "restaurantNotFound": "Restoran bulunamadı.",

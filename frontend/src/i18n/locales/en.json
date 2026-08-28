@@ -1835,9 +1835,67 @@
     "adminSignInHint": "Platform administrators can still sign in during maintenance."
   },
   "orderStation": {
-    "comingSoonTitle": "Order station coming soon",
-    "comingSoonMessage": "The kitchen order board isn't ready yet. Your account is set up correctly — check back once it launches.",
-    "logout": "Log out"
+    "logout": "Log out",
+    "title": "Order Station",
+    "connectionLive": "Live",
+    "connectionReconnecting": "Reconnecting…",
+    "refreshBtn": "Refresh",
+    "soundOnTitle": "Sound on — tap to mute",
+    "soundOffTitle": "Sound muted — tap to unmute",
+    "loadFailed": "Couldn't load orders. Retrying…",
+    "statusUpdateFailed": "Couldn't update the order. Please try again.",
+    "statusUpdated": "Order #{number} marked {status}",
+    "emptyColumn": "No orders",
+    "columns": {
+      "NEW": "New",
+      "ACCEPTED": "Accepted",
+      "PREPARING": "Preparing",
+      "READY": "Ready",
+      "OUT_FOR_DELIVERY": "Out for delivery"
+    },
+    "card": {
+      "unknownCustomer": "Guest",
+      "itemsSuffix": "items",
+      "advanceTo": "Mark {status}",
+      "rejectBtn": "Reject",
+      "cancelBtn": "Cancel",
+      "minutesAgo": "{minutes}m ago",
+      "justNow": "Just now"
+    },
+    "print": {
+      "kitchenTicket": "Kitchen ticket",
+      "courierSlip": "Courier slip",
+      "receipt": "Receipt"
+    },
+    "cancelDialog": {
+      "rejectTitle": "Reject order #{number}",
+      "cancelTitle": "Cancel order #{number}",
+      "description": "This can't be undone. The reason is recorded in the order's audit trail.",
+      "reasonLabel": "Reason (optional)",
+      "reasonPlaceholder": "e.g. Out of stock, customer requested",
+      "confirmBtn": "Confirm",
+      "closeBtn": "Never mind"
+    },
+    "ticket": {
+      "orderLabel": "Order",
+      "noteLabel": "Note",
+      "noItems": "No items",
+      "kitchenHeading": "Kitchen Ticket",
+      "courierHeading": "Courier Slip",
+      "receiptHeading": "Receipt",
+      "customerLabel": "Customer",
+      "phoneLabel": "Phone",
+      "addressLabel": "Delivery address",
+      "codLabel": "Collect on delivery",
+      "mapCaption": "Scan for directions",
+      "subtotalLabel": "Subtotal",
+      "deliveryFeeLabel": "Delivery fee",
+      "totalLabel": "Total",
+      "paymentMethodLabel": "Payment method",
+      "paidLabel": "Paid",
+      "unpaidLabel": "Unpaid",
+      "thankYou": "Thank you for your order!"
+    }
   },
   "publicOrder": {
     "restaurantNotFound": "Restaurant not found.",
