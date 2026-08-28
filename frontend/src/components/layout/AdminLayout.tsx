@@ -288,6 +288,10 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
     if (user?.role === 'SUPER_ADMIN' || user?.role === 'ADMIN') return true;
     if (user?.role === 'MANAGER' && MANAGER_VIEW_PERMS.includes(perm)) return true;
     if (user?.role === 'HOST' && (perm === 'manage_reservations' || perm === 'manage_tables')) return true;
+    // KITCHEN never actually renders dashboard content (the route guard below
+    // bounces it to /order-station before anything mounts), but this mirrors
+    // HOST's grant for consistency/defensiveness.
+    if (user?.role === 'KITCHEN' && perm === 'manage_orders') return true;
     if (!user?.permissions) return false;
     return user.permissions.includes(perm);
   };
@@ -321,6 +325,16 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
   // stops direct-URL access to dashboards they aren't assigned.
   useEffect(() => {
     if (!isMounted || !isAuthenticated || !user) return;
+    // KITCHEN accounts have zero dashboard access, full stop — unlike HOST
+    // (which stays inside AdminLayout for its granted pages), the order
+    // station lives entirely outside this layout. Bounce immediately on
+    // every /dashboard/* path, including ones with no listed ROUTE_PERMS
+    // entry (e.g. a stale bookmark to /dashboard/profile), which the
+    // permission check below would otherwise let through.
+    if (user.role === 'KITCHEN') {
+      router.replace('/order-station');
+      return;
+    }
     const needed = requiredPermForPath(pathname);
     const blockedByRole = requiresAdminOnly(pathname) && user.role !== 'ADMIN';
     if (blockedByRole || (needed && !hasPermission(needed))) {

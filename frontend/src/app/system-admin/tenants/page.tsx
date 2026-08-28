@@ -698,8 +698,8 @@ export default function TenantManagementPage() {
                                     />
                                 </div>
                                 {settingsForm.twoFactorEnabled && (
-                                    <div className="grid grid-cols-4 gap-1.5 pt-1">
-                                        {['ADMIN', 'MANAGER', 'HOST', 'STAFF'].map(role => {
+                                    <div className="grid grid-cols-5 gap-1.5 pt-1">
+                                        {['ADMIN', 'MANAGER', 'HOST', 'KITCHEN', 'STAFF'].map(role => {
                                             const list = settingsForm.twoFactorRoles ? settingsForm.twoFactorRoles.split(',').filter(Boolean) : [];
                                             const active = list.includes(role);
                                             return (

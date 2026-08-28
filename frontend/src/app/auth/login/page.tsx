@@ -43,9 +43,13 @@ interface OtpChallenge {
 // HOST staff work the host stand, not the back-office dashboard — land them
 // there directly instead of /dashboard (which they don't have view_analytics
 // for anyway, so AdminLayout's route guard would just bounce them elsewhere).
+// KITCHEN staff go even further outside the dashboard entirely: the order
+// station is a separate full-screen route that doesn't use AdminLayout chrome
+// at all (unlike /dashboard/host, which stays inside it).
 const defaultRouteForRole = (role: string): string => {
   if (role === 'SUPER_ADMIN') return '/system-admin/tenants';
   if (role === 'HOST') return '/dashboard/host';
+  if (role === 'KITCHEN') return '/order-station';
   return '/dashboard';
 };
 

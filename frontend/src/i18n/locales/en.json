@@ -689,6 +689,7 @@
       "baseRoleTemplate": "Base Role Template",
       "roleManager": "Manager (All Ops)",
       "roleHost": "Host (Tables & Res.)",
+      "roleKitchen": "Kitchen (Order Station)",
       "roleStaff": "Standard Staff (View Only)",
       "granularEntitlements": "Granular Entitlements",
       "entitlementsDesc": "Toggle specific access rights beyond the base role template.",
@@ -735,6 +736,10 @@
       "view_reviews": {
         "label": "View Reviews",
         "desc": "See the reviews dashboard"
+      },
+      "manage_orders": {
+        "label": "Manage Orders",
+        "desc": "Access the online order station"
       }
     }
   },
@@ -1395,6 +1400,7 @@
       "ADMIN": "Admin",
       "MANAGER": "Manager",
       "HOST": "Host",
+      "KITCHEN": "Kitchen",
       "STAFF": "Staff"
     },
     "appearance": "Dashboard Theme",
@@ -1827,5 +1833,10 @@
     "retry": "Try again",
     "adminSignIn": "Administrator sign-in",
     "adminSignInHint": "Platform administrators can still sign in during maintenance."
+  },
+  "orderStation": {
+    "comingSoonTitle": "Order station coming soon",
+    "comingSoonMessage": "The kitchen order board isn't ready yet. Your account is set up correctly — check back once it launches.",
+    "logout": "Log out"
   }
 }

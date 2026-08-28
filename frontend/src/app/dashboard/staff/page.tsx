@@ -46,11 +46,13 @@ const AVAILABLE_PERMISSIONS = [
   { id: 'view_analytics', label: 'View Dashboard & Analytics', desc: 'See the main dashboard and analytics reports' },
   { id: 'view_payments', label: 'View Payments', desc: 'See the payments dashboard' },
   { id: 'view_reviews', label: 'View Reviews', desc: 'See the reviews dashboard' },
+  { id: 'manage_orders', label: 'Manage Orders', desc: 'Access the online order station' },
 ];
 
 const PRESET_ROLES = {
   "MANAGER": ['manage_reservations', 'manage_tables', 'edit_floor_plan', 'manage_menu', 'manage_calendar', 'manage_staff', 'manage_settings'],
   "HOST": ['manage_reservations', 'manage_tables'],
+  "KITCHEN": ['manage_orders'],
   "STAFF": []
 };
 
@@ -328,6 +330,7 @@ export default function StaffManagementPage() {
                                     <SelectContent>
                                         <SelectItem value="MANAGER" className="text-xs font-bold text-blue-700">{t("staff.dialog.roleManager")}</SelectItem>
                                         <SelectItem value="HOST" className="text-xs font-bold text-slate-700">{t("staff.dialog.roleHost")}</SelectItem>
+                                        <SelectItem value="KITCHEN" className="text-xs font-bold text-slate-700">{t("staff.dialog.roleKitchen")}</SelectItem>
                                         <SelectItem value="STAFF" className="text-xs font-bold text-slate-700">{t("staff.dialog.roleStaff")}</SelectItem>
                                     </SelectContent>
                                 </Select>

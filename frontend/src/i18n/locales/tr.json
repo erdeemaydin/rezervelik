@@ -689,6 +689,7 @@
       "baseRoleTemplate": "Temel Rol Şablonu",
       "roleManager": "Yönetici (Tüm İşlemler)",
       "roleHost": "Karşılama (Masalar ve Rez.)",
+      "roleKitchen": "Mutfak (Sipariş İstasyonu)",
       "roleStaff": "Standart Personel (Sadece Görüntüleme)",
       "granularEntitlements": "Detaylı Yetkiler",
       "entitlementsDesc": "Temel rol şablonunun ötesinde belirli erişim haklarını değiştirin.",
@@ -735,6 +736,10 @@
       "view_reviews": {
         "label": "Değerlendirmeleri Görüntüle",
         "desc": "Değerlendirmeler panosunu görüntüle"
+      },
+      "manage_orders": {
+        "label": "Siparişleri Yönet",
+        "desc": "Çevrimiçi sipariş istasyonuna erişim"
       }
     }
   },
@@ -1395,6 +1400,7 @@
       "ADMIN": "Yönetici",
       "MANAGER": "Müdür",
       "HOST": "Karşılama",
+      "KITCHEN": "Mutfak",
       "STAFF": "Personel"
     },
     "appearance": "Pano Teması",
@@ -1827,5 +1833,10 @@
     "retry": "Tekrar dene",
     "adminSignIn": "Yönetici girişi",
     "adminSignInHint": "Platform yöneticileri bakım sırasında da giriş yapabilir."
+  },
+  "orderStation": {
+    "comingSoonTitle": "Sipariş istasyonu yakında",
+    "comingSoonMessage": "Mutfak sipariş panosu henüz hazır değil. Hesabınız doğru şekilde ayarlandı — yayına girdiğinde tekrar kontrol edin.",
+    "logout": "Çıkış yap"
   }
 }
