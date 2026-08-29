@@ -216,10 +216,23 @@ export const updateOrderStatus = async (req: Request, res: Response) => {
         message: 'Order status changed since it was last read — refresh and retry',
       });
     }
+    // Same shape as listOrders / streamOrders (customer + the computed
+    // customerBanned flag), not a bare Order. Both live staff surfaces merge
+    // this response straight into their list state — the dashboard Active
+    // Orders table and the /order-station board — so returning an order
+    // without `customer` blanks out the name/phone column and drops the
+    // no-show / banned badges on the row that was just acted on, until an SSE
+    // event happens to arrive and repair it (and never, if the stream is
+    // reconnecting). lib/orders/types.ts already documents this endpoint as
+    // carrying that shape.
     const updated = await prisma.order.findUniqueOrThrow({
       where: { id: order.id },
-      include: { items: true },
+      include: {
+        items: true,
+        customer: { select: { id: true, name: true, phone: true, noShowCount: true } },
+      },
     });
+    const updatedBanned = await activeBannedPhones(restaurantId, [updated.customer.phone]);
 
     // No dedicated cancel/reject-reason column on Order (schema is frozen for
     // this phase) — the reason is captured in the audit trail instead, same
@@ -252,7 +265,10 @@ export const updateOrderStatus = async (req: Request, res: Response) => {
 
     await publishOrderEvent({ restaurantId, orderId: order.id, orderNumber: order.orderNumber, type: 'status_changed' });
 
-    return successResponse(res, updated);
+    return successResponse(res, {
+      ...updated,
+      customerBanned: updatedBanned.has(updated.customer.phone.trim()),
+    });
   } catch (error) {
     console.error('[Order] updateOrderStatus error:', error);
     return errorResponse(res, 'errors.internal_error', 500);
