@@ -1,8 +1,13 @@
-// Shared types for the order-station board + printing templates. Mirrors the
-// staff-facing shape returned by GET /api/orders, GET /api/orders/stream, and
+// Shared types for every staff-facing live order surface — the /order-station
+// board, the dashboard "Active Orders" table, and the printing templates.
+// Mirrors the shape returned by GET /api/orders, GET /api/orders/stream, and
 // PATCH /api/orders/:id/status (src/controllers/orderController.ts) — every
 // query there includes `items: true` and `customer: { select: { id, name,
-// phone } }`, so those are always present (never a separate fetch).
+// phone, noShowCount } }`, so those are always present (never a separate
+// fetch), plus the computed `customerBanned` flag.
+//
+// Lives under lib/orders/ rather than app/order-station/ because two routes
+// now consume it; a type that two pages share is not one page's private file.
 
 export type OrderStatus =
   | 'NEW'
@@ -12,7 +17,8 @@ export type OrderStatus =
   | 'OUT_FOR_DELIVERY'
   | 'COMPLETED'
   | 'CANCELLED'
-  | 'REJECTED';
+  | 'REJECTED'
+  | 'NOT_PICKED_UP';
 
 export type FulfillmentType = 'DELIVERY' | 'PICKUP';
 export type PaymentMethod = 'CASH_ON_DELIVERY' | 'ONLINE_CARD';
@@ -66,11 +72,18 @@ export interface StaffOrder {
   createdAt: string;
   updatedAt: string;
   items: StaffOrderItem[];
-  customer: { id: string; name: string; phone: string } | null;
+  /** `noShowCount` is the customer's lifetime NOT_PICKED_UP tally (incremented
+   *  by updateOrderStatus); staff surfaces badge it at/above
+   *  OrderSettings.noShowWarnThreshold. */
+  customer: { id: string; name: string; phone: string; noShowCount: number } | null;
+  /** Computed per-response by orderController from the phone-scoped
+   *  CustomerBan table — not a Customer column, so it can't be read off
+   *  `customer` itself. */
+  customerBanned: boolean;
 }
 
-// The five active-board statuses the station board fetches/tracks — matches
-// the FORWARD_TRANSITIONS reachable set in orderController.ts minus the
-// terminal statuses, which fall off the board once reached.
+// The five active-board statuses the station board and the dashboard Active
+// Orders table fetch/track — matches the FORWARD_TRANSITIONS reachable set in
+// orderController.ts minus the terminal statuses, which fall off once reached.
 export const BOARD_STATUSES: OrderStatus[] = ['NEW', 'ACCEPTED', 'PREPARING', 'READY', 'OUT_FOR_DELIVERY'];
-export const TERMINAL_STATUSES: OrderStatus[] = ['COMPLETED', 'CANCELLED', 'REJECTED'];
+export const TERMINAL_STATUSES: OrderStatus[] = ['COMPLETED', 'CANCELLED', 'REJECTED', 'NOT_PICKED_UP'];

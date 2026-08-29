@@ -1,12 +1,12 @@
 'use client';
 
-import { Bike, ShoppingBag, Phone, ArrowRight, Printer, XCircle, StickyNote } from 'lucide-react';
+import { Bike, ShoppingBag, Phone, ArrowRight, Printer, XCircle, StickyNote, AlertTriangle, Ban, PackageX } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { useTranslation } from '@/i18n/provider';
-import { StaffOrder } from '@/app/order-station/types';
-import { nextStatusFor, canCancel, cancelStatusFor } from '@/app/order-station/statusRules';
+import { StaffOrder } from '@/lib/orders/types';
+import { nextStatusFor, canCancel, cancelStatusFor, canMarkNotPickedUp } from '@/lib/orders/statusRules';
 import { PrintTemplateKind } from '@/components/orders/print/OrderPrintPortal';
 
 const formatTRY = (n: number) => n.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' });
@@ -33,14 +33,21 @@ function computeIsOverdue(order: StaffOrder): boolean {
 export default function OrderCard({
   order,
   tick,
+  noShowWarnThreshold,
   onAdvance,
   onCancel,
+  onNotPickedUp,
   onPrint,
 }: {
   order: StaffOrder;
   tick: number; // bumped every 30s by the parent so elapsedLabel re-renders without its own timer
+  /** At/above this lifetime no-show count the customer gets a ⚠ badge on the
+   *  card. Comes from OrderSettings.noShowWarnThreshold; 0/absent disables it
+   *  rather than badging every single customer. */
+  noShowWarnThreshold?: number;
   onAdvance: (order: StaffOrder) => void;
   onCancel: (order: StaffOrder) => void;
+  onNotPickedUp: (order: StaffOrder) => void;
   onPrint: (order: StaffOrder, kind: PrintTemplateKind) => void;
 }) {
   const { t } = useTranslation();
@@ -48,6 +55,8 @@ export default function OrderCard({
   const next = nextStatusFor(order);
   const isOverdue = computeIsOverdue(order);
   const itemCount = order.items.reduce((sum, i) => sum + i.quantity, 0);
+  const noShows = order.customer?.noShowCount ?? 0;
+  const showNoShowBadge = !!noShowWarnThreshold && noShowWarnThreshold > 0 && noShows >= noShowWarnThreshold;
 
   return (
     <div
@@ -85,6 +94,22 @@ export default function OrderCard({
             <Phone className="h-3 w-3 shrink-0" /> {order.customer.phone}
           </div>
         )}
+        {(showNoShowBadge || order.customerBanned) && (
+          <div className="flex flex-wrap items-center gap-1 pt-0.5">
+            {showNoShowBadge && (
+              <Badge className="border-0 bg-amber-100 px-1.5 py-0 text-[9px] font-black uppercase text-amber-700 shadow-none">
+                <AlertTriangle className="mr-0.5 h-2.5 w-2.5" />
+                {String(noShows)} {t('orders.active.noShowsSuffix')}
+              </Badge>
+            )}
+            {order.customerBanned && (
+              <Badge className="border-0 bg-rose-100 px-1.5 py-0 text-[9px] font-black uppercase text-rose-700 shadow-none">
+                <Ban className="mr-0.5 h-2.5 w-2.5" />
+                {t('orders.active.bannedBadge')}
+              </Badge>
+            )}
+          </div>
+        )}
       </div>
 
       <div className="mt-2 border-t border-slate-100 pt-2 text-xs text-slate-600">
@@ -119,7 +144,23 @@ export default function OrderCard({
             className="h-10 flex-1 min-w-0 bg-emerald-600 text-[11px] font-black uppercase tracking-wide text-white hover:bg-emerald-700 active:scale-[0.97]"
           >
             <ArrowRight className="h-3.5 w-3.5" />
-            <span className="truncate">{t('orderStation.card.advanceTo').replace('{status}', t(`publicOrder.status.${next}`))}</span>
+            {/* A NEW card's advance is the confirmation decision, not one more
+                step along the line — say "Accept", not "Mark Accepted". */}
+            <span className="truncate">
+              {order.status === 'NEW'
+                ? t('orderStation.card.acceptBtn')
+                : t('orderStation.card.advanceTo').replace('{status}', t(`publicOrder.status.${next}`))}
+            </span>
+          </Button>
+        )}
+        {canMarkNotPickedUp(order) && (
+          <Button
+            onClick={() => onNotPickedUp(order)}
+            variant="outline"
+            className="h-10 shrink-0 border-amber-200 bg-amber-50 px-2.5 text-amber-700 hover:bg-amber-100"
+            title={t('orderStation.card.notPickedUpBtn')}
+          >
+            <PackageX className="h-4 w-4" />
           </Button>
         )}
         {canCancel(order) && (

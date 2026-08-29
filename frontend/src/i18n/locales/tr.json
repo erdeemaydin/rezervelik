@@ -1866,7 +1866,9 @@
       "rejectBtn": "Reddet",
       "cancelBtn": "İptal Et",
       "minutesAgo": "{minutes} dk önce",
-      "justNow": "Az önce"
+      "justNow": "Az önce",
+      "acceptBtn": "Kabul et",
+      "notPickedUpBtn": "Teslim alınmadı"
     },
     "print": {
       "kitchenTicket": "Mutfak fişi",
@@ -1901,6 +1903,11 @@
       "paidLabel": "Ödendi",
       "unpaidLabel": "Ödenmedi",
       "thankYou": "Siparişiniz için teşekkür ederiz!"
+    },
+    "notPickedUpDialog": {
+      "title": "#{number} numaralı sipariş teslim alınmadı mı?",
+      "description": "Sipariş kapatılır ve bu müşterinin gelmeme sayısı bir artar. Bu işlem geri alınamaz.",
+      "confirmBtn": "Teslim alınmadı"
     }
   },
   "orders": {
@@ -1910,7 +1917,8 @@
     "orderMenuBtn": "Sipariş Menüsü",
     "tabs": {
       "history": "Sipariş Geçmişi",
-      "customers": "Müşteriler"
+      "customers": "Müşteriler",
+      "active": "Aktif"
     },
     "filters": {
       "today": "Bugün",
@@ -1942,7 +1950,8 @@
       "OUT_FOR_DELIVERY": "Yolda",
       "COMPLETED": "Tamamlandı",
       "CANCELLED": "İptal Edildi",
-      "REJECTED": "Reddedildi"
+      "REJECTED": "Reddedildi",
+      "NOT_PICKED_UP": "Teslim alınmadı"
     },
     "fulfillment": {
       "DELIVERY": "Paket Servis",
@@ -2000,7 +2009,12 @@
       "noAddresses": "Kayıtlı adres yok",
       "orderHistory": "Sipariş Geçmişi",
       "noOrders": "Henüz sipariş yok",
-      "close": "Kapat"
+      "close": "Kapat",
+      "banStatus": "Yasak durumu",
+      "bannedState": "Yasaklı",
+      "notBannedState": "Yasaklı değil",
+      "noShowCount": "Gelmeme sayısı",
+      "banHistory": "Yasak geçmişi"
     },
     "errors": {
       "loadFailed": "Siparişler yüklenemedi",
@@ -2232,6 +2246,73 @@
         "clearPin": "İğneyi kaldır",
         "locationSaveFailed": "Restoran konumu kaydedilemedi"
       }
+    },
+    "active": {
+      "heading": "Aktif siparişler",
+      "awaitingSuffix": "onay bekliyor",
+      "liveConnected": "Canlı",
+      "reconnecting": "Yeniden bağlanıyor…",
+      "refreshBtn": "Yenile",
+      "ageColumn": "Süre",
+      "empty": "Şu anda aktif sipariş yok",
+      "needsConfirmation": "Onay bekliyor",
+      "confirmBtn": "Onayla",
+      "rejectBtn": "Reddet",
+      "cancelBtn": "İptal et",
+      "notPickedUpBtn": "Teslim alınmadı",
+      "noShowsSuffix": "kez gelmedi",
+      "bannedBadge": "Yasaklı",
+      "statusUpdated": "#{number} numaralı sipariş → {status}",
+      "statusUpdateFailed": "Sipariş güncellenemedi",
+      "conflict": "Bu siparişi başka biri değiştirdi — liste yenilendi",
+      "justNow": "Az önce",
+      "minutesAgo": "{minutes} dk önce",
+      "hoursAgo": "{hours} sa {minutes} dk önce",
+      "advanceTo": {
+        "ACCEPTED": "Onayla",
+        "PREPARING": "Hazırlamaya başla",
+        "READY": "Hazır işaretle",
+        "OUT_FOR_DELIVERY": "Yola çıkar",
+        "COMPLETED": "Tamamla"
+      },
+      "rejectDialog": {
+        "title": "#{number} numaralı sipariş reddedilsin mi?",
+        "description": "Bu işlem geri alınamaz. Sebep siparişin denetim kaydına işlenir.",
+        "reasonLabel": "Sebep (isteğe bağlı)",
+        "reasonPlaceholder": "örn. Stok yok, müşteri talep etti",
+        "confirmBtn": "Onayla",
+        "closeBtn": "Vazgeç"
+      },
+      "cancelDialog": {
+        "title": "#{number} numaralı sipariş iptal edilsin mi?"
+      },
+      "notPickedUpDialog": {
+        "title": "#{number} numaralı sipariş teslim alınmadı olarak işaretlensin mi?",
+        "description": "Sipariş kapatılır ve bu müşterinin gelmeme sayısı bir artar. Bu işlem geri alınamaz.",
+        "confirmBtn": "Teslim alınmadı"
+      }
+    },
+    "bans": {
+      "banCustomerBtn": "Bu müşteriyi yasakla",
+      "banBtn": "Yasakla",
+      "liftBtn": "Yasağı kaldır",
+      "dialogTitle": "Bu telefon numarasını yasakla",
+      "dialogDesc": "Yasaklı bir numara yeni online sipariş veremez. Yasak telefon numarasına bağlıdır; müşteri yeni hesap açsa bile geçerli kalır.",
+      "reasonLabel": "Sebep (isteğe bağlı)",
+      "reasonPlaceholder": "örn. Siparişlerini tekrar tekrar teslim almadı",
+      "banned": "Müşteri yasaklandı",
+      "banFailed": "Müşteri yasaklanamadı",
+      "alreadyBanned": "Bu telefon numarası zaten yasaklı",
+      "lifted": "Yasak kaldırıldı",
+      "liftFailed": "Yasak kaldırılamadı",
+      "liftConfirmTitle": "Yasak kaldırılsın mı?",
+      "liftConfirmDesc": "Bu numara yeniden online sipariş verebilecek.",
+      "activeBadge": "Aktif",
+      "liftedBadge": "Kaldırıldı",
+      "noReason": "Sebep belirtilmemiş",
+      "bannedBy": "Yasaklayan:",
+      "liftedBy": "kaldıran:",
+      "unknownStaff": "eski bir çalışan"
     }
   },
   "publicOrder": {

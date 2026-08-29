@@ -1866,7 +1866,9 @@
       "rejectBtn": "Reject",
       "cancelBtn": "Cancel",
       "minutesAgo": "{minutes}m ago",
-      "justNow": "Just now"
+      "justNow": "Just now",
+      "acceptBtn": "Accept",
+      "notPickedUpBtn": "Not picked up"
     },
     "print": {
       "kitchenTicket": "Kitchen ticket",
@@ -1901,6 +1903,11 @@
       "paidLabel": "Paid",
       "unpaidLabel": "Unpaid",
       "thankYou": "Thank you for your order!"
+    },
+    "notPickedUpDialog": {
+      "title": "Order #{number} not picked up?",
+      "description": "The order is closed and this customer's no-show count goes up by one. This can't be undone.",
+      "confirmBtn": "Not picked up"
     }
   },
   "orders": {
@@ -1910,7 +1917,8 @@
     "orderMenuBtn": "Order Menu",
     "tabs": {
       "history": "Order History",
-      "customers": "Customers"
+      "customers": "Customers",
+      "active": "Active"
     },
     "filters": {
       "today": "Today",
@@ -1942,7 +1950,8 @@
       "OUT_FOR_DELIVERY": "Out for Delivery",
       "COMPLETED": "Completed",
       "CANCELLED": "Cancelled",
-      "REJECTED": "Rejected"
+      "REJECTED": "Rejected",
+      "NOT_PICKED_UP": "Not picked up"
     },
     "fulfillment": {
       "DELIVERY": "Delivery",
@@ -2000,7 +2009,12 @@
       "noAddresses": "No saved addresses",
       "orderHistory": "Order History",
       "noOrders": "No orders yet",
-      "close": "Close"
+      "close": "Close",
+      "banStatus": "Ban status",
+      "bannedState": "Banned",
+      "notBannedState": "Not banned",
+      "noShowCount": "No-shows",
+      "banHistory": "Ban history"
     },
     "errors": {
       "loadFailed": "Couldn't load orders",
@@ -2232,6 +2246,73 @@
         "clearPin": "Clear pin",
         "locationSaveFailed": "Couldn't save the restaurant location"
       }
+    },
+    "active": {
+      "heading": "Active orders",
+      "awaitingSuffix": "awaiting confirmation",
+      "liveConnected": "Live",
+      "reconnecting": "Reconnecting…",
+      "refreshBtn": "Refresh",
+      "ageColumn": "Age",
+      "empty": "No active orders right now",
+      "needsConfirmation": "Needs confirmation",
+      "confirmBtn": "Confirm",
+      "rejectBtn": "Reject",
+      "cancelBtn": "Cancel",
+      "notPickedUpBtn": "Not picked up",
+      "noShowsSuffix": "no-shows",
+      "bannedBadge": "Banned",
+      "statusUpdated": "Order #{number} → {status}",
+      "statusUpdateFailed": "Couldn't update the order",
+      "conflict": "Someone else changed this order — the list has been refreshed",
+      "justNow": "Just now",
+      "minutesAgo": "{minutes}m ago",
+      "hoursAgo": "{hours}h {minutes}m ago",
+      "advanceTo": {
+        "ACCEPTED": "Confirm",
+        "PREPARING": "Start preparing",
+        "READY": "Mark ready",
+        "OUT_FOR_DELIVERY": "Send out",
+        "COMPLETED": "Complete"
+      },
+      "rejectDialog": {
+        "title": "Reject order #{number}",
+        "description": "This can't be undone. The reason is recorded in the order's audit trail.",
+        "reasonLabel": "Reason (optional)",
+        "reasonPlaceholder": "e.g. Out of stock, customer requested",
+        "confirmBtn": "Confirm",
+        "closeBtn": "Never mind"
+      },
+      "cancelDialog": {
+        "title": "Cancel order #{number}"
+      },
+      "notPickedUpDialog": {
+        "title": "Mark order #{number} as not picked up?",
+        "description": "The order is closed and this customer's no-show count goes up by one. This can't be undone.",
+        "confirmBtn": "Not picked up"
+      }
+    },
+    "bans": {
+      "banCustomerBtn": "Ban this customer",
+      "banBtn": "Ban",
+      "liftBtn": "Lift ban",
+      "dialogTitle": "Ban this phone number",
+      "dialogDesc": "A banned number can't place new online orders. Bans follow the phone number, so they hold even if the customer makes a new account.",
+      "reasonLabel": "Reason (optional)",
+      "reasonPlaceholder": "e.g. Repeated no-shows",
+      "banned": "Customer banned",
+      "banFailed": "Couldn't ban this customer",
+      "alreadyBanned": "This phone number is already banned",
+      "lifted": "Ban lifted",
+      "liftFailed": "Couldn't lift the ban",
+      "liftConfirmTitle": "Lift this ban?",
+      "liftConfirmDesc": "This number will be able to place online orders again.",
+      "activeBadge": "Active",
+      "liftedBadge": "Lifted",
+      "noReason": "No reason recorded",
+      "bannedBy": "Banned by",
+      "liftedBy": "lifted by",
+      "unknownStaff": "a former staff member"
     }
   },
   "publicOrder": {

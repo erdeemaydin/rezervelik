@@ -174,9 +174,22 @@ focused agents; each is committed and build-verified before the next starts.
   shown only when the add-on is on and the user holds `manage_orders`. Nav
   unchanged — `AdminLayout`'s Orders entry is flat and its `/dashboard/orders`
   permission prefix already covers the new route.
-- [ ] **A8 — Frontend Active Orders + bans.** Live "Active Orders" table with
-  confirm / reject / advance + no-show / ban badges; customer-detail ban/unban +
-  noShowCount; `/order-station` handles `NOT_PICKED_UP` + pending-confirm.
+- [x] **A8 — Frontend Active Orders + bans.** The order-station's shared pieces
+  moved to `frontend/src/lib/orders/` (`types.ts`, `statusRules.ts`, `stream.ts`,
+  plus a new `badges.ts`) now that two routes consume them; `OrderStatus` gained
+  `NOT_PICKED_UP`, `StaffOrder` gained `customer.noShowCount` + `customerBanned`,
+  and `statusRules` gained `canMarkNotPickedUp` (deliberately never returned by
+  `nextStatusFor` — a no-show is not a happy-path advance). `dashboard/orders`
+  leads with a new default **Active** tab (`components/orders/ActiveOrdersTable`):
+  the five active statuses fetched once then kept live over the SSE stream, a
+  live/reconnecting pill, an amber "needs confirmation" treatment on `NEW` rows,
+  inline confirm / reject / advance / not-picked-up / cancel per row (Confirm
+  hidden when `autoConfirmOrders`), and 409 → "changed elsewhere" + refetch.
+  Bans: red/⚠ badges on the Active, Customers and order-detail views, a ban
+  dialog with reason (409 → "already banned", not a generic error), lift via
+  `useConfirm`, and a ban-history list with actor names in the customer detail.
+  `/order-station` gained a "Not picked up" card action + confirm dialog, an
+  "Accept" label on `NEW` cards, and the same no-show/banned badges.
 - [ ] **A9 — Review + docs + ship.** Full-diff review pass, fix findings, update
   `PROJECT_LOGIC.md` / `API_DOCS.md` / `ROADMAP.md` / this file, rebuild, restart
   PM2, open PR.
