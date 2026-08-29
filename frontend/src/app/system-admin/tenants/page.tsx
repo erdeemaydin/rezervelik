@@ -44,6 +44,8 @@ export default function TenantManagementPage() {
     hasWaitTimeFeature: true, hasShiftFeature: true, hasMenuFeature: true, hasPaymentFeature: true,
     // Organizer / wedding modules (default off; the WEDDING profile turns them on).
     hasEventPipeline: false, hasInstallmentPlans: false, hasGuestList: false, hasVendors: false,
+    // Commercial add-on on the Restaurant model (SysAdmin-only), not part of a vertical profile.
+    hasOnlineOrdering: false,
     businessType: 'RESTAURANT',
     layoutStyle: 'CLASSIC_LIST',
     // Root-admin-only controls: platform currency + 2FA capability + default language.
@@ -168,6 +170,8 @@ export default function TenantManagementPage() {
       hasInstallmentPlans: tenant.settings?.hasInstallmentPlans ?? false,
       hasGuestList: tenant.settings?.hasGuestList ?? false,
       hasVendors: tenant.settings?.hasVendors ?? false,
+      // Add-on flags live on the Restaurant row itself, not on settings.
+      hasOnlineOrdering: tenant.hasOnlineOrdering ?? false,
       currency: tenant.settings?.currency ?? 'TRY',
       twoFactorEnabled: tenant.settings?.twoFactorEnabled ?? false,
       twoFactorRoles: tenant.settings?.twoFactorRoles ?? '',
@@ -640,6 +644,14 @@ export default function TenantManagementPage() {
                                     <p className="text-[9px] text-indigo-400 font-bold uppercase">Deposits & Payment</p>
                                 </div>
                                 <Checkbox checked={settingsForm.hasPaymentFeature} onCheckedChange={(c) => setSettingsForm({...settingsForm, hasPaymentFeature: !!c})} />
+                            </div>
+                            {/* Online ordering — commercial add-on on the Restaurant row, SysAdmin-only. */}
+                            <div className="flex items-center justify-between p-3 border border-slate-100 rounded-sm bg-emerald-50/40">
+                                <div className="space-y-0.5">
+                                    <Label className="text-xs font-black uppercase text-emerald-900">Online Ordering</Label>
+                                    <p className="text-[9px] text-emerald-500 font-bold uppercase">Checkout, Delivery & Kitchen</p>
+                                </div>
+                                <Checkbox checked={settingsForm.hasOnlineOrdering} onCheckedChange={(c) => setSettingsForm({...settingsForm, hasOnlineOrdering: !!c})} />
                             </div>
                             {/* Organizer / wedding modules — meaningful for the WEDDING vertical. */}
                             <div className="flex items-center justify-between p-3 border border-slate-100 rounded-sm bg-amber-50/40">

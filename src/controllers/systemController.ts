@@ -343,6 +343,7 @@ export const updateTenantSettings = async (req: Request, res: Response) => {
     const {
       hasHostedFrontend,
       hasReservationWidget,
+      hasOnlineOrdering,
       customDomain,
       rotatePublicApiKey,
     } = req.body;
@@ -351,6 +352,7 @@ export const updateTenantSettings = async (req: Request, res: Response) => {
     if (businessTypeProvided) restaurantData.businessType = req.body.businessType;
     if (hasHostedFrontend !== undefined) restaurantData.hasHostedFrontend = Boolean(hasHostedFrontend);
     if (hasReservationWidget !== undefined) restaurantData.hasReservationWidget = Boolean(hasReservationWidget);
+    if (hasOnlineOrdering !== undefined) restaurantData.hasOnlineOrdering = Boolean(hasOnlineOrdering);
 
     // Normalize a custom domain to a bare, lowercase host (strip scheme, path,
     // trailing slash). Changing it invalidates any prior verification.
