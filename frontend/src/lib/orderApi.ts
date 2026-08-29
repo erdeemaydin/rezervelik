@@ -69,10 +69,14 @@ export interface OrderableMenuItem {
   unavailableReason: 'PAUSED' | 'OUT_OF_STOCK' | null;
   /** Only set for a *timed* pause — an indefinite pause has no known end. */
   resumesAt: string | null;
-  isHighlight?: boolean;
-  dietaryTags?: string | null;
-  allergens?: string | null;
-  spiceLevel?: number | null;
+  /** Merchandising attributes, straight off the source MenuItem (no
+   *  OrderMenuItem override exists for them). `isHighlight` drives the
+   *  "Popular" ribbon; the rest feed the item sheet's chips. */
+  isHighlight: boolean;
+  dietaryTags: string | null;
+  allergens: string | null;
+  spiceLevel: number;
+  calories: number | null;
   modifiers: MenuModifier[];
 }
 
@@ -137,7 +141,7 @@ export interface CartLineInput {
  *  estimate for instant UI feedback only — every screen that shows a
  *  trustworthy total re-fetches /quote rather than trusting this. */
 export interface CartEntry {
-  key: string; // menuItemId + sorted modifierOptionIds, so identical picks merge quantity
+  key: string; // menuItemId + sorted modifierOptionIds + note, so identical picks merge quantity
   menuItemId: string;
   name: string;
   imageUrl?: string | null;
@@ -145,6 +149,11 @@ export interface CartEntry {
   quantity: number;
   modifierOptionIds: string[];
   modifierSummary: string;
+  /** Free-text instruction for this line ("no onions"). There is no
+   *  `OrderItem.note` column, so this is not a wire field: the flow folds each
+   *  line's note into the order-level `customerNote` at placement, prefixed
+   *  with the dish name, so the kitchen still receives it. */
+  note?: string;
 }
 
 export interface QuotedModifier {

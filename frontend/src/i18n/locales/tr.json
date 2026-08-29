@@ -2126,13 +2126,15 @@
         "identify": "Telefon Doğrulama",
         "payment": "Ödeme",
         "placed": "Sipariş Alındı"
-      }
+      },
+      "close": "Kapat"
     },
     "menu": {
       "empty": "Şu anda online siparişe açık ürün bulunmuyor.",
       "itemsSuffix": "ürün",
       "viewCart": "Sepeti Gör",
-      "addedToast": "Sepete eklendi"
+      "addedToast": "Sepete eklendi",
+      "categoriesLabel": "Menü kategorileri"
     },
     "item": {
       "required": "Zorunlu",
@@ -2142,17 +2144,39 @@
       "increase": "Adedi artır",
       "addToCart": "Sepete Ekle",
       "temporarilyUnavailable": "Geçici olarak mevcut değil",
-      "outOfStock": "Şu anda mevcut değil"
+      "outOfStock": "Şu anda mevcut değil",
+      "popular": "Popüler",
+      "backAround": "Yaklaşık {{time}} civarı tekrar",
+      "addFor": "Sepete ekle · {{price}}",
+      "noteLabel": "Sipariş notu (isteğe bağlı)",
+      "notePlaceholder": "örn. Soğansız olsun",
+      "chooseOne": "1 seçim yapın",
+      "chooseUpTo": "En fazla {{max}} seçin",
+      "chooseAtLeast": "En az {{min}} seçin",
+      "chooseBetween": "{{min}}–{{max}} arası seçin",
+      "calories": "{{n}} kcal",
+      "allergensPrefix": "İçerir:",
+      "spice": {
+        "1": "Az acı",
+        "2": "Orta acı",
+        "3": "Çok acı"
+      }
     },
     "cart": {
       "title": "Siparişiniz",
-      "remove": "Kaldır"
+      "remove": "Kaldır",
+      "empty": "Sepetiniz boş.",
+      "itemCount": "{{n}} ürün",
+      "feesAtCheckout": "Teslimat ücreti bir sonraki adımda hesaplanır.",
+      "checkoutButton": "Siparişi Tamamla"
     },
     "fulfillment": {
       "title": "Paket Servis mi, Gel-Al mı?",
       "delivery": "Paket Servis",
       "pickup": "Gel-Al",
-      "onlyOneAvailable": "Şu anda yalnızca bir sipariş türü kullanılabilir."
+      "onlyOneAvailable": "Şu anda yalnızca bir sipariş türü kullanılabilir.",
+      "deliveryCaption": "Kapınıza getirelim",
+      "pickupCaption": "Siz gelip alın"
     },
     "address": {
       "zoneLabel": "Teslimat Bölgesi",
@@ -2209,7 +2233,11 @@
       "nameLabel": "Adınız",
       "namePlaceholder": "Ad Soyad",
       "requestFailed": "Kod gönderilemedi. Lütfen tekrar deneyin.",
-      "verifyFailed": "Kod doğrulanamadı. Lütfen tekrar deneyin."
+      "verifyFailed": "Kod doğrulanamadı. Lütfen tekrar deneyin.",
+      "subtitle": "Sizi doğrulamak için telefonunuza bir kod göndereceğiz.",
+      "codeTitle": "Kodu girin",
+      "nameTitle": "Son bir adım",
+      "whyPhone": "Numaranız yalnızca siparişinizi doğrulamak ve restoranın size ulaşabilmesi için kullanılır."
     },
     "payment": {
       "title": "Ödeme Yöntemi",
@@ -2217,7 +2245,10 @@
       "onlineCard": "Online Kart ile Öde",
       "noneAvailable": "Şu anda kullanılabilir ödeme yöntemi yok.",
       "noteLabel": "Mutfak için not (isteğe bağlı)",
-      "notePlaceholder": "örn. Soğansız olsun lütfen"
+      "notePlaceholder": "örn. Soğansız olsun lütfen",
+      "cashOnDeliveryHint": "Siparişiniz geldiğinde kuryeye ödeyin.",
+      "cashOnPickupHint": "Siparişinizi teslim alırken kasada ödeyin.",
+      "comingSoon": "Çok yakında"
     },
     "confirm": {
       "summaryTitle": "Sipariş Özeti",
@@ -2232,7 +2263,29 @@
       "statusLabel": "Durum",
       "readyByPrefix": "Tahmini hazır olma saati:",
       "viewHistoryButton": "Siparişlerim",
-      "orderAgainButton": "Tekrar Sipariş Ver"
+      "orderAgainButton": "Tekrar Sipariş Ver",
+      "pendingTitle": "Siparişiniz iletildi",
+      "pendingBanner": "Siparişiniz {{restaurant}} tarafından onaylanmayı bekliyor",
+      "pendingDescription": "Restoran siparişinizi onayladığı anda bu sayfa güncellenecek — genellikle birkaç dakika sürer.",
+      "timelineTitle": "Sipariş durumu",
+      "currentStep": "Şu anda",
+      "etaPrefix": "Tahmini teslimat",
+      "trackingLive": "Bu sayfa otomatik olarak güncellenir.",
+      "trackingStopped": "Bu sipariş kapandı.",
+      "terminal": {
+        "REJECTED": {
+          "title": "Siparişiniz kabul edilmedi",
+          "description": "Restoran şu anda bu siparişi alamadı. Herhangi bir ücret tahsil edilmedi; dilerseniz daha sonra tekrar deneyebilirsiniz."
+        },
+        "CANCELLED": {
+          "title": "Sipariş iptal edildi",
+          "description": "Bu sipariş iptal edildi. Sorularınız için restoranla iletişime geçebilirsiniz."
+        },
+        "NOT_PICKED_UP": {
+          "title": "Sipariş teslim alınmadı",
+          "description": "Bu sipariş teslim alınmadığı için kapatıldı. Bir yanlışlık olduğunu düşünüyorsanız restoranla iletişime geçin."
+        }
+      }
     },
     "history": {
       "title": "Siparişlerim",
@@ -2246,7 +2299,24 @@
       "OUT_FOR_DELIVERY": "Yolda",
       "COMPLETED": "Tamamlandı",
       "CANCELLED": "İptal Edildi",
-      "REJECTED": "Reddedildi"
+      "REJECTED": "Reddedildi",
+      "NOT_PICKED_UP": "Teslim alınmadı"
+    },
+    "hero": {
+      "prepWindow": "{{min}}–{{max}} dk",
+      "distance": "{{km}} km uzakta",
+      "minOrder": "Min. {{amount}}"
+    },
+    "closedHours": {
+      "title": "Şu anda kapalıyız"
+    },
+    "checkout": {
+      "editCart": "Düzenle"
+    },
+    "pickup": {
+      "title": "Şuradan teslim alın",
+      "addressUnknown": "Tam adres için restoranla iletişime geçebilirsiniz.",
+      "readyIn": "Yaklaşık {{minutes}} dk içinde hazır"
     }
   }
 }

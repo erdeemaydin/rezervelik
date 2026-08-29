@@ -2126,13 +2126,15 @@
         "identify": "Verify your phone",
         "payment": "Payment",
         "placed": "Order placed"
-      }
+      },
+      "close": "Close"
     },
     "menu": {
       "empty": "Nothing available for online ordering right now.",
       "itemsSuffix": "items",
       "viewCart": "View cart",
-      "addedToast": "Added to cart"
+      "addedToast": "Added to cart",
+      "categoriesLabel": "Menu categories"
     },
     "item": {
       "required": "Required",
@@ -2142,17 +2144,39 @@
       "increase": "Increase quantity",
       "addToCart": "Add to cart",
       "temporarilyUnavailable": "Temporarily unavailable",
-      "outOfStock": "Currently unavailable"
+      "outOfStock": "Currently unavailable",
+      "popular": "Popular",
+      "backAround": "Back around {{time}}",
+      "addFor": "Add · {{price}}",
+      "noteLabel": "Special instructions (optional)",
+      "notePlaceholder": "e.g. No onions",
+      "chooseOne": "Choose 1",
+      "chooseUpTo": "Choose up to {{max}}",
+      "chooseAtLeast": "Choose at least {{min}}",
+      "chooseBetween": "Choose {{min}}–{{max}}",
+      "calories": "{{n}} kcal",
+      "allergensPrefix": "Contains:",
+      "spice": {
+        "1": "Mild",
+        "2": "Medium",
+        "3": "Hot"
+      }
     },
     "cart": {
       "title": "Your order",
-      "remove": "Remove"
+      "remove": "Remove",
+      "empty": "Your cart is empty.",
+      "itemCount": "{{n}} items",
+      "feesAtCheckout": "Delivery fee is calculated at the next step.",
+      "checkoutButton": "Go to checkout"
     },
     "fulfillment": {
       "title": "Delivery or pickup?",
       "delivery": "Delivery",
       "pickup": "Pickup",
-      "onlyOneAvailable": "Only one order type is available right now."
+      "onlyOneAvailable": "Only one order type is available right now.",
+      "deliveryCaption": "Brought to your door",
+      "pickupCaption": "Collect it yourself"
     },
     "address": {
       "zoneLabel": "Delivery area",
@@ -2209,7 +2233,11 @@
       "nameLabel": "Your name",
       "namePlaceholder": "John Doe",
       "requestFailed": "Couldn't send the code. Please try again.",
-      "verifyFailed": "That code didn't work. Please try again."
+      "verifyFailed": "That code didn't work. Please try again.",
+      "subtitle": "We'll text you a code to confirm it's really you.",
+      "codeTitle": "Enter your code",
+      "nameTitle": "One last thing",
+      "whyPhone": "Your number is only used to confirm this order and to let the restaurant reach you about it."
     },
     "payment": {
       "title": "Payment method",
@@ -2217,7 +2245,10 @@
       "onlineCard": "Pay by card online",
       "noneAvailable": "No payment methods are available right now.",
       "noteLabel": "Note for the kitchen (optional)",
-      "notePlaceholder": "e.g. No onions, please"
+      "notePlaceholder": "e.g. No onions, please",
+      "cashOnDeliveryHint": "Pay the courier when your order arrives.",
+      "cashOnPickupHint": "Pay at the counter when you collect your order.",
+      "comingSoon": "Coming soon"
     },
     "confirm": {
       "summaryTitle": "Order summary",
@@ -2232,7 +2263,29 @@
       "statusLabel": "Status",
       "readyByPrefix": "Ready by",
       "viewHistoryButton": "My orders",
-      "orderAgainButton": "Order again"
+      "orderAgainButton": "Order again",
+      "pendingTitle": "Order sent",
+      "pendingBanner": "Waiting for {{restaurant}} to confirm your order",
+      "pendingDescription": "This page updates the moment the restaurant accepts it — usually within a few minutes.",
+      "timelineTitle": "Order progress",
+      "currentStep": "Happening now",
+      "etaPrefix": "Estimated arrival",
+      "trackingLive": "This page updates automatically.",
+      "trackingStopped": "This order is closed.",
+      "terminal": {
+        "REJECTED": {
+          "title": "Order not accepted",
+          "description": "The restaurant couldn't take this order right now. Nothing was charged — feel free to try again later."
+        },
+        "CANCELLED": {
+          "title": "Order cancelled",
+          "description": "This order was cancelled. Get in touch with the restaurant if you have any questions."
+        },
+        "NOT_PICKED_UP": {
+          "title": "Order not picked up",
+          "description": "This order was closed because it wasn't collected. Contact the restaurant if you think that's a mistake."
+        }
+      }
     },
     "history": {
       "title": "My orders",
@@ -2246,7 +2299,24 @@
       "OUT_FOR_DELIVERY": "Out for delivery",
       "COMPLETED": "Completed",
       "CANCELLED": "Cancelled",
-      "REJECTED": "Rejected"
+      "REJECTED": "Rejected",
+      "NOT_PICKED_UP": "Not picked up"
+    },
+    "hero": {
+      "prepWindow": "{{min}}–{{max}} min",
+      "distance": "{{km}} km away",
+      "minOrder": "Min. {{amount}}"
+    },
+    "closedHours": {
+      "title": "Closed right now"
+    },
+    "checkout": {
+      "editCart": "Edit"
+    },
+    "pickup": {
+      "title": "Pick up from",
+      "addressUnknown": "Ask the restaurant for the exact address.",
+      "readyIn": "Ready in about {{minutes}} min"
     }
   }
 }

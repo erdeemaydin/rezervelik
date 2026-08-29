@@ -122,10 +122,30 @@ focused agents; each is committed and build-verified before the next starts.
   `OrderExperience` owns the pin/verdict state, sends `lat`/`lng` on both
   `/quote` and `placeOrder`, holds the quote until a positive range verdict,
   and maps `errors.order_out_of_delivery_range` to a friendly message.
-- [ ] **A6 — Frontend customer ordering redesign.** `OrderExperience`, `MenuStep`,
-  `ItemCustomizeDialog`, cart sheet, header, sticky category nav, bottom cart bar,
-  temporarily-unavailable item state, restyled identify / payment / placed +
-  pending-confirmation tracking.
+- [x] **A6 — Frontend customer ordering redesign.** Delivery-app shell in
+  `OrderExperience`: `RestaurantHero` (cover = `Restaurant.logoUrl`, else a
+  brand-derived gradient; logo + name + prep-window/distance/min-order stats),
+  a compact `fixed` header that fades in past 80px of scroll, and a persistent
+  bottom cart bar. `MenuStep` gained a sticky category rail (`top-14`, keyed
+  `${isOrderOnlyCategory}:${id}`) with a rAF-throttled scroll-spy and anchored
+  sections, image-forward cards, a "Popular" ribbon for `isHighlight`, and the
+  temporarily-unavailable state (`PAUSED` → "back around {time}" when
+  `resumesAt` is still ahead, else "temporarily unavailable"; `OUT_OF_STOCK` →
+  "currently unavailable") rendered dimmed and un-addable. `ItemCustomizeDialog`
+  is now a bottom sheet (hero image, dietary/allergen/spice/calorie chips,
+  radio/checkbox modifier groups with min/max hints, quantity stepper, per-item
+  note, sticky "Add · price"). New `CartSheet` is the only mutable view of the
+  cart; `CartFulfillmentStep` became the checkout screen (read-only summary +
+  segmented fulfillment cards + map/zone address + pickup card with a
+  non-interactive `LeafletMap` + fee breakdown), keeping both delivery modes and
+  A5's lifted state. `OrderPlacedView` polls every 20s and renders a
+  fulfillment-aware timeline from the new `lib/orderStatusFlow.ts`, with `NEW`
+  promoted to a "waiting for {restaurant} to confirm" banner and dedicated
+  `REJECTED`/`CANCELLED`/`NOT_PICKED_UP` panels. `withinOrderHours === false`
+  shows a closed banner and blocks cart building. `orderTheme` gained
+  `primaryTint`/`primarySoft`/`shadow`/`shadowLg`/`heroGradient`. One backend
+  change: `getOrderableMenu` re-emits `isHighlight`, `dietaryTags`, `allergens`,
+  `spiceLevel`, `calories`.
 - [ ] **A7 — Frontend dashboard Order Menu + settings.** New "Order Menu" window
   (curate items, overrides, order-only categories, drag sort, pause). Order
   settings: auto-confirm, max delivery distance, no-show threshold, restaurant

@@ -185,6 +185,15 @@ export const getOrderableMenu = async (req: Request, res: Response) => {
               isAvailable: true,
               prepTimeMinutes: true,
               order: true,
+              // Merchandising attributes the customer menu/item sheet renders
+              // (popular ribbon, dietary/allergen chips, spice level, calories).
+              // They live on the source MenuItem and have no OrderMenuItem
+              // override, so they pass straight through.
+              isHighlight: true,
+              dietaryTags: true,
+              allergens: true,
+              spiceLevel: true,
+              calories: true,
               category: { select: { id: true, name: true, order: true } },
               modifiers: {
                 select: {
@@ -241,6 +250,11 @@ export const getOrderableMenu = async (req: Request, res: Response) => {
         // Only meaningful for a *timed* pause — an indefinite pause has no
         // known end, and the client must not invent one.
         resumesAt: reason === 'PAUSED' && !row.pausedIndefinitely ? row.pausedUntil : null,
+        isHighlight: menuItem.isHighlight,
+        dietaryTags: menuItem.dietaryTags,
+        allergens: menuItem.allergens,
+        spiceLevel: menuItem.spiceLevel,
+        calories: menuItem.calories,
         modifiers: menuItem.modifiers,
         // Internal sort keys, stripped before the response goes out.
         _sortOrder: row.sortOrder,
