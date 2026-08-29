@@ -2,8 +2,8 @@
 
 ## Shipped
 
-**2026-08-29** — branch `agent/ordering-v2`, commits `74deb75..HEAD` (10 commits off
-`agent/telegram-bot`), one additive migration
+**2026-08-29** — branch `agent/ordering-v2`, 11 commits off `agent/telegram-bot`
+(`74deb75..HEAD`, 52 files, ~7.8k insertions), one additive migration
 (`prisma/migrations/20260829111123_ordering_v2_schema`). A1–A9 complete; docs updated in
 `PROJECT_LOGIC.md` §15, `API_DOCS.md` §5 and `ROADMAP.md`. Backend `npm run build`, frontend
 `npm run build`, `tsc --noEmit` and `eslint` on every changed file all clean; `prisma migrate
