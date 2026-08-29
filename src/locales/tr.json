@@ -50,7 +50,9 @@
     "order_rate_limited": "Kısa süre içinde çok fazla sipariş verildi. Lütfen biraz bekleyip tekrar deneyin.",
     "order_not_found": "Sipariş bulunamadı.",
     "order_invalid_transition": "Bu sipariş durumu değişikliğine izin verilmiyor.",
-    "order_status_conflict": "Bu siparişin durumu az önce başka biri tarafından değiştirildi. Sayfayı yenileyip tekrar deneyin."
+    "order_status_conflict": "Bu siparişin durumu az önce başka biri tarafından değiştirildi. Sayfayı yenileyip tekrar deneyin.",
+    "order_customer_banned": "Bu telefon numarası bu restorandan sipariş veremez.",
+    "order_capacity_full": "Mutfak şu anda kapasitesini doldurdu. Lütfen biraz sonra tekrar deneyin."
   },
   "messages": {
     "reservation_created": "Rezervasyon başarıyla oluşturuldu",

@@ -50,7 +50,9 @@
     "order_rate_limited": "Too many orders placed recently. Please wait a moment and try again.",
     "order_not_found": "Order not found.",
     "order_invalid_transition": "That order status change is not allowed.",
-    "order_status_conflict": "This order's status was just changed by someone else. Refresh and try again."
+    "order_status_conflict": "This order's status was just changed by someone else. Refresh and try again.",
+    "order_customer_banned": "This phone number is not permitted to place orders with this restaurant.",
+    "order_capacity_full": "The kitchen is at capacity right now. Please try again shortly."
   },
   "messages": {
     "reservation_created": "Reservation created successfully",

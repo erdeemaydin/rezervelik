@@ -5,6 +5,9 @@ import { successResponse, errorResponse } from '../utils/response';
 import { AppError } from '../utils/AppError';
 import { logAudit } from '../services/auditService';
 import { subscribeToRestaurant, publishOrderEvent } from '../services/orderEvents';
+import { activeBannedPhones } from '../services/customerBanService';
+import { FORWARD_TRANSITIONS, TERMINAL_ORDER_STATUSES } from '../utils/orderStatus';
+import { isValidPhone } from '../utils/phone';
 
 // Staff-facing endpoints for online ordering — /api/orders/*. Mounted behind
 // tenantMiddleware + authMiddleware + requirePermission('manage_orders') in
@@ -65,12 +68,22 @@ export const listOrders = async (req: Request, res: Response) => {
       orderBy: { createdAt: 'desc' },
       include: {
         items: true,
-        customer: { select: { id: true, name: true, phone: true } },
+        customer: { select: { id: true, name: true, phone: true, noShowCount: true } },
       },
       take,
     });
 
-    return successResponse(res, orders);
+    // One ban query for the whole batch, not one per order — the board
+    // routinely renders hundreds of rows and needs the badge on each.
+    const banned = await activeBannedPhones(restaurantId, orders.map((o) => o.customer?.phone ?? ''));
+
+    return successResponse(
+      res,
+      orders.map((order) => ({
+        ...order,
+        customerBanned: order.customer ? banned.has(order.customer.phone.trim()) : false,
+      }))
+    );
   } catch (error) {
     console.error('[Order] listOrders error:', error);
     return errorResponse(res, 'errors.internal_error', 500);
@@ -98,10 +111,19 @@ export const streamOrders = (req: Request, res: Response) => {
     try {
       const order = await prisma.order.findFirst({
         where: { id: payload.orderId, restaurantId },
-        include: { items: true, customer: { select: { id: true, name: true, phone: true } } },
+        include: { items: true, customer: { select: { id: true, name: true, phone: true, noShowCount: true } } },
       });
       if (!order) return;
-      res.write(`event: ${payload.type}\ndata: ${JSON.stringify(order)}\n\n`);
+      // Same shape as listOrders so the client can merge a streamed order into
+      // its list state without special-casing the fields.
+      const banned = order.customer
+        ? await activeBannedPhones(restaurantId, [order.customer.phone])
+        : new Set<string>();
+      const payloadOrder = {
+        ...order,
+        customerBanned: order.customer ? banned.has(order.customer.phone.trim()) : false,
+      };
+      res.write(`event: ${payload.type}\ndata: ${JSON.stringify(payloadOrder)}\n\n`);
     } catch (err) {
       console.error('[Order] stream: failed to load order for event', err);
     }
@@ -124,20 +146,10 @@ export const streamOrders = (req: Request, res: Response) => {
 // Status transitions
 // ---------------------------------------------------------------------------
 
-// NEW -> ACCEPTED -> PREPARING -> READY -> OUT_FOR_DELIVERY (delivery only) /
-// COMPLETED (pickup) -> COMPLETED. CANCELLED/REJECTED reachable from any
-// non-terminal state. See docs/packaging/online-ordering-plan.md §1c.
-const FORWARD_TRANSITIONS: Record<string, string[]> = {
-  NEW: ['ACCEPTED'],
-  ACCEPTED: ['PREPARING'],
-  PREPARING: ['READY'],
-  READY: ['OUT_FOR_DELIVERY', 'COMPLETED'],
-  OUT_FOR_DELIVERY: ['COMPLETED'],
-  COMPLETED: [],
-  CANCELLED: [],
-  REJECTED: [],
-};
-const TERMINAL_STATUSES = ['COMPLETED', 'CANCELLED', 'REJECTED'];
+// The transition map and terminal set moved to src/utils/orderStatus.ts —
+// customerOrderController's capacity check needs the same "still in flight"
+// definition, and two copies would drift. See that file for the diagram.
+const TERMINAL_STATUSES: readonly string[] = TERMINAL_ORDER_STATUSES;
 
 export const updateOrderStatus = async (req: Request, res: Response) => {
   try {
@@ -174,11 +186,32 @@ export const updateOrderStatus = async (req: Request, res: Response) => {
     // ACCEPTED with no error. Scoping the WHERE to the status we validated
     // against makes the write itself atomic: only the request that's still
     // acting on the current state can succeed.
-    const { count } = await prisma.order.updateMany({
-      where: { id: order.id, status: order.status },
-      data: { status },
+    //
+    // Wrapped in a transaction because marking NOT_PICKED_UP has a second
+    // effect — the customer's no-show counter — that must land if and only if
+    // the status write actually won the race. Incrementing outside the
+    // conditional write would over-count a duplicate tap; incrementing
+    // unconditionally after a `count === 0` loss would punish the customer
+    // for a transition that never happened.
+    const outcome = await prisma.$transaction(async (tx) => {
+      const { count } = await tx.order.updateMany({
+        where: { id: order.id, status: order.status },
+        data: { status },
+      });
+      if (count === 0) return { won: false as const };
+
+      const noShowCustomer = status === 'NOT_PICKED_UP'
+        ? await tx.customer.update({
+            where: { id: order.customerId },
+            data: { noShowCount: { increment: 1 } },
+            select: { id: true, name: true, phone: true, noShowCount: true },
+          })
+        : null;
+
+      return { won: true as const, noShowCustomer };
     });
-    if (count === 0) {
+
+    if (!outcome.won) {
       return errorResponse(res, 'errors.order_status_conflict', 409, {
         message: 'Order status changed since it was last read — refresh and retry',
       });
@@ -195,11 +228,26 @@ export const updateOrderStatus = async (req: Request, res: Response) => {
       req,
       restaurantId,
       category: 'ORDER',
-      action: 'ORDER_STATUS_CHANGED',
+      // A no-show is a distinct, disputable business event (it permanently
+      // raises a customer's counter and can lead to a ban), so it gets its own
+      // audit action rather than hiding inside a generic status change.
+      action: outcome.noShowCustomer ? 'ORDER_MARKED_NOT_PICKED_UP' : 'ORDER_STATUS_CHANGED',
       targetType: 'Order',
       targetId: order.id,
       targetLabel: `#${order.orderNumber}`,
-      metadata: { from: order.status, to: status, reason: isCancelLike ? (reason || null) : undefined },
+      metadata: {
+        from: order.status,
+        to: status,
+        reason: isCancelLike ? (reason || null) : undefined,
+        ...(outcome.noShowCustomer
+          ? {
+              customerId: outcome.noShowCustomer.id,
+              customerName: outcome.noShowCustomer.name,
+              customerPhone: outcome.noShowCustomer.phone,
+              noShowCount: outcome.noShowCustomer.noShowCount,
+            }
+          : {}),
+      },
     });
 
     await publishOrderEvent({ restaurantId, orderId: order.id, orderNumber: order.orderNumber, type: 'status_changed' });
@@ -224,7 +272,13 @@ export const listCustomers = async (req: Request, res: Response) => {
       include: { _count: { select: { orders: true } } },
       take: 500,
     });
-    return successResponse(res, customers);
+
+    const banned = await activeBannedPhones(restaurantId, customers.map((c) => c.phone));
+
+    return successResponse(
+      res,
+      customers.map((customer) => ({ ...customer, banned: banned.has(customer.phone.trim()) }))
+    );
   } catch (error) {
     console.error('[Order] listCustomers error:', error);
     return errorResponse(res, 'errors.internal_error', 500);
@@ -246,9 +300,232 @@ export const getCustomerDetail = async (req: Request, res: Response) => {
     if (!customer) {
       return errorResponse(res, 'errors.not_found', 404);
     }
-    return successResponse(res, customer);
+
+    // Bans are keyed by phone, not customerId, so this is the ban history of
+    // the *number* — which is the point: it survives the customer deleting
+    // and re-creating their account.
+    const bans = await withActorNames(
+      await prisma.customerBan.findMany({
+        where: { restaurantId, phone: customer.phone },
+        orderBy: { createdAt: 'desc' },
+      })
+    );
+
+    return successResponse(res, {
+      ...customer,
+      bans,
+      banned: bans.some((b) => b.liftedAt === null),
+    });
   } catch (error) {
     console.error('[Order] getCustomerDetail error:', error);
+    return errorResponse(res, 'errors.internal_error', 500);
+  }
+};
+
+// ---------------------------------------------------------------------------
+// Customer bans (plan decision #4: manual only — nothing here bans
+// automatically; noShowCount just surfaces a badge for staff to act on).
+// Bans are phone-scoped so they survive a customer deleting and re-creating
+// their account with the same number.
+// ---------------------------------------------------------------------------
+
+type BanRow = {
+  bannedByUserId: string | null;
+  liftedByUserId: string | null;
+  liftedAt: Date | null;
+  [key: string]: unknown;
+};
+
+/**
+ * Resolve `bannedByUserId` / `liftedByUserId` to display names.
+ *
+ * CustomerBan stores those as plain nullable columns with no FK to User (the
+ * staff member may be deleted long after the ban), so there is no `include`
+ * to lean on. One batched lookup for every id in the set — never a query per
+ * row — and per PROJECT_LOGIC.md §7 the UUID must never be what the dashboard
+ * ends up showing, so a name is always paired with it.
+ */
+async function withActorNames<T extends BanRow>(bans: T[]): Promise<(T & { bannedByName: string | null; liftedByName: string | null; active: boolean })[]> {
+  const ids = [...new Set(bans.flatMap((b) => [b.bannedByUserId, b.liftedByUserId]).filter((id): id is string => !!id))];
+  const users = ids.length
+    ? await prisma.user.findMany({ where: { id: { in: ids } }, select: { id: true, firstName: true, lastName: true } })
+    : [];
+  const nameById = new Map(
+    users.map((u) => [u.id, `${u.firstName ?? ''} ${u.lastName ?? ''}`.trim() || null] as const)
+  );
+  // A deleted staff member resolves to null rather than leaking the raw id.
+  const nameOf = (id: string | null) => (id ? nameById.get(id) ?? null : null);
+
+  return bans.map((ban) => ({
+    ...ban,
+    bannedByName: nameOf(ban.bannedByUserId),
+    liftedByName: nameOf(ban.liftedByUserId),
+    active: ban.liftedAt === null,
+  }));
+}
+
+export const listBans = async (req: Request, res: Response) => {
+  try {
+    const restaurantId = req.restaurantId!;
+    // Active and historical together, newest first — a lifted ban is part of
+    // the record staff need when deciding whether to ban the number again.
+    const bans = await prisma.customerBan.findMany({
+      where: { restaurantId },
+      orderBy: { createdAt: 'desc' },
+      take: 500,
+    });
+    return successResponse(res, await withActorNames(bans));
+  } catch (error) {
+    console.error('[Order] listBans error:', error);
+    return errorResponse(res, 'errors.internal_error', 500);
+  }
+};
+
+export const createBan = async (req: Request, res: Response) => {
+  try {
+    const restaurantId = req.restaurantId!;
+    // Trimmed exactly the way customerOrderController.verifyOtp stores the
+    // number, or the ban would sit next to the customer's phone without ever
+    // matching it.
+    const phone = typeof req.body?.phone === 'string' ? req.body.phone.trim() : '';
+    const reason = typeof req.body?.reason === 'string' ? req.body.reason.trim().slice(0, 500) : null;
+
+    if (!phone || !isValidPhone(phone)) {
+      return errorResponse(res, 'errors.validation_error', 400, { message: 'a valid phone is required' });
+    }
+
+    const existing = await prisma.customerBan.findFirst({
+      where: { restaurantId, phone, liftedAt: null },
+      select: { id: true },
+    });
+    if (existing) {
+      return errorResponse(res, 'errors.validation_error', 409, {
+        message: 'This phone number is already banned',
+        banId: existing.id,
+      });
+    }
+
+    const ban = await prisma.customerBan.create({
+      data: { restaurantId, phone, reason: reason || null, bannedByUserId: req.user?.userId ?? null },
+    });
+
+    logAudit({
+      req,
+      restaurantId,
+      category: 'ORDER',
+      action: 'CUSTOMER_BANNED',
+      targetType: 'CustomerBan',
+      targetId: ban.id,
+      targetLabel: phone,
+      metadata: { phone, reason: reason || null },
+    });
+
+    const [decorated] = await withActorNames([ban]);
+    return successResponse(res, decorated, undefined, 201);
+  } catch (error) {
+    console.error('[Order] createBan error:', error);
+    return errorResponse(res, 'errors.internal_error', 500);
+  }
+};
+
+export const liftBan = async (req: Request, res: Response) => {
+  try {
+    const restaurantId = req.restaurantId!;
+    const { id } = req.params;
+
+    const existing = await prisma.customerBan.findFirst({ where: { id, restaurantId } });
+    if (!existing) return errorResponse(res, 'errors.not_found', 404);
+    if (existing.liftedAt) {
+      // Already lifted — return it rather than 400ing, so a double-tap in the
+      // dashboard is a no-op instead of an error toast.
+      const [decorated] = await withActorNames([existing]);
+      return successResponse(res, decorated);
+    }
+
+    const ban = await prisma.customerBan.update({
+      where: { id: existing.id },
+      data: { liftedAt: new Date(), liftedByUserId: req.user?.userId ?? null },
+    });
+
+    logAudit({
+      req,
+      restaurantId,
+      category: 'ORDER',
+      action: 'CUSTOMER_UNBANNED',
+      targetType: 'CustomerBan',
+      targetId: ban.id,
+      targetLabel: ban.phone,
+      metadata: { phone: ban.phone, reason: ban.reason },
+    });
+
+    const [decorated] = await withActorNames([ban]);
+    return successResponse(res, decorated);
+  } catch (error) {
+    console.error('[Order] liftBan error:', error);
+    return errorResponse(res, 'errors.internal_error', 500);
+  }
+};
+
+// ---------------------------------------------------------------------------
+// Restaurant location (the pin the delivery-range maths measures from — see
+// geoService/orderPricingService). Lives on this router rather than
+// restaurantRoutes because it's an online-ordering concern gated by
+// `manage_orders`, and there is no existing tenant endpoint that writes
+// Restaurant scalar fields to extend.
+// ---------------------------------------------------------------------------
+
+export const updateRestaurantLocation = async (req: Request, res: Response) => {
+  try {
+    const restaurantId = req.restaurantId!;
+    const { latitude, longitude, addressText } = req.body || {};
+
+    // All three are explicitly clearable (null) — a tenant that sets a pin by
+    // mistake must be able to get back to "no coordinates", which is the
+    // state resolveDeliveryZone treats as "fall back to the manual zone
+    // dropdown" rather than "everything is out of range".
+    const parsedLat = latitude === null ? null : parseOptionalFiniteNumber(latitude, 'latitude');
+    const parsedLng = longitude === null ? null : parseOptionalFiniteNumber(longitude, 'longitude');
+
+    if (parsedLat != null && (parsedLat < -90 || parsedLat > 90)) {
+      return errorResponse(res, 'errors.validation_error', 400, { message: 'latitude must be between -90 and 90' });
+    }
+    if (parsedLng != null && (parsedLng < -180 || parsedLng > 180)) {
+      return errorResponse(res, 'errors.validation_error', 400, { message: 'longitude must be between -180 and 180' });
+    }
+    // A half-set pin is worse than none: haversine against a missing
+    // coordinate is meaningless, so refuse rather than persist it.
+    if ((parsedLat == null) !== (parsedLng == null)) {
+      return errorResponse(res, 'errors.validation_error', 400, {
+        message: 'latitude and longitude must be set or cleared together',
+      });
+    }
+
+    const restaurant = await prisma.restaurant.update({
+      where: { id: restaurantId },
+      data: {
+        ...(latitude !== undefined ? { latitude: parsedLat } : {}),
+        ...(longitude !== undefined ? { longitude: parsedLng } : {}),
+        ...(addressText !== undefined
+          ? { addressText: typeof addressText === 'string' ? addressText.trim().slice(0, 500) || null : null }
+          : {}),
+      },
+      select: { latitude: true, longitude: true, addressText: true },
+    });
+
+    logAudit({
+      req,
+      restaurantId,
+      category: 'SETTINGS',
+      action: 'RESTAURANT_LOCATION_UPDATED',
+      targetType: 'Restaurant',
+      targetId: restaurantId,
+      metadata: restaurant as unknown as Record<string, unknown>,
+    });
+
+    return successResponse(res, restaurant);
+  } catch (error) {
+    if (error instanceof AppError) return errorResponse(res, error.code, error.status, error.details);
+    console.error('[Order] updateRestaurantLocation error:', error);
     return errorResponse(res, 'errors.internal_error', 500);
   }
 };
@@ -264,12 +541,25 @@ export const getOrderSettings = async (req: Request, res: Response) => {
     // same tenant would otherwise both find null and both try to create,
     // and the loser hits OrderSettings' restaurantId unique-constraint
     // violation and 500s instead of just getting the row the winner made.
-    const settings = await prisma.orderSettings.upsert({
-      where: { restaurantId },
-      update: {},
-      create: { restaurantId },
+    const [settings, restaurant] = await Promise.all([
+      prisma.orderSettings.upsert({
+        where: { restaurantId },
+        update: {},
+        create: { restaurantId },
+      }),
+      // Folded into this response on purpose: the settings screen edits the
+      // delivery pin alongside maxDeliveryMeters, and they belong to the same
+      // save. Nesting it keeps the OrderSettings columns unshadowed.
+      prisma.restaurant.findUnique({
+        where: { id: restaurantId },
+        select: { latitude: true, longitude: true, addressText: true },
+      }),
+    ]);
+
+    return successResponse(res, {
+      ...settings,
+      restaurantLocation: restaurant ?? { latitude: null, longitude: null, addressText: null },
     });
-    return successResponse(res, settings);
   } catch (error) {
     console.error('[Order] getOrderSettings error:', error);
     return errorResponse(res, 'errors.internal_error', 500);
@@ -288,7 +578,17 @@ export const updateOrderSettings = async (req: Request, res: Response) => {
       maxConcurrentOrders,
       prepTimeMinutes,
       orderHours,
+      autoConfirmOrders,
+      maxDeliveryMeters,
+      noShowWarnThreshold,
     } = req.body || {};
+
+    // Int columns: Prisma rejects a fractional value outright, and a UI that
+    // sends "1500.0" or a stray decimal shouldn't 500.
+    const parseOptionalInt = (value: unknown, field: string) => {
+      const n = parseOptionalFiniteNumber(value, field);
+      return n === undefined ? undefined : Math.round(n);
+    };
 
     const data = {
       onlineOrderingOpen,
@@ -299,6 +599,13 @@ export const updateOrderSettings = async (req: Request, res: Response) => {
       maxConcurrentOrders: maxConcurrentOrders === null ? null : parseOptionalFiniteNumber(maxConcurrentOrders, 'maxConcurrentOrders'),
       prepTimeMinutes: parseOptionalFiniteNumber(prepTimeMinutes, 'prepTimeMinutes'),
       orderHours,
+      // Boolean(undefined) is false, which would silently turn auto-confirm
+      // off on any partial save — so a field that wasn't sent stays undefined
+      // (= leave the column alone) rather than being coerced.
+      autoConfirmOrders: autoConfirmOrders === undefined ? undefined : Boolean(autoConfirmOrders),
+      // null = no hard distance cap; rely on the zones alone.
+      maxDeliveryMeters: maxDeliveryMeters === null ? null : parseOptionalInt(maxDeliveryMeters, 'maxDeliveryMeters'),
+      noShowWarnThreshold: parseOptionalInt(noShowWarnThreshold, 'noShowWarnThreshold'),
     };
 
     const settings = await prisma.orderSettings.upsert({

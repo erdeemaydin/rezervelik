@@ -79,11 +79,26 @@ focused agents; each is committed and build-verified before the next starts.
   mirrors into `OrderMenuItem` (off ⇒ `isListed: false`, overrides preserved)
   so `dashboard/menus` stays consistent until A7. New i18n key
   `errors.order_item_paused`.
-- [ ] **A4 — Backend confirm flow + no-show + bans.** `autoConfirmOrders` in
-  `placeOrder`; `NOT_PICKED_UP` transition + `noShowCount` increment; `CustomerBan`
-  CRUD + enforcement in `requestOtp` / `verifyOtp` / `placeOrder`; order-list &
-  customer-detail includes gain `noShowCount` + `banned`. `PUT /api/restaurants/me`
-  (or dedicated) accepts location fields.
+- [x] **A4 — Backend confirm flow + no-show + bans.** `autoConfirmOrders` makes
+  `placeOrder` create the order `ACCEPTED` instead of `NEW`; that path also now
+  enforces `maxConcurrentOrders` (non-terminal count, `errors.order_capacity_full`)
+  and the weekly `orderHours` schedule in the tenant's own timezone
+  (`errors.online_ordering_closed`). The status machine moved to
+  `src/utils/orderStatus.ts` (shared with the capacity check) and gained
+  `NOT_PICKED_UP` as a forward transition from `READY`/`OUT_FOR_DELIVERY`;
+  reaching it increments `Customer.noShowCount` inside the same transaction as
+  the concurrency-safe conditional status write, audited as
+  `ORDER_MARKED_NOT_PICKED_UP`. Phone-scoped `CustomerBan` CRUD
+  (`GET|POST /api/orders/bans`, `PATCH /api/orders/bans/:id/lift`, actor names
+  resolved via one batched `user.findMany` — no bare UUIDs) with
+  `isPhoneBanned` enforced in `requestOtp` / `verifyOtp` / `placeOrder`
+  (`errors.order_customer_banned`). `listOrders` / `streamOrders` gained
+  `customer.noShowCount` + `customerBanned`, `listCustomers` `banned`,
+  `getCustomerDetail` `bans[]` + `banned` — all via batched ban lookups.
+  `PUT /api/orders/restaurant-location` writes `Restaurant.latitude/longitude/
+  addressText`; `GET /api/orders/order-settings` now also returns
+  `restaurantLocation`, and the public `GET /api/public/order/settings` returns
+  `orderHours` + a computed `withinOrderHours`.
 - [ ] **A5 — Frontend map infra + checkout.** `leaflet` + `react-leaflet` deps;
   `AddressPicker` / `LeafletMap` (dynamic, `ssr:false`, Nominatim search +
   reverse geocode + draggable pin). Rebuild the delivery section of the checkout

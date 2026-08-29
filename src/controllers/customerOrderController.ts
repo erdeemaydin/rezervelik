@@ -9,6 +9,9 @@ import { generateCustomerToken } from '../utils/jwt';
 import { setCustomerSessionCookie, issueTrustedDevice } from '../middlewares/customerAuth';
 import { publishOrderEvent } from '../services/orderEvents';
 import { isValidPhone } from '../utils/phone';
+import { isPhoneBanned } from '../services/customerBanService';
+import { ACTIVE_ORDER_STATUSES } from '../utils/orderStatus';
+import { isWithinOrderHours } from '../utils/orderHours';
 import {
   effectiveName,
   effectiveDescription,
@@ -57,6 +60,12 @@ export const requestOtp = async (req: Request, res: Response) => {
   }
 
   try {
+    // Refuse at the very first step rather than letting a banned number burn
+    // SMS credits and reach the code screen only to be rejected at checkout.
+    if (await isPhoneBanned(restaurantId, phone)) {
+      return errorResponse(res, 'errors.order_customer_banned', 403);
+    }
+
     const { expiresAt } = await otpService.requestOtp({ restaurantId, phone, ip: clientIp(req) });
     return successResponse(res, { expiresAt });
   } catch (error) {
@@ -78,6 +87,13 @@ export const verifyOtp = async (req: Request, res: Response) => {
   }
 
   try {
+    // Re-checked here, not just in requestOtp: a ban placed between the two
+    // calls (or a code obtained before the ban) must not still yield a
+    // session.
+    if (await isPhoneBanned(restaurantId, phone)) {
+      return errorResponse(res, 'errors.order_customer_banned', 403);
+    }
+
     // Validate the code before looking at any phone-specific state (whether
     // a Customer already exists) — checking existence first and branching
     // the error message on it would let anyone probe which phone numbers
@@ -281,19 +297,37 @@ export const getPublicOrderSettings = async (req: Request, res: Response) => {
         cashOnDeliveryEnabled: true,
         onlineCardEnabled: true,
         prepTimeMinutes: true,
+        orderHours: true,
       },
     });
 
     // No row yet = tenant never configured it; mirror the schema defaults
     // (see requireOnlineOrderingOpen's comment for the same fallback logic)
     // rather than telling the customer UI everything is disabled.
-    return successResponse(res, settings ?? {
-      onlineOrderingOpen: true,
-      deliveryEnabled: true,
-      pickupEnabled: true,
-      cashOnDeliveryEnabled: true,
-      onlineCardEnabled: false,
-      prepTimeMinutes: 20,
+    if (!settings) {
+      return successResponse(res, {
+        onlineOrderingOpen: true,
+        deliveryEnabled: true,
+        pickupEnabled: true,
+        cashOnDeliveryEnabled: true,
+        onlineCardEnabled: false,
+        prepTimeMinutes: 20,
+        orderHours: null,
+        withinOrderHours: true,
+      });
+    }
+
+    // placeOrder enforces the weekly schedule; surfacing the verdict (and the
+    // schedule itself) here is what lets the customer UI say "we open at
+    // 18:00" up front instead of letting someone build a whole cart and only
+    // discover it at checkout.
+    const tzSettings = settings.orderHours
+      ? await prisma.restaurantSettings.findUnique({ where: { restaurantId }, select: { timezone: true } })
+      : null;
+
+    return successResponse(res, {
+      ...settings,
+      withinOrderHours: isWithinOrderHours(settings.orderHours, new Date(), tzSettings?.timezone),
     });
   } catch (error) {
     console.error('[CustomerOrder] getPublicOrderSettings error:', error);
@@ -416,6 +450,13 @@ export const placeOrder = async (req: Request, res: Response) => {
     const restaurantId = req.restaurantId!;
     const customer = req.customer!;
 
+    // Defense in depth: the OTP gate already refuses a banned number, but a
+    // trusted-device session minted before the ban skips OTP entirely, so the
+    // ban has to be re-asserted at the point of sale too.
+    if (await isPhoneBanned(restaurantId, customer.phone)) {
+      return errorResponse(res, 'errors.order_customer_banned', 403);
+    }
+
     // Per-customer throttle, on top of the route-level per-IP rateLimitOrNoop
     // — spec §4: "rate-limit order creation per customer/phone/IP".
     const recentOrders = await prisma.order.count({
@@ -446,6 +487,33 @@ export const placeOrder = async (req: Request, res: Response) => {
     // Phase 2 (marketplace sub-merchant) — not implemented yet.
     if (paymentMethod === 'ONLINE_CARD' && !(orderSettings?.onlineCardEnabled)) {
       return errorResponse(res, 'errors.order_payment_method_disabled', 400);
+    }
+
+    // Weekly opening hours. requireOnlineOrderingOpen (the route-level gate)
+    // only covers the manual kill-switch; this is the scheduled counterpart,
+    // evaluated in the tenant's own timezone. isWithinOrderHours is permissive
+    // for an unconfigured/malformed schedule, so a tenant that never touched
+    // the hours editor is unaffected.
+    if (orderSettings?.orderHours) {
+      const tzSettings = await prisma.restaurantSettings.findUnique({
+        where: { restaurantId },
+        select: { timezone: true },
+      });
+      if (!isWithinOrderHours(orderSettings.orderHours, new Date(), tzSettings?.timezone)) {
+        return errorResponse(res, 'errors.online_ordering_closed', 403);
+      }
+    }
+
+    // Kitchen capacity throttle. Counts orders still in flight (anything not
+    // terminal) rather than orders created today — the cap is about how much
+    // work is queued right now, and a completed order frees a slot.
+    if (orderSettings?.maxConcurrentOrders != null && orderSettings.maxConcurrentOrders > 0) {
+      const inFlight = await prisma.order.count({
+        where: { restaurantId, status: { in: ACTIVE_ORDER_STATUSES as any } },
+      });
+      if (inFlight >= orderSettings.maxConcurrentOrders) {
+        return errorResponse(res, 'errors.order_capacity_full', 429);
+      }
     }
 
     let addressSnapshot: Record<string, unknown> | null = null;
@@ -539,6 +607,14 @@ export const placeOrder = async (req: Request, res: Response) => {
 
     const readyBy = new Date(Date.now() + quote.prepTimeMinutes * 60_000);
 
+    // Auto-confirm (plan "Also in scope"): off — the default — leaves the
+    // order in NEW, which the customer's tracking screen renders as "waiting
+    // for the restaurant to confirm" and staff resolve with confirm/reject.
+    // On, the order skips straight to ACCEPTED; it is still subject to the
+    // hours/capacity gates above, so "auto-confirm" never means "accept
+    // anything".
+    const initialStatus = orderSettings?.autoConfirmOrders === true ? 'ACCEPTED' : 'NEW';
+
     const order = await prisma.$transaction(async (tx) => {
       // Race-safe per-tenant order number — see the OrderCounter comment in
       // schema.prisma: an atomic UPDATE ... RETURNING, never COUNT(*).
@@ -552,6 +628,7 @@ export const placeOrder = async (req: Request, res: Response) => {
           customerId: customer.id,
           orderNumber,
           fulfillmentType,
+          status: initialStatus,
           paymentMethod,
           addressSnapshot: (addressSnapshot ?? undefined) as any,
           zoneId: quote.zoneId ?? null,
