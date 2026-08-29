@@ -42,7 +42,7 @@ focused agents; each is committed and build-verified before the next starts.
 
 ## Agent sequence
 
-- [ ] **A1 — Schema & migrations.** `Restaurant.latitude/longitude/addressText`;
+- [x] **A1 — Schema & migrations.** `Restaurant.latitude/longitude/addressText`;
   `OrderSettings.autoConfirmOrders/maxDeliveryMeters/noShowWarnThreshold`;
   `OrderMenuCategory`; `OrderMenuItem` (menuItemId FK, overrides, isListed,
   isAvailable, pausedUntil, pausedIndefinitely, sortOrder, prepTimeMinutes,

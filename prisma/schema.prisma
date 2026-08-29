@@ -52,6 +52,13 @@ model Restaurant {
   // for the tenant's own menu. See docs/packaging/online-ordering-spec.md.
   hasOnlineOrdering      Boolean   @default(false)
 
+  // Physical location of the restaurant. Used as the origin for online-ordering
+  // delivery-distance calculations (haversine against the customer's map pin)
+  // and shown to customers on the ordering page. Set by the tenant.
+  latitude    Float?
+  longitude   Float?
+  addressText String? // free-text street address shown to customers
+
   createdAt             DateTime               @default(now())
   updatedAt             DateTime               @updatedAt
   menus                 Menu[]
@@ -83,6 +90,9 @@ model Restaurant {
   otpChallenges         OtpChallenge[]
   deliveryZones         DeliveryZone[]
   orders                Order[]
+  orderMenuCategories   OrderMenuCategory[]
+  orderMenuItems        OrderMenuItem[]
+  customerBans          CustomerBan[]
 }
 
 model FrontendCustomization {
@@ -288,8 +298,8 @@ model WaitTimeConfig {
 }
 
 model WaitlistEntry {
-  id           String @id @default(uuid())
-  restaurantId String
+  id             String  @id @default(uuid())
+  restaurantId   String
   // Nullable — same KVKK retention rationale as Reservation.customerName/
   // customerPhone: the retention/anonymization worker nulls these out (plus
   // notes, which is free text and may contain PII) once an entry ages past the
@@ -710,12 +720,13 @@ model MenuItem {
 
   category MenuCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
 
-  modifiers    MenuItemModifier[]
-  pairings     MenuItemPairing[]  @relation("ItemPairings")
-  pairedWith   MenuItemPairing[]  @relation("PairedItems")
-  reservations Reservation[]
-  events       Event[]            @relation("EventPackage")
-  orderItems   OrderItem[]
+  modifiers      MenuItemModifier[]
+  pairings       MenuItemPairing[]  @relation("ItemPairings")
+  pairedWith     MenuItemPairing[]  @relation("PairedItems")
+  reservations   Reservation[]
+  events         Event[]            @relation("EventPackage")
+  orderItems     OrderItem[]
+  orderMenuItems OrderMenuItem[]
 
   @@index([categoryId])
 }
@@ -1019,6 +1030,9 @@ model OrderSettings {
   maxConcurrentOrders   Int? // capacity throttle; null = unlimited
   prepTimeMinutes       Int     @default(20) // default prep time when a menu item doesn't set its own
   orderHours            Json? // per-day open/close windows
+  autoConfirmOrders     Boolean @default(false) // false = new orders wait in NEW for staff confirm
+  maxDeliveryMeters     Int? // hard cap on delivery distance; null = rely on zones only
+  noShowWarnThreshold   Int     @default(2) // dashboard shows a warning badge at/above this many no-shows
 
   updatedAt  DateTime   @updatedAt
   restaurant Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
@@ -1048,6 +1062,7 @@ model Customer {
   name            String
   email           String?
   passwordHash    String?
+  noShowCount     Int       @default(0) // incremented when one of their orders is marked NOT_PICKED_UP
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -1104,6 +1119,28 @@ model TrustedDevice {
   @@index([customerId])
 }
 
+// Manual, staff-issued block on a customer. Scoped to the PHONE rather than to
+// a Customer row on purpose: the ban must survive the customer deleting and
+// re-registering their account with the same number. Enforced in the OTP flow
+// and at order placement. Never issued automatically — Customer.noShowCount
+// only drives a dashboard warning badge; a human decides on the ban.
+model CustomerBan {
+  id             String    @id @default(uuid())
+  restaurantId   String
+  phone          String
+  reason         String?
+  bannedByUserId String?
+  liftedAt       DateTime? // null = active ban
+  liftedByUserId String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  restaurant Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+
+  @@index([restaurantId, phone])
+}
+
 // SMS-OTP challenge (Netgsm, via src/services/messaging). Hashed at rest —
 // never the raw code — attempt-capped and rate-limited per-phone + per-IP by
 // the (later) otpService.
@@ -1148,6 +1185,60 @@ model DeliveryZone {
   @@index([restaurantId])
 }
 
+// ---------------------------------------------------------------------------
+// Online catalog ("Order Menu"). The tenant curates which MenuItems sell
+// online instead of forking the menu: OrderMenuItem points at the source
+// MenuItem and layers online-only overrides (price, name/description/photo,
+// grouping, sort order, availability, temporary pause) on top of it. There is
+// no duplicated menu data — anything not overridden falls back to the MenuItem.
+// OrderMenuCategory is an order-only grouping so the online catalog can be
+// arranged differently from the in-house MenuCategory tree.
+// ---------------------------------------------------------------------------
+
+model OrderMenuCategory {
+  id           String @id @default(uuid())
+  restaurantId String
+  name         String
+  sortOrder    Int    @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  restaurant Restaurant      @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  items      OrderMenuItem[]
+
+  @@index([restaurantId])
+}
+
+model OrderMenuItem {
+  id                  String    @id @default(uuid())
+  restaurantId        String
+  menuItemId          String // source MenuItem
+  orderCategoryId     String? // OrderMenuCategory; null = fall back to the source MenuCategory grouping
+  isListed            Boolean   @default(true) // present in the online catalog at all
+  isAvailable         Boolean   @default(true) // permanent online availability (separate from MenuItem.isAvailable)
+  pausedUntil         DateTime? // temporary "closed to order"; a past timestamp = auto-resumed
+  pausedIndefinitely  Boolean   @default(false)
+  priceOverride       Float?
+  nameOverride        String?
+  descriptionOverride String?
+  imageUrlOverride    String?
+  prepTimeMinutes     Int? // online prep-time override (falls back to MenuItem.prepTimeMinutes then OrderSettings.prepTimeMinutes)
+  sortOrder           Int       @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  restaurant    Restaurant         @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  menuItem      MenuItem           @relation(fields: [menuItemId], references: [id], onDelete: Cascade)
+  orderCategory OrderMenuCategory? @relation(fields: [orderCategoryId], references: [id], onDelete: SetNull)
+
+  @@unique([restaurantId, menuItemId])
+  @@index([restaurantId])
+  @@index([menuItemId])
+  @@index([orderCategoryId])
+}
+
 enum FulfillmentType {
   DELIVERY
   PICKUP
@@ -1162,6 +1253,9 @@ enum OrderStatus {
   COMPLETED
   CANCELLED
   REJECTED
+  // Terminal: a PICKUP order the customer never collected (or a delivery the
+  // customer refused). Increments Customer.noShowCount.
+  NOT_PICKED_UP
 }
 
 enum PaymentMethod {
@@ -1182,9 +1276,9 @@ model Order {
   orderNumber  Int // per-tenant continuous sequence — see OrderCounter, never COUNT(*)
 
   fulfillmentType FulfillmentType
-  status          OrderStatus   @default(NEW)
+  status          OrderStatus     @default(NEW)
   paymentMethod   PaymentMethod
-  paymentStatus   PaymentStatus @default(UNPAID)
+  paymentStatus   PaymentStatus   @default(UNPAID)
 
   addressSnapshot Json?
   zoneId          String?
