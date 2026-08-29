@@ -2140,7 +2140,9 @@
       "quantity": "Adet",
       "decrease": "Adedi azalt",
       "increase": "Adedi artır",
-      "addToCart": "Sepete Ekle"
+      "addToCart": "Sepete Ekle",
+      "temporarilyUnavailable": "Geçici olarak mevcut değil",
+      "outOfStock": "Şu anda mevcut değil"
     },
     "cart": {
       "title": "Siparişiniz",
@@ -2162,7 +2164,22 @@
       "neighborhoodLabel": "Mahalle",
       "neighborhoodPlaceholder": "örn. Kadıköy",
       "noteLabel": "Kurye için not",
-      "notePlaceholder": "örn. Zili iki kez çalın"
+      "notePlaceholder": "örn. Zili iki kez çalın",
+      "mapLabel": "Nereye teslim edelim?",
+      "searchLabel": "Adresinizi arayın",
+      "searchPlaceholder": "Sokak, mahalle, şehir…",
+      "clearSearch": "Aramayı temizle",
+      "noResults": "Eşleşen adres yok. Bunun yerine haritadan iğneyi bırakın.",
+      "dragHint": "İğneyi tam konumunuza sürükleyin.",
+      "useMyLocation": "Konumumu kullan",
+      "pinRequired": "Adresinizi arayın veya haritaya dokunarak iğneyi bırakın.",
+      "checking": "Buraya teslimat yapabiliyor muyuz, kontrol ediliyor…",
+      "deliversHere": "Bu adrese teslimat yapıyoruz",
+      "outOfRangeTitle": "Teslimat bölgemizin dışında",
+      "outOfRangeDescription": "Bu kadar uzağa teslimat yapamıyoruz. Başka bir adres deneyin veya gel-al seçeneğine geçin.",
+      "distanceAway": "~{{km}} km uzaklıkta",
+      "buildingLabel": "Bina / kat / kapı no",
+      "buildingPlaceholder": "örn. No 12, kat 3, daire 7"
     },
     "quote": {
       "calculating": "Toplam hesaplanıyor…",
@@ -2171,7 +2188,9 @@
       "total": "Toplam",
       "belowMinimum": "Bu bölge için minimum sipariş tutarı:",
       "waiting": "Toplamı görmek için sepete ürün ekleyin.",
-      "failed": "Toplam hesaplanamadı. Lütfen tekrar deneyin."
+      "failed": "Toplam hesaplanamadı. Lütfen tekrar deneyin.",
+      "outOfRange": "Bu adres teslimat bölgemizin dışında.",
+      "closedNow": "Şu anda kapalıyız — lütfen çalışma saatlerimize göz atın."
     },
     "identify": {
       "title": "Telefon Numaranızı Doğrulayın",

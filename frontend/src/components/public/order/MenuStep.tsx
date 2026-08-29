@@ -53,10 +53,14 @@ export default function MenuStep({
           <div className="space-y-2.5">
             {cat.items.map((item) => (
               <button
-                key={item.id}
+                key={item.menuItemId}
                 type="button"
+                disabled={!item.available}
                 onClick={() => openItem(item)}
-                className="flex w-full items-center gap-3 rounded-xl border p-3 text-left transition-colors hover:opacity-90"
+                className={cn(
+                  'flex w-full items-center gap-3 rounded-xl border p-3 text-left transition-colors hover:opacity-90',
+                  !item.available && 'cursor-not-allowed opacity-50 hover:opacity-50'
+                )}
                 style={{ borderColor: theme.border, backgroundColor: theme.surface }}
               >
                 {item.imageUrl && (
@@ -70,6 +74,13 @@ export default function MenuStep({
                   </div>
                   {item.description && (
                     <p className="mt-0.5 line-clamp-2 text-xs" style={{ color: theme.muted }}>{item.description}</p>
+                  )}
+                  {!item.available && (
+                    <p className="mt-0.5 text-xs font-semibold text-amber-600">
+                      {item.unavailableReason === 'PAUSED'
+                        ? t('publicOrder.item.temporarilyUnavailable')
+                        : t('publicOrder.item.outOfStock')}
+                    </p>
                   )}
                   <div className="mt-1.5 flex items-center gap-2">
                     <span className="text-sm font-bold" style={{ color: theme.primary }}>{formatPrice(item.price)}</span>

@@ -99,10 +99,29 @@ focused agents; each is committed and build-verified before the next starts.
   addressText`; `GET /api/orders/order-settings` now also returns
   `restaurantLocation`, and the public `GET /api/public/order/settings` returns
   `orderHours` + a computed `withinOrderHours`.
-- [ ] **A5 — Frontend map infra + checkout.** `leaflet` + `react-leaflet` deps;
-  `AddressPicker` / `LeafletMap` (dynamic, `ssr:false`, Nominatim search +
-  reverse geocode + draggable pin). Rebuild the delivery section of the checkout
-  step: pin → auto zone/fee, out-of-range state, structured address fields.
+- [x] **A5 — Frontend map infra + checkout.** `leaflet@1.9` + `react-leaflet@5`
+  (React 19 is in v5's peer range — no downgrade needed) + `@types/leaflet`.
+  `components/maps/LeafletMap.tsx` (client-only, loaded via `next/dynamic`
+  `ssr:false`; inline SVG `divIcon` instead of the broken bundler default
+  marker; OSM tiles + attribution; draggable + click-to-move pin; isolated
+  stacking context so tiles can't paint over the sticky header/action bar) and
+  `components/maps/AddressPicker.tsx` (Nominatim search debounced 600ms/min 3
+  chars, reverse geocode on pin settle only, `accept-language` from the current
+  locale, geolocation shortcut, silent failure). `lib/orderApi.ts` synced with
+  A2–A4: `OrderableMenuItem.menuItemId` (was `id`) + `available` /
+  `unavailableReason` / `resumesAt` / `prepTimeMinutes`,
+  `OrderableMenuCategory.sortOrder` + `isOrderOnlyCategory`,
+  `PublicOrderSettings.orderHours` + `withinOrderHours`,
+  `OrderQuote.distanceMeters`, `fetchQuote` accepts `lat`/`lng`, new
+  `checkAddress()` + `AddressCheckResult`. `CartFulfillmentStep`'s delivery
+  section is now map-first (pin → `check-address` verdict → "delivers here ·
+  fee · min order · ~N km" or a blocking out-of-range panel), with the manual
+  zone list kept verbatim as the `needsManualZone` fallback. `AddressFormState`
+  carries `lat`/`lng` + an `autoFilled` flag, and its setter is now a real
+  state dispatcher so a late reverse-geocode label can't clobber typing.
+  `OrderExperience` owns the pin/verdict state, sends `lat`/`lng` on both
+  `/quote` and `placeOrder`, holds the quote until a positive range verdict,
+  and maps `errors.order_out_of_delivery_range` to a friendly message.
 - [ ] **A6 — Frontend customer ordering redesign.** `OrderExperience`, `MenuStep`,
   `ItemCustomizeDialog`, cart sheet, header, sticky category nav, bottom cart bar,
   temporarily-unavailable item state, restyled identify / payment / placed +

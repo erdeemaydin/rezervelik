@@ -2140,7 +2140,9 @@
       "quantity": "Quantity",
       "decrease": "Decrease quantity",
       "increase": "Increase quantity",
-      "addToCart": "Add to cart"
+      "addToCart": "Add to cart",
+      "temporarilyUnavailable": "Temporarily unavailable",
+      "outOfStock": "Currently unavailable"
     },
     "cart": {
       "title": "Your order",
@@ -2162,7 +2164,22 @@
       "neighborhoodLabel": "Neighborhood",
       "neighborhoodPlaceholder": "e.g. Kadıköy",
       "noteLabel": "Note for the courier",
-      "notePlaceholder": "e.g. Ring the bell twice"
+      "notePlaceholder": "e.g. Ring the bell twice",
+      "mapLabel": "Where should we deliver?",
+      "searchLabel": "Search for your address",
+      "searchPlaceholder": "Street, neighborhood, city…",
+      "clearSearch": "Clear search",
+      "noResults": "No matching addresses. Drop the pin on the map instead.",
+      "dragHint": "Drag the pin to your exact location.",
+      "useMyLocation": "Use my location",
+      "pinRequired": "Search for your address or tap the map to drop a pin.",
+      "checking": "Checking if we deliver here…",
+      "deliversHere": "We deliver to this address",
+      "outOfRangeTitle": "Outside our delivery area",
+      "outOfRangeDescription": "We can't deliver this far. Try another address, or switch to pickup.",
+      "distanceAway": "~{{km}} km away",
+      "buildingLabel": "Building / floor / door no.",
+      "buildingPlaceholder": "e.g. No 12, floor 3, flat 7"
     },
     "quote": {
       "calculating": "Calculating your total…",
@@ -2171,7 +2188,9 @@
       "total": "Total",
       "belowMinimum": "Minimum order for this area is",
       "waiting": "Add items to see your total.",
-      "failed": "Couldn't calculate your total. Please try again."
+      "failed": "Couldn't calculate your total. Please try again.",
+      "outOfRange": "This address is outside our delivery area.",
+      "closedNow": "We're closed right now — please check our opening hours."
     },
     "identify": {
       "title": "Verify your phone number",

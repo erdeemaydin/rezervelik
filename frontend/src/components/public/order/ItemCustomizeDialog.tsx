@@ -103,8 +103,8 @@ export default function ItemCustomizeDialog({
     const sortedIds = [...optionIds].sort();
 
     onAdd({
-      key: `${item.id}::${sortedIds.join(',')}`,
-      menuItemId: item.id,
+      key: `${item.menuItemId}::${sortedIds.join(',')}`,
+      menuItemId: item.menuItemId,
       name: item.name,
       imageUrl: item.imageUrl,
       unitPriceEstimate: unitPrice,

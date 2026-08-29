@@ -51,12 +51,24 @@ export interface MenuModifier {
   options: ModifierOption[];
 }
 
+/** One sellable dish in the curated online catalog. Note `menuItemId` rather
+ *  than `id`: since the v2 order menu, a row is an `OrderMenuItem` override of
+ *  a `MenuItem`, and the id every downstream call (cart line, quote, place
+ *  order) needs is the *source* MenuItem's — so the API hands that back
+ *  directly. Unavailable items are returned, not hidden (plan requirement #2),
+ *  so the menu can show "temporarily unavailable" instead of silently
+ *  shrinking. */
 export interface OrderableMenuItem {
-  id: string;
+  menuItemId: string;
   name: string;
   description?: string | null;
   price: number;
   imageUrl?: string | null;
+  prepTimeMinutes?: number | null;
+  available: boolean;
+  unavailableReason: 'PAUSED' | 'OUT_OF_STOCK' | null;
+  /** Only set for a *timed* pause — an indefinite pause has no known end. */
+  resumesAt: string | null;
   isHighlight?: boolean;
   dietaryTags?: string | null;
   allergens?: string | null;
@@ -67,6 +79,10 @@ export interface OrderableMenuItem {
 export interface OrderableMenuCategory {
   id: string;
   name: string;
+  sortOrder: number;
+  /** True for tenant-authored online-only sections (which sort ahead of the
+   *  printed menu's own categories), false for a mirrored `MenuCategory`. */
+  isOrderOnlyCategory: boolean;
   items: OrderableMenuItem[];
 }
 
@@ -84,6 +100,27 @@ export interface PublicOrderSettings {
   cashOnDeliveryEnabled: boolean;
   onlineCardEnabled: boolean;
   prepTimeMinutes: number;
+  /** Weekly opening schedule (tenant-authored JSON), or null when the tenant
+   *  takes orders whenever ordering is switched on. Shape is owned by the
+   *  backend (src/utils/orderHours.ts) — treat it as opaque here and trust
+   *  `withinOrderHours` for the verdict. */
+  orderHours?: unknown;
+  /** Server-computed "are we open right now?", evaluated in the tenant's own
+   *  timezone — never recompute this client-side. */
+  withinOrderHours?: boolean;
+}
+
+/** Verdict for a customer's map pin, from POST /public/order/check-address.
+ *  Never an error for out-of-range: `inRange: false` is a normal answer.
+ *  `needsManualZone` means the tenant has no coordinates of its own, so there
+ *  is nothing to measure a distance from and the customer must pick a zone by
+ *  hand (the pre-v2 flow). */
+export interface AddressCheckResult {
+  inRange: boolean;
+  distanceMeters: number | null;
+  needsManualZone: boolean;
+  zone: { id: string; name: string; deliveryFee: number; minOrderAmount: number } | null;
+  maxDeliveryMeters?: number | null;
 }
 
 export type FulfillmentType = 'DELIVERY' | 'PICKUP';
@@ -138,6 +175,10 @@ export interface OrderQuote {
   // a quote is below minimum.
   minOrderAmount?: number;
   prepTimeMinutes: number;
+  /** Straight-line distance from the restaurant to the customer's pin. Only
+   *  present for DELIVERY quotes that carried a pin and where the tenant has
+   *  its own coordinates set. */
+  distanceMeters?: number;
   lines: QuotedLine[];
 }
 
@@ -205,11 +246,29 @@ export async function fetchDeliveryZones(restaurantId: string): Promise<PublicDe
   return res.data.data;
 }
 
+/** `lat`/`lng` are the customer's map pin. When they're sent and the tenant
+ *  has its own coordinates, the backend resolves the delivery zone and fee
+ *  from the pin and *ignores* any `zoneId` in this payload — `zoneId` is only
+ *  the fallback for tenants with no location set. */
 export async function fetchQuote(
   restaurantId: string,
-  payload: { items: CartLineInput[]; fulfillmentType: FulfillmentType; zoneId?: string }
+  payload: {
+    items: CartLineInput[];
+    fulfillmentType: FulfillmentType;
+    zoneId?: string;
+    lat?: number;
+    lng?: number;
+  }
 ): Promise<OrderQuote> {
   const res = await client.post('/public/order/quote', payload, { headers: tenantHeaders(restaurantId) });
+  return res.data.data;
+}
+
+export async function checkAddress(
+  restaurantId: string,
+  body: { lat: number; lng: number }
+): Promise<AddressCheckResult> {
+  const res = await client.post('/public/order/check-address', body, { headers: tenantHeaders(restaurantId) });
   return res.data.data;
 }
 

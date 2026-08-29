@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { ChevronLeft, History, Loader2, AlertTriangle, StoreIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -15,7 +15,10 @@ import {
   fetchQuote,
   fetchMyOrders,
   placeOrder,
+  checkAddress,
   orderApiErrorMessage,
+  orderApiErrorCode,
+  type AddressCheckResult,
   type PublicOrderSettings,
   type OrderableMenuCategory,
   type PublicDeliveryZone,
@@ -36,6 +39,9 @@ import OrderHistorySheet from './OrderHistorySheet';
 type Step = 'menu' | 'checkout' | 'identify' | 'payment' | 'placed';
 
 const QUOTE_DEBOUNCE_MS = 400;
+// Nominatim/its own rate limiter aside, the pin settles in bursts while the
+// customer drags — one check per settled position is plenty.
+const ADDRESS_CHECK_DEBOUNCE_MS = 500;
 
 export default function OrderExperience({ restaurant }: { restaurant: any }) {
   const { t, locale } = useTranslation();
@@ -57,6 +63,25 @@ export default function OrderExperience({ restaurant }: { restaurant: any }) {
   const [fulfillmentType, setFulfillmentType] = useState<FulfillmentType>('DELIVERY');
   const [zoneId, setZoneId] = useState<string | null>(null);
   const [address, setAddress] = useState<AddressFormState>({ fullAddress: '', neighborhood: '', note: '' });
+
+  // The tenant's own coordinates decide which delivery UX applies: with them,
+  // the map pin drives zone/fee resolution server-side; without them there's
+  // nothing to measure from and the flow falls back to the manual zone list.
+  const restaurantLocation = useMemo(() => {
+    const lat = restaurant.latitude;
+    const lng = restaurant.longitude;
+    return typeof lat === 'number' && typeof lng === 'number' ? { lat, lng } : null;
+  }, [restaurant.latitude, restaurant.longitude]);
+  const [addressCheck, setAddressCheck] = useState<AddressCheckResult | null>(null);
+  const [addressChecking, setAddressChecking] = useState(false);
+
+  // Primitives, not the address object: `address` gets a new identity on every
+  // keystroke in the free-text field, and re-quoting/re-checking on those
+  // would both spam the API and violate Nominatim/rate-limit etiquette.
+  const pinLat = address.lat ?? null;
+  const pinLng = address.lng ?? null;
+  const manualZoneMode = !restaurantLocation || addressCheck?.needsManualZone === true;
+  const pinDrivesQuote = !manualZoneMode && pinLat != null && pinLng != null;
 
   const [quote, setQuote] = useState<OrderQuote | null>(null);
   const [quoteLoading, setQuoteLoading] = useState(false);
@@ -130,7 +155,36 @@ export default function OrderExperience({ restaurant }: { restaurant: any }) {
     };
   }, [restaurant.id]);
 
-  // Recompute the quote on every cart/fulfillment/zone change — the whole
+  // Ask the backend whether the pin is deliverable as soon as it settles. This
+  // is only a verdict (it never throws for out-of-range) and it's what gates
+  // "Continue" — the /quote call and order placement stay the real authority.
+  useEffect(() => {
+    if (!restaurantLocation || fulfillmentType !== 'DELIVERY' || pinLat == null || pinLng == null) {
+      setAddressCheck(null);
+      setAddressChecking(false);
+      return;
+    }
+    let cancelled = false;
+    setAddressChecking(true);
+    const timer = setTimeout(async () => {
+      try {
+        const result = await checkAddress(restaurant.id, { lat: pinLat, lng: pinLng });
+        if (!cancelled) setAddressCheck(result);
+      } catch {
+        // A failed check must not silently look like "in range" — leaving it
+        // null keeps Continue disabled rather than letting a doomed order through.
+        if (!cancelled) setAddressCheck(null);
+      } finally {
+        if (!cancelled) setAddressChecking(false);
+      }
+    }, ADDRESS_CHECK_DEBOUNCE_MS);
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [restaurantLocation, fulfillmentType, pinLat, pinLng, restaurant.id]);
+
+  // Recompute the quote on every cart/fulfillment/zone/pin change — the whole
   // flow's "never trust a client-computed total" rule (spec §4).
   useEffect(() => {
     if (cart.length === 0) {
@@ -138,10 +192,20 @@ export default function OrderExperience({ restaurant }: { restaurant: any }) {
       setQuoteError(null);
       return;
     }
-    if (fulfillmentType === 'DELIVERY' && !zoneId) {
-      setQuote(null);
-      setQuoteError(null);
-      return;
+    // For delivery we need something for the backend to price against: a pin
+    // (map mode) or a hand-picked zone (tenants with no coordinates). And
+    // there's no point quoting a pin we already know is out of range — the
+    // address block says so, and the call would only 400.
+    if (fulfillmentType === 'DELIVERY') {
+      // In map mode we wait for a positive range verdict before quoting: a
+      // pending or negative check would only earn a 400 from the pricing
+      // service, and the address block already explains why.
+      const deliverable = pinDrivesQuote ? addressCheck?.inRange === true : !!zoneId;
+      if (!deliverable) {
+        setQuote(null);
+        setQuoteError(null);
+        return;
+      }
     }
     let cancelled = false;
     setQuoteLoading(true);
@@ -150,7 +214,10 @@ export default function OrderExperience({ restaurant }: { restaurant: any }) {
         const q = await fetchQuote(restaurant.id, {
           items: cart.map((l) => ({ menuItemId: l.menuItemId, quantity: l.quantity, modifierOptionIds: l.modifierOptionIds })),
           fulfillmentType,
-          zoneId: fulfillmentType === 'DELIVERY' ? zoneId! : undefined,
+          // The backend ignores zoneId whenever a pin is usable, so send one
+          // or the other rather than both and hope it picks right.
+          zoneId: fulfillmentType === 'DELIVERY' && !pinDrivesQuote ? zoneId! : undefined,
+          ...(pinDrivesQuote ? { lat: pinLat!, lng: pinLng! } : {}),
         });
         if (!cancelled) {
           setQuote(q);
@@ -159,7 +226,11 @@ export default function OrderExperience({ restaurant }: { restaurant: any }) {
       } catch (err) {
         if (!cancelled) {
           setQuote(null);
-          setQuoteError(orderApiErrorMessage(err, t('publicOrder.quote.failed')));
+          setQuoteError(
+            orderApiErrorCode(err) === 'errors.order_out_of_delivery_range'
+              ? t('publicOrder.quote.outOfRange')
+              : orderApiErrorMessage(err, t('publicOrder.quote.failed'))
+          );
         }
       } finally {
         if (!cancelled) setQuoteLoading(false);
@@ -170,7 +241,7 @@ export default function OrderExperience({ restaurant }: { restaurant: any }) {
       clearTimeout(timer);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [cart, fulfillmentType, zoneId, restaurant.id]);
+  }, [cart, fulfillmentType, zoneId, pinDrivesQuote, pinLat, pinLng, addressCheck?.inRange, restaurant.id]);
 
   const addToCart = (entry: CartEntry) => {
     setCart((prev) => {
@@ -190,11 +261,19 @@ export default function OrderExperience({ restaurant }: { restaurant: any }) {
   const cartCount = cart.reduce((s, l) => s + l.quantity, 0);
   const cartEstimatedTotal = cart.reduce((s, l) => s + l.unitPriceEstimate * l.quantity, 0);
 
+  // Delivery has two shapes now. Map mode: a pin the backend has confirmed is
+  // in range (an unresolved or failed check is deliberately NOT permissive).
+  // Manual mode (tenant has no coordinates): the old hand-picked zone.
+  const deliveryTargetReady = manualZoneMode
+    ? !!zoneId
+    : pinDrivesQuote && !addressChecking && addressCheck?.inRange === true;
+
   const canContinueCheckout =
     cart.length > 0 &&
     !quoteLoading &&
     !!quote &&
-    (fulfillmentType === 'PICKUP' || (!!zoneId && address.fullAddress.trim().length > 0 && quote.meetsMinimum));
+    (fulfillmentType === 'PICKUP' ||
+      (deliveryTargetReady && address.fullAddress.trim().length > 0 && quote.meetsMinimum));
 
   const handleBack = () => {
     if (step === 'checkout') setStep('menu');
@@ -219,7 +298,9 @@ export default function OrderExperience({ restaurant }: { restaurant: any }) {
           fullAddress: address.fullAddress.trim(),
           neighborhood: address.neighborhood.trim() || undefined,
           note: address.note.trim() || undefined,
-          zoneId: zoneId || undefined,
+          // Same rule as the quote: the pin wins where there is one, and the
+          // zone is only sent for tenants with no coordinates to measure from.
+          ...(pinDrivesQuote ? { lat: pinLat!, lng: pinLng! } : { zoneId: zoneId || undefined }),
         };
       }
       const order = await placeOrder(restaurant.id, payload);
@@ -227,7 +308,11 @@ export default function OrderExperience({ restaurant }: { restaurant: any }) {
       setCart([]);
       setStep('placed');
     } catch (err) {
-      setPlaceError(orderApiErrorMessage(err, t('publicOrder.confirm.placeFailed')));
+      setPlaceError(
+        orderApiErrorCode(err) === 'errors.order_out_of_delivery_range'
+          ? t('publicOrder.quote.outOfRange')
+          : orderApiErrorMessage(err, t('publicOrder.confirm.placeFailed'))
+      );
     } finally {
       placingRef.current = false;
       setPlacing(false);
@@ -319,6 +404,9 @@ export default function OrderExperience({ restaurant }: { restaurant: any }) {
                 setZoneId={setZoneId}
                 address={address}
                 setAddress={setAddress}
+                restaurantLocation={restaurantLocation}
+                addressCheck={addressCheck}
+                addressChecking={addressChecking}
                 quote={quote}
                 quoteLoading={quoteLoading}
                 quoteError={quoteError}
