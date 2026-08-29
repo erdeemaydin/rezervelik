@@ -60,10 +60,25 @@ focused agents; each is committed and build-verified before the next starts.
   `DeliveryZone.polygon` format: `{ points: [{ lat, lng }, ...] }`. Public
   restaurant payload already exposed `latitude/longitude` (no top-level
   `select` in `getRestaurantBySlug`).
-- [ ] **A3 — Backend curated order menu.** `orderMenuController` + routes (CRUD for
+- [x] **A3 — Backend curated order menu.** `orderMenuController` + routes (CRUD for
   order categories & catalog items, pause endpoint). `getOrderableMenu` returns
   the curated catalog with effective name/price/photo + availability/pause.
   Pricing service reads `priceOverride` and rejects paused/unavailable items.
+  Effective-value rules (name/description/photo/price/prep-time overrides,
+  `paused`, `unavailableReason`) live in one shared module, `src/utils/orderMenu.ts`,
+  so the staff editor, the customer menu and the pricing authority can't drift.
+  Staff surface: `GET /api/orders/order-menu` (orderCategories + catalog +
+  sourceItems picker), `POST|PUT|PATCH .../items[/:id[/pause]]`, `DELETE
+  .../items/:id`, `POST|PUT|DELETE .../categories[/:id]`, `PUT .../reorder`.
+  Customer `GET /api/public/order/menu` now returns grouped categories whose
+  items carry `available` / `unavailableReason` (`PAUSED` | `OUT_OF_STOCK`) /
+  `resumesAt` — paused items are **returned, not hidden** (requirement #2).
+  Grouping: order-only categories first (by `sortOrder`), then source
+  `MenuCategory` sections (by `order`); items by `OrderMenuItem.sortOrder` then
+  `MenuItem.order`. The legacy `PATCH /api/orders/menu/:id/orderable` toggle now
+  mirrors into `OrderMenuItem` (off ⇒ `isListed: false`, overrides preserved)
+  so `dashboard/menus` stays consistent until A7. New i18n key
+  `errors.order_item_paused`.
 - [ ] **A4 — Backend confirm flow + no-show + bans.** `autoConfirmOrders` in
   `placeOrder`; `NOT_PICKED_UP` transition + `noShowCount` increment; `CustomerBan`
   CRUD + enforcement in `requestOtp` / `verifyOtp` / `placeOrder`; order-list &

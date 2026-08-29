@@ -37,6 +37,7 @@
     "order_item_not_found": "Sepetinizdeki ürünlerden biri bulunamadı.",
     "order_item_not_orderable": "Sepetinizdeki ürünlerden biri online siparişe açık değil.",
     "order_item_unavailable": "Sepetinizdeki ürünlerden biri şu anda mevcut değil.",
+    "order_item_paused": "Bu ürün şu anda siparişe kapalı.",
     "order_modifier_invalid": "Seçilen seçeneklerden biri geçersiz.",
     "order_zone_required": "Lütfen bir teslimat bölgesi seçin.",
     "order_zone_not_found": "Seçilen teslimat bölgesi kullanılamıyor.",

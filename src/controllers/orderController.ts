@@ -337,7 +337,7 @@ export const listDeliveryZones = async (req: Request, res: Response) => {
 // that zone. Returns undefined for "field not sent" (leave column
 // untouched on update / let the schema default apply on create) and throws
 // for "field sent but not a finite number".
-function parseOptionalFiniteNumber(value: unknown, field: string): number | undefined {
+export function parseOptionalFiniteNumber(value: unknown, field: string): number | undefined {
   if (value === undefined || value === null) return undefined;
   const n = Number(value);
   if (!Number.isFinite(n)) {
@@ -426,7 +426,11 @@ export const deleteDeliveryZone = async (req: Request, res: Response) => {
 };
 
 // ---------------------------------------------------------------------------
-// Menu online-orderable toggle
+// Menu online-orderable toggle (legacy — the per-item switch on
+// dashboard/menus). The curated catalog in orderMenuController is the real
+// source of truth now; this endpoint stays so that UI keeps working until A7
+// replaces it, and it mirrors every change into OrderMenuItem so the two
+// surfaces can never disagree about what's sellable online.
 // ---------------------------------------------------------------------------
 
 export const setMenuItemOrderable = async (req: Request, res: Response) => {
@@ -443,15 +447,51 @@ export const setMenuItemOrderable = async (req: Request, res: Response) => {
     });
     if (!item) return errorResponse(res, 'errors.not_found', 404);
 
+    const parsedPrepTime = prepTimeMinutes === undefined
+      ? undefined
+      : prepTimeMinutes === null || prepTimeMinutes === ''
+        ? null
+        : Math.round(parseOptionalFiniteNumber(prepTimeMinutes, 'prepTimeMinutes')!);
+
+    // Still written: the legacy columns are what dashboard/menus reads back to
+    // render its toggle. The cleanup agent drops them once that UI is gone.
     const updated = await prisma.menuItem.update({
       where: { id },
       data: {
         ...(isOrderableOnline !== undefined ? { isOrderableOnline: Boolean(isOrderableOnline) } : {}),
-        ...(prepTimeMinutes !== undefined ? { prepTimeMinutes: prepTimeMinutes === null ? null : Number(prepTimeMinutes) } : {}),
+        ...(parsedPrepTime !== undefined ? { prepTimeMinutes: parsedPrepTime } : {}),
       },
     });
+
+    // Mirror into the curated catalog. Turning the toggle off sets
+    // isListed = false rather than deleting the row — the tenant's price/name/
+    // photo overrides survive so re-listing the item restores them instead of
+    // silently resetting to the source menu's values.
+    if (isOrderableOnline !== undefined) {
+      if (isOrderableOnline) {
+        await prisma.orderMenuItem.upsert({
+          where: { restaurantId_menuItemId: { restaurantId, menuItemId: id } },
+          update: { isListed: true, ...(parsedPrepTime !== undefined ? { prepTimeMinutes: parsedPrepTime } : {}) },
+          create: { restaurantId, menuItemId: id, isListed: true, prepTimeMinutes: parsedPrepTime ?? null },
+        });
+      } else {
+        await prisma.orderMenuItem.updateMany({
+          where: { restaurantId, menuItemId: id },
+          data: { isListed: false },
+        });
+      }
+    } else if (parsedPrepTime !== undefined) {
+      // Prep-time-only edit: keep the catalog override in step, but don't
+      // conjure a catalog row for an item that was never listed.
+      await prisma.orderMenuItem.updateMany({
+        where: { restaurantId, menuItemId: id },
+        data: { prepTimeMinutes: parsedPrepTime },
+      });
+    }
+
     return successResponse(res, updated);
   } catch (error) {
+    if (error instanceof AppError) return errorResponse(res, error.code, error.status, error.details);
     console.error('[Order] setMenuItemOrderable error:', error);
     return errorResponse(res, 'errors.internal_error', 500);
   }

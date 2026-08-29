@@ -1,6 +1,7 @@
 import prisma from '../config/prisma';
 import { AppError } from '../utils/AppError';
 import { resolveDeliveryZone } from './geoService';
+import { effectiveName, effectivePrice, effectivePrepTime, isOrderItemPaused } from '../utils/orderMenu';
 
 // Single server-side pricing authority for online ordering. Both the
 // preview endpoint (POST /api/public/order/quote) and the real
@@ -9,6 +10,13 @@ import { resolveDeliveryZone } from './geoService';
 // trusting any client-supplied quote/total (spec §4: "recompute all totals,
 // fees, minimums, and zone eligibility server-side; never trust client-sent
 // prices/fees").
+//
+// What's sellable and at what price comes from the curated catalog
+// (OrderMenuItem, see docs/packaging/online-ordering-v2-plan.md decision #1),
+// not from MenuItem directly: a line is rejected unless a listed, unpaused,
+// available catalog row exists for it, and the unit price is the row's
+// priceOverride when set. This has to stay in lockstep with
+// customerOrderController.getOrderableMenu, which renders exactly those rules.
 //
 // Delivery zone resolution has two paths: the customer's map pin (preferred —
 // geoService.resolveDeliveryZone measures haversine distance from the
@@ -106,31 +114,37 @@ export async function computeOrderQuote(params: QuoteParams): Promise<OrderQuote
 
   const defaultPrepTime = orderSettings?.prepTimeMinutes ?? 20;
 
+  const now = new Date();
   const menuItemIds = [...new Set(items.map((l) => l.menuItemId))];
-  const menuItems = await prisma.menuItem.findMany({
-    where: {
-      id: { in: menuItemIds },
-      // Tenant-scoped via the category -> menu -> restaurant chain — MenuItem
-      // itself carries no restaurantId column.
-      category: { menu: { restaurantId } },
-    },
-    include: { modifiers: { include: { options: true } } },
+  // The curated catalog, not the raw menu, is what decides sellability and
+  // price online — OrderMenuItem carries restaurantId itself, so this query is
+  // tenant-scoped directly (no category -> menu -> restaurant chain needed),
+  // and a row that isn't isListed simply doesn't come back.
+  const catalogRows = await prisma.orderMenuItem.findMany({
+    where: { restaurantId, menuItemId: { in: menuItemIds }, isListed: true },
+    include: { menuItem: { include: { modifiers: { include: { options: true } } } } },
   });
-  const menuItemById = new Map(menuItems.map((mi) => [mi.id, mi]));
+  const catalogByMenuItemId = new Map(catalogRows.map((row) => [row.menuItemId, row]));
 
   let subtotal = 0;
   let slowestPrepTime = 0;
   const lines: PricedLine[] = [];
 
   for (const line of items) {
-    const menuItem = menuItemById.get(line.menuItemId);
-    if (!menuItem) {
-      throw new AppError('errors.order_item_not_found', 400, { menuItemId: line.menuItemId });
-    }
-    if (!menuItem.isOrderableOnline) {
+    const catalogItem = catalogByMenuItemId.get(line.menuItemId);
+    // No catalog row (or de-listed) covers both "never sold online" and "the
+    // item disappeared from the menu since the cart was filled".
+    if (!catalogItem) {
       throw new AppError('errors.order_item_not_orderable', 400, { menuItemId: line.menuItemId });
     }
-    if (!menuItem.isAvailable) {
+    const { menuItem } = catalogItem;
+    // Paused is checked before availability so the customer gets the specific,
+    // temporary message instead of a flat "unavailable" — and the menu already
+    // showed them this item as "temporarily unavailable", so the two must agree.
+    if (isOrderItemPaused(catalogItem, now)) {
+      throw new AppError('errors.order_item_paused', 400, { menuItemId: line.menuItemId });
+    }
+    if (!catalogItem.isAvailable || !menuItem.isAvailable) {
       throw new AppError('errors.order_item_unavailable', 400, { menuItemId: line.menuItemId });
     }
 
@@ -169,14 +183,17 @@ export async function computeOrderQuote(params: QuoteParams): Promise<OrderQuote
       throw new AppError('errors.order_modifier_invalid', 400, { optionIds: [...requestedOptionIds], reason: 'unknown_option' });
     }
 
-    const unitPrice = round2(menuItem.price + modifierTotal);
+    // priceOverride is the online price when set — the whole point of the
+    // curated catalog is that delivery prices can differ from dine-in ones.
+    const unitPrice = round2(effectivePrice(catalogItem, menuItem) + modifierTotal);
     const lineTotal = round2(unitPrice * line.quantity);
     subtotal = round2(subtotal + lineTotal);
-    slowestPrepTime = Math.max(slowestPrepTime, menuItem.prepTimeMinutes ?? defaultPrepTime);
+    slowestPrepTime = Math.max(slowestPrepTime, effectivePrepTime(catalogItem, menuItem, defaultPrepTime));
 
     lines.push({
       menuItemId: menuItem.id,
-      name: menuItem.name,
+      // The name the customer actually saw, snapshotted onto the OrderItem.
+      name: effectiveName(catalogItem, menuItem),
       unitPrice,
       quantity: line.quantity,
       lineTotal,

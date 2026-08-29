@@ -9,6 +9,14 @@ import { generateCustomerToken } from '../utils/jwt';
 import { setCustomerSessionCookie, issueTrustedDevice } from '../middlewares/customerAuth';
 import { publishOrderEvent } from '../services/orderEvents';
 import { isValidPhone } from '../utils/phone';
+import {
+  effectiveName,
+  effectiveDescription,
+  effectiveImageUrl,
+  effectivePrice,
+  effectivePrepTime,
+  unavailableReason,
+} from '../utils/orderMenu';
 
 // Public, customer-facing endpoints for online ordering — /api/public/order/*.
 // Mounted behind tenantMiddleware (like the guest reservation-create path in
@@ -124,27 +132,124 @@ export const verifyOtp = async (req: Request, res: Response) => {
 // Menu
 // ---------------------------------------------------------------------------
 
+// The curated online catalog (OrderMenuItem layered over MenuItem), grouped
+// into the sections the customer app renders.
+//
+// Deliberately returns items that are paused or out of stock rather than
+// hiding them (plan requirement #2). A dish that silently vanishes reads as
+// "this restaurant doesn't do that any more"; a greyed-out card saying
+// "temporarily unavailable — back at 20:00" reads as "come back later", which
+// is the truth. `available` / `unavailableReason` / `resumesAt` carry that
+// state; the pricing service independently refuses these items at checkout, so
+// showing them can't turn into selling them.
 export const getOrderableMenu = async (req: Request, res: Response) => {
   try {
     const restaurantId = req.restaurantId!;
+    const now = new Date();
 
-    const categories = await prisma.menuCategory.findMany({
-      where: { menu: { restaurantId, isActive: true } },
-      orderBy: { order: 'asc' },
-      include: {
-        items: {
-          where: { isOrderableOnline: true, isAvailable: true },
-          orderBy: { order: 'asc' },
-          include: { modifiers: { include: { options: true } } },
+    const [rows, settings] = await Promise.all([
+      prisma.orderMenuItem.findMany({
+        where: {
+          restaurantId,
+          isListed: true,
+          // Second scoping path on purpose: it keeps items whose source dish
+          // now lives in an archived/replaced menu out of the online catalog,
+          // matching what the old isOrderableOnline query did.
+          menuItem: { category: { menu: { restaurantId, isActive: true } } },
         },
-      },
-    });
+        include: {
+          orderCategory: { select: { id: true, name: true, sortOrder: true } },
+          menuItem: {
+            select: {
+              id: true,
+              name: true,
+              description: true,
+              imageUrl: true,
+              price: true,
+              isAvailable: true,
+              prepTimeMinutes: true,
+              order: true,
+              category: { select: { id: true, name: true, order: true } },
+              modifiers: {
+                select: {
+                  id: true,
+                  name: true,
+                  isRequired: true,
+                  minChoices: true,
+                  maxChoices: true,
+                  options: { select: { id: true, name: true, priceAdjust: true, isAvailable: true } },
+                },
+              },
+            },
+          },
+        },
+      }),
+      prisma.orderSettings.findUnique({ where: { restaurantId }, select: { prepTimeMinutes: true } }),
+    ]);
 
-    // Drop empty categories so the customer never sees a section with
-    // nothing orderable in it.
-    const nonEmpty = categories.filter((c) => c.items.length > 0);
+    const defaultPrepTime = settings?.prepTimeMinutes ?? 20;
 
-    return successResponse(res, { categories: nonEmpty });
+    interface Group {
+      id: string;
+      name: string;
+      sortOrder: number;
+      isOrderOnlyCategory: boolean;
+      items: any[];
+    }
+    const groups = new Map<string, Group>();
+
+    for (const row of rows) {
+      const { menuItem } = row;
+
+      // An item filed under an order-only category goes there; otherwise it
+      // falls back to the section it already sits in on the printed menu, so a
+      // tenant that never builds custom categories still gets a sensible menu.
+      const groupKey = row.orderCategory ? `order:${row.orderCategory.id}` : `menu:${menuItem.category.id}`;
+      if (!groups.has(groupKey)) {
+        groups.set(groupKey, row.orderCategory
+          ? { id: row.orderCategory.id, name: row.orderCategory.name, sortOrder: row.orderCategory.sortOrder, isOrderOnlyCategory: true, items: [] }
+          : { id: menuItem.category.id, name: menuItem.category.name, sortOrder: menuItem.category.order, isOrderOnlyCategory: false, items: [] });
+      }
+
+      const reason = unavailableReason(row, menuItem, now);
+
+      groups.get(groupKey)!.items.push({
+        menuItemId: menuItem.id,
+        name: effectiveName(row, menuItem),
+        description: effectiveDescription(row, menuItem),
+        imageUrl: effectiveImageUrl(row, menuItem),
+        price: effectivePrice(row, menuItem),
+        prepTimeMinutes: effectivePrepTime(row, menuItem, defaultPrepTime),
+        available: reason === null,
+        unavailableReason: reason,
+        // Only meaningful for a *timed* pause — an indefinite pause has no
+        // known end, and the client must not invent one.
+        resumesAt: reason === 'PAUSED' && !row.pausedIndefinitely ? row.pausedUntil : null,
+        modifiers: menuItem.modifiers,
+        // Internal sort keys, stripped before the response goes out.
+        _sortOrder: row.sortOrder,
+        _itemOrder: menuItem.order,
+      });
+    }
+
+    const categories = [...groups.values()]
+      // Order-only categories first (they're the tenant's deliberate online
+      // merchandising), then the untouched source sections in menu order.
+      .sort((a, b) => {
+        if (a.isOrderOnlyCategory !== b.isOrderOnlyCategory) return a.isOrderOnlyCategory ? -1 : 1;
+        if (a.sortOrder !== b.sortOrder) return a.sortOrder - b.sortOrder;
+        return a.name.localeCompare(b.name);
+      })
+      .map((group) => ({
+        ...group,
+        items: group.items
+          .sort((a, b) => (a._sortOrder !== b._sortOrder ? a._sortOrder - b._sortOrder : a._itemOrder - b._itemOrder))
+          .map(({ _sortOrder, _itemOrder, ...item }) => item),
+      }));
+
+    // Groups can't be empty by construction (they're created from an item),
+    // so there's nothing to filter out here.
+    return successResponse(res, { categories });
   } catch (error) {
     console.error('[CustomerOrder] getOrderableMenu error:', error);
     return errorResponse(res, 'errors.internal_error', 500);

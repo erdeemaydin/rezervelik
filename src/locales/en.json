@@ -37,6 +37,7 @@
     "order_item_not_found": "One of the items in your cart could not be found.",
     "order_item_not_orderable": "One of the items in your cart is not available for online ordering.",
     "order_item_unavailable": "One of the items in your cart is currently unavailable.",
+    "order_item_paused": "This item is temporarily unavailable to order.",
     "order_modifier_invalid": "One of the selected options is invalid.",
     "order_zone_required": "Please choose a delivery area.",
     "order_zone_not_found": "That delivery area is not available.",
