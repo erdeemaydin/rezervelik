@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useTranslation } from "@/i18n/provider";
+import OrderOnlineFab from '@/components/public/OrderOnlineFab';
 import { Calendar as CalendarIcon, Clock, CheckCircle2, X, Menu, ChevronDown, ArrowLeft, AlertTriangle } from 'lucide-react';
 import axios from 'axios';
 import { toast } from 'sonner';
@@ -640,6 +641,7 @@ export default function OldenLayout({ slug, initialRestaurant, initialView, menu
       )}
       </>
       )}
+      <OrderOnlineFab slug={slug} restaurant={restaurant} />
     </div>
   );
 }

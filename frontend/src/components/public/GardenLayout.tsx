@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useTranslation } from "@/i18n/provider";
+import OrderOnlineFab from '@/components/public/OrderOnlineFab';
 import { Calendar as CalendarIcon, ChevronDown, CheckCircle2, X, Clock, Menu, ArrowLeft, Leaf, Sparkles, AlertTriangle, Flame } from 'lucide-react';
 import axios from 'axios';
 import { toast } from 'sonner';
@@ -623,6 +624,7 @@ export default function GardenLayout({ slug, initialRestaurant, initialView, men
       )}
       </>
       )}
+      <OrderOnlineFab slug={slug} restaurant={restaurant} />
     </div>
   );
 }

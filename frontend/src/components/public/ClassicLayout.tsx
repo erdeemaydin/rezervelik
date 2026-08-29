@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useTranslation } from "@/i18n/provider";
+import OrderOnlineFab from '@/components/public/OrderOnlineFab';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
@@ -713,6 +714,7 @@ export default function ClassicLayout({ slug, initialRestaurant, initialView = '
           </div>
       )}
 
+      <OrderOnlineFab slug={slug} restaurant={restaurant} />
     </div>
   );
 }

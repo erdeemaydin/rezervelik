@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useTranslation } from "@/i18n/provider";
+import OrderOnlineFab from '@/components/public/OrderOnlineFab';
 import { Calendar as CalendarIcon, ChevronDown, CheckCircle2, X, Clock, Menu, ArrowLeft, Flame, Sparkles, AlertTriangle } from 'lucide-react';
 import axios from 'axios';
 import { toast } from 'sonner';
@@ -576,6 +577,7 @@ export default function NoirLoungeLayout({ slug, initialRestaurant, initialView,
           )}
         </>
       )}
+      <OrderOnlineFab slug={slug} restaurant={restaurant} />
     </div>
   );
 }
