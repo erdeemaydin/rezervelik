@@ -1052,14 +1052,12 @@
       "dishInfo": "Yemek Bilgisi",
       "tagsSpecs": "Etiketler / Özellikler",
       "price": "Fiyat",
-      "onlineOrdering": "Online Sipariş",
       "actions": "İşlemler",
       "noItems": "Bu kategoride ürün bulunmamaktadır."
     },
     "onlineOrdering": {
-      "prepTimePlaceholder": "Hazırlık (dk)",
-      "updated": "Online sipariş ayarı kaydedildi",
-      "updateFailed": "Online sipariş ayarı kaydedilemedi"
+      "movedNote": "Online sipariş ürünleri, fiyatları ve fotoğrafları artık Sipariş Menüsü penceresinden yönetiliyor.",
+      "openOrderMenu": "Sipariş Menüsü"
     },
     "buttons": {
       "addDish": "Kategoriye Yemek Ekle",
@@ -1909,6 +1907,7 @@
     "title": "Siparişler",
     "subtitle": "Online sipariş geçmişi ve müşteri dizini",
     "settingsBtn": "Sipariş Ayarları",
+    "orderMenuBtn": "Sipariş Menüsü",
     "tabs": {
       "history": "Sipariş Geçmişi",
       "customers": "Müşteriler"
@@ -2008,6 +2007,107 @@
       "loadCustomersFailed": "Müşteriler yüklenemedi",
       "loadCustomerDetailFailed": "Müşteri bilgileri yüklenemedi"
     },
+    "orderMenu": {
+      "title": "Sipariş Menüsü",
+      "subtitle": "Online satılacak ürünleri seçin, online'a özel değerler tanımlayın",
+      "addItemsBtn": "Ürün Ekle",
+      "manageCategoriesBtn": "Kategoriler",
+      "loading": "Sipariş menüsü yükleniyor…",
+      "loadFailed": "Sipariş menüsü yüklenemedi",
+      "retry": "Tekrar dene",
+      "close": "Kapat",
+      "toggleFailed": "Değişiklik kaydedilemedi",
+      "empty": {
+        "title": "Henüz online satılan ürün yok",
+        "desc": "Online sipariş sayfasında yayınlamak için menünüzden ürün seçin. Buraya eklediğiniz her ürüne online'a özel fiyat, ad, fotoğraf veya hazırlık süresi verebilirsiniz.",
+        "cta": "Ürün ekle"
+      },
+      "sections": {
+        "fromMenu": "Menü kategorilerinden",
+        "uncategorized": "Kategorisiz",
+        "orderOnlyBadge": "Siparişe özel",
+        "itemsSuffix": "ürün",
+        "emptySection": "Bu kategoride henüz ürün yok"
+      },
+      "addDialog": {
+        "title": "Sipariş menüsüne ürün ekle",
+        "desc": "Aktif menünüzdeki tüm ürünler, kategorilerine göre.",
+        "searchPlaceholder": "Ürün veya kategori ara",
+        "inCatalog": "Menüde",
+        "addBtn": "Ekle",
+        "added": "Ürün sipariş menüsüne eklendi",
+        "addFailed": "Ürün eklenemedi",
+        "noItems": "Eklenecek menü ürünü yok",
+        "noResults": "Aramayla eşleşen ürün yok"
+      },
+      "row": {
+        "listed": "Yayında",
+        "available": "Stokta",
+        "overridden": "Değiştirildi",
+        "menuUnavailable": "Menüde kapalı",
+        "dragHandle": "Sıralamak için sürükleyin",
+        "edit": "Online değerleri düzenle",
+        "remove": "Sipariş menüsünden çıkar"
+      },
+      "pause": {
+        "trigger": "Durdur",
+        "title": "Siparişi durdur",
+        "oneHour": "1 saat durdur",
+        "twoHours": "2 saat durdur",
+        "untilTomorrow": "Yarına kadar durdur",
+        "indefinite": "Süresiz durdur",
+        "resume": "Devam ettir",
+        "badge": "Durduruldu",
+        "resumesAt": "dönüş",
+        "paused": "Ürün durduruldu",
+        "resumed": "Ürün yeniden sipariş edilebilir",
+        "failed": "Durdurma durumu değiştirilemedi"
+      },
+      "edit": {
+        "title": "Online değerler",
+        "name": "Ad",
+        "description": "Açıklama",
+        "descriptionHint": "Menüdeki açıklamayı kullanmak için boş bırakın",
+        "price": "Fiyat",
+        "prepTime": "Hazırlık süresi (dk)",
+        "imageUrl": "Fotoğraf bağlantısı",
+        "imageUrlHint": "Menüdeki fotoğrafı kullanmak için boş bırakın",
+        "category": "Sipariş menüsü kategorisi",
+        "fromMenuCategory": "(menü kategorisinden)",
+        "noCategoriesHint": "Ürünleri online'da farklı gruplamak için siparişe özel bir kategori oluşturun.",
+        "menuDefault": "Menü değeri",
+        "effective": "Şu an",
+        "reset": "Sıfırla",
+        "save": "Kaydet",
+        "saved": "Online değerler kaydedildi",
+        "saveFailed": "Online değerler kaydedilemedi"
+      },
+      "categories": {
+        "title": "Siparişe özel kategoriler",
+        "desc": "Ürünleri online'da farklı gruplayın. Buraya atamadığınız ürünler menü kategorilerine göre gruplanmaya devam eder.",
+        "nameLabel": "Kategori",
+        "namePlaceholder": "örn. Paket Fırsatları",
+        "addBtn": "Ekle",
+        "rename": "Yeniden adlandır",
+        "empty": "Henüz siparişe özel kategori yok",
+        "created": "Kategori oluşturuldu",
+        "updated": "Kategori yeniden adlandırıldı",
+        "deleted": "Kategori silindi",
+        "saveFailed": "Kategori kaydedilemedi",
+        "deleteFailed": "Kategori silinemedi",
+        "confirmDeleteTitle": "Bu siparişe özel kategori silinsin mi?",
+        "confirmDeleteDesc": "İçindeki ürünler sipariş menüsünde kalır ve yeniden menü kategorilerine göre gruplanır."
+      },
+      "reorder": {
+        "failed": "Yeni sıralama kaydedilemedi"
+      },
+      "remove": {
+        "confirmTitle": "Bu ürün sipariş menüsünden çıkarılsın mı?",
+        "confirmDesc": "Ürün online satıştan kalkar ve online'a özel değerleri silinir. Ürünün kendisi menünüzde kalır.",
+        "removed": "Ürün sipariş menüsünden çıkarıldı",
+        "failed": "Ürün çıkarılamadı"
+      }
+    },
     "settings": {
       "title": "Sipariş Ayarları",
       "subtitle": "Teslimat, gel-al, ödeme yöntemleri ve kapasiteyi yapılandırın",
@@ -2047,7 +2147,10 @@
         "maxConcurrent": "Maksimum Eşzamanlı Sipariş",
         "maxConcurrentHint": "Sınırsız için boş bırakın",
         "prepTime": "Varsayılan Hazırlık Süresi (dakika)",
-        "prepTimeHint": "Bir menü ürününün kendi hazırlık süresi yoksa kullanılır"
+        "prepTimeHint": "Bir menü ürününün kendi hazırlık süresi yoksa kullanılır",
+        "enforcedHint": "Ödeme adımında uygulanır — müşteriler bu sınırın üzerinde sipariş veremez.",
+        "noShowThreshold": "Teslim alınmayan sipariş uyarı eşiği",
+        "noShowThresholdHint": "Bu kadar siparişini teslim almamış müşterilerde uyarı gösterilir."
       },
       "hours": {
         "title": "Sipariş Saatleri",
@@ -2063,7 +2166,8 @@
           "fri": "Cuma",
           "sat": "Cumartesi",
           "sun": "Pazar"
-        }
+        },
+        "enforcedHint": "Ödeme adımında uygulanır — bu saatlerin dışında sipariş sayfası kapalıdır."
       },
       "zones": {
         "title": "Teslimat Bölgeleri",
@@ -2105,6 +2209,28 @@
           "deleteFailed": "Teslimat bölgesi silinemedi",
           "loadFailed": "Teslimat bölgeleri yüklenemedi"
         }
+      },
+      "autoConfirm": {
+        "title": "Yeni siparişleri otomatik kabul et",
+        "desc": "Kapalıyken her sipariş, mutfak başlamadan önce bir çalışanın onayını bekler."
+      },
+      "delivery": {
+        "title": "Teslimat mesafesi",
+        "desc": "Restoranınızdan ölçülen teslimat menziliniz.",
+        "maxDistance": "Azami teslimat mesafesi (km)",
+        "maxDistancePlaceholder": "Sınırsız",
+        "maxDistanceHint": "Mesafe sınırı olmaması için boş bırakın — yalnızca teslimat bölgeleriniz belirler.",
+        "location": "Restoran konumu",
+        "locationHint": "Müşterilerin teslimat adresleri bu noktadan ölçülür.",
+        "searchPlaceholder": "Adresinizi arayın",
+        "clearSearch": "Aramayı temizle",
+        "noResults": "Aramayla eşleşen yer bulunamadı",
+        "dragHint": "Konumu ayarlamak için haritaya tıklayın veya iğneyi sürükleyin.",
+        "addressText": "Adres satırı",
+        "addressTextPlaceholder": "Sokak, numara, semt",
+        "pinNotSet": "İğne konmadı",
+        "clearPin": "İğneyi kaldır",
+        "locationSaveFailed": "Restoran konumu kaydedilemedi"
       }
     }
   },

@@ -13,7 +13,7 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle,
 } from '@/components/ui/dialog';
 import {
-  Search, Settings2, ShoppingBag, Users, MapPin, StickyNote, Clock, Phone, BadgeCheck,
+  Search, Settings2, ShoppingBag, Users, MapPin, StickyNote, Clock, Phone, BadgeCheck, ListChecks,
 } from 'lucide-react';
 import api from '@/lib/api';
 import { toast } from 'sonner';
@@ -217,11 +217,18 @@ export default function OrdersPage() {
           <h1 className="text-2xl font-black text-slate-800 tracking-tight">{t('orders.title')}</h1>
           <p className="text-[10px] text-slate-400 font-black uppercase tracking-[0.2em] mt-1 italic">{t('orders.subtitle')}</p>
         </div>
-        <Link href="/dashboard/orders/settings">
-          <Button variant="outline" size="sm" className="h-9 px-4 text-[10px] font-black uppercase border-slate-200 text-slate-600 shadow-sm bg-white">
-            <Settings2 className="w-3.5 h-3.5 mr-1.5" /> {t('orders.settingsBtn')}
-          </Button>
-        </Link>
+        <div className="flex items-center gap-2">
+          <Link href="/dashboard/orders/menu">
+            <Button variant="outline" size="sm" className="h-9 px-4 text-[10px] font-black uppercase border-slate-200 text-slate-600 shadow-sm bg-white">
+              <ListChecks className="w-3.5 h-3.5 mr-1.5" /> {t('orders.orderMenuBtn')}
+            </Button>
+          </Link>
+          <Link href="/dashboard/orders/settings">
+            <Button variant="outline" size="sm" className="h-9 px-4 text-[10px] font-black uppercase border-slate-200 text-slate-600 shadow-sm bg-white">
+              <Settings2 className="w-3.5 h-3.5 mr-1.5" /> {t('orders.settingsBtn')}
+            </Button>
+          </Link>
+        </div>
       </div>
 
       <Tabs defaultValue="orders" className="w-full" onValueChange={(v) => { if (v === 'customers' && !customersLoaded) fetchCustomers(); }}>

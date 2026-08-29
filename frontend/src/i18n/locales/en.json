@@ -1052,14 +1052,12 @@
       "dishInfo": "Dish Information",
       "tagsSpecs": "Tags / Specs",
       "price": "Price",
-      "onlineOrdering": "Online Ordering",
       "actions": "Actions",
       "noItems": "No items in this category."
     },
     "onlineOrdering": {
-      "prepTimePlaceholder": "Prep (min)",
-      "updated": "Online-ordering setting saved",
-      "updateFailed": "Couldn't save the online-ordering setting"
+      "movedNote": "Online-ordering items, prices and photos are now managed in the Order Menu window.",
+      "openOrderMenu": "Order Menu"
     },
     "buttons": {
       "addDish": "Add Dish to Category",
@@ -1909,6 +1907,7 @@
     "title": "Orders",
     "subtitle": "Online order history and customer directory",
     "settingsBtn": "Order Settings",
+    "orderMenuBtn": "Order Menu",
     "tabs": {
       "history": "Order History",
       "customers": "Customers"
@@ -2008,6 +2007,107 @@
       "loadCustomersFailed": "Couldn't load customers",
       "loadCustomerDetailFailed": "Couldn't load this customer's details"
     },
+    "orderMenu": {
+      "title": "Order Menu",
+      "subtitle": "Curate what sells online, with online-only overrides",
+      "addItemsBtn": "Add Items",
+      "manageCategoriesBtn": "Categories",
+      "loading": "Loading the order menu…",
+      "loadFailed": "Couldn't load the order menu",
+      "retry": "Try again",
+      "close": "Close",
+      "toggleFailed": "Couldn't save that change",
+      "empty": {
+        "title": "No items sell online yet",
+        "desc": "Pick dishes from your menu to publish to the online-ordering page. Anything you add here can carry an online-only price, name, photo or prep time.",
+        "cta": "Add items"
+      },
+      "sections": {
+        "fromMenu": "From menu categories",
+        "uncategorized": "Uncategorized",
+        "orderOnlyBadge": "Order only",
+        "itemsSuffix": "items",
+        "emptySection": "No items in this category yet"
+      },
+      "addDialog": {
+        "title": "Add items to the order menu",
+        "desc": "Everything on your active menu, grouped by category.",
+        "searchPlaceholder": "Search dishes or categories",
+        "inCatalog": "In catalog",
+        "addBtn": "Add",
+        "added": "Item added to the order menu",
+        "addFailed": "Couldn't add that item",
+        "noItems": "No menu items to add yet",
+        "noResults": "No dishes match that search"
+      },
+      "row": {
+        "listed": "Listed",
+        "available": "Available",
+        "overridden": "Overridden",
+        "menuUnavailable": "Off the menu",
+        "dragHandle": "Drag to reorder",
+        "edit": "Edit overrides",
+        "remove": "Remove from the order menu"
+      },
+      "pause": {
+        "trigger": "Pause",
+        "title": "Pause ordering",
+        "oneHour": "Pause 1 hour",
+        "twoHours": "Pause 2 hours",
+        "untilTomorrow": "Pause until tomorrow",
+        "indefinite": "Pause indefinitely",
+        "resume": "Resume",
+        "badge": "Paused",
+        "resumesAt": "resumes",
+        "paused": "Item paused",
+        "resumed": "Item is orderable again",
+        "failed": "Couldn't change the pause state"
+      },
+      "edit": {
+        "title": "Online overrides",
+        "name": "Name",
+        "description": "Description",
+        "descriptionHint": "Leave empty to use the menu description",
+        "price": "Price",
+        "prepTime": "Prep time (min)",
+        "imageUrl": "Photo URL",
+        "imageUrlHint": "Leave empty to use the menu photo",
+        "category": "Order menu category",
+        "fromMenuCategory": "(from menu category)",
+        "noCategoriesHint": "Create an order-only category to group items differently online.",
+        "menuDefault": "Menu default",
+        "effective": "Currently",
+        "reset": "Reset",
+        "save": "Save",
+        "saved": "Overrides saved",
+        "saveFailed": "Couldn't save the overrides"
+      },
+      "categories": {
+        "title": "Order-only categories",
+        "desc": "Group items differently online. Items you don't file here stay grouped by their menu category.",
+        "nameLabel": "Category",
+        "namePlaceholder": "e.g. Delivery Deals",
+        "addBtn": "Add",
+        "rename": "Rename",
+        "empty": "No order-only categories yet",
+        "created": "Category created",
+        "updated": "Category renamed",
+        "deleted": "Category deleted",
+        "saveFailed": "Couldn't save the category",
+        "deleteFailed": "Couldn't delete the category",
+        "confirmDeleteTitle": "Delete this order-only category?",
+        "confirmDeleteDesc": "Its items stay on the order menu and go back to being grouped by their menu category."
+      },
+      "reorder": {
+        "failed": "Couldn't save the new order"
+      },
+      "remove": {
+        "confirmTitle": "Remove this item from the order menu?",
+        "confirmDesc": "It stops selling online and its online-only overrides are deleted. The dish itself stays on your menu.",
+        "removed": "Item removed from the order menu",
+        "failed": "Couldn't remove that item"
+      }
+    },
     "settings": {
       "title": "Order Settings",
       "subtitle": "Configure delivery, pickup, payment methods and capacity",
@@ -2047,7 +2147,10 @@
         "maxConcurrent": "Max Concurrent Orders",
         "maxConcurrentHint": "Leave empty for unlimited",
         "prepTime": "Default Prep Time (minutes)",
-        "prepTimeHint": "Used when a menu item doesn't set its own prep time"
+        "prepTimeHint": "Used when a menu item doesn't set its own prep time",
+        "enforcedHint": "Enforced at checkout — customers can't place an order past this limit.",
+        "noShowThreshold": "No-show warning threshold",
+        "noShowThresholdHint": "Show a warning on customers with this many un-collected orders."
       },
       "hours": {
         "title": "Order Hours",
@@ -2063,7 +2166,8 @@
           "fri": "Friday",
           "sat": "Saturday",
           "sun": "Sunday"
-        }
+        },
+        "enforcedHint": "Enforced at checkout — outside these hours the ordering page is closed."
       },
       "zones": {
         "title": "Delivery Zones",
@@ -2105,6 +2209,28 @@
           "deleteFailed": "Couldn't delete the delivery zone",
           "loadFailed": "Couldn't load delivery zones"
         }
+      },
+      "autoConfirm": {
+        "title": "Automatically accept new orders",
+        "desc": "When off, every order waits for a staff member to confirm it before the kitchen starts."
+      },
+      "delivery": {
+        "title": "Delivery range",
+        "desc": "How far you deliver, measured from your restaurant.",
+        "maxDistance": "Max delivery distance (km)",
+        "maxDistancePlaceholder": "No limit",
+        "maxDistanceHint": "Leave empty for no distance cap — your delivery zones alone decide.",
+        "location": "Restaurant location",
+        "locationHint": "Customers' delivery addresses are measured from this point.",
+        "searchPlaceholder": "Search for your address",
+        "clearSearch": "Clear search",
+        "noResults": "No places match that search",
+        "dragHint": "Click the map or drag the pin to fine-tune the position.",
+        "addressText": "Address line",
+        "addressTextPlaceholder": "Street, number, district",
+        "pinNotSet": "No pin set",
+        "clearPin": "Clear pin",
+        "locationSaveFailed": "Couldn't save the restaurant location"
       }
     }
   },

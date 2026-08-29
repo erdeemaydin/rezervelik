@@ -146,10 +146,34 @@ focused agents; each is committed and build-verified before the next starts.
   `primaryTint`/`primarySoft`/`shadow`/`shadowLg`/`heroGradient`. One backend
   change: `getOrderableMenu` re-emits `isHighlight`, `dietaryTags`, `allergens`,
   `spiceLevel`, `calories`.
-- [ ] **A7 — Frontend dashboard Order Menu + settings.** New "Order Menu" window
-  (curate items, overrides, order-only categories, drag sort, pause). Order
-  settings: auto-confirm, max delivery distance, no-show threshold, restaurant
-  location map picker.
+- [x] **A7 — Frontend dashboard Order Menu + settings.** New `/dashboard/orders/menu`
+  window: an "Add items" dialog over `sourceItems` (grouped by source category,
+  `inCatalog` rows disabled), then a catalog editor whose sections are the
+  order-only categories by `sortOrder` followed by a "From menu categories"
+  grouping of every `orderCategoryId === null` row (grouped by
+  `menuItem.category`, groups ordered by their lowest `menuItem.order`). Each
+  row carries Listed/Available switches, a pause popover (1h / 2h / next local
+  midnight / indefinite / resume — the ISO instant is computed client-side, so
+  "until tomorrow" is the staff member's own midnight), an overrides dialog
+  (name / description / price / photo / prep time, each with a
+  "reset to menu default" that sends `''` = clear, plus an order-only category
+  `Select` with "(from menu category)" = `null`), remove-with-confirm, and a
+  `@dnd-kit/sortable` drag handle persisting through `PUT .../reorder`
+  (per-section 0..n indexes; ties preserve the server's `createdAt` order). A
+  categories dialog adds / inline-renames / deletes / drag-reorders order-only
+  categories. Order settings gained an auto-confirm switch (the boolean is
+  always sent — an omitted field is a server-side no-op, so "turn it off" would
+  otherwise be unsaveable), `noShowWarnThreshold` + "enforced at checkout" notes
+  on the capacity/hours cards, and a Delivery range card: max distance edited in
+  km (`maxDeliveryMeters / 1000`, empty ⇒ `null`) plus a `LeafletMap` pin picker
+  with a dashboard-styled Nominatim search and an `addressText` line, saved
+  through a second sequential `PUT /orders/restaurant-location` only when the
+  pin/address actually changed. `dashboard/menus` lost its inline
+  `isOrderableOnline` switch and prep-time input (and the `menus.table
+  .onlineOrdering` column) in favour of a one-line pointer to the new window,
+  shown only when the add-on is on and the user holds `manage_orders`. Nav
+  unchanged — `AdminLayout`'s Orders entry is flat and its `/dashboard/orders`
+  permission prefix already covers the new route.
 - [ ] **A8 — Frontend Active Orders + bans.** Live "Active Orders" table with
   confirm / reject / advance + no-show / ban badges; customer-detail ban/unban +
   noShowCount; `/order-station` handles `NOT_PICKED_UP` + pending-confirm.
