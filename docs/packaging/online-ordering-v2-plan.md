@@ -1,5 +1,17 @@
 # Online Ordering v2 — Implementation Plan & Progress
 
+## Shipped
+
+**2026-08-29** — branch `agent/ordering-v2`, commits `74deb75..HEAD` (10 commits off
+`agent/telegram-bot`), one additive migration
+(`prisma/migrations/20260829111123_ordering_v2_schema`). A1–A9 complete; docs updated in
+`PROJECT_LOGIC.md` §15, `API_DOCS.md` §5 and `ROADMAP.md`. Backend `npm run build`, frontend
+`npm run build`, `tsc --noEmit` and `eslint` on every changed file all clean; `prisma migrate
+status` up to date; backend and frontend i18n dictionaries are at exact key parity and every
+`errors.order_*` key used in a controller exists in both. **Not yet exercised against a running
+app** — no agent ran the flow end to end against a non-prod database, so the click-through list
+under "Follow-ups" below is still outstanding.
+
 Branch: `agent/ordering-v2` (off `agent/telegram-bot`). Executed as a sequence of
 focused agents; each is committed and build-verified before the next starts.
 
@@ -190,9 +202,78 @@ focused agents; each is committed and build-verified before the next starts.
   `useConfirm`, and a ban-history list with actor names in the customer detail.
   `/order-station` gained a "Not picked up" card action + confirm dialog, an
   "Accept" label on `NEW` cards, and the same no-show/banned badges.
-- [ ] **A9 — Review + docs + ship.** Full-diff review pass, fix findings, update
-  `PROJECT_LOGIC.md` / `API_DOCS.md` / `ROADMAP.md` / this file, rebuild, restart
-  PM2, open PR.
+- [x] **A9 — Review + docs + ship.** Full-diff review pass across all 48 changed files.
+  Verified: every new Prisma query in `orderMenuController` / `orderController` /
+  `customerOrderController` / `orderPricingService` / `geoService` is tenant-scoped
+  (`OrderMenuItem`/`OrderMenuCategory`/`CustomerBan` by their own `restaurantId`,
+  `MenuItem` through the `category.menu.restaurantId` chain, `reorder` via
+  `updateMany` with `restaurantId` in the WHERE, and every update-by-id preceded by an
+  ownership `findFirst`); the status machine agrees across all three modules
+  (`src/utils/orderStatus.ts`, `lib/orders/statusRules.ts`, `lib/orderStatusFlow.ts` —
+  same transitions, all four terminal statuses including `NOT_PICKED_UP`,
+  `nextStatusFor` never returns it) and the delivery guards are an `else if` chain that
+  can't block `READY→NOT_PICKED_UP` or `OUT_FOR_DELIVERY→NOT_PICKED_UP`; A2 and A3 both
+  survive intact in `orderPricingService` (pin/zone resolution *and* catalog gating,
+  `priceOverride` driving both `unitPrice` and the min-order check, modifiers still read
+  off the source `MenuItem`, `effectiveName` snapshotted into `nameSnapshot`); geo maths,
+  the three accepted polygon encodings, open/closed rings and all three
+  `resolveDeliveryZone` branches (including `NO_RESTAURANT_LOCATION` falling back to the
+  manual `zoneId` rather than throwing); bans enforced in `requestOtp` + `verifyOtp` +
+  `placeOrder` with matching `.trim()` normalization on both the store and the check
+  sides; the menu payload shape matching `lib/orderApi.ts` exactly and `MenuStep` /
+  `ItemCustomizeDialog` reading `menuItemId`; `OrderExperience` withholding the quote
+  until a positive range verdict and sending `zoneId` XOR `lat`/`lng`; the
+  `NOT_PICKED_UP` + `noShowCount` transaction only incrementing on `count === 1`; i18n
+  key-set parity in both dictionaries; no `LeafletMap` import outside
+  `next/dynamic({ssr:false})`; and an additive-only migration on a clean
+  `prisma migrate status`.
+  **One bug found and fixed:** `PATCH /api/orders/:id/status` returned a bare `Order`
+  (`include: { items: true }`) while both live staff surfaces merge that response
+  straight into list state — so confirming/advancing a row on the dashboard Active
+  Orders table or the `/order-station` board blanked out the customer name/phone column
+  and dropped the no-show/banned badges on that row until an SSE event happened to
+  repair it (and never, if the stream was reconnecting). `lib/orders/types.ts` already
+  documented this endpoint as carrying `customer` + `customerBanned`; the controller now
+  actually does.
+
+## Follow-ups (not blockers, ordered by likelihood of being hit)
+
+1. **`AREA` delivery zones can't be created from the UI.** The zone dialog on
+   `/dashboard/orders/settings` offers `matchType: AREA` but there is no polygon drawing
+   tool, so the zone is saved with `polygon: null` and `pointInPolygon` can never match
+   it. Pre-v2 this was survivable (the customer picked the zone by hand from the
+   dropdown); now that a tenant with coordinates gets *automatic* resolution, an AREA
+   zone is silently dead and every address reads as out of range. Until a polygon editor
+   ships, tenants that set a restaurant pin should use `RADIUS` zones only. Deliberately
+   not "fixed" by removing the AREA option — that's a product call.
+2. **`orderHours` is now enforced, and the settings editor materialises a default week.**
+   `WeeklyHoursEditor` pre-dates v2 and defaults every day to 09:00–22:00, so any tenant
+   who ever opened and saved the order-settings page has a full weekly schedule stored —
+   which A4 now enforces at checkout (`errors.online_ordering_closed`). Before deploying,
+   sanity-check existing rows: `SELECT "restaurantId", "orderHours" FROM "OrderSettings"
+   WHERE "orderHours" IS NOT NULL;` — a tenant that takes orders round the clock should
+   have its days marked open with a wrapping window (or the column cleared to `NULL`,
+   which `isWithinOrderHours` treats as permissive).
+3. **A tenant with a pin but no delivery zones blocks all delivery.**
+   `resolveDeliveryZone` returns `OUT_OF_RANGE` when no zone matches, so the customer
+   sees "outside our delivery area" rather than a setup hint. (Not a regression — pre-v2
+   the same tenant got `errors.order_zone_required` — but it's the first thing to check
+   when delivery "doesn't work".)
+4. **Ban matching is exact-string on the phone.** `+905551112233` and `05551112233` are
+   different bans. Fine today because every stored `Customer.phone` comes from the same
+   OTP path, but a normalizer (`src/utils/phone.ts`) would make this robust.
+5. **`GET /api/orders/bans` has no frontend consumer.** Bans are managed per-customer from
+   the customer-detail dialog; a tenant-wide bans list page could use this endpoint.
+6. **`POST /api/public/order/check-address` is rate-limited to 30/min per IP.** A customer
+   who drags the pin a lot can exhaust it, and the failure path leaves `addressCheck` null
+   (Continue stays disabled) for up to a minute. Consider raising the cap or surfacing a
+   "try again in a moment" message.
+7. **`/order-station`'s `submitNotPickedUp` doesn't special-case `409`** the way the
+   dashboard's `ActiveOrdersTable.patchStatus` does; it shows a generic error toast
+   instead of "changed elsewhere" + refetch.
+8. **`getOrderMenu` returns catalog rows whose source menu is inactive**, while the
+   customer menu filters them out (`menu.isActive`). Harmless — staff can see and remove
+   the stale row — but the two lists can disagree on count.
 
 ## Non-negotiables (carry into every agent)
 
