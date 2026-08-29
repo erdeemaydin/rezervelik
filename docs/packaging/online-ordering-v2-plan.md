@@ -49,12 +49,17 @@ focused agents; each is committed and build-verified before the next starts.
   orderCategoryId); `CustomerBan`; `Customer.noShowCount`; `OrderStatus +=
   NOT_PICKED_UP`. Dev migration + data migration seeding `OrderMenuItem` from
   existing `MenuItem.isOrderableOnline = true`. `prisma generate` + `npm run build`.
-- [ ] **A2 — Backend geo + delivery range.** `src/services/geoService.ts`
+- [x] **A2 — Backend geo + delivery range.** `src/services/geoService.ts`
   (haversineMeters, pointInPolygon, resolveDeliveryZone). `orderPricingService`
   accepts `{ lat, lng }`, enforces `maxDeliveryMeters`, returns
-  `distanceMeters` / `outOfRange`. `quoteOrder` + `placeOrder` resolve the zone
-  server-side from the pin (saved-address `zoneId` still allowed). Public
-  restaurant payload exposes `latitude/longitude`.
+  `distanceMeters` and throws `errors.order_out_of_delivery_range`.
+  `quoteOrder` + `placeOrder` resolve the zone server-side from the pin
+  (saved-address `zoneId` still allowed, and is the automatic fallback for
+  tenants with no coordinates set). New `POST /api/public/order/check-address`
+  returns the range verdict for a pin before there's a cart. Canonical
+  `DeliveryZone.polygon` format: `{ points: [{ lat, lng }, ...] }`. Public
+  restaurant payload already exposed `latitude/longitude` (no top-level
+  `select` in `getRestaurantBySlug`).
 - [ ] **A3 — Backend curated order menu.** `orderMenuController` + routes (CRUD for
   order categories & catalog items, pause endpoint). `getOrderableMenu` returns
   the curated catalog with effective name/price/photo + availability/pause.

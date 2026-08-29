@@ -4,6 +4,7 @@ import { successResponse, errorResponse } from '../utils/response';
 import { AppError } from '../utils/AppError';
 import * as otpService from '../services/otpService';
 import { computeOrderQuote, CartLineInput } from '../services/orderPricingService';
+import { resolveDeliveryZone } from '../services/geoService';
 import { generateCustomerToken } from '../utils/jwt';
 import { setCustomerSessionCookie, issueTrustedDevice } from '../middlewares/customerAuth';
 import { publishOrderEvent } from '../services/orderEvents';
@@ -18,6 +19,23 @@ import { isValidPhone } from '../utils/phone';
 
 const clientIp = (req: Request): string =>
   ((req.headers['x-forwarded-for'] as string)?.split(',')[0] || req.socket.remoteAddress || 'unknown').trim();
+
+// Read an optional { lat, lng } map pin off a request body (or a nested
+// address object). Both must be present, finite, and in range for the pin to
+// count — a half-supplied or out-of-range pin is treated as no pin at all, so
+// the caller falls back to the manual zone path rather than measuring a
+// distance from garbage.
+const readPin = (source: any): { lat?: number; lng?: number } => {
+  if (!source || typeof source !== 'object') return {};
+  // Guard null/'' explicitly before Number() — Number(null) and Number('')
+  // are both 0, which would silently place the pin at (0, 0).
+  if (source.lat == null || source.lat === '' || source.lng == null || source.lng === '') return {};
+  const lat = Number(source.lat);
+  const lng = Number(source.lng);
+  if (!Number.isFinite(lat) || !Number.isFinite(lng)) return {};
+  if (lat < -90 || lat > 90 || lng < -180 || lng > 180) return {};
+  return { lat, lng };
+};
 
 // ---------------------------------------------------------------------------
 // OTP
@@ -179,10 +197,10 @@ export const getPublicOrderSettings = async (req: Request, res: Response) => {
 };
 
 // ---------------------------------------------------------------------------
-// Delivery zones (anonymous, read-only) — orderPricingService resolves a
-// quote from an already-chosen zoneId rather than doing geo/radius matching
-// itself (see its file comment), so the customer flow needs to know which
-// zones exist and what they cost before the address step can offer a picker.
+// Delivery zones (anonymous, read-only). The primary flow now auto-resolves
+// the zone from the customer's map pin (see /check-address), but this stays:
+// it backs the manual picker for tenants that haven't set their own
+// coordinates yet, and lets the customer see the fee tiers up front.
 // Only active zones, only the fields a customer needs to choose one.
 // ---------------------------------------------------------------------------
 
@@ -212,16 +230,71 @@ export const quoteOrder = async (req: Request, res: Response) => {
     const items: CartLineInput[] = Array.isArray(req.body?.items) ? req.body.items : [];
     const fulfillmentType = req.body?.fulfillmentType;
     const zoneId = typeof req.body?.zoneId === 'string' ? req.body.zoneId : undefined;
+    // Map pin (optional). When present and the tenant has its own coordinates
+    // set, computeOrderQuote resolves the zone/fee from it and ignores zoneId.
+    const { lat, lng } = readPin(req.body);
 
     if (fulfillmentType !== 'DELIVERY' && fulfillmentType !== 'PICKUP') {
       return errorResponse(res, 'errors.validation_error', 400, { message: 'fulfillmentType must be DELIVERY or PICKUP' });
     }
 
-    const quote = await computeOrderQuote({ restaurantId, items, fulfillmentType, zoneId });
+    const quote = await computeOrderQuote({ restaurantId, items, fulfillmentType, zoneId, lat, lng });
     return successResponse(res, quote);
   } catch (error) {
     if (error instanceof AppError) return errorResponse(res, error.code, error.status, error.details);
     console.error('[CustomerOrder] quoteOrder error:', error);
+    return errorResponse(res, 'errors.internal_error', 500);
+  }
+};
+
+// ---------------------------------------------------------------------------
+// Check a map pin against the tenant's delivery range (anonymous). Lets the
+// address step show "we deliver here, fee X" / "outside our delivery area"
+// before there's a cart to quote. Deliberately does NOT throw on out-of-range
+// — it's a verdict endpoint, not a checkout gate; /quote and order placement
+// are what actually block. `needsManualZone` tells the client to fall back to
+// the old zone dropdown because this tenant hasn't set its own coordinates
+// yet (nothing to measure distance from).
+// ---------------------------------------------------------------------------
+
+export const checkAddress = async (req: Request, res: Response) => {
+  try {
+    const restaurantId = req.restaurantId!;
+    const { lat, lng } = readPin(req.body);
+
+    if (lat === undefined || lng === undefined) {
+      return errorResponse(res, 'errors.validation_error', 400, { message: 'lat and lng are required' });
+    }
+
+    const result = await resolveDeliveryZone({ restaurantId, lat, lng });
+
+    if (result.zone) {
+      return successResponse(res, {
+        inRange: true,
+        distanceMeters: result.distanceMeters,
+        needsManualZone: false,
+        zone: {
+          id: result.zone.id,
+          name: result.zone.name,
+          deliveryFee: result.zone.deliveryFee,
+          minOrderAmount: result.zone.minOrderAmount,
+        },
+      });
+    }
+
+    const needsManualZone = result.reason === 'NO_RESTAURANT_LOCATION';
+    return successResponse(res, {
+      // A tenant with no location can't be judged out of range — the customer
+      // just has to pick a zone by hand, so don't show them a rejection.
+      inRange: needsManualZone,
+      distanceMeters: result.distanceMeters,
+      needsManualZone,
+      zone: null,
+      maxDeliveryMeters: result.maxDeliveryMeters ?? null,
+    });
+  } catch (error) {
+    if (error instanceof AppError) return errorResponse(res, error.code, error.status, error.details);
+    console.error('[CustomerOrder] checkAddress error:', error);
     return errorResponse(res, 'errors.internal_error', 500);
   }
 };
@@ -272,6 +345,11 @@ export const placeOrder = async (req: Request, res: Response) => {
 
     let addressSnapshot: Record<string, unknown> | null = null;
     let zoneId: string | undefined;
+    // The pin may arrive at the top level of the body or on the inline address
+    // object; either is accepted, top level wins. For a saved address the
+    // stored coordinates are the pin.
+    let pin = readPin(req.body);
+    let savedAddressId: string | undefined;
 
     if (fulfillmentType === 'DELIVERY') {
       if (addressId) {
@@ -282,6 +360,8 @@ export const placeOrder = async (req: Request, res: Response) => {
           return errorResponse(res, 'errors.order_address_not_found', 400);
         }
         zoneId = address.zoneId || undefined;
+        if (pin.lat === undefined) pin = readPin({ lat: address.lat, lng: address.lng });
+        savedAddressId = address.id;
         addressSnapshot = {
           label: address.label,
           neighborhood: address.neighborhood,
@@ -292,39 +372,64 @@ export const placeOrder = async (req: Request, res: Response) => {
         };
       } else if (inlineAddress?.fullAddress) {
         zoneId = typeof inlineAddress.zoneId === 'string' ? inlineAddress.zoneId : undefined;
+        if (pin.lat === undefined) pin = readPin(inlineAddress);
         addressSnapshot = {
           label: inlineAddress.label ?? null,
           neighborhood: inlineAddress.neighborhood ?? null,
           fullAddress: inlineAddress.fullAddress,
-          lat: typeof inlineAddress.lat === 'number' ? inlineAddress.lat : null,
-          lng: typeof inlineAddress.lng === 'number' ? inlineAddress.lng : null,
+          lat: pin.lat ?? null,
+          lng: pin.lng ?? null,
           note: inlineAddress.note ?? null,
         };
-        if (inlineAddress.save) {
-          const saved = await prisma.customerAddress.create({
-            data: {
-              customerId: customer.id,
-              restaurantId,
-              label: inlineAddress.label ?? null,
-              neighborhood: inlineAddress.neighborhood ?? null,
-              fullAddress: inlineAddress.fullAddress,
-              lat: typeof inlineAddress.lat === 'number' ? inlineAddress.lat : null,
-              lng: typeof inlineAddress.lng === 'number' ? inlineAddress.lng : null,
-              zoneId: zoneId ?? null,
-              note: inlineAddress.note ?? null,
-            },
-          });
-          addressSnapshot.addressId = saved.id;
-        }
       } else {
         return errorResponse(res, 'errors.order_address_required', 400);
       }
     }
 
-    // Recompute everything server-side — the whole point of this call.
-    const quote = await computeOrderQuote({ restaurantId, items, fulfillmentType, zoneId });
+    // Recompute everything server-side — the whole point of this call. When a
+    // pin is present and the tenant has coordinates, this also re-resolves the
+    // zone/fee from that pin and can reject the address as out of range.
+    const quote = await computeOrderQuote({
+      restaurantId,
+      items,
+      fulfillmentType,
+      zoneId,
+      lat: pin.lat,
+      lng: pin.lng,
+    });
     if (fulfillmentType === 'DELIVERY' && !quote.meetsMinimum) {
       return errorResponse(res, 'errors.order_below_minimum', 400, { minOrderAmount: quote.minOrderAmount, subtotal: quote.subtotal });
+    }
+
+    // Persist a new address only after the quote succeeded — an out-of-range
+    // or below-minimum attempt shouldn't leave a saved address behind — and
+    // stamp it with the server-resolved zone rather than whatever the client
+    // guessed, so the saved-address fast path stays correct next time.
+    if (fulfillmentType === 'DELIVERY' && !addressId && inlineAddress?.save && addressSnapshot) {
+      const saved = await prisma.customerAddress.create({
+        data: {
+          customerId: customer.id,
+          restaurantId,
+          label: inlineAddress.label ?? null,
+          neighborhood: inlineAddress.neighborhood ?? null,
+          fullAddress: inlineAddress.fullAddress,
+          lat: pin.lat ?? null,
+          lng: pin.lng ?? null,
+          zoneId: quote.zoneId ?? null,
+          note: inlineAddress.note ?? null,
+        },
+      });
+      savedAddressId = saved.id;
+      addressSnapshot.addressId = saved.id;
+    }
+
+    // Keep an existing saved address's zone in sync with what the pin actually
+    // resolves to now (zones/fees change; the stored zoneId can go stale).
+    if (fulfillmentType === 'DELIVERY' && addressId && savedAddressId && quote.zoneId && quote.zoneId !== zoneId) {
+      await prisma.customerAddress.update({
+        where: { id: savedAddressId },
+        data: { zoneId: quote.zoneId },
+      });
     }
 
     const readyBy = new Date(Date.now() + quote.prepTimeMinutes * 60_000);

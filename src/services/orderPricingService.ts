@@ -1,5 +1,6 @@
 import prisma from '../config/prisma';
 import { AppError } from '../utils/AppError';
+import { resolveDeliveryZone } from './geoService';
 
 // Single server-side pricing authority for online ordering. Both the
 // preview endpoint (POST /api/public/order/quote) and the real
@@ -8,6 +9,11 @@ import { AppError } from '../utils/AppError';
 // trusting any client-supplied quote/total (spec §4: "recompute all totals,
 // fees, minimums, and zone eligibility server-side; never trust client-sent
 // prices/fees").
+//
+// Delivery zone resolution has two paths: the customer's map pin (preferred —
+// geoService.resolveDeliveryZone measures haversine distance from the
+// restaurant's own coordinates and matches a RADIUS/AREA zone), falling back
+// to an explicitly chosen zoneId when the tenant has no coordinates set.
 
 export interface CartLineInput {
   menuItemId: string;
@@ -34,11 +40,18 @@ export interface QuoteParams {
   restaurantId: string;
   items: CartLineInput[];
   fulfillmentType: 'DELIVERY' | 'PICKUP';
-  // For DELIVERY only. The zone is resolved once, at address-save time (see
-  // CustomerAddress.zoneId) or by the customer explicitly picking a named
-  // zone before logging in — this service never attempts geo/radius
-  // matching itself (DeliveryZone/Restaurant carry no canonical lat/lng to
-  // compute against; see report deviation note).
+  // For DELIVERY only, and preferred over `zoneId`: the customer's map pin.
+  // When the restaurant has its own coordinates set, the zone is resolved
+  // server-side from this pin (haversine distance -> smallest matching RADIUS
+  // zone, else a containing AREA polygon) and any client-sent `zoneId` is
+  // ignored. See geoService.resolveDeliveryZone.
+  lat?: number;
+  lng?: number;
+  // For DELIVERY only. Fallback path, still fully supported: tenants that
+  // haven't set a restaurant location yet (every tenant predating the
+  // dashboard location picker) have no origin to measure from, so the zone
+  // comes from an explicit customer choice or a saved address's
+  // CustomerAddress.zoneId.
   zoneId?: string;
 }
 
@@ -51,6 +64,9 @@ export interface OrderQuote {
   // Only set for DELIVERY — the resolved zone's minimum, so callers can
   // report "below minimum" without mislabeling subtotal as the minimum.
   minOrderAmount?: number;
+  // Only set for DELIVERY when the zone was auto-resolved from a pin — the
+  // straight-line distance from the restaurant to that pin, in meters.
+  distanceMeters?: number;
   prepTimeMinutes: number;
   lines: PricedLine[];
 }
@@ -172,21 +188,54 @@ export async function computeOrderQuote(params: QuoteParams): Promise<OrderQuote
   let meetsMinimum = true;
   let resolvedZoneId: string | undefined;
   let resolvedMinOrderAmount: number | undefined;
+  let resolvedDistanceMeters: number | undefined;
 
   if (fulfillmentType === 'DELIVERY') {
-    if (!params.zoneId) {
-      throw new AppError('errors.order_zone_required', 400);
+    const hasPin = Number.isFinite(params.lat) && Number.isFinite(params.lng);
+    let resolvedFromPin = false;
+
+    if (hasPin) {
+      const result = await resolveDeliveryZone({
+        restaurantId,
+        lat: params.lat as number,
+        lng: params.lng as number,
+      });
+
+      if (result.zone) {
+        // Auto-resolution wins outright: the client's zoneId (if any) is
+        // advisory at best and must never override a server-computed fee.
+        resolvedZoneId = result.zone.id;
+        deliveryFee = result.zone.deliveryFee;
+        resolvedMinOrderAmount = result.zone.minOrderAmount;
+        meetsMinimum = subtotal >= result.zone.minOrderAmount;
+        resolvedDistanceMeters = result.distanceMeters;
+        resolvedFromPin = true;
+      } else if (result.reason === 'OUT_OF_RANGE') {
+        throw new AppError('errors.order_out_of_delivery_range', 400, {
+          distanceMeters: result.distanceMeters,
+          maxDeliveryMeters: result.maxDeliveryMeters ?? null,
+        });
+      }
+      // reason === 'NO_RESTAURANT_LOCATION' -> the tenant never set its own
+      // coordinates, so there is nothing to measure from. Fall through to the
+      // manual zoneId path below instead of blocking the order.
     }
-    const zone = await prisma.deliveryZone.findFirst({
-      where: { id: params.zoneId, restaurantId },
-    });
-    if (!zone || !zone.isActive) {
-      throw new AppError('errors.order_zone_not_found', 400);
+
+    if (!resolvedFromPin) {
+      if (!params.zoneId) {
+        throw new AppError('errors.order_zone_required', 400);
+      }
+      const zone = await prisma.deliveryZone.findFirst({
+        where: { id: params.zoneId, restaurantId },
+      });
+      if (!zone || !zone.isActive) {
+        throw new AppError('errors.order_zone_not_found', 400);
+      }
+      resolvedZoneId = zone.id;
+      deliveryFee = zone.deliveryFee;
+      resolvedMinOrderAmount = zone.minOrderAmount;
+      meetsMinimum = subtotal >= zone.minOrderAmount;
     }
-    resolvedZoneId = zone.id;
-    deliveryFee = zone.deliveryFee;
-    resolvedMinOrderAmount = zone.minOrderAmount;
-    meetsMinimum = subtotal >= zone.minOrderAmount;
   }
 
   const total = round2(subtotal + deliveryFee);
@@ -198,6 +247,7 @@ export async function computeOrderQuote(params: QuoteParams): Promise<OrderQuote
     zoneId: resolvedZoneId,
     meetsMinimum,
     minOrderAmount: resolvedMinOrderAmount,
+    distanceMeters: resolvedDistanceMeters,
     prepTimeMinutes: slowestPrepTime || defaultPrepTime,
     lines,
   };

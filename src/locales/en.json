@@ -40,6 +40,7 @@
     "order_modifier_invalid": "One of the selected options is invalid.",
     "order_zone_required": "Please choose a delivery area.",
     "order_zone_not_found": "That delivery area is not available.",
+    "order_out_of_delivery_range": "This address is outside our delivery area.",
     "order_fulfillment_disabled": "This order type is not currently available.",
     "order_payment_method_disabled": "This payment method is not currently available.",
     "order_address_required": "Please provide a delivery address.",

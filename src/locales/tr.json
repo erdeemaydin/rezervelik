@@ -40,6 +40,7 @@
     "order_modifier_invalid": "Seçilen seçeneklerden biri geçersiz.",
     "order_zone_required": "Lütfen bir teslimat bölgesi seçin.",
     "order_zone_not_found": "Seçilen teslimat bölgesi kullanılamıyor.",
+    "order_out_of_delivery_range": "Bu adres teslimat bölgemizin dışında.",
     "order_fulfillment_disabled": "Bu sipariş türü şu anda kullanılamıyor.",
     "order_payment_method_disabled": "Bu ödeme yöntemi şu anda kullanılamıyor.",
     "order_address_required": "Lütfen bir teslimat adresi girin.",

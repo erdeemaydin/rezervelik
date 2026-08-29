@@ -41,6 +41,15 @@ router.post(
   customerOrderController.quoteOrder
 );
 
+// Delivery-range verdict for a single map pin — same anonymous/rate-limited
+// shape as /quote, but usable at the address step before there's a cart.
+router.post(
+  '/check-address',
+  requireOnlineOrderingOpen,
+  rateLimitOrNoop({ windowMs: 60_000, max: 30, keyPrefix: 'order-check-address' }),
+  customerOrderController.checkAddress
+);
+
 // Placing an order requires a verified customer session (or trusted-device
 // cookie) and re-validates everything server-side inside its own transaction.
 router.post(
