@@ -15,7 +15,7 @@
      hierarchy reads as intentional rather than just a bigger weight of the
      body font. ui/card.tsx's CardTitle already references `font-heading`;
      it silently no-op'd before this token existed. */
-  --font-heading: var(--font-outfit);
+  --font-heading: var(--font-playfair);
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -53,58 +53,64 @@
 }
 
 :root {
-  --background: #f8fafc;
-  --foreground: #0f172a;
+  /* Warm monochrome base (minimalist-ui skill) — off-white canvas, charcoal
+     text, never pure black/white. Primary is a neutral off-black rather
+     than the tenant's accent color: color is reserved for small, deliberate
+     accents (active nav, tags, focus rings) driven by --admin-accent below,
+     not large filled surfaces. */
+  --background: #fbfbfa;
+  --foreground: #2f3437;
   --card: #ffffff;
-  --card-foreground: #0f172a;
+  --card-foreground: #2f3437;
   --popover: #ffffff;
-  --popover-foreground: #0f172a;
-  --primary: #2563eb;
+  --popover-foreground: #2f3437;
+  --primary: #111111;
   --primary-foreground: #ffffff;
-  --secondary: #f1f5f9;
-  --secondary-foreground: #0f172a;
-  --muted: #f1f5f9;
-  --muted-foreground: #64748b;
-  --accent: #f1f5f9;
-  --accent-foreground: #0f172a;
-  --destructive: #ef4444;
+  --secondary: #f3f2ef;
+  --secondary-foreground: #2f3437;
+  --muted: #f3f2ef;
+  --muted-foreground: #787774;
+  --accent: #f3f2ef;
+  --accent-foreground: #2f3437;
+  --destructive: #af3029;
   --destructive-foreground: #ffffff;
-  --border: #e2e8f0;
-  --input: #e2e8f0;
-  --ring: #3b82f6;
-  --radius: 0.5rem;
-  
-  /* Sidebar */
-  --sidebar: #0f172a;
-  --sidebar-foreground: #f8fafc;
-  --sidebar-primary: #3b82f6;
+  --border: #eaeaea;
+  --input: #eaeaea;
+  --ring: #a8a29e;
+  --radius: 0.625rem;
+
+  /* Sidebar: light warm surface, not dark navy — separated from the canvas
+     by a border rather than a color block. */
+  --sidebar: #f7f6f3;
+  --sidebar-foreground: #2f3437;
+  --sidebar-primary: #111111;
   --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: #1e293b;
-  --sidebar-accent-foreground: #f8fafc;
-  --sidebar-border: #1e293b;
-  --sidebar-ring: #3b82f6;
+  --sidebar-accent: #efece6;
+  --sidebar-accent-foreground: #2f3437;
+  --sidebar-border: #eaeaea;
+  --sidebar-ring: #a8a29e;
 }
 
 .dark {
-  --background: #020617;
-  --foreground: #f8fafc;
-  --card: #0f172a;
-  --card-foreground: #f8fafc;
-  --popover: #0f172a;
-  --popover-foreground: #f8fafc;
-  --primary: #3b82f6;
-  --primary-foreground: #ffffff;
-  --secondary: #1e293b;
-  --secondary-foreground: #f8fafc;
-  --muted: #1e293b;
-  --muted-foreground: #94a3b8;
-  --accent: #1e293b;
-  --accent-foreground: #f8fafc;
-  --destructive: #ef4444;
-  --destructive-foreground: #ffffff;
-  --border: #1e293b;
-  --input: #1e293b;
-  --ring: #3b82f6;
+  --background: #1a1918;
+  --foreground: #f7f6f3;
+  --card: #232120;
+  --card-foreground: #f7f6f3;
+  --popover: #232120;
+  --popover-foreground: #f7f6f3;
+  --primary: #f7f6f3;
+  --primary-foreground: #1a1918;
+  --secondary: #2c2a28;
+  --secondary-foreground: #f7f6f3;
+  --muted: #2c2a28;
+  --muted-foreground: #a39e97;
+  --accent: #2c2a28;
+  --accent-foreground: #f7f6f3;
+  --destructive: #e0655c;
+  --destructive-foreground: #1a1918;
+  --border: #35322f;
+  --input: #35322f;
+  --ring: #78716c;
 }
 
 @layer base {
@@ -129,65 +135,70 @@
    layered utilities.
    ===================================================================== */
 
+/* Accent ramps are desaturated/muted throughout (minimalist-ui: "color is a
+   scarce resource" — accents mark active nav/tags/focus rings, never large
+   filled surfaces). Sidebar is the same warm-bone surface for every theme;
+   only the accent and its pastel tint change. */
+
 [data-admin-theme] {
-  /* Fallback = original blue, so an unknown value never breaks the accent. */
-  --admin-accent: #2563eb;
-  --admin-accent-hover: #1d4ed8;
-  --admin-accent-strong: #1e40af;
-  --admin-accent-mid: #3b82f6;
-  --admin-accent-tint: #eff6ff;
-  --admin-accent-tint-2: #dbeafe;
-  --admin-accent-tint-3: #bfdbfe;
-  --admin-sidebar: #0f172a;
-  --admin-bg: #f8fafc;
+  /* Fallback = muted denim, so an unknown value never breaks the accent. */
+  --admin-accent: #3d6a8a;
+  --admin-accent-hover: #2f5470;
+  --admin-accent-strong: #24425a;
+  --admin-accent-mid: #5b87a3;
+  --admin-accent-tint: #e1f3fe;
+  --admin-accent-tint-2: #cfe9fb;
+  --admin-accent-tint-3: #b4dcf6;
+  --admin-sidebar: #f7f6f3;
+  --admin-bg: #fbfbfa;
 }
 
 [data-admin-theme="terracotta"] {
-  --admin-accent: #c2410c;
-  --admin-accent-hover: #9a3412;
-  --admin-accent-strong: #7c2d12;
-  --admin-accent-mid: #ea580c;
-  --admin-accent-tint: #fff7ed;
-  --admin-accent-tint-2: #ffedd5;
-  --admin-accent-tint-3: #fed7aa;
-  --admin-sidebar: #292524;
-  --admin-bg: #faf7f2;
+  --admin-accent: #a8623f;
+  --admin-accent-hover: #8a4f33;
+  --admin-accent-strong: #6b3d28;
+  --admin-accent-mid: #bf7c5b;
+  --admin-accent-tint: #f5e6dd;
+  --admin-accent-tint-2: #eed4c4;
+  --admin-accent-tint-3: #e3bea6;
+  --admin-sidebar: #f7f6f3;
+  --admin-bg: #fbfbfa;
 }
 
 [data-admin-theme="forest"] {
-  --admin-accent: #15803d;
-  --admin-accent-hover: #166534;
-  --admin-accent-strong: #14532d;
-  --admin-accent-mid: #16a34a;
-  --admin-accent-tint: #f0fdf4;
-  --admin-accent-tint-2: #dcfce7;
-  --admin-accent-tint-3: #bbf7d0;
-  --admin-sidebar: #1c1917;
-  --admin-bg: #f5f5f4;
+  --admin-accent: #4a6741;
+  --admin-accent-hover: #3b5334;
+  --admin-accent-strong: #2d4027;
+  --admin-accent-mid: #6b8560;
+  --admin-accent-tint: #edf3ec;
+  --admin-accent-tint-2: #dde8db;
+  --admin-accent-tint-3: #c5d8c1;
+  --admin-sidebar: #f7f6f3;
+  --admin-bg: #fbfbfa;
 }
 
 [data-admin-theme="burgundy"] {
-  --admin-accent: #9f1239;
-  --admin-accent-hover: #881337;
-  --admin-accent-strong: #881337;
-  --admin-accent-mid: #be123c;
-  --admin-accent-tint: #fff1f2;
-  --admin-accent-tint-2: #ffe4e6;
-  --admin-accent-tint-3: #fecdd3;
-  --admin-sidebar: #1c1917;
-  --admin-bg: #f7f5f4;
+  --admin-accent: #7a3b42;
+  --admin-accent-hover: #612e34;
+  --admin-accent-strong: #4a2328;
+  --admin-accent-mid: #98595f;
+  --admin-accent-tint: #fdebec;
+  --admin-accent-tint-2: #f8d7d9;
+  --admin-accent-tint-3: #f0b9bd;
+  --admin-sidebar: #f7f6f3;
+  --admin-bg: #fbfbfa;
 }
 
 [data-admin-theme="amber"] {
-  --admin-accent: #b45309;
-  --admin-accent-hover: #92400e;
-  --admin-accent-strong: #78350f;
-  --admin-accent-mid: #d97706;
-  --admin-accent-tint: #fffbeb;
-  --admin-accent-tint-2: #fef3c7;
-  --admin-accent-tint-3: #fde68a;
-  --admin-sidebar: #1c1917;
-  --admin-bg: #faf9f7;
+  --admin-accent: #8a6d3b;
+  --admin-accent-hover: #6f572f;
+  --admin-accent-strong: #544224;
+  --admin-accent-mid: #a68a5c;
+  --admin-accent-tint: #fbf3db;
+  --admin-accent-tint-2: #f5e7bd;
+  --admin-accent-tint-3: #ecd695;
+  --admin-sidebar: #f7f6f3;
+  --admin-bg: #fbfbfa;
 }
 
 /* --- Remap hardcoded blue utilities to the active theme accent --- */

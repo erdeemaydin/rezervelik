@@ -138,21 +138,21 @@ export default function SystemAdminLayout({ children }: SystemAdminLayoutProps) 
         className={cn(
           // h-dvh, not h-screen: 100vh reaches behind iOS Safari's bottom toolbar,
           // hiding the logout button under Safari's chrome. dvh = visible height.
-          "w-64 bg-[var(--admin-sidebar)] text-slate-300 flex flex-col shadow-2xl z-50 transition-transform duration-300 ease-in-out fixed lg:static top-0 h-dvh",
+          "w-64 bg-[var(--admin-sidebar)] text-stone-700 border-r border-stone-200 flex flex-col z-50 transition-transform duration-300 ease-in-out fixed lg:static top-0 h-dvh",
           isSidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
         )}
       >
-        <div className="h-16 flex items-center justify-between px-6 bg-black/20 border-b border-slate-800">
+        <div className="h-16 flex items-center justify-between px-6 border-b border-stone-200">
           <div className="flex items-center">
-            <div className="w-7 h-7 bg-emerald-600 rounded-sm flex items-center justify-center mr-3 shadow-md">
+            <div className="w-7 h-7 bg-[#111111] rounded-sm flex items-center justify-center mr-3">
               <span className="text-white font-bold text-lg leading-none">S</span>
             </div>
-            <span className="font-bold text-lg text-white tracking-tight">System<span className="text-emerald-400">Adm</span></span>
+            <span className="font-bold text-lg text-stone-900 tracking-tight">System<span className="text-[var(--admin-accent)]">Adm</span></span>
           </div>
           <button
             onClick={() => setIsSidebarOpen(false)}
             aria-label="Close navigation"
-            className="lg:hidden text-slate-400 hover:text-white w-8 h-8 flex items-center justify-center rounded-md hover:bg-slate-800/60"
+            className="lg:hidden text-stone-400 hover:text-stone-900 w-8 h-8 flex items-center justify-center rounded-md hover:bg-stone-100"
           >
             <X className="w-5 h-5" />
           </button>
@@ -160,12 +160,12 @@ export default function SystemAdminLayout({ children }: SystemAdminLayoutProps) 
 
         <div className="flex-1 overflow-y-auto py-6">
           <div className="px-6 mb-8 flex items-center space-x-3">
-            <div className="h-9 w-9 rounded-md bg-slate-800 border border-slate-700 flex items-center justify-center text-emerald-500 font-black text-xs">SA</div>
+            <div className="h-9 w-9 rounded-md bg-stone-100 border border-stone-200 flex items-center justify-center text-[var(--admin-accent)] font-semibold text-xs">SA</div>
             <div className="overflow-hidden">
-              <p className="text-xs font-bold text-white truncate">
+              <p className="text-xs font-semibold text-stone-900 truncate">
                 {mounted ? `${user?.firstName || 'System'} ${user?.lastName || 'Admin'}` : 'System Admin'}
               </p>
-              <p className="text-[9px] text-emerald-500 font-semibold tracking-tighter">
+              <p className="text-[9px] text-[var(--admin-accent)] font-semibold tracking-tighter">
                 {isRoot ? t('systemAdmin.rootAuthority') : t('systemAdmin.restrictedAdministrator')}
               </p>
             </div>
@@ -174,7 +174,7 @@ export default function SystemAdminLayout({ children }: SystemAdminLayoutProps) 
           <nav className="space-y-6">
             {navigation.map((group, idx) => (
               <div key={idx}>
-                <h3 className="px-6 text-[10px] font-semibold text-slate-400 tracking-[0.18em] mb-3">
+                <h3 className="px-6 text-[10px] font-semibold text-stone-400 tracking-[0.18em] mb-3">
                   {group.section}
                 </h3>
                 <ul className="space-y-1 px-2">
@@ -188,14 +188,14 @@ export default function SystemAdminLayout({ children }: SystemAdminLayoutProps) 
                           className={cn(
                             'flex items-center justify-between py-2.5 text-xs font-bold rounded-sm transition-all duration-150',
                             // Same current-page treatment as the tenant dashboard sidebar:
-                            // filled accent + left edge + shadow, not just a color swap.
+                            // muted pastel fill + left edge, not a color swap.
                             isActive
-                              ? 'bg-emerald-600 text-white shadow-md shadow-emerald-600/20 border-l-2 border-white/30 pl-3.5 pr-4'
-                              : 'px-4 text-slate-400 hover:bg-slate-800 hover:text-white'
+                              ? 'bg-[var(--admin-accent-tint)] text-[var(--admin-accent-strong)] border-l-2 border-[var(--admin-accent)] pl-3.5 pr-4'
+                              : 'px-4 text-stone-500 hover:bg-stone-100 hover:text-stone-900'
                           )}
                         >
                           <div className="flex items-center">
-                            <item.icon className={cn('mr-3 h-4 w-4', isActive ? 'text-white' : 'text-slate-500')} />
+                            <item.icon className={cn('mr-3 h-4 w-4', isActive ? 'text-[var(--admin-accent-strong)]' : 'text-stone-400')} />
                             {item.name}
                           </div>
                         </Link>
@@ -208,19 +208,19 @@ export default function SystemAdminLayout({ children }: SystemAdminLayoutProps) 
           </nav>
         </div>
 
-        <div className="p-4 bg-black/20 border-t border-slate-800">
-          <Button variant="ghost" className="w-full justify-start text-slate-500 hover:text-white hover:bg-red-500/10" onClick={handleLogout}>
+        <div className="p-4 border-t border-stone-200">
+          <Button variant="ghost" className="w-full justify-start text-stone-500 hover:text-red-600 hover:bg-red-50" onClick={handleLogout}>
             <LogOut className="mr-3 h-5 w-5" /> {t('systemAdmin.logoutSystem')}
           </Button>
         </div>
       </aside>
 
       <div className="flex-1 flex flex-col overflow-hidden min-w-0">
-        <header className="h-16 bg-white border-b flex items-center justify-between pl-16 pr-4 lg:px-8 shadow-sm shrink-0">
-          <h2 className="text-base sm:text-xl font-bold text-slate-800 truncate">{t('systemAdmin.systemManagement')}</h2>
+        <header className="h-16 bg-white border-b border-stone-200 flex items-center justify-between pl-16 pr-4 lg:px-8 shrink-0">
+          <h2 className="text-base sm:text-xl font-semibold text-stone-900 truncate font-heading">{t('systemAdmin.systemManagement')}</h2>
           <div className="flex items-center gap-2 sm:gap-4 shrink-0">
             <LanguageSwitcher />
-            <Badge variant="outline" className="hidden sm:inline-flex text-emerald-600 border-emerald-200 bg-emerald-50">{t('systemAdmin.globalClusterActive')}</Badge>
+            <Badge variant="outline" className="hidden sm:inline-flex text-[var(--admin-accent-strong)] border-[var(--admin-accent-tint-3)] bg-[var(--admin-accent-tint)]">{t('systemAdmin.globalClusterActive')}</Badge>
           </div>
         </header>
         <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">

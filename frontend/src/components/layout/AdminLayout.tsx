@@ -423,27 +423,27 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
           // 100vh extends behind the browser's bottom toolbar, hiding the sidebar
           // footer (logout/language) under Safari's own buttons so they can't be
           // tapped. dvh is the actually-visible height, keeping the footer reachable.
-          "bg-[var(--admin-sidebar)] text-slate-300 transition-all duration-300 ease-in-out flex flex-col z-50 shadow-xl fixed lg:sticky top-0 h-dvh",
+          "bg-[var(--admin-sidebar)] text-stone-700 border-r border-stone-200 transition-all duration-300 ease-in-out flex flex-col z-50 fixed lg:sticky top-0 h-dvh",
           isSidebarOpen ? "w-64 translate-x-0" : "w-64 -translate-x-full lg:w-16 lg:translate-x-0"
         )}
       >
         {/* Sidebar Header — logo + collapse/expand toggle (works on desktop too,
             since there's no top bar anymore). */}
-        <div className="h-16 flex items-center justify-between px-4 border-b border-slate-800 bg-[#1e293b]/20">
+        <div className="h-16 flex items-center justify-between px-4 border-b border-stone-200">
           {isSidebarOpen ? (
             <>
               <div className="flex items-center gap-3 overflow-hidden">
-                <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center shrink-0">
+                <div className="w-8 h-8 rounded-lg bg-[#111111] flex items-center justify-center shrink-0">
                   <vIcon.brand className="w-5 h-5 text-white" />
                 </div>
-                <span className="font-semibold text-sm tracking-tight text-white whitespace-nowrap">
-                  Reserve<span className="text-blue-500">Pro</span>
+                <span className="font-semibold text-sm tracking-tight text-stone-900 whitespace-nowrap">
+                  Reserve<span className="text-[var(--admin-accent)]">Pro</span>
                 </span>
               </div>
               <button
                 onClick={() => setIsSidebarOpen(false)}
                 aria-label="Collapse navigation"
-                className="text-slate-400 hover:text-white hover:bg-slate-800/60 rounded-md w-8 h-8 flex items-center justify-center shrink-0"
+                className="text-stone-400 hover:text-stone-900 hover:bg-stone-100 rounded-md w-8 h-8 flex items-center justify-center shrink-0"
               >
                 <ChevronLeft className="w-5 h-5" />
               </button>
@@ -455,10 +455,10 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
               title="Expand"
               className="w-full flex items-center justify-center group"
             >
-              <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center shrink-0 group-hover:hidden">
+              <div className="w-8 h-8 rounded-lg bg-[#111111] flex items-center justify-center shrink-0 group-hover:hidden">
                 <vIcon.brand className="w-5 h-5 text-white" />
               </div>
-              <ChevronRight className="w-6 h-6 text-blue-400 hidden group-hover:block" />
+              <ChevronRight className="w-6 h-6 text-[var(--admin-accent)] hidden group-hover:block" />
             </button>
           )}
         </div>
@@ -473,7 +473,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
               return (
                 <div key={group.section}>
                   {isSidebarOpen && (
-                    <h3 className="px-3 text-[10px] font-semibold text-slate-400 tracking-[0.18em] mb-3">
+                    <h3 className="px-3 text-[10px] font-semibold text-stone-400 tracking-[0.18em] mb-3">
                       {group.section}
                     </h3>
                   )}
@@ -500,14 +500,14 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
                               // filled accent background, so it reads as deliberate
                               // rather than just "this row happens to be blue."
                               isActive
-                                ? "bg-blue-600 text-white font-bold shadow-lg shadow-blue-600/20 border-l-2 border-white/30 pl-2.5 pr-3"
-                                : "px-3 hover:bg-slate-800/50 hover:text-white"
+                                ? "bg-[var(--admin-accent-tint)] text-[var(--admin-accent-strong)] font-bold border-l-2 border-[var(--admin-accent)] pl-2.5 pr-3"
+                                : "px-3 hover:bg-stone-100 hover:text-stone-900"
                             )}
                           >
                             <div className="flex items-center gap-3">
                               <item.icon className={cn(
                                 "w-[18px] h-[18px] shrink-0",
-                                isActive ? "text-white" : "text-slate-400 group-hover:text-white"
+                                isActive ? "text-[var(--admin-accent-strong)]" : "text-stone-400 group-hover:text-stone-700"
                               )} />
                               {isSidebarOpen && <span>{item.name}</span>}
                             </div>
@@ -524,33 +524,33 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
 
         {/* Sidebar Footer — the account area. All the old top-bar controls
             (profile/user settings, language, logout) live here now. */}
-        <div className="border-t border-slate-800 bg-[#1e293b]/20 mt-auto">
+        <div className="border-t border-stone-200 mt-auto">
           {isSidebarOpen ? (
             <div className="p-3 space-y-2">
-              <span className="block px-1 text-[9px] font-semibold tracking-[0.18em] text-slate-500">{t('admin.userSettings')}</span>
+              <span className="block px-1 text-[9px] font-semibold tracking-[0.18em] text-stone-400">{t('admin.userSettings')}</span>
               <Link
                 href="/dashboard/profile"
                 onClick={() => { if (window.innerWidth < 1024) setIsSidebarOpen(false); }}
                 title={t('admin.userSettings')}
-                className="flex items-center gap-3 p-2 rounded-md hover:bg-slate-800/60 transition-colors group"
+                className="flex items-center gap-3 p-2 rounded-md hover:bg-stone-100 transition-colors group"
               >
-                <Avatar className="w-9 h-9 border border-slate-700 shrink-0">
+                <Avatar className="w-9 h-9 border border-stone-200 shrink-0">
                   <AvatarImage src={`https://avatar.iran.liara.run/username?username=${user?.firstName}+${user?.lastName}`} />
-                  <AvatarFallback className="bg-blue-600 text-white text-[10px] font-semibold">{user?.firstName?.[0]}{user?.lastName?.[0]}</AvatarFallback>
+                  <AvatarFallback className="bg-[#111111] text-white text-[10px] font-semibold">{user?.firstName?.[0]}{user?.lastName?.[0]}</AvatarFallback>
                 </Avatar>
                 <div className="flex flex-col min-w-0 flex-1">
-                  <span className="text-xs font-black text-white truncate capitalize">{user?.firstName} {user?.lastName}</span>
-                  <span className="text-[9px] font-bold text-blue-400 tracking-tighter">{user?.role}</span>
+                  <span className="text-xs font-semibold text-stone-900 truncate capitalize">{user?.firstName} {user?.lastName}</span>
+                  <span className="text-[9px] font-semibold text-[var(--admin-accent)] tracking-tighter">{user?.role}</span>
                 </div>
-                <Settings className="w-4 h-4 text-slate-500 group-hover:text-white transition-colors shrink-0" />
+                <Settings className="w-4 h-4 text-stone-400 group-hover:text-stone-700 transition-colors shrink-0" />
               </Link>
-              <div className="flex items-center justify-between gap-2 pt-2 border-t border-slate-800/60">
+              <div className="flex items-center justify-between gap-2 pt-2 border-t border-stone-200">
                 <LanguageSwitcher />
                 <Button
                   variant="ghost"
                   size="sm"
                   onClick={handleLogout}
-                  className="text-slate-400 hover:text-red-400 hover:bg-red-500/10 font-bold text-xs gap-2 px-2 h-9"
+                  className="text-stone-400 hover:text-red-600 hover:bg-red-50 font-semibold text-xs gap-2 px-2 h-9"
                 >
                   <LogOut className="w-4 h-4" /> {t('admin.logout')}
                 </Button>
@@ -560,23 +560,23 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
             /* Collapsed rail: icon-only profile + logout. */
             <div className="py-3 flex flex-col items-center gap-2">
               <Link href="/dashboard/profile" title={t('admin.userSettings')}>
-                <Avatar className="w-8 h-8 border border-slate-700">
+                <Avatar className="w-8 h-8 border border-stone-200">
                   <AvatarImage src={`https://avatar.iran.liara.run/username?username=${user?.firstName}+${user?.lastName}`} />
-                  <AvatarFallback className="bg-blue-600 text-white text-[9px] font-semibold">{user?.firstName?.[0]}{user?.lastName?.[0]}</AvatarFallback>
+                  <AvatarFallback className="bg-[#111111] text-white text-[9px] font-semibold">{user?.firstName?.[0]}{user?.lastName?.[0]}</AvatarFallback>
                 </Avatar>
               </Link>
               <button
                 onClick={handleLogout}
                 title={t('admin.logout')}
-                className="text-slate-400 hover:text-red-400 hover:bg-red-500/10 w-8 h-8 flex items-center justify-center rounded-md transition-colors"
+                className="text-stone-400 hover:text-red-600 hover:bg-red-50 w-8 h-8 flex items-center justify-center rounded-md transition-colors"
               >
                 <LogOut className="w-4 h-4" />
               </button>
             </div>
           )}
-          <div className="px-4 py-2 flex items-center gap-2 border-t border-slate-800/60 justify-center lg:justify-start">
+          <div className="px-4 py-2 flex items-center gap-2 border-t border-stone-200 justify-center lg:justify-start">
             <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shrink-0" />
-            {isSidebarOpen && <span className="text-[10px] font-semibold text-slate-500">System Online</span>}
+            {isSidebarOpen && <span className="text-[10px] font-semibold text-stone-400">System Online</span>}
           </div>
         </div>
       </aside>
