@@ -138,11 +138,11 @@ export default function SystemAdminLayout({ children }: SystemAdminLayoutProps) 
         className={cn(
           // h-dvh, not h-screen: 100vh reaches behind iOS Safari's bottom toolbar,
           // hiding the logout button under Safari's chrome. dvh = visible height.
-          "w-64 bg-[var(--admin-sidebar)] text-stone-700 border-r border-stone-200 flex flex-col z-50 transition-transform duration-300 ease-in-out fixed lg:static top-0 h-dvh",
+          "w-64 bg-[var(--admin-sidebar)] text-stone-700 border-r border-stone-300 flex flex-col z-50 transition-transform duration-300 ease-in-out fixed lg:static top-0 h-dvh",
           isSidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
         )}
       >
-        <div className="h-16 flex items-center justify-between px-6 border-b border-stone-200">
+        <div className="h-16 flex items-center justify-between px-6 border-b border-stone-300">
           <div className="flex items-center">
             <div className="w-7 h-7 bg-[#111111] rounded-sm flex items-center justify-center mr-3">
               <span className="text-white font-bold text-lg leading-none">S</span>
@@ -160,7 +160,7 @@ export default function SystemAdminLayout({ children }: SystemAdminLayoutProps) 
 
         <div className="flex-1 overflow-y-auto py-6">
           <div className="px-6 mb-8 flex items-center space-x-3">
-            <div className="h-9 w-9 rounded-md bg-stone-100 border border-stone-200 flex items-center justify-center text-[var(--admin-accent)] font-semibold text-xs">SA</div>
+            <div className="h-9 w-9 rounded-md bg-stone-100 border border-stone-300 flex items-center justify-center text-[var(--admin-accent)] font-semibold text-xs">SA</div>
             <div className="overflow-hidden">
               <p className="text-xs font-semibold text-stone-900 truncate">
                 {mounted ? `${user?.firstName || 'System'} ${user?.lastName || 'Admin'}` : 'System Admin'}
@@ -208,7 +208,7 @@ export default function SystemAdminLayout({ children }: SystemAdminLayoutProps) 
           </nav>
         </div>
 
-        <div className="p-4 border-t border-stone-200">
+        <div className="p-4 border-t border-stone-300">
           <Button variant="ghost" className="w-full justify-start text-stone-500 hover:text-red-600 hover:bg-red-50" onClick={handleLogout}>
             <LogOut className="mr-3 h-5 w-5" /> {t('systemAdmin.logoutSystem')}
           </Button>
@@ -216,7 +216,7 @@ export default function SystemAdminLayout({ children }: SystemAdminLayoutProps) 
       </aside>
 
       <div className="flex-1 flex flex-col overflow-hidden min-w-0">
-        <header className="h-16 bg-white border-b border-stone-200 flex items-center justify-between pl-16 pr-4 lg:px-8 shrink-0">
+        <header className="h-16 bg-white border-b border-stone-300 flex items-center justify-between pl-16 pr-4 lg:px-8 shrink-0">
           <h2 className="text-base sm:text-xl font-semibold text-stone-900 truncate font-heading">{t('systemAdmin.systemManagement')}</h2>
           <div className="flex items-center gap-2 sm:gap-4 shrink-0">
             <LanguageSwitcher />

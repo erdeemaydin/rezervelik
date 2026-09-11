@@ -423,13 +423,13 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
           // 100vh extends behind the browser's bottom toolbar, hiding the sidebar
           // footer (logout/language) under Safari's own buttons so they can't be
           // tapped. dvh is the actually-visible height, keeping the footer reachable.
-          "bg-[var(--admin-sidebar)] text-stone-700 border-r border-stone-200 transition-all duration-300 ease-in-out flex flex-col z-50 fixed lg:sticky top-0 h-dvh",
+          "bg-[var(--admin-sidebar)] text-stone-700 border-r border-stone-300 transition-all duration-300 ease-in-out flex flex-col z-50 fixed lg:sticky top-0 h-dvh",
           isSidebarOpen ? "w-64 translate-x-0" : "w-64 -translate-x-full lg:w-16 lg:translate-x-0"
         )}
       >
         {/* Sidebar Header — logo + collapse/expand toggle (works on desktop too,
             since there's no top bar anymore). */}
-        <div className="h-16 flex items-center justify-between px-4 border-b border-stone-200">
+        <div className="h-16 flex items-center justify-between px-4 border-b border-stone-300">
           {isSidebarOpen ? (
             <>
               <div className="flex items-center gap-3 overflow-hidden">
@@ -524,7 +524,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
 
         {/* Sidebar Footer — the account area. All the old top-bar controls
             (profile/user settings, language, logout) live here now. */}
-        <div className="border-t border-stone-200 mt-auto">
+        <div className="border-t border-stone-300 mt-auto">
           {isSidebarOpen ? (
             <div className="p-3 space-y-2">
               <span className="block px-1 text-[9px] font-semibold tracking-[0.18em] text-stone-400">{t('admin.userSettings')}</span>
@@ -534,7 +534,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
                 title={t('admin.userSettings')}
                 className="flex items-center gap-3 p-2 rounded-md hover:bg-stone-100 transition-colors group"
               >
-                <Avatar className="w-9 h-9 border border-stone-200 shrink-0">
+                <Avatar className="w-9 h-9 border border-stone-300 shrink-0">
                   <AvatarImage src={`https://avatar.iran.liara.run/username?username=${user?.firstName}+${user?.lastName}`} />
                   <AvatarFallback className="bg-[#111111] text-white text-[10px] font-semibold">{user?.firstName?.[0]}{user?.lastName?.[0]}</AvatarFallback>
                 </Avatar>
@@ -544,7 +544,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
                 </div>
                 <Settings className="w-4 h-4 text-stone-400 group-hover:text-stone-700 transition-colors shrink-0" />
               </Link>
-              <div className="flex items-center justify-between gap-2 pt-2 border-t border-stone-200">
+              <div className="flex items-center justify-between gap-2 pt-2 border-t border-stone-300">
                 <LanguageSwitcher />
                 <Button
                   variant="ghost"
@@ -560,7 +560,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
             /* Collapsed rail: icon-only profile + logout. */
             <div className="py-3 flex flex-col items-center gap-2">
               <Link href="/dashboard/profile" title={t('admin.userSettings')}>
-                <Avatar className="w-8 h-8 border border-stone-200">
+                <Avatar className="w-8 h-8 border border-stone-300">
                   <AvatarImage src={`https://avatar.iran.liara.run/username?username=${user?.firstName}+${user?.lastName}`} />
                   <AvatarFallback className="bg-[#111111] text-white text-[9px] font-semibold">{user?.firstName?.[0]}{user?.lastName?.[0]}</AvatarFallback>
                 </Avatar>
@@ -574,7 +574,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
               </button>
             </div>
           )}
-          <div className="px-4 py-2 flex items-center gap-2 border-t border-stone-200 justify-center lg:justify-start">
+          <div className="px-4 py-2 flex items-center gap-2 border-t border-stone-300 justify-center lg:justify-start">
             <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shrink-0" />
             {isSidebarOpen && <span className="text-[10px] font-semibold text-stone-400">System Online</span>}
           </div>

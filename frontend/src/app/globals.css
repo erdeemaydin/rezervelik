@@ -74,21 +74,25 @@
   --accent-foreground: #2f3437;
   --destructive: #af3029;
   --destructive-foreground: #ffffff;
-  --border: #eaeaea;
-  --input: #eaeaea;
-  --ring: #a8a29e;
-  --radius: 0.625rem;
+  /* Borders must read clearly against the warm off-white canvas — a
+     minimalist palette is not an excuse for low-contrast dividers. Every
+     card, input, select, and menu boundary depends on this being visible
+     at a glance, not just technically present. */
+  --border: #aca290;
+  --input: #9c9280;
+  --ring: #6b6353;
+  --radius: 0.5rem;
 
   /* Sidebar: light warm surface, not dark navy — separated from the canvas
-     by a border rather than a color block. */
+     by a clearly visible border, not a faint one. */
   --sidebar: #f7f6f3;
   --sidebar-foreground: #2f3437;
   --sidebar-primary: #111111;
   --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: #efece6;
+  --sidebar-accent: #ece6d9;
   --sidebar-accent-foreground: #2f3437;
-  --sidebar-border: #eaeaea;
-  --sidebar-ring: #a8a29e;
+  --sidebar-border: #9c9280;
+  --sidebar-ring: #6b6353;
 }
 
 .dark {
