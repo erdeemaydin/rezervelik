@@ -173,7 +173,7 @@ export default function AnalyticsPage() {
           <Card className="border-slate-100 shadow-sm hover:shadow-md transition-shadow">
             <CardHeader className="p-4 pb-2">
               <CardDescription className="text-[10px] font-black uppercase text-slate-500 tracking-wider">{t("analytics.totalReservations")}</CardDescription>
-              <CardTitle className="text-2xl font-bold flex items-center justify-between">
+              <CardTitle className="text-2xl font-bold tabular-nums flex items-center justify-between">
                 {data.summary.totalReservations}
                 <CalendarDays className="w-5 h-5 text-blue-500" />
               </CardTitle>
@@ -186,7 +186,7 @@ export default function AnalyticsPage() {
           <Card className="border-slate-100 shadow-sm hover:shadow-md transition-shadow">
             <CardHeader className="p-4 pb-2">
               <CardDescription className="text-[10px] font-black uppercase text-slate-500 tracking-wider">{t("analytics.guestsSeated")}</CardDescription>
-              <CardTitle className="text-2xl font-bold flex items-center justify-between">
+              <CardTitle className="text-2xl font-bold tabular-nums flex items-center justify-between">
                 {data.summary.totalGuests}
                 <Users className="w-5 h-5 text-indigo-500" />
               </CardTitle>
@@ -199,7 +199,7 @@ export default function AnalyticsPage() {
           <Card className="border-slate-100 shadow-sm hover:shadow-md transition-shadow">
             <CardHeader className="p-4 pb-2">
               <CardDescription className="text-[10px] font-black uppercase text-slate-500 tracking-wider">{t("analytics.avgPartySize")}</CardDescription>
-              <CardTitle className="text-2xl font-bold flex items-center justify-between">
+              <CardTitle className="text-2xl font-bold tabular-nums flex items-center justify-between">
                 {data.summary.avgPartySize}
                 <Users className="w-5 h-5 text-amber-500" />
               </CardTitle>
@@ -214,7 +214,7 @@ export default function AnalyticsPage() {
           <Card className="border-slate-100 shadow-sm hover:shadow-md transition-shadow">
             <CardHeader className="p-4 pb-2">
               <CardDescription className="text-[10px] font-black uppercase text-slate-500 tracking-wider">{t("analytics.vipVisits")}</CardDescription>
-              <CardTitle className="text-2xl font-bold flex items-center justify-between">
+              <CardTitle className="text-2xl font-bold tabular-nums flex items-center justify-between">
                 {data.summary.vipCount}
                 <Star className="w-5 h-5 text-emerald-500" />
               </CardTitle>
@@ -232,7 +232,7 @@ export default function AnalyticsPage() {
           <Card className="border-slate-100 shadow-sm">
             <CardHeader className="p-4 pb-2">
               <CardDescription className="text-[10px] font-black uppercase text-slate-500 tracking-wider">{t("analytics.cancelRate")}</CardDescription>
-              <CardTitle className="text-2xl font-bold flex items-center justify-between">
+              <CardTitle className="text-2xl font-bold tabular-nums flex items-center justify-between">
                 {data.summary.cancelRate}%
                 <Ban className="w-5 h-5 text-rose-500" />
               </CardTitle>
@@ -241,7 +241,7 @@ export default function AnalyticsPage() {
           <Card className="border-slate-100 shadow-sm">
             <CardHeader className="p-4 pb-2">
               <CardDescription className="text-[10px] font-black uppercase text-slate-500 tracking-wider">{t("analytics.noShowRate")}</CardDescription>
-              <CardTitle className="text-2xl font-bold flex items-center justify-between">
+              <CardTitle className="text-2xl font-bold tabular-nums flex items-center justify-between">
                 {data.summary.noShowRate}%
                 <UserX className="w-5 h-5 text-slate-500" />
               </CardTitle>
@@ -250,7 +250,7 @@ export default function AnalyticsPage() {
           <Card className="border-slate-100 shadow-sm">
             <CardHeader className="p-4 pb-2">
               <CardDescription className="text-[10px] font-black uppercase text-slate-500 tracking-wider">{t("analytics.avgLeadTime")}</CardDescription>
-              <CardTitle className="text-2xl font-bold flex items-center justify-between">
+              <CardTitle className="text-2xl font-bold tabular-nums flex items-center justify-between">
                 {data.leadTime.avgDays >= 1 ? `${data.leadTime.avgDays} ${t("analytics.days")}` : `${data.leadTime.avgHours} ${t("analytics.hours")}`}
                 <Clock className="w-5 h-5 text-blue-500" />
               </CardTitle>
@@ -266,15 +266,15 @@ export default function AnalyticsPage() {
             <CardContent className="p-4 pt-0 space-y-1.5">
               <div className="flex justify-between items-center text-xs font-semibold text-slate-600">
                 <span className="flex items-center gap-1.5"><UserPlus className="w-3.5 h-3.5 text-emerald-500" /> {t("analytics.newCustomers")}</span>
-                <span className="font-black text-slate-900">{data.customerSegments.new}</span>
+                <span className="font-black tabular-nums text-slate-900">{data.customerSegments.new}</span>
               </div>
               <div className="flex justify-between items-center text-xs font-semibold text-slate-600">
                 <span className="flex items-center gap-1.5"><Repeat className="w-3.5 h-3.5 text-blue-500" /> {t("analytics.returningCustomers")}</span>
-                <span className="font-black text-slate-900">{data.customerSegments.returning}</span>
+                <span className="font-black tabular-nums text-slate-900">{data.customerSegments.returning}</span>
               </div>
               <div className="flex justify-between items-center text-xs font-semibold text-slate-600">
                 <span className="flex items-center gap-1.5"><Crown className="w-3.5 h-3.5 text-amber-500" /> {t("analytics.regularCustomers")}</span>
-                <span className="font-black text-slate-900">{data.customerSegments.regular}</span>
+                <span className="font-black tabular-nums text-slate-900">{data.customerSegments.regular}</span>
               </div>
             </CardContent>
           </Card>
@@ -437,15 +437,15 @@ export default function AnalyticsPage() {
                 <div className="grid grid-cols-3 gap-4 text-center">
                   <div>
                     <p className="text-[10px] text-slate-400 font-bold uppercase mb-1">{t("analytics.avgWait")}</p>
-                    <p className="text-2xl font-black">{data.waitlistMetrics.avgWaitMinutes}<span className="text-sm font-normal text-slate-400 ml-1">m</span></p>
+                    <p className="text-2xl font-black tabular-nums">{data.waitlistMetrics.avgWaitMinutes}<span className="text-sm font-normal text-slate-400 ml-1">m</span></p>
                   </div>
                   <div>
                     <p className="text-[10px] text-slate-400 font-bold uppercase mb-1">{t("analytics.conversion")}</p>
-                    <p className="text-2xl font-black text-emerald-400">{data.waitlistMetrics.conversionRate}%</p>
+                    <p className="text-2xl font-black tabular-nums text-emerald-400">{data.waitlistMetrics.conversionRate}%</p>
                   </div>
                   <div>
                     <p className="text-[10px] text-slate-400 font-bold uppercase mb-1">{t("analytics.seated")}</p>
-                    <p className="text-2xl font-black">{data.waitlistMetrics.seated}<span className="text-sm font-normal text-slate-400 ml-1">/{data.waitlistMetrics.totalJoined}</span></p>
+                    <p className="text-2xl font-black tabular-nums">{data.waitlistMetrics.seated}<span className="text-sm font-normal text-slate-400 ml-1">/{data.waitlistMetrics.totalJoined}</span></p>
                   </div>
                 </div>
               </CardContent>

@@ -118,28 +118,28 @@ export default function PaymentsPage() {
           <Card className="border-slate-100 shadow-sm bg-gradient-to-br from-emerald-600 to-teal-700 text-white">
             <CardHeader className="p-4 pb-2">
               <CardDescription className="text-[10px] font-black uppercase text-emerald-100 tracking-wider">{t('payments.totalCollected')}</CardDescription>
-              <CardTitle className="text-2xl font-bold">{money(stats.collected, stats.currency)}</CardTitle>
+              <CardTitle className="text-2xl font-bold tabular-nums">{money(stats.collected, stats.currency)}</CardTitle>
             </CardHeader>
             <CardContent className="p-4 pt-0 text-[11px] font-bold text-emerald-100">{stats.paidCount} {t('payments.paidDeposits')}</CardContent>
           </Card>
           <Card className="border-slate-100 shadow-sm">
             <CardHeader className="p-4 pb-2">
               <CardDescription className="text-[10px] font-black uppercase text-slate-400 tracking-wider">{t('payments.awaiting')}</CardDescription>
-              <CardTitle className="text-2xl font-bold text-slate-800">{stats.pending}</CardTitle>
+              <CardTitle className="text-2xl font-bold tabular-nums text-slate-800">{stats.pending}</CardTitle>
             </CardHeader>
             <CardContent className="p-4 pt-0 text-[11px] font-bold text-slate-400">{t('payments.awaitingHint')}</CardContent>
           </Card>
           <Card className="border-rose-100 shadow-sm">
             <CardHeader className="p-4 pb-2">
               <CardDescription className="text-[10px] font-black uppercase text-rose-400 tracking-wider">{t('payments.forfeited')}</CardDescription>
-              <CardTitle className="text-2xl font-bold text-rose-600">{money(stats.forfeitedTotal, stats.currency)}</CardTitle>
+              <CardTitle className="text-2xl font-bold tabular-nums text-rose-600">{money(stats.forfeitedTotal, stats.currency)}</CardTitle>
             </CardHeader>
             <CardContent className="p-4 pt-0 text-[11px] font-bold text-rose-400">{stats.forfeitedCount} {t('payments.forfeitedHint')}</CardContent>
           </Card>
           <Card className="border-slate-100 shadow-sm">
             <CardHeader className="p-4 pb-2">
               <CardDescription className="text-[10px] font-black uppercase text-slate-400 tracking-wider">{t('payments.totalTransactions')}</CardDescription>
-              <CardTitle className="text-2xl font-bold text-slate-800">{stats.count}</CardTitle>
+              <CardTitle className="text-2xl font-bold tabular-nums text-slate-800">{stats.count}</CardTitle>
             </CardHeader>
             <CardContent className="p-4 pt-0 text-[11px] font-bold text-slate-400">{payments[0]?.provider || '—'}</CardContent>
           </Card>
