@@ -436,7 +436,7 @@ export default function ReservationsPage() {
 
   return (
     <>
-      <div className="flex flex-col gap-4">
+      <div className="flex flex-col gap-6">
         {/* Header - Corporate Blue */}
         <div className="flex items-center justify-between">
           <div>
