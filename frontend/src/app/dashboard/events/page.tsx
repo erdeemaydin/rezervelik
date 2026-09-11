@@ -90,7 +90,7 @@ export default function EventsPage() {
       <div className="p-4 sm:p-6 space-y-6">
         <div className="flex items-center justify-between flex-wrap gap-3">
           <div>
-            <h1 className="text-2xl font-black tracking-tight">{t('events.title')}</h1>
+            <h1 className="text-2xl font-semibold tracking-tight text-slate-900 font-heading">{t('events.title')}</h1>
             <p className="text-xs text-slate-400 font-bold uppercase">{t('events.subtitle')}</p>
           </div>
           <Button onClick={() => setIsOpen(true)} className="bg-slate-900 hover:bg-slate-800">

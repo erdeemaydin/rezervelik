@@ -91,7 +91,7 @@ export default function ProfilePage() {
     <>
       <div className="flex flex-col gap-6 max-w-3xl">
         <div>
-          <h1 className="text-2xl font-black text-slate-800 tracking-tight">{t('profile.title')}</h1>
+          <h1 className="text-2xl font-semibold tracking-tight text-slate-900 font-heading">{t('profile.title')}</h1>
           <p className="text-[10px] text-slate-400 font-black uppercase tracking-[0.2em] mt-1">{t('profile.subtitle')}</p>
         </div>
 

@@ -234,7 +234,7 @@ export default function BulkPricesPage() {
             <Button variant="ghost" size="icon" className="rounded-full"><ArrowLeft className="w-5 h-5" /></Button>
           </Link>
           <div>
-            <h1 className="text-2xl font-black text-slate-800 tracking-tight">{t('menus.bulkEditor.title')}</h1>
+            <h1 className="text-2xl font-semibold tracking-tight text-slate-900 font-heading">{t('menus.bulkEditor.title')}</h1>
             <p className="text-[11px] text-slate-400 font-bold uppercase tracking-[0.15em] mt-1">
               {t('menus.bulkEditor.subtitle')} · {t('menus.bulkEditor.currency')}: {currency}
             </p>

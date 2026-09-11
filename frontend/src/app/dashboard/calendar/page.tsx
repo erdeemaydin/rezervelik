@@ -206,7 +206,7 @@ export default function CalendarSettingsPage() {
       <div className="flex flex-col gap-6">
         <div className="flex flex-col md:flex-row justify-between md:items-start gap-4">
           <div>
-            <h1 className="text-2xl font-black text-slate-800 uppercase tracking-tight">{t("calendar.header.title")}</h1>
+            <h1 className="text-2xl font-semibold tracking-tight text-slate-900 font-heading">{t("calendar.header.title")}</h1>
             <p className="text-[10px] text-slate-400 font-black uppercase tracking-[0.2em] mt-1 italic">{t("calendar.header.subtitle")}</p>
           </div>
           

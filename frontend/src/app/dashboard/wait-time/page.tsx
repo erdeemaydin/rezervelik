@@ -180,7 +180,7 @@ export default function WaitlistPage() {
                             <ArrowLeft className="w-5 h-5" />
                         </Button>
                         <div>
-                            <h1 className="text-2xl font-black text-slate-800 tracking-tight">{t("waitTime.title")}</h1>
+                            <h1 className="text-2xl font-semibold tracking-tight text-slate-900 font-heading">{t("waitTime.title")}</h1>
                             <p className="text-[10px] text-slate-400 font-black uppercase tracking-[0.2em] mt-1">{t("waitTime.subtitle")}</p>
                         </div>
                     </div>

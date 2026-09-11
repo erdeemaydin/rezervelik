@@ -117,7 +117,7 @@ export default function MenuWizardPage() {
         <div className="flex items-center gap-4 mb-8">
           <Button variant="ghost" size="icon" onClick={() => router.back()}><ArrowLeft className="w-5 h-5" /></Button>
           <div>
-            <h1 className="text-2xl font-black text-slate-800">{t("menusWizard.title")}</h1>
+            <h1 className="text-2xl font-semibold tracking-tight text-slate-900 font-heading">{t("menusWizard.title")}</h1>
             <p className="text-sm text-slate-500">{t("menusWizard.step")} {step} {t("menusWizard.of3")}</p>
           </div>
         </div>

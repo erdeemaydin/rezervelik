@@ -462,7 +462,7 @@ export default function TablesPage() {
       <div className="flex flex-col gap-4 h-full">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="min-w-0">
-            <h1 className="text-xl font-bold text-slate-800">{isRestaurant ? t("tables.pageTitle") : term('resourcePlural')}</h1>
+            <h1 className="text-2xl font-semibold tracking-tight text-slate-900 font-heading">{isRestaurant ? t("tables.pageTitle") : term('resourcePlural')}</h1>
             <p className="text-[10px] text-slate-400 uppercase tracking-[0.2em] font-black">{t("tables.pageSubtitle")}</p>
             {reservationLogic && (
               <Link href="/dashboard/settings" className="inline-flex items-center gap-1 mt-1 text-[10px] font-bold text-blue-600 hover:text-blue-700 hover:underline">

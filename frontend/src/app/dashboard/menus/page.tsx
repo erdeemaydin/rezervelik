@@ -518,7 +518,7 @@ export default function MenuManagementPage() {
         {/* Header - High Density Corporate */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-black text-slate-800 tracking-tight">{t('menus.title.menuArchitecture')}</h1>
+            <h1 className="text-2xl font-semibold tracking-tight text-slate-900 font-heading">{t('menus.title.menuArchitecture')}</h1>
             <p className="text-[10px] text-slate-400 font-black uppercase tracking-[0.2em] mt-1 italic">{t('menus.title.digitalCatalogue')}</p>
           </div>
           <div className="flex gap-2">

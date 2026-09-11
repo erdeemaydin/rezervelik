@@ -85,7 +85,7 @@ export default function TenantAuditPage() {
       <div className="flex flex-col gap-6">
         <div className="flex items-start justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-slate-800">{t('audit.title')}</h1>
+            <h1 className="text-2xl font-semibold tracking-tight text-slate-900 font-heading">{t('audit.title')}</h1>
             <p className="text-xs text-slate-500 font-medium">{t('audit.subtitle')}</p>
           </div>
           <button

@@ -40,7 +40,7 @@ export default function SchedulingPage() {
     <>
       <div className="flex flex-col gap-3">
         <div className="flex items-baseline gap-3 flex-wrap">
-          <h1 className="text-lg font-black tracking-tight">{t("scheduling.title")}</h1>
+          <h1 className="text-lg font-semibold tracking-tight font-heading">{t("scheduling.title")}</h1>
           <p className="text-muted-foreground text-xs hidden sm:block">
             {t("scheduling.description")}
           </p>

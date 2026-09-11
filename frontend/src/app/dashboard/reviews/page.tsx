@@ -88,7 +88,7 @@ export default function ReviewsPage() {
   const Header = () => (
     <div className="flex flex-wrap items-center justify-between gap-3">
       <div>
-        <h1 className="text-2xl font-bold text-slate-800">{t('reviews.title')}</h1>
+        <h1 className="text-2xl font-semibold tracking-tight text-slate-900 font-heading">{t('reviews.title')}</h1>
         <p className="text-xs text-slate-500 font-medium">{t('reviews.subtitle')}</p>
       </div>
       <div className="flex items-center gap-2">

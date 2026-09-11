@@ -226,7 +226,7 @@ export default function EventDetailPage() {
 
         <div className="flex items-center justify-between flex-wrap gap-3">
           <div>
-            <h1 className="text-2xl font-black tracking-tight">{form.clientName}</h1>
+            <h1 className="text-2xl font-semibold tracking-tight text-slate-900 font-heading">{form.clientName}</h1>
             <p className="text-xs text-slate-400 font-bold uppercase">{t(`events.types.${form.eventType}`)} · {form.eventDate}</p>
           </div>
           <div className="flex flex-wrap gap-1">

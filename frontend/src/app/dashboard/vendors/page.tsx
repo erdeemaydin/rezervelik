@@ -72,7 +72,7 @@ export default function VendorsPage() {
       <div className="p-4 sm:p-6 space-y-6 max-w-5xl">
         <div className="flex items-center justify-between flex-wrap gap-3">
           <div>
-            <h1 className="text-2xl font-black tracking-tight flex items-center gap-2"><Handshake className="w-6 h-6" />{t('vendors.title')}</h1>
+            <h1 className="text-2xl font-semibold tracking-tight flex items-center gap-2 font-heading"><Handshake className="w-6 h-6" />{t('vendors.title')}</h1>
             <p className="text-xs text-slate-400 font-bold uppercase">{t('vendors.subtitle')}</p>
           </div>
           <Button onClick={openCreate} className="bg-slate-900 hover:bg-slate-800"><Plus className="w-4 h-4 mr-1.5" />{t('vendors.add')}</Button>

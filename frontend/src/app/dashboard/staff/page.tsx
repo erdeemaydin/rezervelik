@@ -194,7 +194,7 @@ export default function StaffManagementPage() {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-black text-slate-800 tracking-tight">{t("staff.title")}</h1>
+            <h1 className="text-2xl font-semibold tracking-tight text-slate-900 font-heading">{t("staff.title")}</h1>
             <p className="text-[10px] text-slate-400 font-black uppercase tracking-[0.2em] mt-1 italic">{t("staff.subtitle")}</p>
           </div>
           <Button size="sm" onClick={handleOpenCreate} className="bg-blue-600 hover:bg-blue-700 text-white rounded-sm h-9 px-6 font-black text-[10px] uppercase shadow-md shadow-blue-600/20">

@@ -110,7 +110,7 @@ export default function PaymentsPage() {
     <>
       <div className="flex flex-col gap-6">
         <div>
-          <h1 className="text-2xl font-bold text-slate-800">{t('payments.title')}</h1>
+          <h1 className="text-2xl font-semibold tracking-tight text-slate-900 font-heading">{t('payments.title')}</h1>
           <p className="text-xs text-slate-500 font-medium">{t('payments.depositsSubtitle')}</p>
         </div>
 
