@@ -69,13 +69,13 @@ export default function SystemSettingsPage() {
           <p className="text-xs text-slate-500 font-medium">Configure platform-wide behaviors and defaults.</p>
         </div>
 
-        <Card className="border-slate-200 shadow-sm bg-white">
-          <CardHeader className="border-b border-slate-100 bg-slate-50/50 p-4">
+        <Card className="border-border shadow-sm bg-white">
+          <CardHeader className="border-b border-border bg-slate-50/50 p-4">
             <CardTitle className="text-sm font-bold text-slate-700">Platform Control</CardTitle>
             <CardDescription className="text-xs">These settings affect all tenants on the platform immediately.</CardDescription>
           </CardHeader>
           <CardContent className="p-6 space-y-6">
-            <div className="flex items-center justify-between p-4 border border-slate-200 rounded-lg">
+            <div className="flex items-center justify-between p-4 border border-border rounded-lg">
               <div className="space-y-0.5">
                 <Label className="text-base font-bold text-slate-800">Maintenance Mode</Label>
                 <p className="text-xs text-slate-500 font-medium">Disable access to all tenant dashboards. API will return 503.</p>
@@ -83,7 +83,7 @@ export default function SystemSettingsPage() {
               <Switch checked={settings.maintenanceMode} onCheckedChange={(v) => setSettings({ ...settings, maintenanceMode: v })} />
             </div>
 
-            <div className="flex items-center justify-between p-4 border border-slate-200 rounded-lg">
+            <div className="flex items-center justify-between p-4 border border-border rounded-lg">
               <div className="space-y-0.5">
                 <Label className="text-base font-bold text-slate-800">Public Registration</Label>
                 <p className="text-xs text-slate-500 font-medium">Allow new restaurants to self-register via the main landing page.</p>
@@ -91,7 +91,7 @@ export default function SystemSettingsPage() {
               <Switch checked={settings.publicRegistrationEnabled} onCheckedChange={(v) => setSettings({ ...settings, publicRegistrationEnabled: v })} />
             </div>
 
-            <div className="flex items-center justify-between p-4 border border-slate-200 rounded-lg">
+            <div className="flex items-center justify-between p-4 border border-border rounded-lg">
               <div className="space-y-0.5">
                 <Label className="text-base font-bold text-slate-800">Enforce 2FA for System Admins</Label>
                 <p className="text-xs text-slate-500 font-medium">Require two-factor authentication for root access.</p>
@@ -99,7 +99,7 @@ export default function SystemSettingsPage() {
               <Switch checked={settings.enforce2FAForAdmins} onCheckedChange={(v) => setSettings({ ...settings, enforce2FAForAdmins: v })} />
             </div>
             
-            <div className="flex items-center justify-between p-4 border border-slate-200 rounded-lg">
+            <div className="flex items-center justify-between p-4 border border-border rounded-lg">
               <div className="space-y-0.5 pr-4">
                 <Label className="text-base font-bold text-slate-800">Date &amp; Time Format</Label>
                 <p className="text-xs text-slate-500 font-medium">
@@ -131,8 +131,8 @@ export default function SystemSettingsPage() {
           </CardContent>
         </Card>
 
-        <Card className="border-slate-200 shadow-sm bg-white">
-          <CardHeader className="border-b border-slate-100 bg-slate-50/50 p-4 flex flex-row items-center gap-3">
+        <Card className="border-border shadow-sm bg-white">
+          <CardHeader className="border-b border-border bg-slate-50/50 p-4 flex flex-row items-center gap-3">
             <div className="p-2 bg-emerald-50 rounded-md text-emerald-600"><Palette className="w-5 h-5" /></div>
             <div>
               <CardTitle className="text-sm font-bold text-slate-700">Console Appearance</CardTitle>
@@ -148,10 +148,10 @@ export default function SystemSettingsPage() {
                     key={th.id}
                     type="button"
                     onClick={() => { setSettings({ ...settings, dashboardTheme: th.id }); useAdminThemeStore.getState().setTheme(th.id); }}
-                    className={`relative flex flex-col items-stretch gap-2 rounded-lg border-2 p-2.5 text-left transition-all ${active ? 'border-slate-800 shadow-sm' : 'border-slate-200 hover:border-slate-300'}`}
+                    className={`relative flex flex-col items-stretch gap-2 rounded-lg border-2 p-2.5 text-left transition-all ${active ? 'border-slate-800 shadow-sm' : 'border-border hover:border-ring'}`}
                     aria-pressed={active}
                   >
-                    <div className="flex h-12 overflow-hidden rounded-md border border-slate-200">
+                    <div className="flex h-12 overflow-hidden rounded-md border border-border">
                       <span className="w-1/4" style={{ backgroundColor: th.swatch.sidebar }} />
                       <span className="flex flex-1 items-center justify-center" style={{ backgroundColor: th.swatch.bg }}>
                         <span className="h-4 w-4 rounded-full" style={{ backgroundColor: th.swatch.accent }} />

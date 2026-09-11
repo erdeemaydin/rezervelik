@@ -249,8 +249,8 @@ export default function TenantManagementPage() {
           <Button size="sm" onClick={() => setIsDialogOpen(true)} className="bg-emerald-600 hover:bg-emerald-700 h-8 text-[10px] font-semibold">{t('systemAdmin.provisionNewRestaurant')}</Button>
         </div>
 
-        <Card className="rounded-md border-slate-200 shadow-sm overflow-hidden bg-white">
-          <CardHeader className="p-3 bg-slate-50/50 border-b border-slate-200">
+        <Card className="rounded-md border-border shadow-sm overflow-hidden bg-white">
+          <CardHeader className="p-3 bg-slate-50/50 border-b border-border">
              <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                     <Globe className="w-4 h-4 text-emerald-500" />
@@ -258,7 +258,7 @@ export default function TenantManagementPage() {
                 </div>
                 <div className="relative w-64">
                     <MagnifyingGlass className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
-                    <Input placeholder={t('systemAdmin.searchPlaceholder')} className="pl-8 h-8 text-xs bg-white border-slate-200 rounded-md" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
+                    <Input placeholder={t('systemAdmin.searchPlaceholder')} className="pl-8 h-8 text-xs bg-white border-border rounded-md" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
                 </div>
              </div>
           </CardHeader>
@@ -277,7 +277,7 @@ export default function TenantManagementPage() {
                 {loading ? (
                     <TableRow><TableCell colSpan={5} className="h-32 text-center text-[10px] font-semibold text-slate-400">Querying Tenants...</TableCell></TableRow>
                 ) : filteredTenants.map(tenant => (
-                  <TableRow key={tenant.id} className="h-12 hover:bg-slate-50/50 border-b border-slate-100">
+                  <TableRow key={tenant.id} className="h-12 hover:bg-slate-50/50 border-b border-border">
                     <TableCell className="px-4">
                       <div className="flex items-center gap-3">
                         <div className="w-8 h-8 rounded bg-emerald-50 flex items-center justify-center text-emerald-600 border border-emerald-100">
@@ -362,32 +362,32 @@ export default function TenantManagementPage() {
                 <div className="p-6 space-y-4 bg-white">
                     <div className="grid gap-1.5">
                         <Label className="text-[10px] font-semibold text-slate-400 ml-1">Restaurant Name</Label>
-                        <Input required value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} className="h-10 text-sm font-bold border-slate-200 rounded-sm" />
+                        <Input required value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} className="h-10 text-sm font-bold border-border rounded-sm" />
                     </div>
                     <div className="grid gap-1.5">
                         <Label className="text-[10px] font-semibold text-slate-400 ml-1">Admin Email</Label>
-                        <Input required type="email" value={formData.contactEmail} onChange={e => setFormData({...formData, contactEmail: e.target.value})} className="h-10 text-sm font-bold border-slate-200 rounded-sm" />
+                        <Input required type="email" value={formData.contactEmail} onChange={e => setFormData({...formData, contactEmail: e.target.value})} className="h-10 text-sm font-bold border-border rounded-sm" />
                     </div>
                     <div className="grid grid-cols-2 gap-4">
                         <div className="grid gap-1.5">
                             <Label className="text-[10px] font-semibold text-slate-400 ml-1">First Name</Label>
-                            <Input required value={formData.adminFirstName} onChange={e => setFormData({...formData, adminFirstName: e.target.value})} className="h-10 text-sm font-bold border-slate-200 rounded-sm" />
+                            <Input required value={formData.adminFirstName} onChange={e => setFormData({...formData, adminFirstName: e.target.value})} className="h-10 text-sm font-bold border-border rounded-sm" />
                         </div>
                         <div className="grid gap-1.5">
                             <Label className="text-[10px] font-semibold text-slate-400 ml-1">Last Name</Label>
-                            <Input required value={formData.adminLastName} onChange={e => setFormData({...formData, adminLastName: e.target.value})} className="h-10 text-sm font-bold border-slate-200 rounded-sm" />
+                            <Input required value={formData.adminLastName} onChange={e => setFormData({...formData, adminLastName: e.target.value})} className="h-10 text-sm font-bold border-border rounded-sm" />
                         </div>
                     </div>
                     <div className="grid gap-1.5">
                         <Label className="text-[10px] font-semibold text-slate-400 ml-1">Initial Password (Optional)</Label>
-                        <Input type="password" value={formData.adminPassword} onChange={e => setFormData({...formData, adminPassword: e.target.value})} placeholder="Leave blank to generate invite link" className="h-10 text-sm font-bold border-slate-200 rounded-sm" />
+                        <Input type="password" value={formData.adminPassword} onChange={e => setFormData({...formData, adminPassword: e.target.value})} placeholder="Leave blank to generate invite link" className="h-10 text-sm font-bold border-border rounded-sm" />
                     </div>
                     <div className="grid gap-1.5">
                         <Label className="text-[10px] font-semibold text-slate-400 ml-1">Business Type</Label>
                         <select
                           value={formData.businessType}
                           onChange={e => setFormData({...formData, businessType: e.target.value})}
-                          className="h-10 px-2 text-sm font-bold border border-slate-200 rounded-sm bg-white"
+                          className="h-10 px-2 text-sm font-bold border border-border rounded-sm bg-white transition-colors outline-none hover:border-ring focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
                         >
                           <option value="RESTAURANT">Restaurant</option>
                           <option value="SALON">Salon / Barber</option>
@@ -409,7 +409,7 @@ export default function TenantManagementPage() {
                     </div>
                   </div>
                 )}
-                <div className="p-4 bg-slate-50 border-t border-slate-100 flex justify-end gap-2">
+                <div className="p-4 bg-slate-50 border-t border-border flex justify-end gap-2">
                     <Button type="button" variant="ghost" onClick={() => { setIsDialogOpen(false); setInviteLink(null); }} className="h-9 text-xs font-bold text-slate-400">CLOSE</Button>
                     {!inviteLink && <Button type="submit" className="h-9 bg-emerald-600 hover:bg-emerald-700 text-xs font-semibold px-6 rounded-sm">INITIALIZE PROVISIONING</Button>}
                 </div>
@@ -429,7 +429,7 @@ export default function TenantManagementPage() {
                     </div>
                     <div className="bg-white max-h-[82vh] overflow-y-auto">
                       <Tabs defaultValue="subscription" className="w-full gap-0">
-                        <div className="px-6 pt-4 border-b border-slate-100 sticky top-0 bg-white z-10">
+                        <div className="px-6 pt-4 border-b border-border sticky top-0 bg-white z-10">
                           <TabsList className="bg-slate-100/60">
                             <TabsTrigger value="subscription" className="text-[10px] font-semibold gap-1.5"><CreditCard className="w-3.5 h-3.5" /> Subscription</TabsTrigger>
                             <TabsTrigger value="configuration" className="text-[10px] font-semibold gap-1.5"><GearSix className="w-3.5 h-3.5" /> Configuration</TabsTrigger>
@@ -444,7 +444,7 @@ export default function TenantManagementPage() {
                                 <div className="space-y-1.5">
                                     <Label className="text-[10px] font-semibold text-slate-400">Plan Tier</Label>
                                     <select 
-                                      className="w-full h-9 px-3 text-xs font-bold border border-slate-200 rounded-sm bg-slate-50"
+                                      className="w-full h-9 px-3 text-xs font-bold border border-border rounded-sm bg-slate-50 transition-colors outline-none hover:border-ring focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
                                       value={subscriptionForm.subscriptionPlan}
                                       onChange={e => {
                                         const plan = e.target.value;
@@ -470,7 +470,7 @@ export default function TenantManagementPage() {
                                 <div className="space-y-1.5">
                                     <Label className="text-[10px] font-semibold text-slate-400">Status</Label>
                                     <select 
-                                      className="w-full h-9 px-3 text-xs font-bold border border-slate-200 rounded-sm bg-slate-50"
+                                      className="w-full h-9 px-3 text-xs font-bold border border-border rounded-sm bg-slate-50 transition-colors outline-none hover:border-ring focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
                                       value={subscriptionForm.subscriptionStatus}
                                       onChange={e => setSubscriptionForm({...subscriptionForm, subscriptionStatus: e.target.value})}
                                     >
@@ -483,7 +483,7 @@ export default function TenantManagementPage() {
                                     <Label className="text-[10px] font-semibold text-slate-400">Subscription Ends At</Label>
                                     <Input 
                                       type="date" 
-                                      className="h-9 text-xs font-bold border-slate-200 rounded-sm bg-slate-50"
+                                      className="h-9 text-xs font-bold border-border rounded-sm bg-slate-50"
                                       value={subscriptionForm.subscriptionEndsAt}
                                       onChange={e => setSubscriptionForm({...subscriptionForm, subscriptionEndsAt: e.target.value})}
                                     />
@@ -492,7 +492,7 @@ export default function TenantManagementPage() {
                             <div className="mt-4 space-y-1.5">
                                 <Label className="text-[10px] font-semibold text-slate-400">SysAdmin Notes</Label>
                                 <textarea 
-                                  className="w-full h-24 p-3 text-xs font-medium border border-slate-200 rounded-sm bg-slate-50 resize-none"
+                                  className="w-full h-24 p-3 text-xs font-medium border border-border rounded-sm bg-slate-50 resize-none"
                                   placeholder="Internal notes about billing, integration, or custom agreements..."
                                   value={subscriptionForm.sysAdminNotes}
                                   onChange={e => setSubscriptionForm({...subscriptionForm, sysAdminNotes: e.target.value})}
@@ -506,13 +506,13 @@ export default function TenantManagementPage() {
                             <div className="flex items-center gap-2 mb-2">
                                 <Label className="text-xs font-semibold text-slate-800 tracking-tight">Business Vertical</Label>
                             </div>
-                            <div className="flex items-center justify-between p-3 border border-slate-100 rounded-sm">
+                            <div className="flex items-center justify-between p-3 border border-border rounded-sm">
                                 <div className="space-y-0.5">
                                     <Label className="text-xs font-semibold">Business Type</Label>
                                     <p className="text-[9px] text-slate-400 font-bold">Terminology & default features</p>
                                 </div>
                                 <select
-                                  className="h-8 px-2 text-xs font-bold border border-slate-200 rounded-sm bg-slate-50"
+                                  className="h-8 px-2 text-xs font-bold border border-border rounded-sm bg-slate-50 transition-colors outline-none hover:border-ring focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
                                   value={settingsForm.businessType}
                                   onChange={e => setSettingsForm({...settingsForm, businessType: e.target.value})}
                                 >
@@ -530,13 +530,13 @@ export default function TenantManagementPage() {
                             <div className="flex items-center gap-2 mb-2">
                                 <Label className="text-xs font-semibold text-slate-800 tracking-tight">Design Architecture</Label>
                             </div>
-                            <div className="flex items-center justify-between p-3 border border-slate-100 rounded-sm">
+                            <div className="flex items-center justify-between p-3 border border-border rounded-sm">
                                 <div className="space-y-0.5">
                                     <Label className="text-xs font-semibold">Layout Style</Label>
                                     <p className="text-[9px] text-slate-400 font-bold">Customer Portal Theme</p>
                                 </div>
                                 <select 
-                                  className="h-8 px-2 text-xs font-bold border border-slate-200 rounded-sm bg-slate-50"
+                                  className="h-8 px-2 text-xs font-bold border border-border rounded-sm bg-slate-50 transition-colors outline-none hover:border-ring focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
                                   value={settingsForm.layoutStyle}
                                   onChange={e => setSettingsForm({...settingsForm, layoutStyle: e.target.value})}
                                 >
@@ -557,13 +557,13 @@ export default function TenantManagementPage() {
                                 <Label className="text-xs font-semibold text-slate-800 tracking-tight">Platform Configuration</Label>
                             </div>
                             {/* Global currency — root-admin-only; tenant admins see it read-only. */}
-                            <div className="flex items-center justify-between p-3 border border-slate-100 rounded-sm">
+                            <div className="flex items-center justify-between p-3 border border-border rounded-sm">
                                 <div className="space-y-0.5">
                                     <Label className="text-xs font-semibold">Currency</Label>
                                     <p className="text-[9px] text-slate-400 font-bold">Global Menu & Deposit Currency</p>
                                 </div>
                                 <select
-                                  className="h-8 px-2 text-xs font-bold border border-slate-200 rounded-sm bg-slate-50"
+                                  className="h-8 px-2 text-xs font-bold border border-border rounded-sm bg-slate-50 transition-colors outline-none hover:border-ring focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
                                   value={settingsForm.currency}
                                   onChange={e => setSettingsForm({...settingsForm, currency: e.target.value})}
                                 >
@@ -574,13 +574,13 @@ export default function TenantManagementPage() {
                                 </select>
                             </div>
                             {/* Default UI language — applied for users who haven't chosen one. */}
-                            <div className="flex items-center justify-between p-3 border border-slate-100 rounded-sm">
+                            <div className="flex items-center justify-between p-3 border border-border rounded-sm">
                                 <div className="space-y-0.5">
                                     <Label className="text-xs font-semibold">Default Language</Label>
                                     <p className="text-[9px] text-slate-400 font-bold">Dashboard UI Language</p>
                                 </div>
                                 <select
-                                  className="h-8 px-2 text-xs font-bold border border-slate-200 rounded-sm bg-slate-50"
+                                  className="h-8 px-2 text-xs font-bold border border-border rounded-sm bg-slate-50 transition-colors outline-none hover:border-ring focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
                                   value={settingsForm.defaultLanguage}
                                   onChange={e => setSettingsForm({...settingsForm, defaultLanguage: e.target.value})}
                                 >
@@ -596,49 +596,49 @@ export default function TenantManagementPage() {
                             <Label className="text-xs font-semibold text-slate-800 tracking-tight">Feature Flags</Label>
                         </div>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                            <div className="flex items-center justify-between p-3 border border-slate-100 rounded-sm">
+                            <div className="flex items-center justify-between p-3 border border-border rounded-sm">
                                 <div className="space-y-0.5">
                                     <Label className="text-xs font-semibold">VIP Status</Label>
                                     <p className="text-[9px] text-slate-400 font-bold">Staff VIP Marking</p>
                                 </div>
                                 <Checkbox checked={settingsForm.isVipEnabled} onCheckedChange={(c) => setSettingsForm({...settingsForm, isVipEnabled: !!c})} />
                             </div>
-                            <div className="flex items-center justify-between p-3 border border-slate-100 rounded-sm">
+                            <div className="flex items-center justify-between p-3 border border-border rounded-sm">
                                 <div className="space-y-0.5">
                                     <Label className="text-xs font-semibold">Internal Notes</Label>
                                     <p className="text-[9px] text-slate-400 font-bold">Staff Instructions</p>
                                 </div>
                                 <Checkbox checked={settingsForm.isInternalNotesEnabled} onCheckedChange={(c) => setSettingsForm({...settingsForm, isInternalNotesEnabled: !!c})} />
                             </div>
-                            <div className="flex items-center justify-between p-3 border border-slate-100 rounded-sm">
+                            <div className="flex items-center justify-between p-3 border border-border rounded-sm">
                                 <div className="space-y-0.5">
                                     <Label className="text-xs font-semibold">Categories</Label>
                                     <p className="text-[9px] text-slate-400 font-bold">Source Tracking</p>
                                 </div>
                                 <Checkbox checked={settingsForm.isCategoriesEnabled} onCheckedChange={(c) => setSettingsForm({...settingsForm, isCategoriesEnabled: !!c})} />
                             </div>
-                            <div className="flex items-center justify-between p-3 border border-slate-100 rounded-sm bg-indigo-50/30">
+                            <div className="flex items-center justify-between p-3 border border-border rounded-sm bg-indigo-50/30">
                                 <div className="space-y-0.5">
                                     <Label className="text-xs font-semibold text-indigo-900">Wait Time Module</Label>
                                     <p className="text-[9px] text-indigo-400 font-bold">Enable Waitlist</p>
                                 </div>
                                 <Checkbox checked={settingsForm.hasWaitTimeFeature} onCheckedChange={(c) => setSettingsForm({...settingsForm, hasWaitTimeFeature: !!c})} />
                             </div>
-                            <div className="flex items-center justify-between p-3 border border-slate-100 rounded-sm bg-indigo-50/30">
+                            <div className="flex items-center justify-between p-3 border border-border rounded-sm bg-indigo-50/30">
                                 <div className="space-y-0.5">
                                     <Label className="text-xs font-semibold text-indigo-900">Shift Management</Label>
                                     <p className="text-[9px] text-indigo-400 font-bold">Staff Rostering</p>
                                 </div>
                                 <Checkbox checked={settingsForm.hasShiftFeature} onCheckedChange={(c) => setSettingsForm({...settingsForm, hasShiftFeature: !!c})} />
                             </div>
-                            <div className="flex items-center justify-between p-3 border border-slate-100 rounded-sm bg-indigo-50/30">
+                            <div className="flex items-center justify-between p-3 border border-border rounded-sm bg-indigo-50/30">
                                 <div className="space-y-0.5">
                                     <Label className="text-xs font-semibold text-indigo-900">Digital Menu</Label>
                                     <p className="text-[9px] text-indigo-400 font-bold">Menu & QR</p>
                                 </div>
                                 <Checkbox checked={settingsForm.hasMenuFeature} onCheckedChange={(c) => setSettingsForm({...settingsForm, hasMenuFeature: !!c})} />
                             </div>
-                            <div className="flex items-center justify-between p-3 border border-slate-100 rounded-sm bg-indigo-50/30">
+                            <div className="flex items-center justify-between p-3 border border-border rounded-sm bg-indigo-50/30">
                                 <div className="space-y-0.5">
                                     <Label className="text-xs font-semibold text-indigo-900">Paid Reservations</Label>
                                     <p className="text-[9px] text-indigo-400 font-bold">Deposits & Payment</p>
@@ -646,7 +646,7 @@ export default function TenantManagementPage() {
                                 <Checkbox checked={settingsForm.hasPaymentFeature} onCheckedChange={(c) => setSettingsForm({...settingsForm, hasPaymentFeature: !!c})} />
                             </div>
                             {/* Online ordering — commercial add-on on the Restaurant row, SysAdmin-only. */}
-                            <div className="flex items-center justify-between p-3 border border-slate-100 rounded-sm bg-emerald-50/40">
+                            <div className="flex items-center justify-between p-3 border border-border rounded-sm bg-emerald-50/40">
                                 <div className="space-y-0.5">
                                     <Label className="text-xs font-semibold text-emerald-900">Online Ordering</Label>
                                     <p className="text-[9px] text-emerald-500 font-bold">Checkout, Delivery & Kitchen</p>
@@ -654,28 +654,28 @@ export default function TenantManagementPage() {
                                 <Checkbox checked={settingsForm.hasOnlineOrdering} onCheckedChange={(c) => setSettingsForm({...settingsForm, hasOnlineOrdering: !!c})} />
                             </div>
                             {/* Organizer / wedding modules — meaningful for the WEDDING vertical. */}
-                            <div className="flex items-center justify-between p-3 border border-slate-100 rounded-sm bg-amber-50/40">
+                            <div className="flex items-center justify-between p-3 border border-border rounded-sm bg-amber-50/40">
                                 <div className="space-y-0.5">
                                     <Label className="text-xs font-semibold text-amber-900">Event Pipeline</Label>
                                     <p className="text-[9px] text-amber-500 font-bold">Lead → Confirmed</p>
                                 </div>
                                 <Checkbox checked={settingsForm.hasEventPipeline} onCheckedChange={(c) => setSettingsForm({...settingsForm, hasEventPipeline: !!c})} />
                             </div>
-                            <div className="flex items-center justify-between p-3 border border-slate-100 rounded-sm bg-amber-50/40">
+                            <div className="flex items-center justify-between p-3 border border-border rounded-sm bg-amber-50/40">
                                 <div className="space-y-0.5">
                                     <Label className="text-xs font-semibold text-amber-900">Installment Plans</Label>
                                     <p className="text-[9px] text-amber-500 font-bold">Kapora & Taksit</p>
                                 </div>
                                 <Checkbox checked={settingsForm.hasInstallmentPlans} onCheckedChange={(c) => setSettingsForm({...settingsForm, hasInstallmentPlans: !!c})} />
                             </div>
-                            <div className="flex items-center justify-between p-3 border border-slate-100 rounded-sm bg-amber-50/40">
+                            <div className="flex items-center justify-between p-3 border border-border rounded-sm bg-amber-50/40">
                                 <div className="space-y-0.5">
                                     <Label className="text-xs font-semibold text-amber-900">Guest List & Seating</Label>
                                     <p className="text-[9px] text-amber-500 font-bold">RSVP & Seating</p>
                                 </div>
                                 <Checkbox checked={settingsForm.hasGuestList} onCheckedChange={(c) => setSettingsForm({...settingsForm, hasGuestList: !!c})} />
                             </div>
-                            <div className="flex items-center justify-between p-3 border border-slate-100 rounded-sm bg-amber-50/40">
+                            <div className="flex items-center justify-between p-3 border border-border rounded-sm bg-amber-50/40">
                                 <div className="space-y-0.5">
                                     <Label className="text-xs font-semibold text-amber-900">Vendor Coordination</Label>
                                     <p className="text-[9px] text-amber-500 font-bold">Photographers, DJs…</p>
@@ -693,7 +693,7 @@ export default function TenantManagementPage() {
                             {/* 2FA — root-admin-only. The SysAdmin both enables 2FA and
                                 picks which roles must use it; tenant admins have no 2FA
                                 controls of their own. */}
-                            <div className="p-3 border border-slate-100 rounded-sm bg-rose-50/30 space-y-3">
+                            <div className="p-3 border border-border rounded-sm bg-rose-50/30 space-y-3">
                                 <div className="flex items-center justify-between">
                                     <div className="space-y-0.5">
                                         <Label className="text-xs font-semibold text-rose-900">Two-Factor Authentication</Label>
@@ -723,7 +723,7 @@ export default function TenantManagementPage() {
                                                         if (set.has(role)) set.delete(role); else set.add(role);
                                                         setSettingsForm({ ...settingsForm, twoFactorRoles: Array.from(set).join(',') });
                                                     }}
- className={`px-1.5 py-1.5 rounded-sm border text-[10px] font-semibold tracking-tight transition-all ${active ?'border-rose-500 bg-rose-500 text-white':'border-slate-200 bg-white text-slate-500 hover:border-rose-300'}`}
+ className={`px-1.5 py-1.5 rounded-sm border text-[10px] font-semibold tracking-tight transition-all ${active ?'border-rose-500 bg-rose-500 text-white':'border-border bg-white text-slate-500 hover:border-rose-300'}`}
                                                 >
                                                     {role}
                                                 </button>
@@ -733,7 +733,7 @@ export default function TenantManagementPage() {
                                 )}
                             </div>
                             {/* Audit log visibility — let this tenant's admins see their own activity log. */}
-                            <div className="flex items-center justify-between p-3 border border-slate-100 rounded-sm bg-slate-50/40">
+                            <div className="flex items-center justify-between p-3 border border-border rounded-sm bg-slate-50/40">
                                 <div className="space-y-0.5">
                                     <Label className="text-xs font-semibold">Audit Log Visibility</Label>
                                     <p className="text-[9px] text-slate-400 font-bold">Let Tenant Admins See Their Activity Log</p>
@@ -750,7 +750,7 @@ export default function TenantManagementPage() {
                             </div>
                             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
                                 {AVAILABLE_PERMISSIONS.map(perm => (
-                                    <div key={perm.id} className={cn("flex items-center justify-between p-2.5 border rounded-sm transition-all", adminPermissions.has(perm.id) ? "border-emerald-200 bg-emerald-50/30" : "border-slate-100 bg-slate-50/50")}>
+                                    <div key={perm.id} className={cn("flex items-center justify-between p-2.5 border rounded-sm transition-all", adminPermissions.has(perm.id) ? "border-emerald-200 bg-emerald-50/30" : "border-border bg-slate-50/50")}>
  <div className={cn("text-[10px] font-semibold tracking-tight", adminPermissions.has(perm.id) ?"text-emerald-700":"text-slate-600")}>{perm.label}</div>
                                         <Checkbox checked={adminPermissions.has(perm.id)} onCheckedChange={() => togglePermission(perm.id)} />
                                     </div>
@@ -761,8 +761,8 @@ export default function TenantManagementPage() {
                                 const adminUser = selectedTenant?.users?.find((u: any) => u.role === 'ADMIN');
                                 if (!adminUser) return null;
                                 return (
-                                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-6 mt-2 border-t border-slate-200">
-                                    <div className="p-4 border border-slate-200 rounded-md space-y-2">
+                                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-6 mt-2 border-t border-border">
+                                    <div className="p-4 border border-border rounded-md space-y-2">
                                         <div className="flex items-center justify-between">
                                             <div className="flex items-center gap-2">
                                                 <ShieldCheck className="w-4 h-4 text-emerald-500" />
@@ -777,7 +777,7 @@ export default function TenantManagementPage() {
                                                 : <span className="text-amber-600 font-bold"> Awaiting setup at next sign-in.</span>)}
                                         </p>
                                     </div>
-                                    <div className="p-4 border border-slate-200 rounded-md space-y-2">
+                                    <div className="p-4 border border-border rounded-md space-y-2">
                                         <div className="flex items-center gap-2">
                                             <Key className="w-4 h-4 text-amber-500" />
                                             <Label className="text-xs font-semibold text-slate-800 tracking-tight">Password Reset</Label>
@@ -788,7 +788,7 @@ export default function TenantManagementPage() {
                                         {resetLink ? (
                                             <div className="space-y-2">
                                                 <div className="flex items-center gap-2">
-                                                    <Input readOnly value={resetLink} className="h-9 text-[10px] font-mono border-slate-200 bg-slate-50 rounded-sm" onFocus={(e) => e.target.select()} />
+                                                    <Input readOnly value={resetLink} className="h-9 text-[10px] font-mono border-border bg-slate-50 rounded-sm" onFocus={(e) => e.target.select()} />
                                                     <Button type="button" size="sm" onClick={() => { navigator.clipboard.writeText(resetLink); toast.success('Copied to clipboard!'); }} className="h-9 shrink-0 bg-slate-900 hover:bg-slate-800 text-white">
                                                         <Copy className="w-3.5 h-3.5" />
                                                     </Button>
@@ -811,7 +811,7 @@ export default function TenantManagementPage() {
                         </div>
                       </Tabs>
                     </div>
-                    <div className="p-4 bg-slate-50 border-t border-slate-100 flex justify-end gap-2">
+                    <div className="p-4 bg-slate-50 border-t border-border flex justify-end gap-2">
                         <Button type="button" variant="ghost" disabled={saving} onClick={() => setIsSettingsOpen(false)} className="h-9 text-xs font-bold text-slate-400">CANCEL</Button>
                         <Button type="submit" disabled={saving} className="h-9 bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold px-6 rounded-sm disabled:opacity-60">{saving ? 'COMMITTING…' : 'COMMIT ENTITLEMENTS'}</Button>
                     </div>

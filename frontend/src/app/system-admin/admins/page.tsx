@@ -31,7 +31,7 @@ function PermissionPicker({ value, onChange }: { value: SystemPermissionKey[]; o
   return (
     <div className="grid gap-2.5 max-h-64 overflow-y-auto pr-1">
       {SYSTEM_PERMISSIONS.map((p) => (
-        <label key={p.key} className="flex items-start gap-2.5 rounded-md border border-slate-200 p-2.5 cursor-pointer hover:bg-slate-50">
+        <label key={p.key} className="flex items-start gap-2.5 rounded-md border border-border p-2.5 cursor-pointer hover:bg-slate-50">
           <Checkbox checked={value.includes(p.key)} onCheckedChange={(c) => toggle(p.key, c)} className="mt-0.5" />
           <span>
             <span className="block text-xs font-bold text-slate-700">{p.label}</span>
@@ -63,7 +63,7 @@ function RootAccessSection({
   const { t } = useTranslation();
   return (
     <>
-      <div className="flex items-center justify-between rounded-md border border-slate-200 p-3">
+      <div className="flex items-center justify-between rounded-md border border-border p-3">
         <div>
           <p className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
             {isRoot ? <ShieldCheck className="w-3.5 h-3.5 text-red-600" /> : <Lock className="w-3.5 h-3.5 text-blue-600" />}
@@ -231,8 +231,8 @@ export default function SystemAdminsPage() {
           </Button>
         </div>
 
-        <Card className="border-slate-200 shadow-sm bg-white overflow-hidden">
-          <CardHeader className="border-b border-slate-100 bg-slate-50/50 p-4">
+        <Card className="border-border shadow-sm bg-white overflow-hidden">
+          <CardHeader className="border-b border-border bg-slate-50/50 p-4">
             <div className="flex items-center gap-2">
               <ShieldCheck className="w-4 h-4 text-emerald-600" />
               <CardTitle className="text-sm font-bold text-slate-700">{t('systemAdmin.admins.accessRoster')}</CardTitle>
@@ -270,7 +270,7 @@ export default function SystemAdminsPage() {
                       </Badge>
                     </TableCell>
                     <TableCell>
-                      <Badge className={isActive ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-slate-100 text-slate-500 border-slate-200'}>
+                      <Badge className={isActive ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-slate-100 text-slate-500 border-border'}>
                         {isActive ? t('systemAdmin.active') : t('systemAdmin.admins.deactivated')}
                       </Badge>
                     </TableCell>
@@ -398,7 +398,7 @@ export default function SystemAdminsPage() {
             </DialogDescription>
           </DialogHeader>
           <div className="flex items-center gap-2 mt-2">
-            <Input readOnly value={resetLink || ''} className="h-9 text-[10px] font-mono border-slate-200 bg-slate-50" onFocus={(e) => e.target.select()} />
+            <Input readOnly value={resetLink || ''} className="h-9 text-[10px] font-mono border-border bg-slate-50" onFocus={(e) => e.target.select()} />
             <Button type="button" size="sm" onClick={() => { if (resetLink) { navigator.clipboard.writeText(resetLink); toast.success(t('systemAdmin.admins.copiedToClipboard')); } }} className="h-9 shrink-0 bg-slate-900 hover:bg-slate-800 text-white">
               <Copy className="w-3.5 h-3.5" />
             </Button>

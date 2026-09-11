@@ -33,7 +33,7 @@ const categoryColor = (c: string) => {
     case 'PERMISSIONS': return 'bg-indigo-50 text-indigo-700 border-indigo-200';
     case 'RESERVATION': return 'bg-teal-50 text-teal-700 border-teal-200';
     case 'PAYMENT': return 'bg-rose-50 text-rose-700 border-rose-200';
-    default: return 'bg-slate-100 text-slate-600 border-slate-200';
+    default: return 'bg-slate-100 text-slate-600 border-border';
   }
 };
 
@@ -75,14 +75,14 @@ export default function SystemAuditPage() {
           </div>
           <button
             onClick={fetchLogs}
-            className="flex items-center gap-2 h-8 px-3 text-xs font-bold text-slate-600 border border-slate-200 rounded-md hover:bg-slate-50"
+            className="flex items-center gap-2 h-8 px-3 text-xs font-bold text-slate-600 border border-border rounded-md hover:bg-slate-50"
           >
             <ArrowClockwise className={cn('w-3.5 h-3.5', loading && 'animate-spin')} /> Refresh
           </button>
         </div>
 
-        <Card className="border-slate-200 shadow-sm bg-white overflow-hidden">
-          <CardHeader className="border-b border-slate-100 bg-slate-50/50 p-4">
+        <Card className="border-border shadow-sm bg-white overflow-hidden">
+          <CardHeader className="border-b border-border bg-slate-50/50 p-4">
             <div className="flex items-center justify-between flex-wrap gap-3">
               <div className="flex items-center gap-2">
                 <HardDrives className="w-4 h-4 text-slate-600" />
@@ -92,7 +92,7 @@ export default function SystemAuditPage() {
                 <select
                   value={restaurantId}
                   onChange={(e) => setRestaurantId(e.target.value)}
-                  className="h-8 px-2 text-xs font-bold border border-slate-200 rounded-md bg-white max-w-[200px]"
+                  className="h-8 px-2 text-xs font-bold border border-border rounded-md bg-white max-w-[200px] transition-colors outline-none hover:border-ring focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
                 >
                   <option value="ALL">All Tenants + Platform</option>
                   {tenants.map((t) => (
@@ -102,7 +102,7 @@ export default function SystemAuditPage() {
                 <select
                   value={category}
                   onChange={(e) => setCategory(e.target.value)}
-                  className="h-8 px-2 text-xs font-bold border border-slate-200 rounded-md bg-white"
+                  className="h-8 px-2 text-xs font-bold border border-border rounded-md bg-white transition-colors outline-none hover:border-ring focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
                 >
                   {CATEGORIES.map((c) => (
                     <option key={c} value={c}>{c === 'ALL' ? 'All Categories' : c}</option>

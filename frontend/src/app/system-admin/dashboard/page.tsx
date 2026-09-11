@@ -28,7 +28,7 @@ export default function SystemAdminDashboard() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <Card className="border-slate-200 shadow-sm">
+          <Card className="border-border shadow-sm">
             <CardHeader className="p-4 pb-2">
               <CardDescription className="text-[10px] font-semibold text-slate-500">Active Tenants</CardDescription>
               <CardTitle className="text-2xl font-bold flex items-center justify-between">
@@ -41,7 +41,7 @@ export default function SystemAdminDashboard() {
             </CardContent>
           </Card>
 
-          <Card className="border-slate-200 shadow-sm">
+          <Card className="border-border shadow-sm">
             <CardHeader className="p-4 pb-2">
               <CardDescription className="text-[10px] font-semibold text-slate-500">Total Users</CardDescription>
               <CardTitle className="text-2xl font-bold flex items-center justify-between">
@@ -54,7 +54,7 @@ export default function SystemAdminDashboard() {
             </CardContent>
           </Card>
 
-          <Card className="border-slate-200 shadow-sm">
+          <Card className="border-border shadow-sm">
             <CardHeader className="p-4 pb-2">
               <CardDescription className="text-[10px] font-semibold text-slate-500">Total Reservations</CardDescription>
               <CardTitle className="text-2xl font-bold flex items-center justify-between">
@@ -67,7 +67,7 @@ export default function SystemAdminDashboard() {
             </CardContent>
           </Card>
 
-          <Card className="border-slate-200 shadow-sm">
+          <Card className="border-border shadow-sm">
             <CardHeader className="p-4 pb-2">
               <CardDescription className="text-[10px] font-semibold text-slate-500">DB Size</CardDescription>
               <CardTitle className="text-2xl font-bold flex items-center justify-between">
@@ -81,8 +81,8 @@ export default function SystemAdminDashboard() {
           </Card>
         </div>
 
-        <Card className="border-slate-200 shadow-sm bg-white min-h-[400px]">
-          <CardHeader className="border-b border-slate-100 bg-slate-50/50">
+        <Card className="border-border shadow-sm bg-white min-h-[400px]">
+          <CardHeader className="border-b border-border bg-slate-50/50">
             <CardTitle className="text-sm font-bold text-slate-700">Platform Traffic</CardTitle>
           </CardHeader>
           <CardContent className="flex items-center justify-center p-8 h-80">
