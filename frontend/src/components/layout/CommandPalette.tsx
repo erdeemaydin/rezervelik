@@ -91,7 +91,7 @@ export function CommandPalette({ items }: CommandPaletteProps) {
         className="p-0 border-0 shadow-2xl overflow-hidden top-[20%] translate-y-0"
       >
         <DialogTitle className="sr-only">{t('commandPalette.title')}</DialogTitle>
-        <div className="flex items-center gap-3 px-4 border-b border-slate-100">
+        <div className="flex items-center gap-3 px-4 border-b border-border">
           <MagnifyingGlass className="w-4 h-4 text-slate-400 shrink-0" />
           <input
             ref={inputRef}
@@ -101,7 +101,7 @@ export function CommandPalette({ items }: CommandPaletteProps) {
             placeholder={t('commandPalette.placeholder')}
             className="w-full h-14 text-sm font-medium text-slate-800 placeholder:text-slate-400 outline-none bg-transparent"
           />
-          <kbd className="hidden sm:inline-block text-[10px] font-bold text-slate-400 border border-slate-200 rounded px-1.5 py-0.5 shrink-0">ESC</kbd>
+          <kbd className="hidden sm:inline-block text-[10px] font-bold text-slate-400 border border-border rounded px-1.5 py-0.5 shrink-0">ESC</kbd>
         </div>
         <div className="max-h-[60vh] overflow-y-auto py-2">
           {results.length === 0 ? (

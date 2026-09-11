@@ -94,7 +94,7 @@ function DraggableStaff({
       className={cn(
         "flex items-center justify-between p-1.5 bg-white border rounded-md shadow-sm hover:border-blue-400 hover:shadow transition-all relative group",
         isDragging && 'opacity-50',
-        isHighlighted ? 'border-blue-600 bg-blue-50/50 ring-2 ring-blue-500/20' : 'border-slate-200'
+        isHighlighted ? 'border-blue-600 bg-blue-50/50 ring-2 ring-blue-500/20' : 'border-border'
       )}
     >
       <div
@@ -129,7 +129,7 @@ function DraggableStaff({
             ? "bg-blue-600 text-white border-blue-600 shadow-sm"
             : shiftCount > 0
               ? "bg-blue-50 text-blue-600 border-blue-200 hover:border-blue-400"
-              : "bg-slate-50 text-slate-400 border-slate-200 hover:text-blue-600 hover:border-blue-300"
+              : "bg-slate-50 text-slate-400 border-border hover:text-blue-600 hover:border-blue-300"
         )}
         // Same behavior as before: toggles highlighting this staff's shifts.
         // The icon is replaced by the live count of shifts they have in this plan (#6).
@@ -865,20 +865,20 @@ export default function ShiftAssigner({ viewMode = 'MONTHLY' }: { viewMode?: 'WE
                 <table className="w-full text-xs text-left border-collapse min-w-[900px]">
                   <thead className="text-[10px] text-slate-700 bg-slate-50 sticky top-0 z-30">
                     <tr>
-                      <th scope="col" className="px-3 py-3 border-b border-slate-100 min-w-[100px] sticky left-0 bg-slate-50 z-40">
+                      <th scope="col" className="px-3 py-3 border-b border-border min-w-[100px] sticky left-0 bg-slate-50 z-40">
                         {t('scheduling.assigner.dateWeekday')}
                       </th>
                       {shifts.map(shift => (
-                        <th key={shift.id} scope="col" className="px-2 py-3 border-b border-slate-100 min-w-[140px]">
+                        <th key={shift.id} scope="col" className="px-2 py-3 border-b border-border min-w-[140px]">
                           <div className="font-bold text-center text-slate-900 leading-tight">{shift.name}</div>
-                          <div className="text-[9px] text-slate-500 font-normal text-center mt-1 bg-white/50 rounded-sm py-0.5 border border-slate-100">
+                          <div className="text-[9px] text-slate-500 font-normal text-center mt-1 bg-white/50 rounded-sm py-0.5 border border-border">
                             {formatTimeRange(shift.startTime, shift.endTime, system)}
                           </div>
 
                         </th>
                       ))}
                       {isAdminOrManager && (
-                        <th scope="col" className="px-3 py-3 border-b border-slate-100 min-w-[70px] text-right bg-slate-50">
+                        <th scope="col" className="px-3 py-3 border-b border-border min-w-[70px] text-right bg-slate-50">
                           <div className="font-bold text-slate-900">{t('scheduling.assigner.total')}</div>
                           <div className="text-[9px] text-slate-400 font-normal mt-1">h:mm</div>
                         </th>
@@ -901,7 +901,7 @@ export default function ShiftAssigner({ viewMode = 'MONTHLY' }: { viewMode?: 'WE
                         >
                           {/* Date Column */}
                           <td className={cn(
-                            "px-3 py-2 border-b border-slate-100 font-medium sticky left-0 z-20",
+                            "px-3 py-2 border-b border-border font-medium sticky left-0 z-20",
                             isToday ? 'bg-blue-50 text-blue-700' : isWeekend ? 'bg-slate-50 text-red-500' : 'bg-white'
                           )}>
                             <div className="flex flex-col">
@@ -977,7 +977,7 @@ export default function ShiftAssigner({ viewMode = 'MONTHLY' }: { viewMode?: 'WE
                                               ? "bg-red-50 text-red-700 border-red-200 hover:bg-red-100" 
                                               : hasUnspecified
                                                 ? "bg-amber-50 text-amber-800 border-amber-200 hover:bg-amber-100"
-                                                : "bg-slate-50 text-slate-700 border-slate-100 hover:bg-blue-50"
+                                                : "bg-slate-50 text-slate-700 border-border hover:bg-blue-50"
                                       )}
                                     >
                                       <span className="truncate mr-1 flex-1 font-medium flex items-center gap-1">
@@ -1057,13 +1057,13 @@ export default function ShiftAssigner({ viewMode = 'MONTHLY' }: { viewMode?: 'WE
 "text-[9px] font-semibold rounded px-1.5 py-0.5 mt-1 w-full text-center flex items-center justify-center gap-1 transition-all border cursor-pointer",
                                            availableCount > 0
                                              ? "bg-emerald-50 border-emerald-100 text-emerald-700 hover:bg-emerald-100"
-                                             : "bg-slate-50 border-slate-100 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+                                             : "bg-slate-50 border-border text-slate-400 hover:bg-slate-100 hover:text-slate-600"
                                          )}
                                        >
                                          <Plus className="w-2.5 h-2.5" />
                                          <span>{availableCount > 0 ? `${availableCount} ${t('scheduling.assigner.avail')}` : t('scheduling.assigner.add')}</span>
                                        </PopoverTrigger>
-                                      <PopoverContent className="w-64 p-0 bg-white border border-slate-200 shadow-xl rounded-xl overflow-hidden z-50">
+                                      <PopoverContent className="w-64 p-0 bg-white border border-border shadow-xl rounded-xl overflow-hidden z-50">
                                         <div className="bg-slate-900 p-3 text-white">
                                           <div className="text-xs font-semibold">
                                             {t('scheduling.assigner.assignStaff')}
@@ -1088,7 +1088,7 @@ export default function ShiftAssigner({ viewMode = 'MONTHLY' }: { viewMode?: 'WE
                                                   const others = assignments.filter(a => a.date === day.dateString && a.shiftId !== shift.id && a.userId === s.id);
                                                   
                                                   return (
-                                                    <div key={s.id} className="flex items-center justify-between p-1.5 rounded-lg border border-slate-100 bg-slate-50/50 hover:bg-slate-50 gap-2">
+                                                    <div key={s.id} className="flex items-center justify-between p-1.5 rounded-lg border border-border bg-slate-50/50 hover:bg-slate-50 gap-2">
                                                       <div className="flex flex-col min-w-0 flex-1">
                                                         <span className="text-[10px] font-bold text-slate-800 truncate">{s.firstName} {s.lastName}</span>
                                                         {others.length > 0 && (
@@ -1119,7 +1119,7 @@ export default function ShiftAssigner({ viewMode = 'MONTHLY' }: { viewMode?: 'WE
                                           </div>
 
                                           {/* 2. OTHER STAFF (NO EXPLICIT AVAILABILITY) */}
-                                          <div className="space-y-1 pt-2 border-t border-slate-100">
+                                          <div className="space-y-1 pt-2 border-t border-border">
                                             <h4 className="text-[9px] font-semibold text-slate-600">
                                               ⚪ {t('scheduling.assigner.otherStaff')} ({unspecified.length})
                                             </h4>
@@ -1132,7 +1132,7 @@ export default function ShiftAssigner({ viewMode = 'MONTHLY' }: { viewMode?: 'WE
                                                   const others = assignments.filter(a => a.date === day.dateString && a.shiftId !== shift.id && a.userId === s.id);
                                                   
                                                   return (
-                                                    <div key={s.id} className="flex items-center justify-between p-1.5 rounded-lg border border-slate-100 bg-slate-50/50 hover:bg-slate-50 gap-2">
+                                                    <div key={s.id} className="flex items-center justify-between p-1.5 rounded-lg border border-border bg-slate-50/50 hover:bg-slate-50 gap-2">
                                                       <div className="flex flex-col min-w-0 flex-1">
                                                         <span className="text-[10px] font-bold text-slate-700 truncate">{s.firstName} {s.lastName}</span>
                                                         {others.length > 0 && (
@@ -1164,7 +1164,7 @@ export default function ShiftAssigner({ viewMode = 'MONTHLY' }: { viewMode?: 'WE
                                           </div>
 
                                           {/* 3. EXPLICITLY UNAVAILABLE */}
-                                          <div className="space-y-1 pt-2 border-t border-slate-100">
+                                          <div className="space-y-1 pt-2 border-t border-border">
                                             <h4 className="text-[9px] font-semibold text-red-600">
                                               🔴 {t('scheduling.assigner.unavailable')} ({unavailable.length})
                                             </h4>
@@ -1233,7 +1233,7 @@ export default function ShiftAssigner({ viewMode = 'MONTHLY' }: { viewMode?: 'WE
                             const total = dayTotalMinutes(day.dateString);
                             return (
                               <td className={cn(
-                                "px-3 py-2 border-b border-slate-100 text-right align-top font-black tabular-nums",
+                                "px-3 py-2 border-b border-border text-right align-top font-black tabular-nums",
                                 isToday ? 'bg-blue-50/40' : isWeekend ? 'bg-slate-50/50' : 'bg-white'
                               )}>
                                 {total > 0 ? <span className="text-slate-900">{formatHM(total)}</span> : <span className="text-slate-300">—</span>}

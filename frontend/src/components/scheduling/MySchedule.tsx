@@ -196,7 +196,7 @@ export default function MySchedule({ viewMode = 'MONTHLY', staffScheduleView = '
                     return (
                       <div
                         key={assignment.id}
-                        className={`rounded-md border px-1.5 py-1 ${isOwnShift ? 'bg-blue-100/70 border-blue-200' : 'bg-slate-100 border-slate-200'}`}
+                        className={`rounded-md border px-1.5 py-1 ${isOwnShift ? 'bg-blue-100/70 border-blue-200' : 'bg-slate-100 border-border'}`}
                       >
                         <div className="flex items-center gap-1 text-xs md:text-sm font-semibold text-slate-800">
                           <Clock className={`w-3 h-3 shrink-0 ${isOwnShift ? 'text-blue-500' : 'text-slate-400'}`} />

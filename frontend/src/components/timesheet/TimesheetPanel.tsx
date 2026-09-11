@@ -243,14 +243,14 @@ export default function TimesheetPanel() {
 
       {/* Worked hours summary */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card className="border-slate-100 shadow-sm">
+        <Card className="border-border shadow-sm">
           <CardHeader className="p-4 pb-2"><CardTitle className="text-sm text-slate-500 font-bold flex items-center gap-2"><Timer className="w-4 h-4 text-blue-500" /> {t('timesheet.workedHours')}</CardTitle></CardHeader>
           <CardContent className="p-4 pt-0"><span className="text-3xl font-black text-slate-900">{Math.round(totalHours * 10) / 10}<span className="text-sm text-slate-400 ml-1">{t('timesheet.hours')}</span></span></CardContent>
         </Card>
       </div>
 
       {/* Shift plan overview — now shows worked/scheduled hours per assignment */}
-      <Card className="rounded-md border-slate-200 shadow-sm overflow-hidden">
+      <Card className="rounded-md border-border shadow-sm overflow-hidden">
         <CardHeader className="p-3 bg-slate-50/50 border-b flex-row items-center justify-between">
           <CardTitle className="text-xs font-bold text-slate-700 flex items-center gap-2"><CalendarRange className="w-4 h-4 text-blue-500" /> {t('timesheet.shiftPlanTitle')}</CardTitle>
           <span className="text-[10px] text-slate-400 font-medium normal-case">{t('timesheet.shiftPlanSubtitle')}</span>
@@ -279,7 +279,7 @@ export default function TimesheetPanel() {
                   const isToday = iso(new Date()) === dateStr;
                   const dayTotal = dayTotalMinutes(dateStr);
                   return (
-                    <tr key={dateStr} className={cn('border-b border-slate-100', isToday ? 'bg-blue-50/40' : weekend ? 'bg-slate-50/50' : 'bg-white')}>
+                    <tr key={dateStr} className={cn('border-b border-border', isToday ? 'bg-blue-50/40' : weekend ? 'bg-slate-50/50' : 'bg-white')}>
                       <td className={cn('px-3 py-1.5 font-medium sticky left-0 whitespace-nowrap', isToday ? 'bg-blue-50 text-blue-700' : weekend ? 'bg-slate-50' : 'bg-white')}>
                         <span className="font-bold">{formatDate(dateStr)}</span>
                         <span className="text-[10px] text-slate-400 font-semibold ml-1.5">{d.toLocaleDateString(undefined, { weekday: 'short' })}</span>
@@ -323,7 +323,7 @@ export default function TimesheetPanel() {
 
       {/* Per-staff summary — overtime in red, under-scheduled in yellow */}
       {summary.length > 0 && (
-        <Card className="rounded-md border-slate-200 shadow-sm overflow-hidden">
+        <Card className="rounded-md border-border shadow-sm overflow-hidden">
           <CardHeader className="p-3 bg-slate-50/50 border-b flex-row items-center justify-between">
             <CardTitle className="text-xs font-bold text-slate-700">{t('timesheet.summaryTitle')}</CardTitle>
             <div className="flex items-center gap-3 text-[10px] font-semibold normal-case">
@@ -344,7 +344,7 @@ export default function TimesheetPanel() {
                   const over = row.workedHours > row.scheduledHours + 0.05;
                   const under = row.workedHours < row.scheduledHours - 0.05;
                   return (
-                    <TableRow key={row.userId} className="h-11 border-b border-slate-100">
+                    <TableRow key={row.userId} className="h-11 border-b border-border">
                       <TableCell className="px-4 font-bold text-slate-800 text-sm">{row.name}</TableCell>
                       <TableCell className="text-right text-slate-500 tabular-nums">{row.scheduledHours} {t('timesheet.hours')}</TableCell>
                       <TableCell className={cn('text-right font-black tabular-nums', over ? 'text-red-600' : under ? 'text-amber-600' : 'text-slate-900')}>
@@ -363,14 +363,14 @@ export default function TimesheetPanel() {
       )}
 
       {/* Add / edit an entry */}
-      <Card className="rounded-md border-slate-200 shadow-sm">
+      <Card className="rounded-md border-border shadow-sm">
         <CardHeader className="p-3 bg-slate-50/50 border-b"><CardTitle className="text-xs font-bold text-slate-700 flex items-center gap-2"><Clock className="w-4 h-4 text-blue-500" /> {t('timesheet.logTime')}</CardTitle></CardHeader>
         <CardContent className="p-4">
           <form onSubmit={saveEntry} className="grid grid-cols-2 md:grid-cols-6 gap-3 items-end">
             {isManager && (
               <div className="grid gap-1.5 col-span-2 md:col-span-2">
                 <Label className="text-[10px] font-semibold text-slate-400">{t('timesheet.logFor')}</Label>
-                <select required value={selectedStaffId} onChange={e => setSelectedStaffId(e.target.value)} className="h-10 rounded-md border border-slate-200 bg-white px-2 text-sm">
+                <select required value={selectedStaffId} onChange={e => setSelectedStaffId(e.target.value)} className="h-10 rounded-md border border-border bg-white px-2 text-sm transition-colors outline-none hover:border-ring focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50">
                   <option value="">{t('timesheet.selectStaff')}</option>
                   {staffList.map(s => (<option key={s.id} value={s.id}>{staffName(s)}</option>))}
                 </select>
@@ -381,7 +381,7 @@ export default function TimesheetPanel() {
 
             <div className="grid gap-1.5">
               <Label className="text-[10px] font-semibold text-slate-400">{t('timesheet.shift')}</Label>
-              <select value={form.shiftId} onChange={e => onShiftChange(e.target.value)} className="h-10 rounded-md border border-slate-200 bg-white px-2 text-sm">
+              <select value={form.shiftId} onChange={e => onShiftChange(e.target.value)} className="h-10 rounded-md border border-border bg-white px-2 text-sm transition-colors outline-none hover:border-ring focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50">
                 <option value="">{t('timesheet.customShift')}</option>
                 {shifts.map(s => {
                   const assigned = dayAssignments.some(a => a.shiftId === s.id);
@@ -392,7 +392,7 @@ export default function TimesheetPanel() {
 
             <div className="grid gap-1.5">
               <Label className="text-[10px] font-semibold text-slate-400">{t('timesheet.checkIn')}</Label>
-              <select value={form.checkIn} onChange={e => setForm({ ...form, checkIn: e.target.value })} className="h-10 rounded-md border border-slate-200 bg-white px-2 text-sm">
+              <select value={form.checkIn} onChange={e => setForm({ ...form, checkIn: e.target.value })} className="h-10 rounded-md border border-border bg-white px-2 text-sm transition-colors outline-none hover:border-ring focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50">
                 <option value="">—</option>
                 {times.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
               </select>
@@ -400,7 +400,7 @@ export default function TimesheetPanel() {
 
             <div className="grid gap-1.5">
               <Label className="text-[10px] font-semibold text-slate-400">{t('timesheet.checkOut')}</Label>
-              <select value={form.checkOut} onChange={e => setForm({ ...form, checkOut: e.target.value })} className="h-10 rounded-md border border-slate-200 bg-white px-2 text-sm">
+              <select value={form.checkOut} onChange={e => setForm({ ...form, checkOut: e.target.value })} className="h-10 rounded-md border border-border bg-white px-2 text-sm transition-colors outline-none hover:border-ring focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50">
                 <option value="">—</option>
                 {times.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
               </select>
@@ -408,7 +408,7 @@ export default function TimesheetPanel() {
 
             <div className="grid gap-1.5">
               <Label className="text-[10px] font-semibold text-slate-400">{t('timesheet.breakLabel')}</Label>
-              <select value={form.breakMinutes} onChange={e => setForm({ ...form, breakMinutes: e.target.value })} className="h-10 rounded-md border border-slate-200 bg-white px-2 text-sm">
+              <select value={form.breakMinutes} onChange={e => setForm({ ...form, breakMinutes: e.target.value })} className="h-10 rounded-md border border-border bg-white px-2 text-sm transition-colors outline-none hover:border-ring focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50">
                 {BREAK_OPTIONS.map(m => <option key={m} value={m}>{m} {t('timesheet.min')}</option>)}
               </select>
             </div>
@@ -423,7 +423,7 @@ export default function TimesheetPanel() {
       </Card>
 
       {/* Entries list */}
-      <Card className="rounded-md border-slate-200 shadow-sm overflow-hidden">
+      <Card className="rounded-md border-border shadow-sm overflow-hidden">
         <CardHeader className="p-3 bg-slate-50/50 border-b"><CardTitle className="text-xs font-bold text-slate-700">{t('timesheet.myEntries')}</CardTitle></CardHeader>
         <CardContent className="p-0">
           <Table>
@@ -442,7 +442,7 @@ export default function TimesheetPanel() {
               ) : listEntries.length === 0 ? (
                 <TableRow><TableCell colSpan={isManager ? 7 : 6} className="h-24 text-center text-xs text-slate-400 font-bold">{t('timesheet.noEntries')}</TableCell></TableRow>
               ) : listEntries.map(entry => (
-                <TableRow key={entry.id} className="h-11 border-b border-slate-100">
+                <TableRow key={entry.id} className="h-11 border-b border-border">
                   {isManager && <TableCell className="px-4 font-bold text-slate-700 text-sm">{nameById.get(entry.userId) || '—'}</TableCell>}
                   <TableCell className="px-4 font-bold text-slate-800 text-sm">{formatDate(entry.date)}</TableCell>
                   <TableCell className="text-slate-600 tabular-nums">{entry.checkIn ? formatTime(entry.checkIn) : '—'}</TableCell>
