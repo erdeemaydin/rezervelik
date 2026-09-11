@@ -120,7 +120,7 @@ export function CommandPalette({ items }: CommandPaletteProps) {
               >
                 <item.icon className="w-4 h-4 shrink-0 text-slate-400" />
                 <span className="flex-1 text-sm font-bold truncate">{item.name}</span>
-                <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 shrink-0">{item.section}</span>
+                <span className="text-[10px] font-semibold text-slate-400 shrink-0">{item.section}</span>
                 {i === activeIndex && <CornerDownLeft className="w-3.5 h-3.5 text-blue-400 shrink-0" />}
               </button>
             ))

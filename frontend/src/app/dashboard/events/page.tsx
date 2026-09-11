@@ -91,7 +91,7 @@ export default function EventsPage() {
         <div className="flex items-center justify-between flex-wrap gap-3">
           <div>
             <h1 className="text-2xl font-semibold tracking-tight text-slate-900 font-heading">{t('events.title')}</h1>
-            <p className="text-xs text-slate-400 font-bold uppercase">{t('events.subtitle')}</p>
+            <p className="text-xs text-slate-400 font-bold">{t('events.subtitle')}</p>
           </div>
           <Button onClick={() => setIsOpen(true)} className="bg-slate-900 hover:bg-slate-800">
             <Plus className="w-4 h-4 mr-1.5" /> {t('events.new')}
@@ -114,7 +114,7 @@ export default function EventsPage() {
               return (
                 <div key={stage} className="min-w-[240px] w-[240px] flex-shrink-0">
                   <div className="flex items-center justify-between mb-2 px-1">
-                    <Badge className={`${STAGE_COLORS[stage]} border-0 text-[10px] font-black uppercase`}>{t(`events.stages.${stage}`)}</Badge>
+ <Badge className={`${STAGE_COLORS[stage]} border-0 text-[10px] font-semibold`}>{t(`events.stages.${stage}`)}</Badge>
                     <span className="text-xs font-black text-slate-400">{col.length}</span>
                   </div>
                   <div className="space-y-2">
@@ -134,7 +134,7 @@ export default function EventsPage() {
                           <div className="flex items-center gap-1.5"><Wallet className="w-3 h-3" />{money(ev.quotedTotal)}</div>
                         </div>
                         {ev.coordinator && (
-                          <p className="mt-1.5 text-[10px] font-bold text-slate-400 uppercase truncate">{ev.coordinator.firstName} {ev.coordinator.lastName}</p>
+                          <p className="mt-1.5 text-[10px] font-bold text-slate-400 truncate">{ev.coordinator.firstName} {ev.coordinator.lastName}</p>
                         )}
                       </button>
                     ))}
@@ -149,32 +149,32 @@ export default function EventsPage() {
       <Dialog open={isOpen} onOpenChange={setIsOpen}>
         <DialogContent className="p-0 rounded-md">
           <div className="bg-slate-900 p-4 text-white">
-            <DialogHeader><DialogTitle className="text-sm font-bold uppercase tracking-widest">{t('events.new')}</DialogTitle></DialogHeader>
+            <DialogHeader><DialogTitle className="text-sm font-bold">{t('events.new')}</DialogTitle></DialogHeader>
           </div>
           <form onSubmit={handleCreate} className="p-6 space-y-4 max-h-[75vh] overflow-y-auto">
             <div className="grid gap-1.5">
-              <Label className="text-[10px] font-black uppercase text-slate-400">{t('events.form.clientName')}</Label>
+              <Label className="text-[10px] font-semibold text-slate-400">{t('events.form.clientName')}</Label>
               <Input required value={form.clientName} onChange={e => setForm({ ...form, clientName: e.target.value })} className="h-10 text-sm font-bold" />
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="grid gap-1.5">
-                <Label className="text-[10px] font-black uppercase text-slate-400">{t('events.form.clientPhone')}</Label>
+                <Label className="text-[10px] font-semibold text-slate-400">{t('events.form.clientPhone')}</Label>
                 <Input required value={form.clientPhone} onChange={e => setForm({ ...form, clientPhone: e.target.value })} className="h-10 text-sm font-bold" />
               </div>
               <div className="grid gap-1.5">
-                <Label className="text-[10px] font-black uppercase text-slate-400">{t('events.form.clientEmail')}</Label>
+                <Label className="text-[10px] font-semibold text-slate-400">{t('events.form.clientEmail')}</Label>
                 <Input type="email" value={form.clientEmail} onChange={e => setForm({ ...form, clientEmail: e.target.value })} className="h-10 text-sm font-bold" />
               </div>
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="grid gap-1.5">
-                <Label className="text-[10px] font-black uppercase text-slate-400">{t('events.form.eventType')}</Label>
+                <Label className="text-[10px] font-semibold text-slate-400">{t('events.form.eventType')}</Label>
                 <select value={form.eventType} onChange={e => setForm({ ...form, eventType: e.target.value })} className={selectClass}>
                   {EVENT_TYPES.map(x => <option key={x} value={x}>{t(`events.types.${x}`)}</option>)}
                 </select>
               </div>
               <div className="grid gap-1.5">
-                <Label className="text-[10px] font-black uppercase text-slate-400">{t('events.form.stage')}</Label>
+                <Label className="text-[10px] font-semibold text-slate-400">{t('events.form.stage')}</Label>
                 <select value={form.stage} onChange={e => setForm({ ...form, stage: e.target.value })} className={selectClass}>
                   {STAGES.map(x => <option key={x} value={x}>{t(`events.stages.${x}`)}</option>)}
                 </select>
@@ -182,25 +182,25 @@ export default function EventsPage() {
             </div>
             <div className="grid grid-cols-3 gap-3">
               <div className="grid gap-1.5">
-                <Label className="text-[10px] font-black uppercase text-slate-400">{t('events.form.date')}</Label>
+                <Label className="text-[10px] font-semibold text-slate-400">{t('events.form.date')}</Label>
                 <Input required type="date" value={form.eventDate} onChange={e => setForm({ ...form, eventDate: e.target.value })} className="h-10 text-sm font-bold" />
               </div>
               <div className="grid gap-1.5">
-                <Label className="text-[10px] font-black uppercase text-slate-400">{t('events.form.slot')}</Label>
+                <Label className="text-[10px] font-semibold text-slate-400">{t('events.form.slot')}</Label>
                 <Input value={form.slot} onChange={e => setForm({ ...form, slot: e.target.value })} placeholder={t('events.form.slotPlaceholder')} className="h-10 text-sm font-bold" />
               </div>
               <div className="grid gap-1.5">
-                <Label className="text-[10px] font-black uppercase text-slate-400">{t('events.form.guestCount')}</Label>
+                <Label className="text-[10px] font-semibold text-slate-400">{t('events.form.guestCount')}</Label>
                 <Input type="number" min="0" value={form.guestCount} onChange={e => setForm({ ...form, guestCount: e.target.value })} className="h-10 text-sm font-bold font-mono" />
               </div>
             </div>
             <div className="grid gap-1.5">
-              <Label className="text-[10px] font-black uppercase text-slate-400">{t('events.form.notes')}</Label>
+              <Label className="text-[10px] font-semibold text-slate-400">{t('events.form.notes')}</Label>
               <Textarea value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} className="min-h-[60px] text-xs" />
             </div>
             <div className="flex justify-end gap-2 pt-2">
               <Button type="button" variant="ghost" onClick={() => setIsOpen(false)} className="text-xs font-bold">{t('common.cancel')}</Button>
-              <Button type="submit" className="bg-emerald-600 hover:bg-emerald-700 text-xs font-black uppercase px-6">{t('common.save')}</Button>
+              <Button type="submit" className="bg-emerald-600 hover:bg-emerald-700 text-xs font-semibold px-6">{t('common.save')}</Button>
             </div>
           </form>
         </DialogContent>

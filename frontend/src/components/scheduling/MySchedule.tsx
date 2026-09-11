@@ -155,7 +155,7 @@ export default function MySchedule({ viewMode = 'MONTHLY', staffScheduleView = '
         {/* Weekday header */}
         <div className="grid grid-cols-7 bg-slate-50 border-b">
           {weekdayLabels.map((label) => (
-            <div key={label} className="px-2 py-2 text-center text-xs md:text-sm font-bold uppercase tracking-wide text-slate-500">
+            <div key={label} className="px-2 py-2 text-center text-xs md:text-sm font-bold text-slate-500">
               {label}
             </div>
           ))}

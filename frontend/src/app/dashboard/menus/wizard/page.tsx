@@ -138,11 +138,11 @@ export default function MenuWizardPage() {
             </CardHeader>
             <CardContent className="p-6 space-y-6">
               <div className="space-y-1.5">
-                <Label className="text-xs font-black uppercase text-slate-500">{t("menusWizard.menuName")}</Label>
+                <Label className="text-xs font-semibold text-slate-500">{t("menusWizard.menuName")}</Label>
                 <Input value={menuInfo.name} onChange={(e) => setMenuInfo({...menuInfo, name: e.target.value})} placeholder={t("menusWizard.menuNamePlaceholder")} className="h-12 font-bold text-lg" />
               </div>
               <div className="space-y-1.5">
-                <Label className="text-xs font-black uppercase text-slate-500 flex items-center gap-1"><Info className="w-3.5 h-3.5"/> {t("menusWizard.footnotes")}</Label>
+                <Label className="text-xs font-semibold text-slate-500 flex items-center gap-1"><Info className="w-3.5 h-3.5"/> {t("menusWizard.footnotes")}</Label>
                 <Textarea value={menuInfo.footnotes} onChange={(e) => setMenuInfo({...menuInfo, footnotes: e.target.value})} placeholder={t("menusWizard.footnotesPlaceholder")} className="min-h-[100px]" />
               </div>
               <div className="flex items-center gap-2 p-4 bg-slate-50 rounded-lg border border-slate-200">
@@ -150,7 +150,7 @@ export default function MenuWizardPage() {
                 <Label htmlFor="active" className="font-bold text-slate-700">{t("menusWizard.makeActive")}</Label>
               </div>
               <div className="flex justify-end pt-4">
-                <Button onClick={() => setStep(2)} disabled={!menuInfo.name.trim()} className="h-12 px-8 bg-blue-600 hover:bg-blue-700 text-white font-black uppercase">
+                <Button onClick={() => setStep(2)} disabled={!menuInfo.name.trim()} className="h-12 px-8 bg-blue-600 hover:bg-blue-700 text-white font-semibold">
                   {t("menusWizard.nextAddCategories")} <ChevronRight className="w-4 h-4 ml-2" />
                 </Button>
               </div>
@@ -175,7 +175,7 @@ export default function MenuWizardPage() {
                           {item.imageUrl ? (
                             <img src={item.imageUrl} alt="preview" className="w-full h-full object-cover" />
                           ) : (
-                            <><ImageIcon className="w-6 h-6 text-slate-300 mb-1" /><span className="text-[9px] font-bold text-slate-400 uppercase">{t("menusWizard.upload")}</span></>
+                            <><ImageIcon className="w-6 h-6 text-slate-300 mb-1" /><span className="text-[9px] font-bold text-slate-400">{t("menusWizard.upload")}</span></>
                           )}
                           <input type="file" accept="image/*" onChange={(e) => handleImageUpload(e, cIdx, iIdx)} className="absolute inset-0 opacity-0 cursor-pointer" />
                         </div>
@@ -204,7 +204,7 @@ export default function MenuWizardPage() {
 
             <div className="flex justify-between pt-8 border-t border-slate-200">
               <Button variant="ghost" onClick={() => setStep(1)} className="font-bold text-slate-500">{t("menusWizard.back")}</Button>
-              <Button onClick={() => setStep(3)} className="h-12 px-8 bg-blue-600 hover:bg-blue-700 text-white font-black uppercase">
+              <Button onClick={() => setStep(3)} className="h-12 px-8 bg-blue-600 hover:bg-blue-700 text-white font-semibold">
                 {t("menusWizard.reviewPublish")} <ChevronRight className="w-4 h-4 ml-2" />
               </Button>
             </div>
@@ -224,9 +224,9 @@ export default function MenuWizardPage() {
             <CardContent className="max-w-md mx-auto space-y-6 pb-10">
               <div className="bg-slate-50 p-4 rounded-lg border border-slate-200 text-center">
                 <h3 className="font-black text-lg text-slate-800">{menuInfo.name}</h3>
-                <p className="text-xs text-slate-500 font-bold uppercase mt-1">{categories.length} {t("menusWizard.categories")} • {categories.reduce((acc, cat) => acc + cat.items.length, 0)} {t("menusWizard.items")}</p>
+                <p className="text-xs text-slate-500 font-bold mt-1">{categories.length} {t("menusWizard.categories")} • {categories.reduce((acc, cat) => acc + cat.items.length, 0)} {t("menusWizard.items")}</p>
               </div>
-              <Button disabled={loading} onClick={handleCreateMenu} className="w-full h-14 text-base bg-emerald-600 hover:bg-emerald-700 text-white font-black uppercase shadow-lg shadow-emerald-600/20">
+              <Button disabled={loading} onClick={handleCreateMenu} className="w-full h-14 text-base bg-emerald-600 hover:bg-emerald-700 text-white font-semibold shadow-lg shadow-emerald-600/20">
                 {loading ? t("menusWizard.publishing") : t("menusWizard.publishNow")}
               </Button>
               <Button variant="ghost" onClick={() => setStep(2)} className="w-full font-bold text-slate-500">{t("menusWizard.goBackEdit")}</Button>

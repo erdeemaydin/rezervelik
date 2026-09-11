@@ -101,7 +101,7 @@ export default function TenantAuditPage() {
             <div className="flex items-center justify-between flex-wrap gap-3">
               <div className="flex items-center gap-2">
                 <ScrollText className="w-4 h-4 text-slate-600" />
-                <CardTitle className="text-sm font-bold uppercase tracking-widest text-slate-700">{t('audit.title')}</CardTitle>
+                <CardTitle className="text-sm font-bold text-slate-700">{t('audit.title')}</CardTitle>
               </div>
               <select
                 value={category}
@@ -143,11 +143,11 @@ export default function TenantAuditPage() {
                       <TableCell className="font-mono text-[11px] text-slate-500 whitespace-nowrap">{new Date(log.createdAt).toLocaleString()}</TableCell>
                       <TableCell>
                         <div className="font-semibold text-xs text-slate-800">{log.actorName || log.actorEmail || 'System'}</div>
-                        {log.actorRole && <div className="text-[10px] text-slate-400 font-bold uppercase tracking-wide">{log.actorRole}</div>}
+                        {log.actorRole && <div className="text-[10px] text-slate-400 font-bold">{log.actorRole}</div>}
                       </TableCell>
                       <TableCell>
                         <div className="flex flex-col gap-1">
-                          <Badge variant="outline" className={cn('text-[9px] font-black uppercase w-fit px-1.5', categoryColor(log.category))}>
+ <Badge variant="outline"className={cn('text-[9px] font-semibold w-fit px-1.5', categoryColor(log.category))}>
                             {log.category}
                           </Badge>
                           <span className="text-[11px] font-semibold text-slate-600">{log.action.replace(/_/g, ' ').toLowerCase()}</span>
@@ -185,31 +185,31 @@ export default function TenantAuditPage() {
               <div className="space-y-4 text-sm">
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <div className="text-[10px] font-black uppercase text-slate-400 tracking-wide">{t('audit.colActor')}</div>
+                    <div className="text-[10px] font-semibold text-slate-400">{t('audit.colActor')}</div>
                     <div className="font-semibold text-slate-800">{selectedLog.actorName || selectedLog.actorEmail || 'System'}</div>
-                    {selectedLog.actorRole && <div className="text-[10px] text-slate-400 font-bold uppercase">{selectedLog.actorRole}</div>}
+                    {selectedLog.actorRole && <div className="text-[10px] text-slate-400 font-bold">{selectedLog.actorRole}</div>}
                   </div>
                   <div>
-                    <div className="text-[10px] font-black uppercase text-slate-400 tracking-wide">{t('audit.detailCategory')}</div>
-                    <Badge variant="outline" className={cn('text-[9px] font-black uppercase w-fit px-1.5 mt-0.5', categoryColor(selectedLog.category))}>
+                    <div className="text-[10px] font-semibold text-slate-400">{t('audit.detailCategory')}</div>
+ <Badge variant="outline"className={cn('text-[9px] font-semibold w-fit px-1.5 mt-0.5', categoryColor(selectedLog.category))}>
                       {selectedLog.category}
                     </Badge>
                   </div>
                   <div>
-                    <div className="text-[10px] font-black uppercase text-slate-400 tracking-wide">{t('audit.colTarget')}</div>
+                    <div className="text-[10px] font-semibold text-slate-400">{t('audit.colTarget')}</div>
                     <div className="text-slate-700">{selectedLog.targetLabel || selectedLog.targetType || '—'}</div>
                     {selectedLog.targetId && <div className="text-[10px] text-slate-400 font-mono truncate">{selectedLog.targetId}</div>}
                   </div>
                   {selectedLog.ip && (
                     <div>
-                      <div className="text-[10px] font-black uppercase text-slate-400 tracking-wide">{t('audit.detailIp')}</div>
+                      <div className="text-[10px] font-semibold text-slate-400">{t('audit.detailIp')}</div>
                       <div className="text-slate-700 font-mono text-xs">{selectedLog.ip}</div>
                     </div>
                   )}
                 </div>
 
                 <div>
-                  <div className="text-[10px] font-black uppercase text-slate-400 tracking-wide mb-1.5">{t('audit.detailChanges')}</div>
+                  <div className="text-[10px] font-semibold text-slate-400 mb-1.5">{t('audit.detailChanges')}</div>
                   {selectedLog.metadata && Object.keys(selectedLog.metadata).length > 0 ? (
                     <pre className="bg-slate-50 border border-slate-200 rounded-lg p-3 text-[11px] font-mono text-slate-700 overflow-x-auto whitespace-pre-wrap break-words">
                       {JSON.stringify(selectedLog.metadata, null, 2)}

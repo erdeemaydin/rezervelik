@@ -173,9 +173,9 @@ export default function AvailabilitySubmitter({ viewMode = 'MONTHLY' }: { viewMo
             <table className="w-full text-sm text-left border-collapse">
               <thead className="sticky top-0 z-20">
                 <tr className="border-b bg-slate-50">
-                  <th className="px-3 py-2 font-bold text-slate-700 uppercase text-[10px] tracking-wider border-r sticky left-0 bg-slate-50 z-30">{t('scheduling.availability.date')}</th>
+                  <th className="px-3 py-2 font-bold text-slate-700 text-[10px] border-r sticky left-0 bg-slate-50 z-30">{t('scheduling.availability.date')}</th>
                   {shifts.map(shift => (
-                    <th key={shift.id} className="px-3 py-2 font-bold text-slate-700 uppercase text-[10px] tracking-wider text-center">
+                    <th key={shift.id} className="px-3 py-2 font-bold text-slate-700 text-[10px] text-center">
                       {shift.name}
                       <div className="text-[9px] font-normal text-slate-500 lowercase mt-0.5">{formatTimeRange(shift.startTime, shift.endTime)}</div>
                     </th>
@@ -188,7 +188,7 @@ export default function AvailabilitySubmitter({ viewMode = 'MONTHLY' }: { viewMo
                     <td className="px-3 py-2 font-medium border-r sticky left-0 bg-white z-10 shadow-[1px_0_0_0_#e2e8f0]">
                       <div className="flex flex-col">
                         <span className="text-sm">{day.formattedDate}</span>
-                        <span className="text-[10px] text-slate-400 uppercase">{day.dayName}</span>
+                        <span className="text-[10px] text-slate-400">{day.dayName}</span>
                       </div>
                     </td>
                     {shifts.map(shift => {

@@ -58,7 +58,7 @@ export default function CartFulfillmentStep({
   return (
     <div className="space-y-6 pb-6">
       <div>
-        <h2 className="mb-3 text-sm font-bold uppercase tracking-wide" style={{ color: theme.muted }}>{t('publicOrder.cart.title')}</h2>
+        <h2 className="mb-3 text-sm font-bold" style={{ color: theme.muted }}>{t('publicOrder.cart.title')}</h2>
         <div className="space-y-2">
           {cart.map((line) => (
             <div key={line.key} className="flex items-start gap-3 rounded-xl border p-3" style={{ borderColor: theme.border, backgroundColor: theme.surface }}>
@@ -99,7 +99,7 @@ export default function CartFulfillmentStep({
       </div>
 
       <div>
-        <h2 className="mb-3 text-sm font-bold uppercase tracking-wide" style={{ color: theme.muted }}>{t('publicOrder.fulfillment.title')}</h2>
+        <h2 className="mb-3 text-sm font-bold" style={{ color: theme.muted }}>{t('publicOrder.fulfillment.title')}</h2>
         <div className="grid grid-cols-2 gap-2">
           {settings.deliveryEnabled && (
             <button
@@ -140,7 +140,7 @@ export default function CartFulfillmentStep({
       {fulfillmentType === 'DELIVERY' && (
         <div className="space-y-4">
           <div>
-            <Label className="text-xs font-bold uppercase" style={{ color: theme.muted }}>{t('publicOrder.address.zoneLabel')}</Label>
+            <Label className="text-xs font-bold" style={{ color: theme.muted }}>{t('publicOrder.address.zoneLabel')}</Label>
             {zones.length === 0 ? (
               <p className="mt-2 text-sm" style={{ color: theme.muted }}>{t('publicOrder.address.noZones')}</p>
             ) : (
@@ -169,7 +169,7 @@ export default function CartFulfillmentStep({
           </div>
 
           <div className="space-y-1.5">
-            <Label className="text-xs font-bold uppercase" style={{ color: theme.muted }}>{t('publicOrder.address.fullAddressLabel')}</Label>
+            <Label className="text-xs font-bold" style={{ color: theme.muted }}>{t('publicOrder.address.fullAddressLabel')}</Label>
             <Textarea
               value={address.fullAddress}
               onChange={(e) => setAddress({ ...address, fullAddress: e.target.value })}
@@ -178,7 +178,7 @@ export default function CartFulfillmentStep({
             />
           </div>
           <div className="space-y-1.5">
-            <Label className="text-xs font-bold uppercase" style={{ color: theme.muted }}>{t('publicOrder.address.neighborhoodLabel')}</Label>
+            <Label className="text-xs font-bold" style={{ color: theme.muted }}>{t('publicOrder.address.neighborhoodLabel')}</Label>
             <Input
               value={address.neighborhood}
               onChange={(e) => setAddress({ ...address, neighborhood: e.target.value })}
@@ -187,7 +187,7 @@ export default function CartFulfillmentStep({
             />
           </div>
           <div className="space-y-1.5">
-            <Label className="text-xs font-bold uppercase" style={{ color: theme.muted }}>{t('publicOrder.address.noteLabel')}</Label>
+            <Label className="text-xs font-bold" style={{ color: theme.muted }}>{t('publicOrder.address.noteLabel')}</Label>
             <Input
               value={address.note}
               onChange={(e) => setAddress({ ...address, note: e.target.value })}

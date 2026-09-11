@@ -195,9 +195,9 @@ export default function StaffManagementPage() {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-semibold tracking-tight text-slate-900 font-heading">{t("staff.title")}</h1>
-            <p className="text-[10px] text-slate-400 font-black uppercase tracking-[0.2em] mt-1 italic">{t("staff.subtitle")}</p>
+            <p className="text-[10px] text-slate-400 font-semibold tracking-[0.2em] mt-1 italic">{t("staff.subtitle")}</p>
           </div>
-          <Button size="sm" onClick={handleOpenCreate} className="bg-blue-600 hover:bg-blue-700 text-white rounded-sm h-9 px-6 font-black text-[10px] uppercase shadow-md shadow-blue-600/20">
+          <Button size="sm" onClick={handleOpenCreate} className="bg-blue-600 hover:bg-blue-700 text-white rounded-sm h-9 px-6 font-semibold text-[10px] shadow-md shadow-blue-600/20">
             <Plus className="w-3.5 h-3.5 mr-1.5 stroke-[3]" /> {t("staff.addBtn")}
           </Button>
         </div>
@@ -207,7 +207,7 @@ export default function StaffManagementPage() {
           <CardHeader className="p-3 bg-slate-50/50 border-b border-slate-200 flex flex-row items-center justify-between">
             <div className="flex items-center gap-2">
                 <Users className="w-4 h-4 text-blue-500" />
-                <span className="text-xs font-bold text-slate-700 uppercase tracking-widest">{t("staff.activePersonnel")}</span>
+                <span className="text-xs font-bold text-slate-700">{t("staff.activePersonnel")}</span>
             </div>
             <div className="relative w-64">
                 <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
@@ -218,18 +218,18 @@ export default function StaffManagementPage() {
             <Table>
               <TableHeader className="bg-slate-50/80">
                 <TableRow className="h-9 border-b border-slate-200">
-                  <TableHead className="text-[9px] font-black text-slate-400 uppercase tracking-widest px-6">{t("staff.table.identity")}</TableHead>
-                  <TableHead className="text-[9px] font-black text-slate-400 uppercase tracking-widest">{t("staff.table.baseRole")}</TableHead>
-                  <TableHead className="text-[9px] font-black text-slate-400 uppercase tracking-widest">{t("staff.table.customEntitlements")}</TableHead>
-                  <TableHead className="text-[9px] font-black text-slate-400 uppercase tracking-widest">{t("staff.table.status")}</TableHead>
-                  <TableHead className="text-[9px] font-black text-slate-400 uppercase tracking-widest text-right px-6">{t("staff.table.command")}</TableHead>
+                  <TableHead className="text-[9px] font-semibold text-slate-400 px-6">{t("staff.table.identity")}</TableHead>
+                  <TableHead className="text-[9px] font-semibold text-slate-400">{t("staff.table.baseRole")}</TableHead>
+                  <TableHead className="text-[9px] font-semibold text-slate-400">{t("staff.table.customEntitlements")}</TableHead>
+                  <TableHead className="text-[9px] font-semibold text-slate-400">{t("staff.table.status")}</TableHead>
+                  <TableHead className="text-[9px] font-semibold text-slate-400 text-right px-6">{t("staff.table.command")}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {loading ? (
-                    <TableRow><TableCell colSpan={5} className="h-48 text-center text-[10px] font-black text-slate-400 uppercase tracking-widest">{t("staff.table.loading")}</TableCell></TableRow>
+                    <TableRow><TableCell colSpan={5} className="h-48 text-center text-[10px] font-semibold text-slate-400">{t("staff.table.loading")}</TableCell></TableRow>
                 ) : filteredStaff.length === 0 ? (
-                    <TableRow><TableCell colSpan={5} className="h-48 text-center text-[10px] font-black text-slate-400 uppercase tracking-widest">{t("staff.table.noResults")}</TableCell></TableRow>
+                    <TableRow><TableCell colSpan={5} className="h-48 text-center text-[10px] font-semibold text-slate-400">{t("staff.table.noResults")}</TableCell></TableRow>
                 ) : filteredStaff.map((member) => (
                   <TableRow key={member.id} className="h-14 hover:bg-slate-50/50 border-b border-slate-100 transition-colors">
                     <TableCell className="px-6 py-3">
@@ -239,17 +239,17 @@ export default function StaffManagementPage() {
                       </div>
                     </TableCell>
                     <TableCell>
-                      <Badge className={cn("text-[9px] font-black uppercase px-2 shadow-none rounded-sm", member.role === 'ADMIN' || member.role === 'MANAGER' ? "bg-blue-100 text-blue-700" : "bg-slate-100 text-slate-700")}>
+ <Badge className={cn("text-[9px] font-semibold px-2 shadow-none rounded-sm", member.role ==='ADMIN'|| member.role ==='MANAGER'?"bg-blue-100 text-blue-700":"bg-slate-100 text-slate-700")}>
                           {member.role}
                       </Badge>
                     </TableCell>
                     <TableCell>
                       <div className="flex flex-wrap gap-1 max-w-[250px]">
                         {member.role === 'ADMIN' ? (
-                            <Badge variant="outline" className="text-[8px] font-black bg-emerald-50 text-emerald-700 border-emerald-200 uppercase px-1 py-0 shadow-none"><ShieldCheck className="w-2.5 h-2.5 mr-1" /> {t("staff.table.fullAccess")}</Badge>
+                            <Badge variant="outline" className="text-[8px] font-semibold bg-emerald-50 text-emerald-700 border-emerald-200 px-1 py-0 shadow-none"><ShieldCheck className="w-2.5 h-2.5 mr-1" /> {t("staff.table.fullAccess")}</Badge>
                         ) : member.permissions ? (
                             member.permissions.split(',').map(p => (
-                                <Badge key={p} variant="outline" className="text-[8px] font-black bg-white text-slate-500 border-slate-200 uppercase px-1 py-0 shadow-none">
+                                <Badge key={p} variant="outline" className="text-[8px] font-semibold bg-white text-slate-500 border-slate-200 px-1 py-0 shadow-none">
                                     {t(`staff.permissions.${p}.label`)}
                                 </Badge>
                             ))
@@ -259,7 +259,7 @@ export default function StaffManagementPage() {
                       </div>
                     </TableCell>
                     <TableCell>
-                        <div className="flex items-center gap-1.5 text-emerald-600 text-[10px] font-black uppercase tracking-tighter">
+                        <div className="flex items-center gap-1.5 text-emerald-600 text-[10px] font-semibold tracking-tighter">
                             <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-sm" /> {t("staff.table.active")}
                         </div>
                     </TableCell>
@@ -270,7 +270,7 @@ export default function StaffManagementPage() {
                                 <Button variant="ghost" size="icon" onClick={() => handleDelete(member)} className="h-7 w-7 text-slate-300 hover:text-red-600 transition-colors"><Trash2 className="w-3.5 h-3.5" /></Button>
                             </div>
                         ) : (
-                            <span className="text-[9px] font-black text-slate-300 uppercase tracking-widest mr-2">{t("staff.table.protected")}</span>
+                            <span className="text-[9px] font-semibold text-slate-300 mr-2">{t("staff.table.protected")}</span>
                         )}
                     </TableCell>
                   </TableRow>
@@ -286,27 +286,27 @@ export default function StaffManagementPage() {
                 <form onSubmit={handleSubmit}>
                     <div className="bg-slate-900 p-4 text-white">
                         <DialogHeader>
-                            <DialogTitle className="text-sm font-bold uppercase tracking-widest">{isEditMode ? t("staff.dialog.editTitle") : t("staff.dialog.createTitle")}</DialogTitle>
+                            <DialogTitle className="text-sm font-bold">{isEditMode ? t("staff.dialog.editTitle") : t("staff.dialog.createTitle")}</DialogTitle>
                         </DialogHeader>
                     </div>
                     <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-8 bg-white">
                         <div className="space-y-5">
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="grid gap-1.5">
-                                    <Label className="text-[10px] font-black uppercase text-slate-400 ml-1">{t("staff.dialog.firstName")}</Label>
+                                    <Label className="text-[10px] font-semibold text-slate-400 ml-1">{t("staff.dialog.firstName")}</Label>
                                     <Input required value={formData.firstName} onChange={e => setFormData({...formData, firstName: e.target.value})} className="h-10 text-sm font-bold border-slate-200 rounded-sm" />
                                 </div>
                                 <div className="grid gap-1.5">
-                                    <Label className="text-[10px] font-black uppercase text-slate-400 ml-1">{t("staff.dialog.lastName")}</Label>
+                                    <Label className="text-[10px] font-semibold text-slate-400 ml-1">{t("staff.dialog.lastName")}</Label>
                                     <Input required value={formData.lastName} onChange={e => setFormData({...formData, lastName: e.target.value})} className="h-10 text-sm font-bold border-slate-200 rounded-sm" />
                                 </div>
                             </div>
                             <div className="grid gap-1.5">
-                                <Label className="text-[10px] font-black uppercase text-slate-400 ml-1">{t("staff.dialog.email")}</Label>
+                                <Label className="text-[10px] font-semibold text-slate-400 ml-1">{t("staff.dialog.email")}</Label>
                                 <Input type="email" required value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} className="h-10 text-sm font-bold border-slate-200 rounded-sm font-mono" />
                             </div>
                             <div className="grid gap-1.5">
-                                <Label className="text-[10px] font-black uppercase text-slate-400 ml-1">{t("staff.dialog.phone")}</Label>
+                                <Label className="text-[10px] font-semibold text-slate-400 ml-1">{t("staff.dialog.phone")}</Label>
                                 <PhoneInput value={formData.phone} onChange={(p) => setFormData({...formData, phone: p})} countryHint={t("staff.dialog.phoneHint")} />
                             </div>
                             {/* Passwords are set by the staff member via a reset link, never by the admin (#7.1) */}
@@ -317,14 +317,14 @@ export default function StaffManagementPage() {
                             ) : (
                                 <div className={cn("flex items-center justify-between p-3 border rounded-sm transition-all", formData.sendResetLink ? "border-blue-200 bg-blue-50/30" : "border-slate-100 bg-slate-50/50")}>
                                     <div className="space-y-0.5">
-                                        <div className="text-xs font-black uppercase tracking-tight text-slate-600">{t("staff.dialog.sendResetLink")}</div>
+                                        <div className="text-xs font-semibold tracking-tight text-slate-600">{t("staff.dialog.sendResetLink")}</div>
                                         <div className="text-[9px] font-bold text-slate-400">{t("staff.dialog.sendResetLinkDesc")}</div>
                                     </div>
                                     <Checkbox checked={formData.sendResetLink} onCheckedChange={() => setFormData(prev => ({...prev, sendResetLink: !prev.sendResetLink}))} />
                                 </div>
                             )}
                             <div className="grid gap-1.5 pt-4 border-t border-slate-100">
-                                <Label className="text-[10px] font-black uppercase text-slate-400 ml-1">{t("staff.dialog.baseRoleTemplate")}</Label>
+                                <Label className="text-[10px] font-semibold text-slate-400 ml-1">{t("staff.dialog.baseRoleTemplate")}</Label>
                                 <Select value={formData.role} onValueChange={handleRoleChange}>
                                     <SelectTrigger className="h-10 text-sm font-bold border-slate-200 rounded-sm bg-slate-50"><SelectValue /></SelectTrigger>
                                     <SelectContent>
@@ -340,15 +340,15 @@ export default function StaffManagementPage() {
                         <div className="space-y-4 border-l border-slate-100 pl-6">
                             <div className="flex items-center gap-2 mb-2">
                                 <Shield className="w-4 h-4 text-blue-500" />
-                                <Label className="text-xs font-black uppercase text-slate-800 tracking-tight">{t("staff.dialog.granularEntitlements")}</Label>
+                                <Label className="text-xs font-semibold text-slate-800 tracking-tight">{t("staff.dialog.granularEntitlements")}</Label>
                             </div>
-                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-relaxed mb-4">{t("staff.dialog.entitlementsDesc")}</p>
+                            <p className="text-[10px] font-bold text-slate-400 leading-relaxed mb-4">{t("staff.dialog.entitlementsDesc")}</p>
                             
                             <div className="grid gap-3">
                                 {AVAILABLE_PERMISSIONS.map(perm => (
                                     <div key={perm.id} className={cn("flex items-center justify-between p-3 border rounded-sm transition-all", formData.permissions.has(perm.id) ? "border-blue-200 bg-blue-50/30" : "border-slate-100 bg-slate-50/50")}>
                                         <div className="space-y-0.5">
-                                            <div className={cn("text-xs font-black uppercase tracking-tight", formData.permissions.has(perm.id) ? "text-blue-700" : "text-slate-600")}>{t(`staff.permissions.${perm.id}.label`)}</div>
+ <div className={cn("text-xs font-semibold tracking-tight", formData.permissions.has(perm.id) ?"text-blue-700":"text-slate-600")}>{t(`staff.permissions.${perm.id}.label`)}</div>
                                             <div className="text-[9px] font-bold text-slate-400">{t(`staff.permissions.${perm.id}.desc`)}</div>
                                         </div>
                                         <Checkbox checked={formData.permissions.has(perm.id)} onCheckedChange={() => togglePermission(perm.id)} />
@@ -358,8 +358,8 @@ export default function StaffManagementPage() {
                         </div>
                     </div>
                     <div className="p-4 bg-slate-50 border-t border-slate-100 flex justify-end gap-2">
-                        <Button type="button" variant="ghost" onClick={() => setIsDialogOpen(false)} className="h-9 text-xs font-bold text-slate-400 uppercase tracking-widest px-6">{t("staff.dialog.cancel")}</Button>
-                        <Button type="submit" className="h-9 bg-blue-600 hover:bg-blue-700 text-xs font-black uppercase px-8 rounded-sm shadow-lg shadow-blue-600/20">{t("staff.dialog.commit")}</Button>
+                        <Button type="button" variant="ghost" onClick={() => setIsDialogOpen(false)} className="h-9 text-xs font-bold text-slate-400 px-6">{t("staff.dialog.cancel")}</Button>
+                        <Button type="submit" className="h-9 bg-blue-600 hover:bg-blue-700 text-xs font-semibold px-8 rounded-sm shadow-lg shadow-blue-600/20">{t("staff.dialog.commit")}</Button>
                     </div>
                 </form>
             </DialogContent>

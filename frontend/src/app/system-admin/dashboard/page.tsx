@@ -30,7 +30,7 @@ export default function SystemAdminDashboard() {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <Card className="border-slate-200 shadow-sm">
             <CardHeader className="p-4 pb-2">
-              <CardDescription className="text-[10px] font-black uppercase text-slate-500 tracking-wider">Active Tenants</CardDescription>
+              <CardDescription className="text-[10px] font-semibold text-slate-500">Active Tenants</CardDescription>
               <CardTitle className="text-2xl font-bold flex items-center justify-between">
                 {metrics.totalTenants}
                 <Building2 className="w-5 h-5 text-emerald-600" />
@@ -43,7 +43,7 @@ export default function SystemAdminDashboard() {
 
           <Card className="border-slate-200 shadow-sm">
             <CardHeader className="p-4 pb-2">
-              <CardDescription className="text-[10px] font-black uppercase text-slate-500 tracking-wider">Total Users</CardDescription>
+              <CardDescription className="text-[10px] font-semibold text-slate-500">Total Users</CardDescription>
               <CardTitle className="text-2xl font-bold flex items-center justify-between">
                 {metrics.totalUsers}
                 <Users className="w-5 h-5 text-blue-600" />
@@ -56,7 +56,7 @@ export default function SystemAdminDashboard() {
 
           <Card className="border-slate-200 shadow-sm">
             <CardHeader className="p-4 pb-2">
-              <CardDescription className="text-[10px] font-black uppercase text-slate-500 tracking-wider">Total Reservations</CardDescription>
+              <CardDescription className="text-[10px] font-semibold text-slate-500">Total Reservations</CardDescription>
               <CardTitle className="text-2xl font-bold flex items-center justify-between">
                 {metrics.totalReservations}
                 <BarChart3 className="w-5 h-5 text-indigo-600" />
@@ -69,7 +69,7 @@ export default function SystemAdminDashboard() {
 
           <Card className="border-slate-200 shadow-sm">
             <CardHeader className="p-4 pb-2">
-              <CardDescription className="text-[10px] font-black uppercase text-slate-500 tracking-wider">DB Size</CardDescription>
+              <CardDescription className="text-[10px] font-semibold text-slate-500">DB Size</CardDescription>
               <CardTitle className="text-2xl font-bold flex items-center justify-between">
                 1.4 GB
                 <Database className="w-5 h-5 text-amber-600" />
@@ -83,7 +83,7 @@ export default function SystemAdminDashboard() {
 
         <Card className="border-slate-200 shadow-sm bg-white min-h-[400px]">
           <CardHeader className="border-b border-slate-100 bg-slate-50/50">
-            <CardTitle className="text-sm font-bold uppercase tracking-widest text-slate-700">Platform Traffic</CardTitle>
+            <CardTitle className="text-sm font-bold text-slate-700">Platform Traffic</CardTitle>
           </CardHeader>
           <CardContent className="flex items-center justify-center p-8 h-80">
             <div className="text-center space-y-3">

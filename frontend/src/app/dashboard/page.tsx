@@ -117,7 +117,7 @@ export default function DashboardPage() {
             <div className="h-1 w-full bg-blue-500"></div>
             <CardContent className="p-6">
               <div className="flex items-center justify-between space-y-0 pb-2">
-                <p className="text-sm font-semibold text-slate-500 uppercase tracking-wider">{t('dashboard.reservationsToday')}</p>
+                <p className="text-sm font-semibold text-slate-500">{t('dashboard.reservationsToday')}</p>
                 <div className="p-2 bg-blue-50 rounded-lg group-hover:bg-blue-100 transition-colors">
                   <Calendar className="h-5 w-5 text-blue-600" />
                 </div>
@@ -132,7 +132,7 @@ export default function DashboardPage() {
             <div className="h-1 w-full bg-indigo-500"></div>
             <CardContent className="p-6">
               <div className="flex items-center justify-between space-y-0 pb-2">
-                <p className="text-sm font-semibold text-slate-500 uppercase tracking-wider">{t('dashboard.expectedGuests')}</p>
+                <p className="text-sm font-semibold text-slate-500">{t('dashboard.expectedGuests')}</p>
                 <div className="p-2 bg-indigo-50 rounded-lg group-hover:bg-indigo-100 transition-colors">
                   <Users className="h-5 w-5 text-indigo-600" />
                 </div>
@@ -148,14 +148,14 @@ export default function DashboardPage() {
             <div className="h-1 w-full bg-amber-500"></div>
             <CardContent className="p-6">
               <div className="flex items-center justify-between space-y-0 pb-2">
-                <p className="text-sm font-semibold text-slate-500 uppercase tracking-wider">{t('dashboard.avgDuration')}</p>
+                <p className="text-sm font-semibold text-slate-500">{t('dashboard.avgDuration')}</p>
                 <div className="p-2 bg-amber-50 rounded-lg group-hover:bg-amber-100 transition-colors">
                   <Clock className="h-5 w-5 text-amber-600" />
                 </div>
               </div>
               <div className="flex items-baseline space-x-2 mt-1">
                 <h2 className="text-3xl font-black tabular-nums text-slate-900">{data.avgDuration || '--'}</h2>
-                <span className="text-sm font-bold text-slate-400 uppercase">{t('dashboard.minutes')}</span>
+                <span className="text-sm font-bold text-slate-400">{t('dashboard.minutes')}</span>
               </div>
             </CardContent>
           </Card>
@@ -164,7 +164,7 @@ export default function DashboardPage() {
             <div className="h-1 w-full bg-rose-500"></div>
             <CardContent className="p-6">
               <div className="flex items-center justify-between space-y-0 pb-2">
-                <p className="text-sm font-semibold text-slate-500 uppercase tracking-wider">{t('dashboard.actionRequired')}</p>
+                <p className="text-sm font-semibold text-slate-500">{t('dashboard.actionRequired')}</p>
                 <div className="p-2 bg-rose-50 rounded-lg group-hover:bg-rose-100 transition-colors">
                   <Activity className="h-5 w-5 text-rose-600" />
                 </div>

@@ -197,7 +197,7 @@ export default function PremiumLayout({ slug, initialRestaurant, initialView, me
 
   // Eyebrow label with a botanical leaf mark.
   const Eyebrow = ({ children }: { children: React.ReactNode }) => (
-    <span className="inline-flex items-center gap-2 text-[11px] tracking-[0.35em] uppercase text-[color:var(--moss)]">
+    <span className="inline-flex items-center gap-2 text-[11px] tracking-[0.35em] text-[color:var(--moss)]">
       <Leaf className="w-3.5 h-3.5" /> {children}
     </span>
   );
@@ -212,14 +212,14 @@ export default function PremiumLayout({ slug, initialRestaurant, initialView, me
       {item.description && <p className="text-sm text-[color:var(--muted)] mt-2 font-light max-w-xl leading-relaxed">{item.description}</p>}
       {item.ingredients && <p className="text-xs text-[color:var(--muted)]/80 mt-1 font-light max-w-xl"><span className="font-medium">{t('public.ingredients')}:</span> {item.ingredients}</p>}
       <div className="flex flex-wrap items-center gap-2 mt-2">
-        {item.calories && <span className="text-[10px] uppercase tracking-wider text-amber-300/90 bg-amber-400/10 px-2 py-0.5 rounded-full">{item.calories} {t('public.calories')}</span>}
-        {item.containsAlcohol && <span className="text-[10px] uppercase tracking-wider text-rose-300/90 bg-rose-400/10 px-2 py-0.5 rounded-full">{t('public.containsAlcohol')}</span>}
-        {item.containsPork && <span className="text-[10px] uppercase tracking-wider text-pink-300/90 bg-pink-400/10 px-2 py-0.5 rounded-full">{t('public.containsPork')}</span>}
+        {item.calories && <span className="text-[10px] text-amber-300/90 bg-amber-400/10 px-2 py-0.5 rounded-full">{item.calories} {t('public.calories')}</span>}
+        {item.containsAlcohol && <span className="text-[10px] text-rose-300/90 bg-rose-400/10 px-2 py-0.5 rounded-full">{t('public.containsAlcohol')}</span>}
+        {item.containsPork && <span className="text-[10px] text-pink-300/90 bg-pink-400/10 px-2 py-0.5 rounded-full">{t('public.containsPork')}</span>}
         {item.dietaryTags && item.dietaryTags.split(',').map((tag: string, i: number) => (
-          <span key={i} className="text-[10px] uppercase tracking-wider text-[color:var(--moss)] bg-[color:var(--moss)]/10 px-2 py-0.5 rounded-full">{tag.trim()}</span>
+          <span key={i} className="text-[10px] text-[color:var(--moss)] bg-[color:var(--moss)]/10 px-2 py-0.5 rounded-full">{tag.trim()}</span>
         ))}
       </div>
-      {item.allergens && <p className="mt-2 text-[10px] font-light uppercase tracking-wider text-amber-300/80">{t('public.allergens')}: {item.allergens}</p>}
+      {item.allergens && <p className="mt-2 text-[10px] font-light text-amber-300/80">{t('public.allergens')}: {item.allergens}</p>}
     </div>
   );
 
@@ -238,24 +238,24 @@ export default function PremiumLayout({ slug, initialRestaurant, initialView, me
       {/* Header */}
       {menuOnly ? (
         <nav className={cn("fixed w-full z-40 flex justify-between items-center px-6 md:px-12 py-5", navBg, customization.announcementText ? "top-11" : "top-0")}>
-          <Link href={`/r/${slug}`} className="inline-flex items-center gap-2 text-xs font-medium uppercase tracking-[0.2em] text-[color:var(--muted)] hover:text-[var(--text)] transition-colors">
+          <Link href={`/r/${slug}`} className="inline-flex items-center gap-2 text-xs font-medium tracking-[0.2em] text-[color:var(--muted)] hover:text-[var(--text)] transition-colors">
             <ArrowLeft className="h-4 w-4" /> {restaurant.name}
           </Link>
           <div className="flex items-center gap-4">
             <LanguageSwitcher />
-            <Link href={`/r/${slug}?view=booking`} className="rounded-full border border-[color:var(--moss)] px-5 py-2 text-xs font-medium uppercase tracking-[0.2em] text-[color:var(--moss)] hover:bg-[color:var(--moss)] hover:text-[var(--bg)] transition-colors">
+            <Link href={`/r/${slug}?view=booking`} className="rounded-full border border-[color:var(--moss)] px-5 py-2 text-xs font-medium tracking-[0.2em] text-[color:var(--moss)] hover:bg-[color:var(--moss)] hover:text-[var(--bg)] transition-colors">
               {t('public.bookATable')}
             </Link>
           </div>
         </nav>
       ) : bookingOnly ? (
         <nav className={cn("fixed w-full z-40 flex justify-between items-center px-6 md:px-12 py-5", navBg, customization.announcementText ? "top-11" : "top-0")}>
-          <Link href={`/r/${slug}`} className="inline-flex items-center gap-2 text-xs font-medium uppercase tracking-[0.2em] text-[color:var(--muted)] hover:text-[var(--text)] transition-colors">
+          <Link href={`/r/${slug}`} className="inline-flex items-center gap-2 text-xs font-medium tracking-[0.2em] text-[color:var(--muted)] hover:text-[var(--text)] transition-colors">
             <ArrowLeft className="h-4 w-4" /> {restaurant.name}
           </Link>
           <div className="flex items-center gap-4">
             <LanguageSwitcher />
-            <Link href={`/r/${slug}/menu`} className="rounded-full border border-[color:var(--moss)] px-5 py-2 text-xs font-medium uppercase tracking-[0.2em] text-[color:var(--moss)] hover:bg-[color:var(--moss)] hover:text-[var(--bg)] transition-colors">
+            <Link href={`/r/${slug}/menu`} className="rounded-full border border-[color:var(--moss)] px-5 py-2 text-xs font-medium tracking-[0.2em] text-[color:var(--moss)] hover:bg-[color:var(--moss)] hover:text-[var(--bg)] transition-colors">
               {t('public.menu')}
             </Link>
           </div>
@@ -263,14 +263,14 @@ export default function PremiumLayout({ slug, initialRestaurant, initialView, me
       ) : (
       <nav className={cn("fixed w-full z-40 flex items-center px-6 md:px-12 py-6 transition-all duration-500", scrolled ? navBg : "bg-transparent", customization.announcementText ? "top-11" : "top-0")}>
         {/* Left links */}
-        <div className="hidden md:flex items-center gap-8 text-xs font-medium tracking-[0.2em] uppercase">
+        <div className="hidden md:flex items-center gap-8 text-xs font-medium tracking-[0.2em]">
           <button onClick={() => scrollToSection('about')} className="text-[color:var(--muted)] hover:text-[var(--text)] transition-colors">{t('public.ourStory')}</button>
           <button onClick={() => scrollToSection('menu')} className="text-[color:var(--muted)] hover:text-[var(--text)] transition-colors">{t('public.menu')}</button>
         </div>
         {/* Perfectly-centered restaurant name (aligned with the banner) */}
-        <div className={cn("absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-xl md:text-2xl tracking-[0.15em] whitespace-nowrap", customization.typography !== 'MONO' && 'uppercase')}>{restaurant.name}</div>
+ <div className={cn("absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-xl md:text-2xl tracking-[0.15em] whitespace-nowrap", customization.typography !=='MONO'&&'')}>{restaurant.name}</div>
         {/* Right links */}
-        <div className="ml-auto flex items-center gap-8 text-xs font-medium tracking-[0.2em] uppercase">
+        <div className="ml-auto flex items-center gap-8 text-xs font-medium tracking-[0.2em]">
           <div className="hidden md:flex items-center gap-8">
             <LanguageSwitcher />
             <button onClick={() => scrollToSection('contact')} className="text-[color:var(--muted)] hover:text-[var(--text)] transition-colors">{t('public.contact')}</button>
@@ -305,7 +305,7 @@ export default function PremiumLayout({ slug, initialRestaurant, initialView, me
         <div className="relative z-20 text-center px-4 flex flex-col items-center animate-in fade-in slide-in-from-bottom-8 duration-1000">
           <span className="mb-6"><Eyebrow>{t('public.aCulinaryJourney')}</Eyebrow></span>
           <h1 className="text-5xl md:text-7xl lg:text-8xl tracking-tight mb-8">{restaurant.name}</h1>
-          <button onClick={() => scrollToSection('reservations')} className="rounded-full bg-[color:var(--moss)] text-[var(--bg)] px-8 py-3.5 text-xs font-semibold tracking-[0.2em] uppercase transition-all hover:scale-[1.03] hover:brightness-110">
+          <button onClick={() => scrollToSection('reservations')} className="rounded-full bg-[color:var(--moss)] text-[var(--bg)] px-8 py-3.5 text-xs font-semibold tracking-[0.2em] transition-all hover:scale-[1.03] hover:brightness-110">
             {t('public.bookATable')}
           </button>
         </div>
@@ -364,7 +364,7 @@ export default function PremiumLayout({ slug, initialRestaurant, initialView, me
                 <div key={cat.id}>
                   <div className="flex items-center justify-center gap-3 mb-12">
                     <span className="h-px w-10 bg-[color:var(--line)]" />
-                    <h3 className="text-xl text-center uppercase tracking-[0.25em] text-[color:var(--moss)]">{cat.name}</h3>
+                    <h3 className="text-xl text-center tracking-[0.25em] text-[color:var(--moss)]">{cat.name}</h3>
                     <span className="h-px w-10 bg-[color:var(--line)]" />
                   </div>
                   <div className="space-y-8 rounded-[2rem] p-8 md:p-10" style={{ background: 'var(--panel)' }}>
@@ -375,7 +375,7 @@ export default function PremiumLayout({ slug, initialRestaurant, initialView, me
                     <div className="mt-10 space-y-12">
                       {cat.children.map((sub: any) => (
                         <div key={sub.id}>
-                          <h4 className="text-lg text-center uppercase tracking-[0.2em] mb-8 text-[color:var(--muted)] italic">{sub.name}</h4>
+                          <h4 className="text-lg text-center tracking-[0.2em] mb-8 text-[color:var(--muted)] italic">{sub.name}</h4>
                           <div className="space-y-8 rounded-[2rem] p-8 md:p-10" style={{ background: 'var(--panel-soft)' }}>
                             {sub.items?.map((item: any) => renderMenuItem(item, true))}
                           </div>
@@ -388,7 +388,7 @@ export default function PremiumLayout({ slug, initialRestaurant, initialView, me
             </div>
           )}
           {restaurant.menus?.[0]?.updatedAt && (
-            <div className="text-center mt-16 text-xs font-light text-[color:var(--muted)] uppercase tracking-widest">
+            <div className="text-center mt-16 text-xs font-light text-[color:var(--muted)]">
               Son Fiyat Güncelleme Tarihi: {new Date(restaurant.menus[0].updatedAt).toLocaleDateString('tr-TR')}
             </div>
           )}
@@ -405,7 +405,7 @@ export default function PremiumLayout({ slug, initialRestaurant, initialView, me
               {restaurant.contactEmail && <a href={`mailto:${restaurant.contactEmail}`} className="hover:text-[var(--text)]">{restaurant.contactEmail}</a>}
             </div>
           )}
-          <Link href={`/r/${slug}?view=booking`} className="inline-block mt-8 rounded-full border border-[color:var(--moss)] px-6 py-2.5 text-xs font-medium uppercase tracking-[0.2em] text-[color:var(--moss)] hover:bg-[color:var(--moss)] hover:text-[var(--bg)] transition-colors">
+          <Link href={`/r/${slug}?view=booking`} className="inline-block mt-8 rounded-full border border-[color:var(--moss)] px-6 py-2.5 text-xs font-medium tracking-[0.2em] text-[color:var(--moss)] hover:bg-[color:var(--moss)] hover:text-[var(--bg)] transition-colors">
             {t('public.bookATable')}
           </Link>
           <p className="mt-10 text-xs text-[color:var(--muted)]/70">© {new Date().getFullYear()} {restaurant.name}</p>
@@ -425,7 +425,7 @@ export default function PremiumLayout({ slug, initialRestaurant, initialView, me
         )}
         {customization.showLegal && customization.legalText && (
           <div className="mt-24 pt-12 border-t border-[color:var(--line)] text-xs text-[color:var(--muted)] font-light text-left max-w-2xl mx-auto space-y-4">
-            <h4 className="text-xs font-bold uppercase tracking-widest mb-2 text-center text-[color:var(--moss)]">Legal Terms</h4>
+            <h4 className="text-xs font-bold mb-2 text-center text-[color:var(--moss)]">Legal Terms</h4>
             <div className="whitespace-pre-wrap">{customization.legalText}</div>
           </div>
         )}
@@ -451,7 +451,7 @@ export default function PremiumLayout({ slug, initialRestaurant, initialView, me
               <p className="text-[color:var(--muted)] font-light text-base">We look forward to welcoming you.</p>
               {confirmationCode && (
                 <div className="mx-auto mt-8 flex max-w-xs flex-col items-center rounded-2xl border border-[color:var(--line)] px-6 py-4" style={{ background: 'var(--panel)' }}>
-                  <span className="text-[10px] font-medium uppercase tracking-[0.25em] text-[color:var(--muted)]">{t('public.confirmationCodeLabel')}</span>
+                  <span className="text-[10px] font-medium tracking-[0.25em] text-[color:var(--muted)]">{t('public.confirmationCodeLabel')}</span>
                   <span className="mt-1 text-2xl font-medium tracking-[0.2em] text-[color:var(--moss)]">{confirmationCode}</span>
                   <span className="mt-2 text-[10px] font-light text-[color:var(--muted)]">{t('public.confirmationCodeHint')}</span>
                 </div>
@@ -472,14 +472,14 @@ export default function PremiumLayout({ slug, initialRestaurant, initialView, me
               )}
 
               <div className="space-y-4">
-                <Label className="text-sm uppercase tracking-widest text-[color:var(--moss)] font-medium">Date</Label>
+                <Label className="text-sm text-[color:var(--moss)] font-medium">Date</Label>
                 <div className="rounded-2xl border border-[color:var(--line)] p-4 text-[var(--text)]" style={{ background: 'var(--panel)' }}>
                   <ReservationCalendar value={selectedDate} onChange={setSelectedDate} tz={tz} accent="var(--moss)" accentText="var(--bg)" />
                 </div>
               </div>
 
               <div className="space-y-4">
-                <Label className="text-sm uppercase tracking-widest text-[color:var(--moss)] font-medium">Time</Label>
+                <Label className="text-sm text-[color:var(--moss)] font-medium">Time</Label>
                 <div className="grid grid-cols-4 gap-2">
                   {[...times.lunch, ...times.dinner].map(tm => (
                     <button key={tm} type="button" onClick={() => setSelectedTime(tm)} className={cn("h-11 rounded-xl border text-sm font-medium transition-all", selectedTime === tm ? "border-[color:var(--moss)] bg-[color:var(--moss)] text-[var(--bg)]" : "border-[color:var(--line)] hover:border-[color:var(--moss)]/50")} style={selectedTime === tm ? undefined : { background: 'var(--panel)' }}>{tm}</button>
@@ -495,7 +495,7 @@ export default function PremiumLayout({ slug, initialRestaurant, initialView, me
                 <div className="rounded-2xl border-l-4 border-amber-400 bg-amber-400/15 p-6 text-base font-normal text-amber-50 flex items-start gap-4">
                   <Clock className="w-6 h-6 shrink-0 text-amber-300" />
                   <div>
-                    <span className="mb-1 block text-xs font-semibold uppercase tracking-widest text-amber-300">{selectedDateLabel}</span>
+                    <span className="mb-1 block text-xs font-semibold text-amber-300">{selectedDateLabel}</span>
                     <strong className="block mb-2 text-amber-200 text-lg">Fully Booked</strong>
                     We are fully booked for reservations on this day. Please choose another date, or call us directly.
                   </div>
@@ -504,7 +504,7 @@ export default function PremiumLayout({ slug, initialRestaurant, initialView, me
                 <div className="rounded-2xl border-l-4 border-red-400 bg-red-400/15 p-6 text-base font-normal text-red-50 flex items-start gap-4">
                   <X className="w-6 h-6 shrink-0 text-red-300" />
                   <div>
-                    <span className="mb-1 block text-xs font-semibold uppercase tracking-widest text-red-300">{selectedDateLabel}</span>
+                    <span className="mb-1 block text-xs font-semibold text-red-300">{selectedDateLabel}</span>
                     <strong className="block mb-2 text-red-200 text-lg">Reservations Closed</strong>
                     Unfortunately, we&apos;re not accepting reservations for this day.
                   </div>
@@ -513,7 +513,7 @@ export default function PremiumLayout({ slug, initialRestaurant, initialView, me
                 <div className="rounded-2xl border-l-4 border-[color:var(--moss)] p-6 text-base font-normal text-[var(--text)] flex items-start gap-4" style={{ background: 'var(--panel)' }}>
                   <CheckCircle2 className="w-6 h-6 shrink-0 text-[color:var(--moss)]" />
                   <div>
-                    <span className="mb-1 block text-xs font-semibold uppercase tracking-widest text-[color:var(--moss)]">{selectedDateLabel}</span>
+                    <span className="mb-1 block text-xs font-semibold text-[color:var(--moss)]">{selectedDateLabel}</span>
                     <strong className="block mb-2 text-[color:var(--moss)] text-lg">Immediate Booking</strong>
                     Your reservation will be confirmed automatically.
                   </div>
@@ -522,7 +522,7 @@ export default function PremiumLayout({ slug, initialRestaurant, initialView, me
                 <div className="rounded-2xl border-l-4 border-sky-400 bg-sky-400/15 p-6 text-base font-normal text-sky-50 flex items-start gap-4">
                   <CalendarIcon className="w-6 h-6 shrink-0 text-sky-300" />
                   <div>
-                    <span className="mb-1 block text-xs font-semibold uppercase tracking-widest text-sky-300">{selectedDateLabel}</span>
+                    <span className="mb-1 block text-xs font-semibold text-sky-300">{selectedDateLabel}</span>
                     <strong className="block mb-2 text-sky-200 text-lg">Confirmation Queue</strong>
                     This date requires manual staff review. You&apos;ll receive a notification.
                   </div>
@@ -541,7 +541,7 @@ export default function PremiumLayout({ slug, initialRestaurant, initialView, me
 
               <div className="space-y-8 pt-8 border-t border-[color:var(--line)]">
                 <div className="space-y-4 text-center">
-                  <Label className="block text-sm uppercase tracking-widest text-[color:var(--moss)] font-medium">Guests</Label>
+                  <Label className="block text-sm text-[color:var(--moss)] font-medium">Guests</Label>
                   <div className="flex flex-wrap justify-center gap-2">
                     {Array.from({ length: maxPartySize }, (_, i) => i + 1).map(n => (
                       <button key={n} type="button" onClick={() => setResForm({...resForm, guestCount: String(n)})}
@@ -552,12 +552,12 @@ export default function PremiumLayout({ slug, initialRestaurant, initialView, me
                 </div>
                 <div className="grid grid-cols-1 gap-8 sm:grid-cols-2">
                   <div className="space-y-3">
-                    <Label className="text-sm uppercase tracking-widest text-[color:var(--moss)] font-medium">Name</Label>
+                    <Label className="text-sm text-[color:var(--moss)] font-medium">Name</Label>
                     <Input required value={resForm.customerName} onChange={e => setResForm({...resForm, customerName: e.target.value})}
                       className="border border-[color:var(--line)] rounded-xl h-14 px-4 text-base bg-[var(--panel)] focus-visible:ring-2 focus-visible:ring-[color:var(--moss)]/40 transition-all" />
                   </div>
                   <div className="space-y-3">
-                    <Label className="text-sm uppercase tracking-widest text-[color:var(--moss)] font-medium">Phone</Label>
+                    <Label className="text-sm text-[color:var(--moss)] font-medium">Phone</Label>
                     <Input required value={resForm.customerPhone} onChange={e => setResForm({...resForm, customerPhone: e.target.value})}
                       className="border border-[color:var(--line)] rounded-xl h-14 px-4 text-base bg-[var(--panel)] focus-visible:ring-2 focus-visible:ring-[color:var(--moss)]/40 transition-all" />
                   </div>
@@ -574,7 +574,7 @@ export default function PremiumLayout({ slug, initialRestaurant, initialView, me
               />
 
               <button type="submit" disabled={checkingDay || dayStatus?.daySetting?.isFullyBooked || (dayStatus?.daySetting?.isReservationEnabled === false && !dayStatus?.daySetting?.isFullyBooked)}
-                className="w-full h-16 text-lg font-semibold tracking-[0.1em] uppercase rounded-2xl mt-8 disabled:opacity-50 transition-all hover:scale-[1.02] hover:brightness-110"
+                className="w-full h-16 text-lg font-semibold tracking-[0.1em] rounded-2xl mt-8 disabled:opacity-50 transition-all hover:scale-[1.02] hover:brightness-110"
                 style={{ background: 'var(--moss)', color: 'var(--bg)' }}>
                 {dayStatus?.daySetting?.isFullyBooked ? 'Fully Booked' : 'Request Table'}
               </button>
@@ -592,7 +592,7 @@ export default function PremiumLayout({ slug, initialRestaurant, initialView, me
               {restaurant.contactEmail && <a href={`mailto:${restaurant.contactEmail}`} className="hover:text-[var(--text)]">{restaurant.contactEmail}</a>}
             </div>
           )}
-          <Link href={`/r/${slug}/menu`} className="inline-block mt-8 rounded-full border border-[color:var(--moss)] px-6 py-2.5 text-xs font-medium uppercase tracking-[0.2em] text-[color:var(--moss)] hover:bg-[color:var(--moss)] hover:text-[var(--bg)] transition-colors">
+          <Link href={`/r/${slug}/menu`} className="inline-block mt-8 rounded-full border border-[color:var(--moss)] px-6 py-2.5 text-xs font-medium tracking-[0.2em] text-[color:var(--moss)] hover:bg-[color:var(--moss)] hover:text-[var(--bg)] transition-colors">
             {t('public.menu')}
           </Link>
           <p className="mt-10 text-xs text-[color:var(--muted)]/70">© {new Date().getFullYear()} {restaurant.name}</p>

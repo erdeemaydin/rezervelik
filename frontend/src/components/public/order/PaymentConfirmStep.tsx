@@ -43,7 +43,7 @@ export default function PaymentConfirmStep({
   return (
     <div className="space-y-6 pb-6">
       <div>
-        <h2 className="mb-3 text-sm font-bold uppercase tracking-wide" style={{ color: theme.muted }}>{t('publicOrder.payment.title')}</h2>
+        <h2 className="mb-3 text-sm font-bold" style={{ color: theme.muted }}>{t('publicOrder.payment.title')}</h2>
         {noMethodsAvailable ? (
           <p className="text-sm text-amber-600">{t('publicOrder.payment.noneAvailable')}</p>
         ) : (
@@ -83,7 +83,7 @@ export default function PaymentConfirmStep({
       </div>
 
       <div className="space-y-1.5">
-        <Label className="text-xs font-bold uppercase" style={{ color: theme.muted }}>{t('publicOrder.payment.noteLabel')}</Label>
+        <Label className="text-xs font-bold" style={{ color: theme.muted }}>{t('publicOrder.payment.noteLabel')}</Label>
         <Textarea
           value={customerNote}
           onChange={(e) => setCustomerNote(e.target.value.slice(0, 500))}

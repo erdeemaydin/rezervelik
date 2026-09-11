@@ -73,15 +73,15 @@ export default function VendorsPage() {
         <div className="flex items-center justify-between flex-wrap gap-3">
           <div>
             <h1 className="text-2xl font-semibold tracking-tight flex items-center gap-2 font-heading"><Handshake className="w-6 h-6" />{t('vendors.title')}</h1>
-            <p className="text-xs text-slate-400 font-bold uppercase">{t('vendors.subtitle')}</p>
+            <p className="text-xs text-slate-400 font-bold">{t('vendors.subtitle')}</p>
           </div>
           <Button onClick={openCreate} className="bg-slate-900 hover:bg-slate-800"><Plus className="w-4 h-4 mr-1.5" />{t('vendors.add')}</Button>
         </div>
 
         <div className="flex gap-1.5 flex-wrap">
-          <button onClick={() => setFilter('')} className={`text-[10px] font-black uppercase px-2 py-1 rounded-sm border ${filter === '' ? 'bg-slate-900 text-white border-slate-900' : 'bg-white text-slate-500 border-slate-200'}`}>{t('vendors.all')}</button>
+ <button onClick={() => setFilter('')} className={`text-[10px] font-semibold px-2 py-1 rounded-sm border ${filter ===''?'bg-slate-900 text-white border-slate-900':'bg-white text-slate-500 border-slate-200'}`}>{t('vendors.all')}</button>
           {CATEGORIES.map(c => (
-            <button key={c} onClick={() => setFilter(c)} className={`text-[10px] font-black uppercase px-2 py-1 rounded-sm border ${filter === c ? 'bg-slate-900 text-white border-slate-900' : 'bg-white text-slate-500 border-slate-200'}`}>{t(`vendors.categories.${c}`)}</button>
+ <button key={c} onClick={() => setFilter(c)} className={`text-[10px] font-semibold px-2 py-1 rounded-sm border ${filter === c ?'bg-slate-900 text-white border-slate-900':'bg-white text-slate-500 border-slate-200'}`}>{t(`vendors.categories.${c}`)}</button>
           ))}
         </div>
 
@@ -100,7 +100,7 @@ export default function VendorsPage() {
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0">
                       <h3 className="font-black text-sm truncate">{v.name}</h3>
-                      <span className="text-[10px] font-black uppercase text-blue-500 tracking-wide">{t(`vendors.categories.${v.category}`)}</span>
+                      <span className="text-[10px] font-semibold text-blue-500">{t(`vendors.categories.${v.category}`)}</span>
                     </div>
                     <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                       <button onClick={() => openEdit(v)} className="text-slate-300 hover:text-slate-700"><Pencil className="w-3.5 h-3.5" /></button>
@@ -123,31 +123,31 @@ export default function VendorsPage() {
           <DialogHeader><DialogTitle>{editId ? t('vendors.editTitle') : t('vendors.add')}</DialogTitle></DialogHeader>
           <form onSubmit={submit} className="space-y-3">
             <div className="grid gap-1.5">
-              <Label className="text-[10px] font-black uppercase text-slate-400">{t('vendors.name')}</Label>
+              <Label className="text-[10px] font-semibold text-slate-400">{t('vendors.name')}</Label>
               <Input value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} className="h-10 text-sm font-bold" required />
             </div>
             <div className="grid gap-1.5">
-              <Label className="text-[10px] font-black uppercase text-slate-400">{t('vendors.category')}</Label>
+              <Label className="text-[10px] font-semibold text-slate-400">{t('vendors.category')}</Label>
               <select value={form.category} onChange={e => setForm({ ...form, category: e.target.value })} className="h-10 px-2 text-sm font-bold border border-slate-200 rounded-sm bg-white">
                 {CATEGORIES.map(c => <option key={c} value={c}>{t(`vendors.categories.${c}`)}</option>)}
               </select>
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="grid gap-1.5">
-                <Label className="text-[10px] font-black uppercase text-slate-400">{t('vendors.contactName')}</Label>
+                <Label className="text-[10px] font-semibold text-slate-400">{t('vendors.contactName')}</Label>
                 <Input value={form.contactName} onChange={e => setForm({ ...form, contactName: e.target.value })} className="h-10 text-sm font-bold" />
               </div>
               <div className="grid gap-1.5">
-                <Label className="text-[10px] font-black uppercase text-slate-400">{t('vendors.phone')}</Label>
+                <Label className="text-[10px] font-semibold text-slate-400">{t('vendors.phone')}</Label>
                 <Input value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })} className="h-10 text-sm font-bold" />
               </div>
             </div>
             <div className="grid gap-1.5">
-              <Label className="text-[10px] font-black uppercase text-slate-400">{t('vendors.email')}</Label>
+              <Label className="text-[10px] font-semibold text-slate-400">{t('vendors.email')}</Label>
               <Input type="email" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} className="h-10 text-sm font-bold" />
             </div>
             <div className="grid gap-1.5">
-              <Label className="text-[10px] font-black uppercase text-slate-400">{t('vendors.notes')}</Label>
+              <Label className="text-[10px] font-semibold text-slate-400">{t('vendors.notes')}</Label>
               <Textarea value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} className="min-h-[52px] text-xs" />
             </div>
             <div className="flex justify-end gap-2 pt-1">

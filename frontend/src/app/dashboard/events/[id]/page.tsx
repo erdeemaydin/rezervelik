@@ -227,12 +227,12 @@ export default function EventDetailPage() {
         <div className="flex items-center justify-between flex-wrap gap-3">
           <div>
             <h1 className="text-2xl font-semibold tracking-tight text-slate-900 font-heading">{form.clientName}</h1>
-            <p className="text-xs text-slate-400 font-bold uppercase">{t(`events.types.${form.eventType}`)} · {form.eventDate}</p>
+            <p className="text-xs text-slate-400 font-bold">{t(`events.types.${form.eventType}`)} · {form.eventDate}</p>
           </div>
           <div className="flex flex-wrap gap-1">
             {STAGES.map(s => (
               <button key={s} onClick={() => setStage(s)}
-                className={`text-[10px] font-black uppercase px-2 py-1 rounded-sm border ${form.stage === s ? 'bg-slate-900 text-white border-slate-900' : 'bg-white text-slate-500 border-slate-200 hover:border-slate-400'}`}>
+ className={`text-[10px] font-semibold px-2 py-1 rounded-sm border ${form.stage === s ?'bg-slate-900 text-white border-slate-900':'bg-white text-slate-500 border-slate-200 hover:border-slate-400'}`}>
                 {t(`events.stages.${s}`)}
               </button>
             ))}
@@ -241,7 +241,7 @@ export default function EventDetailPage() {
 
         {/* Core details */}
         <Card>
-          <CardHeader><CardTitle className="text-sm font-black uppercase">{t('events.detailsTitle')}</CardTitle></CardHeader>
+          <CardHeader><CardTitle className="text-sm font-semibold">{t('events.detailsTitle')}</CardTitle></CardHeader>
           <CardContent className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Field label={t('events.form.clientName')}><Input value={form.clientName} onChange={e => setForm({ ...form, clientName: e.target.value })} className="h-10 text-sm font-bold" /></Field>
             <Field label={t('events.form.clientPhone')}><Input value={form.clientPhone} onChange={e => setForm({ ...form, clientPhone: e.target.value })} className="h-10 text-sm font-bold" /></Field>
@@ -293,7 +293,7 @@ export default function EventDetailPage() {
           {/* Guests */}
           <Card>
             <CardHeader>
-              <CardTitle className="text-sm font-black uppercase flex items-center gap-2">
+              <CardTitle className="text-sm font-semibold flex items-center gap-2">
                 <Users className="w-4 h-4" />{t('events.guestsTitle')}
                 <Badge variant="outline" className="ml-auto text-[10px]">{t('events.rsvpConfirmed')}: {rsvpYes}</Badge>
               </CardTitle>
@@ -326,7 +326,7 @@ export default function EventDetailPage() {
           {/* Payment plan */}
           <Card>
             <CardHeader>
-              <CardTitle className="text-sm font-black uppercase flex items-center gap-2">
+              <CardTitle className="text-sm font-semibold flex items-center gap-2">
                 <Wallet className="w-4 h-4" />{t('events.paymentTitle')}
                 <span className="ml-auto text-[11px] font-bold text-emerald-600">{money(paidSum)} / {money(event?.paymentPlan?.totalAmount)}</span>
               </CardTitle>
@@ -363,7 +363,7 @@ export default function EventDetailPage() {
         {/* Seating (assign guests to halls/tables) */}
         <Card>
           <CardHeader>
-            <CardTitle className="text-sm font-black uppercase flex items-center gap-2">
+            <CardTitle className="text-sm font-semibold flex items-center gap-2">
               <Armchair className="w-4 h-4" />{t('events.seatingTitle')}
               <Badge variant="outline" className="ml-auto text-[10px]">{seatedIds.size}/{guests.length}</Badge>
             </CardTitle>
@@ -400,7 +400,7 @@ export default function EventDetailPage() {
         {/* Vendors */}
         <Card>
           <CardHeader>
-            <CardTitle className="text-sm font-black uppercase flex items-center gap-2">
+            <CardTitle className="text-sm font-semibold flex items-center gap-2">
               <Handshake className="w-4 h-4" />{t('events.vendorsTitle')}
               <button onClick={() => router.push('/dashboard/vendors')} className="ml-auto text-[10px] font-bold text-blue-500 hover:underline">{t('events.manageVendors')}</button>
             </CardTitle>
@@ -420,7 +420,7 @@ export default function EventDetailPage() {
               {vendors.map(v => (
                 <div key={v.id} className="flex items-center gap-2 border border-slate-100 rounded-sm px-2 py-1.5 flex-wrap">
                   <span className="font-bold text-sm truncate flex-1 min-w-[120px]">{v.vendor.name}
-                    <span className="ml-1.5 text-[10px] font-bold text-slate-400 uppercase">{t(`vendors.categories.${v.vendor.category}`)}</span>
+                    <span className="ml-1.5 text-[10px] font-bold text-slate-400">{t(`vendors.categories.${v.vendor.category}`)}</span>
                   </span>
                   <Input defaultValue={v.role || ''} onBlur={e => e.target.value !== (v.role || '') && patchVendor(v.id, { role: e.target.value })} placeholder={t('events.vendorRole')} className="h-8 w-28 text-xs font-bold" />
                   <Input type="number" min="0" step="0.01" defaultValue={v.cost != null ? String(v.cost / 100) : ''} onBlur={e => patchVendor(v.id, { cost: e.target.value === '' ? null : Math.round(parseFloat(e.target.value) * 100) })} placeholder="₺" className="h-8 w-20 text-xs font-bold font-mono" />
@@ -437,7 +437,7 @@ export default function EventDetailPage() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Contract / proposal */}
           <Card>
-            <CardHeader><CardTitle className="text-sm font-black uppercase flex items-center gap-2"><FileSignature className="w-4 h-4" />{t('events.contractTitle')}</CardTitle></CardHeader>
+            <CardHeader><CardTitle className="text-sm font-semibold flex items-center gap-2"><FileSignature className="w-4 h-4" />{t('events.contractTitle')}</CardTitle></CardHeader>
             <CardContent className="space-y-3">
               <Field label={t('events.contractUrl')}>
                 <Input value={form.contractUrl} onChange={e => setForm({ ...form, contractUrl: e.target.value })} placeholder="https://…" className="h-9 text-sm font-bold" />
@@ -456,7 +456,7 @@ export default function EventDetailPage() {
 
           {/* Invitation microsite */}
           <Card>
-            <CardHeader><CardTitle className="text-sm font-black uppercase flex items-center gap-2"><Mail className="w-4 h-4" />{t('events.invitationTitle')}</CardTitle></CardHeader>
+            <CardHeader><CardTitle className="text-sm font-semibold flex items-center gap-2"><Mail className="w-4 h-4" />{t('events.invitationTitle')}</CardTitle></CardHeader>
             <CardContent className="space-y-3">
               <p className="text-[11px] text-slate-400 font-bold">{t('events.invitationHint')}</p>
               <Field label={t('events.form.venueName')}><Input value={form.venueName} onChange={e => setForm({ ...form, venueName: e.target.value })} className="h-9 text-sm font-bold" /></Field>
@@ -484,7 +484,7 @@ export default function EventDetailPage() {
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="grid gap-1.5">
-      <Label className="text-[10px] font-black uppercase text-slate-400">{label}</Label>
+      <Label className="text-[10px] font-semibold text-slate-400">{label}</Label>
       {children}
     </div>
   );
@@ -494,7 +494,7 @@ function SeatingGroup({ title, count, capacity, over, children }: { title: strin
   return (
     <div className="border border-slate-200 rounded-md p-2.5 space-y-1.5 bg-slate-50/50">
       <div className="flex items-center justify-between">
-        <span className="text-[11px] font-black uppercase tracking-wide truncate">{title}</span>
+        <span className="text-[11px] font-semibold truncate">{title}</span>
         <span className={`text-[10px] font-black font-mono ${over ? 'text-rose-500' : 'text-slate-400'}`}>{count}{capacity != null ? `/${capacity}` : ''}</span>
       </div>
       {children}

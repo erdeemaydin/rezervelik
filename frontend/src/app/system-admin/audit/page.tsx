@@ -86,7 +86,7 @@ export default function SystemAuditPage() {
             <div className="flex items-center justify-between flex-wrap gap-3">
               <div className="flex items-center gap-2">
                 <Server className="w-4 h-4 text-slate-600" />
-                <CardTitle className="text-sm font-bold uppercase tracking-widest text-slate-700">Audit Trail</CardTitle>
+                <CardTitle className="text-sm font-bold text-slate-700">Audit Trail</CardTitle>
               </div>
               <div className="flex items-center gap-2">
                 <select
@@ -133,11 +133,11 @@ export default function SystemAuditPage() {
                       <TableCell className="font-mono text-[11px] text-slate-500 whitespace-nowrap">{new Date(log.createdAt).toLocaleString()}</TableCell>
                       <TableCell>
                         <div className="font-semibold text-xs text-slate-800">{log.actorName || log.actorEmail || 'System'}</div>
-                        {log.actorRole && <div className="text-[10px] text-slate-400 font-bold uppercase tracking-wide">{log.actorRole}</div>}
+                        {log.actorRole && <div className="text-[10px] text-slate-400 font-bold">{log.actorRole}</div>}
                       </TableCell>
                       <TableCell>
                         <div className="flex flex-col gap-1">
-                          <Badge variant="outline" className={cn('text-[9px] font-black uppercase w-fit px-1.5', categoryColor(log.category))}>
+ <Badge variant="outline"className={cn('text-[9px] font-semibold w-fit px-1.5', categoryColor(log.category))}>
                             {log.category}
                           </Badge>
                           <span className="text-[11px] font-semibold text-slate-600">{log.action.replace(/_/g, ' ').toLowerCase()}</span>
@@ -147,7 +147,7 @@ export default function SystemAuditPage() {
                         {log.restaurant ? (
                           <span className="font-semibold text-slate-700">{log.restaurant.name}</span>
                         ) : (
-                          <span className="text-[10px] font-black uppercase tracking-wide text-slate-400">Platform</span>
+                          <span className="text-[10px] font-semibold text-slate-400">Platform</span>
                         )}
                       </TableCell>
                       <TableCell className="text-xs text-slate-600">

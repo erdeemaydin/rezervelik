@@ -71,7 +71,7 @@ export default function SystemSettingsPage() {
 
         <Card className="border-slate-200 shadow-sm bg-white">
           <CardHeader className="border-b border-slate-100 bg-slate-50/50 p-4">
-            <CardTitle className="text-sm font-bold uppercase tracking-widest text-slate-700">Platform Control</CardTitle>
+            <CardTitle className="text-sm font-bold text-slate-700">Platform Control</CardTitle>
             <CardDescription className="text-xs">These settings affect all tenants on the platform immediately.</CardDescription>
           </CardHeader>
           <CardContent className="p-6 space-y-6">
@@ -135,7 +135,7 @@ export default function SystemSettingsPage() {
           <CardHeader className="border-b border-slate-100 bg-slate-50/50 p-4 flex flex-row items-center gap-3">
             <div className="p-2 bg-emerald-50 rounded-md text-emerald-600"><Palette className="w-5 h-5" /></div>
             <div>
-              <CardTitle className="text-sm font-bold uppercase tracking-widest text-slate-700">Console Appearance</CardTitle>
+              <CardTitle className="text-sm font-bold text-slate-700">Console Appearance</CardTitle>
               <CardDescription className="text-xs">Color theme for this system-admin console. Tenant dashboards are themed separately by each restaurant.</CardDescription>
             </div>
           </CardHeader>
@@ -158,7 +158,7 @@ export default function SystemSettingsPage() {
                       </span>
                     </div>
                     <span className="flex items-center justify-between">
-                      <span className="text-[11px] font-black uppercase tracking-tight text-slate-700">{t(th.labelKey)}</span>
+                      <span className="text-[11px] font-semibold tracking-tight text-slate-700">{t(th.labelKey)}</span>
                       {active && <Check className="h-3.5 w-3.5 text-slate-800" />}
                     </span>
                   </button>

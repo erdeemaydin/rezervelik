@@ -215,10 +215,10 @@ export default function OrdersPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight text-slate-900 font-heading">{t('orders.title')}</h1>
-          <p className="text-[10px] text-slate-400 font-black uppercase tracking-[0.2em] mt-1 italic">{t('orders.subtitle')}</p>
+          <p className="text-[10px] text-slate-400 font-semibold tracking-[0.2em] mt-1 italic">{t('orders.subtitle')}</p>
         </div>
         <Link href="/dashboard/orders/settings">
-          <Button variant="outline" size="sm" className="h-9 px-4 text-[10px] font-black uppercase border-slate-200 text-slate-600 shadow-sm bg-white">
+          <Button variant="outline" size="sm" className="h-9 px-4 text-[10px] font-semibold border-slate-200 text-slate-600 shadow-sm bg-white">
             <Settings2 className="w-3.5 h-3.5 mr-1.5" /> {t('orders.settingsBtn')}
           </Button>
         </Link>
@@ -242,7 +242,7 @@ export default function OrdersPage() {
                     { label: t('orders.filters.thisMonth'), value: 'month' as const },
                     { label: t('orders.filters.allTime'), value: 'all' as const },
                   ]).map((f) => (
-                    <Button key={f.value} variant="ghost" size="sm" onClick={() => setTimeFilter(f.value)} className={cn('h-7 text-[9px] font-black uppercase px-3 rounded-sm transition-all', timeFilter === f.value ? 'bg-white text-slate-900 shadow-sm border border-slate-200/50' : 'text-slate-500 hover:text-slate-700')}>{f.label}</Button>
+ <Button key={f.value} variant="ghost"size="sm"onClick={() => setTimeFilter(f.value)} className={cn('h-7 text-[9px] font-semibold px-3 rounded-sm transition-all', timeFilter === f.value ?'bg-white text-slate-900 shadow-sm border border-slate-200/50':'text-slate-500 hover:text-slate-700')}>{f.label}</Button>
                   ))}
                   <div className="w-px h-4 bg-slate-300 mx-1" />
                   <input
@@ -273,19 +273,19 @@ export default function OrdersPage() {
               <Table>
                 <TableHeader className="bg-slate-50/80">
                   <TableRow className="h-10 hover:bg-transparent border-b border-slate-200">
-                    <TableHead className="text-[10px] font-black text-slate-500 uppercase tracking-widest px-6">{t('orders.table.orderNumber')}</TableHead>
-                    <TableHead className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{t('orders.table.customer')}</TableHead>
-                    <TableHead className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{t('orders.table.fulfillment')}</TableHead>
-                    <TableHead className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{t('orders.table.status')}</TableHead>
-                    <TableHead className="text-[10px] font-black text-slate-500 uppercase tracking-widest text-right">{t('orders.table.total')}</TableHead>
-                    <TableHead className="text-[10px] font-black text-slate-500 uppercase tracking-widest text-right px-6">{t('orders.table.placedAt')}</TableHead>
+                    <TableHead className="text-[10px] font-semibold text-slate-500 px-6">{t('orders.table.orderNumber')}</TableHead>
+                    <TableHead className="text-[10px] font-semibold text-slate-500">{t('orders.table.customer')}</TableHead>
+                    <TableHead className="text-[10px] font-semibold text-slate-500">{t('orders.table.fulfillment')}</TableHead>
+                    <TableHead className="text-[10px] font-semibold text-slate-500">{t('orders.table.status')}</TableHead>
+                    <TableHead className="text-[10px] font-semibold text-slate-500 text-right">{t('orders.table.total')}</TableHead>
+                    <TableHead className="text-[10px] font-semibold text-slate-500 text-right px-6">{t('orders.table.placedAt')}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {loadingOrders ? (
-                    <TableRow><TableCell colSpan={6} className="h-48 text-center text-xs text-slate-300 font-black uppercase tracking-widest">{t('orders.table.loading')}</TableCell></TableRow>
+                    <TableRow><TableCell colSpan={6} className="h-48 text-center text-xs text-slate-300 font-semibold">{t('orders.table.loading')}</TableCell></TableRow>
                   ) : filteredOrders.length === 0 ? (
-                    <TableRow><TableCell colSpan={6} className="h-48 text-center text-xs text-slate-300 font-black uppercase tracking-widest">{t('orders.table.noOrders')}</TableCell></TableRow>
+                    <TableRow><TableCell colSpan={6} className="h-48 text-center text-xs text-slate-300 font-semibold">{t('orders.table.noOrders')}</TableCell></TableRow>
                   ) : filteredOrders.map((o) => (
                     <TableRow key={o.id} onClick={() => setSelectedOrder(o)} className="h-14 border-b border-slate-50 hover:bg-slate-50/70 transition-colors cursor-pointer">
                       <TableCell className="px-6">
@@ -298,12 +298,12 @@ export default function OrdersPage() {
                         </div>
                       </TableCell>
                       <TableCell>
-                        <Badge variant="outline" className="text-[9px] font-black uppercase border-slate-200 bg-white text-slate-600 shadow-none">
+                        <Badge variant="outline" className="text-[9px] font-semibold border-slate-200 bg-white text-slate-600 shadow-none">
                           {t(`orders.fulfillment.${o.fulfillmentType}`)}
                         </Badge>
                       </TableCell>
                       <TableCell>
-                        <Badge className={cn('text-[9px] font-black uppercase px-2 py-0.5 rounded-sm shadow-none border-0', statusBadgeClass(o.status))}>
+ <Badge className={cn('text-[9px] font-semibold px-2 py-0.5 rounded-sm shadow-none border-0', statusBadgeClass(o.status))}>
                           {t(`orders.status.${o.status}`)}
                         </Badge>
                       </TableCell>
@@ -323,7 +323,7 @@ export default function OrdersPage() {
             <CardHeader className="p-3 bg-slate-50/50 border-b border-slate-200 flex flex-row items-center justify-between">
               <div className="flex items-center gap-2">
                 <Users className="w-4 h-4 text-blue-500" />
-                <span className="text-xs font-bold text-slate-700 uppercase tracking-widest">{t('orders.tabs.customers')}</span>
+                <span className="text-xs font-bold text-slate-700">{t('orders.tabs.customers')}</span>
               </div>
               <div className="relative w-64">
                 <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
@@ -334,17 +334,17 @@ export default function OrdersPage() {
               <Table>
                 <TableHeader className="bg-slate-50/80">
                   <TableRow className="h-9 border-b border-slate-200">
-                    <TableHead className="text-[9px] font-black text-slate-400 uppercase tracking-widest px-6">{t('orders.customers.table.name')}</TableHead>
-                    <TableHead className="text-[9px] font-black text-slate-400 uppercase tracking-widest">{t('orders.customers.table.phone')}</TableHead>
-                    <TableHead className="text-[9px] font-black text-slate-400 uppercase tracking-widest text-center">{t('orders.customers.table.orderCount')}</TableHead>
-                    <TableHead className="text-[9px] font-black text-slate-400 uppercase tracking-widest text-right px-6">{t('orders.customers.table.joined')}</TableHead>
+                    <TableHead className="text-[9px] font-semibold text-slate-400 px-6">{t('orders.customers.table.name')}</TableHead>
+                    <TableHead className="text-[9px] font-semibold text-slate-400">{t('orders.customers.table.phone')}</TableHead>
+                    <TableHead className="text-[9px] font-semibold text-slate-400 text-center">{t('orders.customers.table.orderCount')}</TableHead>
+                    <TableHead className="text-[9px] font-semibold text-slate-400 text-right px-6">{t('orders.customers.table.joined')}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {loadingCustomers ? (
-                    <TableRow><TableCell colSpan={4} className="h-48 text-center text-[10px] font-black text-slate-400 uppercase tracking-widest">{t('orders.customers.table.loading')}</TableCell></TableRow>
+                    <TableRow><TableCell colSpan={4} className="h-48 text-center text-[10px] font-semibold text-slate-400">{t('orders.customers.table.loading')}</TableCell></TableRow>
                   ) : filteredCustomers.length === 0 ? (
-                    <TableRow><TableCell colSpan={4} className="h-48 text-center text-[10px] font-black text-slate-400 uppercase tracking-widest">{t('orders.customers.table.noCustomers')}</TableCell></TableRow>
+                    <TableRow><TableCell colSpan={4} className="h-48 text-center text-[10px] font-semibold text-slate-400">{t('orders.customers.table.noCustomers')}</TableCell></TableRow>
                   ) : filteredCustomers.map((c) => (
                     <TableRow key={c.id} onClick={() => openCustomerDetail(c.id)} className="h-14 hover:bg-slate-50/50 border-b border-slate-100 transition-colors cursor-pointer">
                       <TableCell className="px-6 py-3">
@@ -371,42 +371,42 @@ export default function OrdersPage() {
             <>
               <div className="bg-slate-900 p-5 text-white flex items-center justify-between">
                 <DialogHeader>
-                  <DialogTitle className="text-lg font-black uppercase tracking-tight">
+                  <DialogTitle className="text-lg font-semibold tracking-tight">
                     {t('orders.detail.title')} #{selectedOrder.orderNumber}
                   </DialogTitle>
                 </DialogHeader>
-                <Badge className={cn('text-[9px] font-black uppercase px-2 py-1 rounded-sm shadow-none border-0', statusBadgeClass(selectedOrder.status))}>
+ <Badge className={cn('text-[9px] font-semibold px-2 py-1 rounded-sm shadow-none border-0', statusBadgeClass(selectedOrder.status))}>
                   {t(`orders.status.${selectedOrder.status}`)}
                 </Badge>
               </div>
               <div className="p-6 space-y-5 bg-white max-h-[70vh] overflow-y-auto">
                 <div className="grid grid-cols-2 gap-4 text-xs">
                   <div className="space-y-1">
-                    <div className="text-[9px] font-black uppercase text-slate-400 tracking-widest">{t('orders.detail.customer')}</div>
+                    <div className="text-[9px] font-semibold text-slate-400">{t('orders.detail.customer')}</div>
                     <div className="font-bold text-slate-800">{selectedOrder.customer?.name || '—'}</div>
                     <div className="text-slate-500 font-mono">{selectedOrder.customer?.phone || ''}</div>
                   </div>
                   <div className="space-y-1">
-                    <div className="text-[9px] font-black uppercase text-slate-400 tracking-widest">{t('orders.detail.placedAt')}</div>
+                    <div className="text-[9px] font-semibold text-slate-400">{t('orders.detail.placedAt')}</div>
                     <div className="font-bold text-slate-800">{fmtDateTime(selectedOrder.createdAt)}</div>
                   </div>
                   <div className="space-y-1">
-                    <div className="text-[9px] font-black uppercase text-slate-400 tracking-widest">{t('orders.detail.paymentMethod')}</div>
+                    <div className="text-[9px] font-semibold text-slate-400">{t('orders.detail.paymentMethod')}</div>
                     <div className="font-bold text-slate-800">{t(`orders.paymentMethod.${selectedOrder.paymentMethod}`)}</div>
                   </div>
                   <div className="space-y-1">
-                    <div className="text-[9px] font-black uppercase text-slate-400 tracking-widest">{t('orders.detail.paymentStatus')}</div>
+                    <div className="text-[9px] font-semibold text-slate-400">{t('orders.detail.paymentStatus')}</div>
                     <div className="font-bold text-slate-800">{t(`orders.paymentStatus.${selectedOrder.paymentStatus}`)}</div>
                   </div>
                   {selectedOrder.prepTimeMinutes != null && (
                     <div className="space-y-1">
-                      <div className="text-[9px] font-black uppercase text-slate-400 tracking-widest flex items-center gap-1"><Clock className="w-3 h-3" /> {t('orders.detail.prepTime')}</div>
+                      <div className="text-[9px] font-semibold text-slate-400 flex items-center gap-1"><Clock className="w-3 h-3" /> {t('orders.detail.prepTime')}</div>
                       <div className="font-bold text-slate-800">{selectedOrder.prepTimeMinutes} {t('orders.detail.minutesSuffix')}</div>
                     </div>
                   )}
                   {selectedOrder.readyBy && (
                     <div className="space-y-1">
-                      <div className="text-[9px] font-black uppercase text-slate-400 tracking-widest">{t('orders.detail.readyBy')}</div>
+                      <div className="text-[9px] font-semibold text-slate-400">{t('orders.detail.readyBy')}</div>
                       <div className="font-bold text-slate-800">{fmtDateTime(selectedOrder.readyBy)}</div>
                     </div>
                   )}
@@ -414,7 +414,7 @@ export default function OrdersPage() {
 
                 {selectedOrder.fulfillmentType === 'DELIVERY' && (
                   <div className="rounded-md border border-slate-200 bg-slate-50/50 p-3">
-                    <div className="text-[9px] font-black uppercase text-slate-400 tracking-widest flex items-center gap-1 mb-1"><MapPin className="w-3 h-3" /> {t('orders.detail.address')}</div>
+                    <div className="text-[9px] font-semibold text-slate-400 flex items-center gap-1 mb-1"><MapPin className="w-3 h-3" /> {t('orders.detail.address')}</div>
                     {selectedOrder.addressSnapshot ? (
                       <div className="text-xs text-slate-700 font-medium">
                         {selectedOrder.addressSnapshot.label && <span className="font-black mr-1">{selectedOrder.addressSnapshot.label}:</span>}
@@ -429,7 +429,7 @@ export default function OrdersPage() {
                 )}
 
                 <div>
-                  <div className="text-[9px] font-black uppercase text-slate-400 tracking-widest mb-2">{t('orders.detail.items')}</div>
+                  <div className="text-[9px] font-semibold text-slate-400 mb-2">{t('orders.detail.items')}</div>
                   <div className="rounded-md border border-slate-200 overflow-hidden">
                     {selectedOrder.items.map((it) => (
                       <div key={it.id} className="flex items-start justify-between p-3 border-b border-slate-100 last:border-0 bg-white">
@@ -466,7 +466,7 @@ export default function OrdersPage() {
                 </div>
 
                 <div className="rounded-md bg-blue-50/40 border border-blue-100 p-3">
-                  <div className="text-[9px] font-black uppercase text-blue-500 tracking-widest flex items-center gap-1 mb-1"><StickyNote className="w-3 h-3" /> {t('orders.detail.customerNote')}</div>
+                  <div className="text-[9px] font-semibold text-blue-500 flex items-center gap-1 mb-1"><StickyNote className="w-3 h-3" /> {t('orders.detail.customerNote')}</div>
                   <div className="text-xs text-slate-700 font-medium italic">{selectedOrder.customerNote || t('orders.detail.noNote')}</div>
                 </div>
               </div>
@@ -480,7 +480,7 @@ export default function OrdersPage() {
         <DialogContent maxWidth="sm:max-w-lg" className="p-0 rounded-md overflow-hidden border-0 shadow-2xl">
           <div className="bg-slate-900 p-5 text-white">
             <DialogHeader>
-              <DialogTitle className="text-lg font-black uppercase tracking-tight">
+              <DialogTitle className="text-lg font-semibold tracking-tight">
                 {selectedCustomer ? selectedCustomer.name : t('orders.customerDetail.title')}
               </DialogTitle>
             </DialogHeader>
@@ -503,7 +503,7 @@ export default function OrdersPage() {
                 </div>
 
                 <div>
-                  <div className="text-[9px] font-black uppercase text-slate-400 tracking-widest mb-2">{t('orders.customerDetail.addresses')}</div>
+                  <div className="text-[9px] font-semibold text-slate-400 mb-2">{t('orders.customerDetail.addresses')}</div>
                   {selectedCustomer.addresses.length === 0 ? (
                     <div className="text-xs text-slate-400 italic">{t('orders.customerDetail.noAddresses')}</div>
                   ) : (
@@ -520,7 +520,7 @@ export default function OrdersPage() {
                 </div>
 
                 <div>
-                  <div className="text-[9px] font-black uppercase text-slate-400 tracking-widest mb-2">{t('orders.customerDetail.orderHistory')}</div>
+                  <div className="text-[9px] font-semibold text-slate-400 mb-2">{t('orders.customerDetail.orderHistory')}</div>
                   {selectedCustomer.orders.length === 0 ? (
                     <div className="text-xs text-slate-400 italic">{t('orders.customerDetail.noOrders')}</div>
                   ) : (
@@ -529,7 +529,7 @@ export default function OrdersPage() {
                         <div key={o.id} className="flex items-center justify-between p-2.5 border-b border-slate-100 last:border-0 bg-white text-xs">
                           <div className="flex items-center gap-2">
                             <span className="font-black text-slate-900">#{o.orderNumber}</span>
-                            <Badge className={cn('text-[8px] font-black uppercase px-1.5 py-0 rounded-sm shadow-none border-0', statusBadgeClass(o.status))}>{t(`orders.status.${o.status}`)}</Badge>
+ <Badge className={cn('text-[8px] font-semibold px-1.5 py-0 rounded-sm shadow-none border-0', statusBadgeClass(o.status))}>{t(`orders.status.${o.status}`)}</Badge>
                           </div>
                           <div className="flex items-center gap-3 text-slate-500 font-bold">
                             <span>{fmtDateTime(o.createdAt)}</span>

@@ -419,7 +419,7 @@ export default function ReservationsPage() {
 
   const getStatusBadge = (status: string) => {
     const s = statusStyle(status);
-    return <Badge className={cn("text-[10px] font-black uppercase px-2 py-0.5 rounded-sm shadow-sm", s.badge)}>{t(s.labelKey)}</Badge>;
+ return <Badge className={cn("text-[10px] font-semibold px-2 py-0.5 rounded-sm shadow-sm", s.badge)}>{t(s.labelKey)}</Badge>;
   };
 
   // Boxed summary rows shown inside confirmation prompts so staff can see exactly
@@ -443,7 +443,7 @@ export default function ReservationsPage() {
             <h1 className="text-2xl font-semibold tracking-tight text-slate-900 font-heading">{isRestaurant ? t("reservations.dashboardTitle") : term('bookingPlural')}</h1>
             <div className="flex items-center gap-2 mt-1">
                 <div className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
-                <p className="text-[10px] text-slate-400 font-black uppercase tracking-[0.2em]">{t("reservations.serviceControlUnit")}</p>
+                <p className="text-[10px] text-slate-400 font-semibold tracking-[0.2em]">{t("reservations.serviceControlUnit")}</p>
             </div>
           </div>
           <Button onClick={() => openCreate()} className="bg-blue-600 hover:bg-blue-700 text-white rounded-md h-10 px-6 font-black text-xs shadow-lg shadow-blue-600/20">
@@ -461,13 +461,13 @@ export default function ReservationsPage() {
             <div className="flex flex-col">
               {/* Tab Selector */}
               <div className="flex items-center border-b border-slate-50 p-1 bg-slate-50/50">
-                <Button variant="ghost" size="sm" onClick={() => { setActiveTab('upcoming'); setStatusFilter(null); if (!['today','tomorrow','this-week','next-week','all','custom','interval'].includes(timeFilter)) setTimeFilter('today'); }} className={cn("flex-1 h-9 text-[10px] font-black uppercase rounded-sm transition-all", activeTab === 'upcoming' ? "bg-white text-blue-600 shadow-sm border border-slate-100" : "text-slate-400 hover:text-slate-600")}>
+ <Button variant="ghost"size="sm"onClick={() => { setActiveTab('upcoming'); setStatusFilter(null); if (!['today','tomorrow','this-week','next-week','all','custom','interval'].includes(timeFilter)) setTimeFilter('today'); }} className={cn("flex-1 h-9 text-[10px] font-semibold rounded-sm transition-all", activeTab ==='upcoming'?"bg-white text-blue-600 shadow-sm border border-slate-100":"text-slate-400 hover:text-slate-600")}>
                     <Timer className="w-3.5 h-3.5 mr-2" /> {t("reservations.liveAndPending")}
                 </Button>
-                <Button variant="ghost" size="sm" onClick={() => { setActiveTab('timeline'); setStatusFilter(null); }} className={cn("flex-1 h-9 text-[10px] font-black uppercase rounded-sm transition-all", activeTab === 'timeline' ? "bg-white text-blue-600 shadow-sm border border-slate-100" : "text-slate-400 hover:text-slate-600")}>
+ <Button variant="ghost"size="sm"onClick={() => { setActiveTab('timeline'); setStatusFilter(null); }} className={cn("flex-1 h-9 text-[10px] font-semibold rounded-sm transition-all", activeTab ==='timeline'?"bg-white text-blue-600 shadow-sm border border-slate-100":"text-slate-400 hover:text-slate-600")}>
                     <CalendarDays className="w-3.5 h-3.5 mr-2" /> {t("reservations.timeline")}
                 </Button>
-                <Button variant="ghost" size="sm" onClick={() => { setActiveTab('history'); setStatusFilter(null); if (!['today','this-week','last-week','last-month','custom','interval'].includes(timeFilter)) setTimeFilter('today'); }} className={cn("flex-1 h-9 text-[10px] font-black uppercase rounded-sm transition-all", activeTab === 'history' ? "bg-white text-blue-600 shadow-sm border border-slate-100" : "text-slate-400 hover:text-slate-600")}>
+ <Button variant="ghost"size="sm"onClick={() => { setActiveTab('history'); setStatusFilter(null); if (!['today','this-week','last-week','last-month','custom','interval'].includes(timeFilter)) setTimeFilter('today'); }} className={cn("flex-1 h-9 text-[10px] font-semibold rounded-sm transition-all", activeTab ==='history'?"bg-white text-blue-600 shadow-sm border border-slate-100":"text-slate-400 hover:text-slate-600")}>
                     <CheckCircle2 className="w-3.5 h-3.5 mr-2" /> {t("reservations.reservationDatabase")}
                 </Button>
               </div>
@@ -476,10 +476,10 @@ export default function ReservationsPage() {
                 <div className="flex flex-wrap items-center justify-between p-3 gap-4">
                   <div className="flex items-center gap-1 bg-slate-100/50 p-1 rounded-md border border-slate-200/60">
                     <Button variant="ghost" size="icon" onClick={() => shiftTimelineDate(-1)} className="h-8 w-8 text-slate-500"><ChevronLeft className="w-4 h-4" /></Button>
-                    <Button variant="ghost" size="sm" onClick={() => setTimelineDate(todayLocalDate())} className={cn("h-7 text-[9px] font-black uppercase px-3 rounded-sm", timelineDate === todayLocalDate() ? "bg-blue-600 text-white" : "text-slate-500")}>{t("reservations.filterToday")}</Button>
+ <Button variant="ghost"size="sm"onClick={() => setTimelineDate(todayLocalDate())} className={cn("h-7 text-[9px] font-semibold px-3 rounded-sm", timelineDate === todayLocalDate() ?"bg-blue-600 text-white":"text-slate-500")}>{t("reservations.filterToday")}</Button>
                     <div className="relative">
                       <input type="date" ref={timelineDateRef} value={timelineDate} onChange={(e) => setTimelineDate(e.target.value)} className="sr-only" />
-                      <Button variant="ghost" size="sm" onClick={() => timelineDateRef.current?.showPicker()} className="h-7 text-[9px] font-black uppercase px-3 rounded-sm text-slate-700">
+                      <Button variant="ghost" size="sm" onClick={() => timelineDateRef.current?.showPicker()} className="h-7 text-[9px] font-semibold px-3 rounded-sm text-slate-700">
                         <CalendarIcon className="w-3 h-3 mr-1.5" /> {new Date(`${timelineDate}T00:00:00`).toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' })}
                       </Button>
                     </div>
@@ -488,7 +488,7 @@ export default function ReservationsPage() {
                   <div className="flex items-center gap-2">
                     {timelineZones.length > 0 && (
                       <div className="flex items-center gap-1.5 bg-slate-100/50 p-1 rounded-md border border-slate-200/60">
-                        <span className="text-[9px] font-black uppercase text-slate-400 pl-1.5">{t("reservations.zone")}</span>
+                        <span className="text-[9px] font-semibold text-slate-400 pl-1.5">{t("reservations.zone")}</span>
                         <Select value={timelineZoneId} onValueChange={(v) => { if (v) setTimelineZoneId(v); }}>
                           <SelectTrigger className="h-7 min-w-[96px] text-[10px] font-black rounded-sm border-slate-200 focus:ring-0 shadow-none"><SelectValue /></SelectTrigger>
                           <SelectContent>
@@ -499,7 +499,7 @@ export default function ReservationsPage() {
                       </div>
                     )}
                     <div className="flex items-center gap-1.5 bg-slate-100/50 p-1 rounded-md border border-slate-200/60">
-                      <span className="text-[9px] font-black uppercase text-slate-400 pl-1.5">{t("reservations.displayHours")}</span>
+                      <span className="text-[9px] font-semibold text-slate-400 pl-1.5">{t("reservations.displayHours")}</span>
                       <Select value={String(timelineStartHour)} onValueChange={(v) => { if (!v) return; const h = parseInt(v); setTimelineStartHour(h); if (h >= timelineEndHour) setTimelineEndHour(Math.min(24, h + 1)); }}>
                         <SelectTrigger className="h-7 w-[64px] text-[10px] font-black rounded-sm border-slate-200 focus:ring-0 shadow-none"><SelectValue /></SelectTrigger>
                         <SelectContent>
@@ -514,7 +514,7 @@ export default function ReservationsPage() {
                         </SelectContent>
                       </Select>
                     </div>
-                    <Button variant="outline" size="sm" onClick={() => scrollTimelineToNow(true)} className="h-8 text-[10px] font-black uppercase border-slate-200 text-slate-600">
+                    <Button variant="outline" size="sm" onClick={() => scrollTimelineToNow(true)} className="h-8 text-[10px] font-semibold border-slate-200 text-slate-600">
                       <Timer className="w-3.5 h-3.5 mr-1.5" /> {t("reservations.jumpToNow")}
                     </Button>
                   </div>
@@ -537,17 +537,17 @@ export default function ReservationsPage() {
                         { label: t("reservations.filterAllTime"), value: 'all' },
                       ]
                   ).map(f => (
-                    <Button key={f.value} variant="ghost" size="sm" onClick={() => setTimeFilter(f.value)} className={cn("h-7 text-[9px] font-black uppercase px-3 rounded-sm transition-all", timeFilter === f.value ? "bg-white text-slate-900 shadow-sm border border-slate-200/50" : "text-slate-500 hover:text-slate-700")}>{f.label}</Button>
+ <Button key={f.value} variant="ghost"size="sm"onClick={() => setTimeFilter(f.value)} className={cn("h-7 text-[9px] font-semibold px-3 rounded-sm transition-all", timeFilter === f.value ?"bg-white text-slate-900 shadow-sm border border-slate-200/50":"text-slate-500 hover:text-slate-700")}>{f.label}</Button>
                   ))}
                   <div className="w-px h-4 bg-slate-300 mx-1" />
                   <div className="relative">
                     <input type="date" ref={filterDateRef} value={customDate} onChange={(e) => {setCustomFilterDate(e.target.value); setTimeFilter('custom');}} className="sr-only" />
-                    <Button variant="ghost" size="sm" onClick={() => filterDateRef.current?.showPicker()} className={cn("h-7 text-[9px] font-black uppercase px-3 rounded-sm transition-all", timeFilter === 'custom' ? "bg-blue-600 text-white" : "text-slate-500")}>
+ <Button variant="ghost"size="sm"onClick={() => filterDateRef.current?.showPicker()} className={cn("h-7 text-[9px] font-semibold px-3 rounded-sm transition-all", timeFilter ==='custom'?"bg-blue-600 text-white":"text-slate-500")}>
                         <CalendarIcon className="w-3 h-3 mr-1.5" /> {timeFilter === 'custom' && customDate ? customDate : t("reservations.picker")}
                     </Button>
                   </div>
                   {/* Interval (date range) picker. */}
-                  <Button variant="ghost" size="sm" onClick={() => setTimeFilter('interval')} className={cn("h-7 text-[9px] font-black uppercase px-3 rounded-sm transition-all", timeFilter === 'interval' ? "bg-blue-600 text-white" : "text-slate-500")}>
+ <Button variant="ghost"size="sm"onClick={() => setTimeFilter('interval')} className={cn("h-7 text-[9px] font-semibold px-3 rounded-sm transition-all", timeFilter ==='interval'?"bg-blue-600 text-white":"text-slate-500")}>
                     <CalendarIcon className="w-3 h-3 mr-1.5" /> {t("reservations.filterInterval")}
                   </Button>
                   {timeFilter === 'interval' && (
@@ -568,7 +568,7 @@ export default function ReservationsPage() {
                         { label: t("reservations.dbActive"), value: 'active' as const },
                         { label: t("reservations.dbDeactive"), value: 'deactive' as const },
                       ].map(f => (
-                        <Button key={f.value} variant="ghost" size="sm" onClick={() => setDbFilter(f.value)} className={cn("h-7 text-[9px] font-black uppercase px-3 rounded-sm transition-all", dbFilter === f.value ? "bg-white text-slate-900 shadow-sm border border-slate-200/50" : "text-slate-500 hover:text-slate-700")}>{f.label}</Button>
+ <Button key={f.value} variant="ghost"size="sm"onClick={() => setDbFilter(f.value)} className={cn("h-7 text-[9px] font-semibold px-3 rounded-sm transition-all", dbFilter === f.value ?"bg-white text-slate-900 shadow-sm border border-slate-200/50":"text-slate-500 hover:text-slate-700")}>{f.label}</Button>
                       ))}
                     </div>
                   )}
@@ -600,30 +600,30 @@ export default function ReservationsPage() {
             <Table>
               <TableHeader className="bg-slate-50/80">
                 <TableRow className="h-10 hover:bg-transparent border-b border-slate-200">
-                  <TableHead className="text-[10px] font-black text-slate-500 uppercase tracking-widest px-6">
-                    <button type="button" onClick={() => toggleSort('time')} className="inline-flex items-center gap-1 hover:text-slate-800 transition-colors uppercase">
+                  <TableHead className="text-[10px] font-semibold text-slate-500 px-6">
+                    <button type="button" onClick={() => toggleSort('time')} className="inline-flex items-center gap-1 hover:text-slate-800 transition-colors">
                       {t("reservations.schedule")}<span className="text-[8px] w-2">{sortBy === 'time' ? (sortDir === 'asc' ? '▲' : '▼') : ''}</span>
                     </button>
                   </TableHead>
-                  <TableHead className="text-[10px] font-black text-slate-500 uppercase tracking-widest">
-                    <button type="button" onClick={() => toggleSort('guest')} className="inline-flex items-center gap-1 hover:text-slate-800 transition-colors uppercase">
+                  <TableHead className="text-[10px] font-semibold text-slate-500">
+                    <button type="button" onClick={() => toggleSort('guest')} className="inline-flex items-center gap-1 hover:text-slate-800 transition-colors">
                       {t("reservations.guestContext")}<span className="text-[8px] w-2">{sortBy === 'guest' ? (sortDir === 'asc' ? '▲' : '▼') : ''}</span>
                     </button>
                   </TableHead>
-                  <TableHead className="text-[10px] font-black text-slate-500 uppercase tracking-widest text-center">
-                    <button type="button" onClick={() => toggleSort('table')} className="inline-flex items-center gap-1 hover:text-slate-800 transition-colors uppercase">
+                  <TableHead className="text-[10px] font-semibold text-slate-500 text-center">
+                    <button type="button" onClick={() => toggleSort('table')} className="inline-flex items-center gap-1 hover:text-slate-800 transition-colors">
                       {t("reservations.table")}<span className="text-[8px] w-2">{sortBy === 'table' ? (sortDir === 'asc' ? '▲' : '▼') : ''}</span>
                     </button>
                   </TableHead>
-                  <TableHead className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{t("reservations.serviceNotes")}</TableHead>
-                  <TableHead className="text-[10px] font-black text-slate-500 uppercase tracking-widest text-right px-6">{t("reservations.command")}</TableHead>
+                  <TableHead className="text-[10px] font-semibold text-slate-500">{t("reservations.serviceNotes")}</TableHead>
+                  <TableHead className="text-[10px] font-semibold text-slate-500 text-right px-6">{t("reservations.command")}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {loading ? (
-                    <TableRow><TableCell colSpan={5} className="h-64 text-center text-xs text-slate-300 font-black uppercase tracking-widest">{t("reservations.refreshing")}</TableCell></TableRow>
+                    <TableRow><TableCell colSpan={5} className="h-64 text-center text-xs text-slate-300 font-semibold">{t("reservations.refreshing")}</TableCell></TableRow>
                 ) : filteredReservations.length === 0 ? (
-                    <TableRow><TableCell colSpan={5} className="h-64 text-center text-xs text-slate-300 font-black uppercase tracking-widest">{t("reservations.noRecords")}</TableCell></TableRow>
+                    <TableRow><TableCell colSpan={5} className="h-64 text-center text-xs text-slate-300 font-semibold">{t("reservations.noRecords")}</TableCell></TableRow>
                 ) : filteredReservations.map((res) => (
                   <TableRow key={res.id} className={cn("h-16 border-b border-slate-50 transition-colors", getRowColor(res.status, res.isVIP))}>
                     <TableCell className="px-6">
@@ -631,7 +631,7 @@ export default function ReservationsPage() {
                         <span className="font-black text-slate-900 text-xl tracking-tighter leading-none mb-1">
                             {fmtTime(new Date(res.startTime))}
                         </span>
-                        <span className="text-[10px] font-black text-blue-600 uppercase tracking-tight bg-blue-50/50 w-fit px-1.5 rounded border border-blue-100/50">
+                        <span className="text-[10px] font-semibold text-blue-600 tracking-tight bg-blue-50/50 w-fit px-1.5 rounded border border-blue-100/50">
                             {new Date(res.startTime).toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' })}
                         </span>
                       </div>
@@ -639,17 +639,17 @@ export default function ReservationsPage() {
                     <TableCell>
                       <div className="flex flex-col gap-1">
                         <div className="flex items-center gap-2">
-                            <span className="font-black text-slate-800 text-sm uppercase tracking-tight">{res.customerName}</span>
+                            <span className="font-semibold text-slate-800 text-sm tracking-tight">{res.customerName}</span>
                             {res.isVIP && <Star className="w-3.5 h-3.5 text-amber-500 fill-amber-500 animate-pulse" />}
                             <div className="h-4 w-[1px] bg-slate-200 mx-1" />
                             <span className="text-[10px] font-black text-slate-500">{res.guestCount} {t("reservations.pax")}</span>
                         </div>
                         <div className="flex items-center gap-3">
                             <span className="text-[10px] text-slate-400 font-mono font-bold">{res.customerPhone}</span>
-                            <Badge variant="outline" className="text-[8px] h-4 border-slate-200 bg-white font-black text-slate-400 rounded-sm shadow-none uppercase">{res.category?.name || t("reservations.manual")}</Badge>
+                            <Badge variant="outline" className="text-[8px] h-4 border-slate-200 bg-white font-semibold text-slate-400 rounded-sm shadow-none">{res.category?.name || t("reservations.manual")}</Badge>
                         </div>
                         {res.phoneHistory && res.phoneHistory.noShowCount > 0 && (
-                            <div title={t("reservations.noShowHistoryHint")} className="flex items-center gap-1 w-fit text-[9px] font-black uppercase text-red-700 bg-red-50 border border-red-200 px-1.5 py-0.5 rounded-sm">
+                            <div title={t("reservations.noShowHistoryHint")} className="flex items-center gap-1 w-fit text-[9px] font-semibold text-red-700 bg-red-50 border border-red-200 px-1.5 py-0.5 rounded-sm">
                                 <AlertTriangle className="w-2.5 h-2.5" /> {res.phoneHistory.noShowCount}/{res.phoneHistory.totalVisits} {t("reservations.noShowHistoryLabel")}
                             </div>
                         )}
@@ -660,15 +660,15 @@ export default function ReservationsPage() {
                         <div className="inline-flex flex-col items-center">
                             <div className="font-black text-slate-900 text-lg leading-none">{res.table.identifier}</div>
                             {typeof res.table.capacity === 'number' && res.guestCount > res.table.capacity ? (
-                                <span title={t("reservations.overCapacityHint")} className="mt-1 inline-flex items-center gap-1 text-[8px] font-black text-red-700 bg-red-50 border border-red-200 px-1.5 py-0.5 rounded-sm uppercase tracking-tighter">
+                                <span title={t("reservations.overCapacityHint")} className="mt-1 inline-flex items-center gap-1 text-[8px] font-semibold text-red-700 bg-red-50 border border-red-200 px-1.5 py-0.5 rounded-sm tracking-tighter">
                                     <AlertTriangle className="w-2.5 h-2.5" /> {res.guestCount}/{res.table.capacity} {t("reservations.overCapacity")}
                                 </span>
                             ) : (
-                                <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest mt-1">{t("reservations.assigned")}</span>
+                                <span className="text-[8px] font-semibold text-slate-400 mt-1">{t("reservations.assigned")}</span>
                             )}
                         </div>
                       ) : (
-                        <span className="text-[9px] font-black text-amber-600 bg-amber-50 px-2 py-1 rounded-sm border border-amber-200 uppercase tracking-tighter">{t("reservations.needsAssign")}</span>
+                        <span className="text-[9px] font-semibold text-amber-600 bg-amber-50 px-2 py-1 rounded-sm border border-amber-200 tracking-tighter">{t("reservations.needsAssign")}</span>
                       )}
                     </TableCell>
                     <TableCell>
@@ -679,7 +679,7 @@ export default function ReservationsPage() {
                             <Info className="w-2.5 h-2.5 text-blue-500 inline mr-1" /> {res.internalNote}
                           </div>
                         ) : (
-                            <span className="text-[9px] text-slate-300 italic font-medium uppercase tracking-widest">{t("reservations.noIntelligence")}</span>
+                            <span className="text-[9px] text-slate-300 italic font-medium">{t("reservations.noIntelligence")}</span>
                         )}
                       </div>
                     </TableCell>
@@ -688,24 +688,24 @@ export default function ReservationsPage() {
                         <div className="flex items-center gap-1.5">
                             {res.status === 'PENDING' && (
                             <>
-                                <Button size="sm" onClick={() => confirmAccept(res)} className="h-8 px-4 bg-green-600 hover:bg-green-700 text-[10px] font-black uppercase rounded shadow-lg shadow-green-600/10"><Check className="w-3.5 h-3.5 mr-1.5" /> {t("reservations.accept")}</Button>
-                                <Button size="sm" variant="outline" onClick={() => confirmReject(res)} className="h-8 px-4 text-red-600 hover:bg-red-50 border-red-200 text-[10px] font-black uppercase rounded">{t("reservations.reject")}</Button>
+                                <Button size="sm" onClick={() => confirmAccept(res)} className="h-8 px-4 bg-green-600 hover:bg-green-700 text-[10px] font-semibold rounded shadow-lg shadow-green-600/10"><Check className="w-3.5 h-3.5 mr-1.5" /> {t("reservations.accept")}</Button>
+                                <Button size="sm" variant="outline" onClick={() => confirmReject(res)} className="h-8 px-4 text-red-600 hover:bg-red-50 border-red-200 text-[10px] font-semibold rounded">{t("reservations.reject")}</Button>
                             </>
                             )}
                             {res.status === 'AWAITING_PAYMENT' && (
-                            <Button size="sm" onClick={() => confirmSkipPayment(res)} className="h-8 px-4 bg-violet-600 hover:bg-violet-700 text-white text-[10px] font-black uppercase rounded shadow-lg shadow-violet-600/10">{t("reservations.skipPayment")}</Button>
+                            <Button size="sm" onClick={() => confirmSkipPayment(res)} className="h-8 px-4 bg-violet-600 hover:bg-violet-700 text-white text-[10px] font-semibold rounded shadow-lg shadow-violet-600/10">{t("reservations.skipPayment")}</Button>
                             )}
                             {res.status === 'CONFIRMED' && (
-                            <Button size="sm" onClick={() => updateStatus(res.id, 'COMPLETED')} className="h-8 px-6 bg-blue-600 hover:bg-blue-700 text-white text-[10px] font-black uppercase rounded shadow-lg shadow-blue-600/10">{t("reservations.arrived")}</Button>
+                            <Button size="sm" onClick={() => updateStatus(res.id, 'COMPLETED')} className="h-8 px-6 bg-blue-600 hover:bg-blue-700 text-white text-[10px] font-semibold rounded shadow-lg shadow-blue-600/10">{t("reservations.arrived")}</Button>
                             )}
                             {(res.status === 'CANCELLED' || res.status === 'NO_SHOW' || res.status === 'COMPLETED') && (
-                            <Button size="sm" variant="ghost" onClick={() => updateStatus(res.id, 'CONFIRMED')} className="h-8 text-blue-600 hover:bg-blue-50 text-[10px] font-black uppercase rounded">
+                            <Button size="sm" variant="ghost" onClick={() => updateStatus(res.id, 'CONFIRMED')} className="h-8 text-blue-600 hover:bg-blue-50 text-[10px] font-semibold rounded">
                                 <RotateCcw className="w-3 h-3 mr-1.5 stroke-[3]" /> {t("reservations.restore")}
                             </Button>
                             )}
                         </div>
                         {res.status === 'PENDING' && (
-                          <button type="button" onClick={() => confirmSkipPayment(res)} className="text-[9px] font-bold uppercase tracking-wide text-slate-400 hover:text-violet-600 transition-colors">
+                          <button type="button" onClick={() => confirmSkipPayment(res)} className="text-[9px] font-bold text-slate-400 hover:text-violet-600 transition-colors">
                             {t("reservations.skipPayment")}
                           </button>
                         )}
@@ -729,27 +729,27 @@ export default function ReservationsPage() {
             <form onSubmit={handleSubmit}>
               <div className="bg-slate-900 p-5 text-white flex justify-between items-center">
                 <DialogHeader>
-                  <DialogTitle className="text-xl font-black uppercase tracking-tight">{isEditMode ? t("reservations.updateRecord") : t("reservations.initializeBooking")}</DialogTitle>
+                  <DialogTitle className="text-xl font-semibold tracking-tight">{isEditMode ? t("reservations.updateRecord") : t("reservations.initializeBooking")}</DialogTitle>
                 </DialogHeader>
               </div>
               
               <div className="p-8 grid grid-cols-2 gap-10 bg-white">
                 <div className="space-y-6">
                   <div className="grid gap-2">
-                    <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest">{t("reservations.fullName")}</Label>
+                    <Label className="text-[10px] font-semibold text-slate-400">{t("reservations.fullName")}</Label>
                     <Input required value={formData.customerName} onChange={e => setFormData({...formData, customerName: e.target.value})} className="h-12 text-sm font-bold border-slate-200 focus:border-blue-500 rounded-sm" />
                   </div>
                   <div className="grid gap-2">
-                    <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest">{t("reservations.mobileContact")}</Label>
+                    <Label className="text-[10px] font-semibold text-slate-400">{t("reservations.mobileContact")}</Label>
                     <Input required value={formData.customerPhone} onChange={e => setFormData({...formData, customerPhone: e.target.value})} className="h-12 text-sm font-bold border-slate-200 focus:border-blue-500 rounded-sm" />
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div className="grid gap-2">
-                        <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest">{t("reservations.partyPax")}</Label>
+                        <Label className="text-[10px] font-semibold text-slate-400">{t("reservations.partyPax")}</Label>
                         <Input type="number" min="1" required value={formData.guestCount} onChange={e => setFormData({...formData, guestCount: e.target.value})} className="h-12 text-sm font-black text-center border-slate-200 rounded-sm" />
                     </div>
                     <div className="grid gap-2">
-                        <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest">{t("reservations.entrySource")}</Label>
+                        <Label className="text-[10px] font-semibold text-slate-400">{t("reservations.entrySource")}</Label>
                         <Select value={formData.categoryId} onValueChange={(v) => setFormData({...formData, categoryId: v || 'none'})}>
                             <SelectTrigger className="h-12 text-sm font-bold rounded-sm border-slate-200 focus:ring-0 shadow-none">
                                 <SelectValue>
@@ -767,15 +767,15 @@ export default function ReservationsPage() {
 
                 <div className="space-y-6">
                   <div className="grid gap-2">
-                    <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest">{t("reservations.calendarDate")}</Label>
+                    <Label className="text-[10px] font-semibold text-slate-400">{t("reservations.calendarDate")}</Label>
                     <Input type="date" value={selectedDate} onChange={e => setSelectedDate(e.target.value)} className="h-12 text-sm font-bold border-slate-200 focus:border-blue-500 rounded-sm" />
                   </div>
                   <div className="grid gap-2">
-                    <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest">{t("reservations.arrivalTime")}</Label>
+                    <Label className="text-[10px] font-semibold text-slate-400">{t("reservations.arrivalTime")}</Label>
                     <TimeSelect value={selectedTime} onChange={setSelectedTime} className="w-full h-12 text-sm font-bold border-slate-200 focus:border-blue-500 rounded-sm" />
                   </div>
                   <div className="grid gap-2">
-                    <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest">{t("reservations.tableLocation")}</Label>
+                    <Label className="text-[10px] font-semibold text-slate-400">{t("reservations.tableLocation")}</Label>
                     <Select value={formData.tableId} onValueChange={(v) => setFormData({...formData, tableId: v || 'none'})}>
                         <SelectTrigger className="h-12 text-sm font-bold rounded-sm border-slate-200 focus:ring-0 shadow-none">
                             <SelectValue>
@@ -792,7 +792,7 @@ export default function ReservationsPage() {
                         const party = parseInt(formData.guestCount);
                         if (selTable && party && party > selTable.capacity) {
                             return (
-                                <div className="flex items-center gap-1.5 text-[10px] font-black text-red-700 bg-red-50 border border-red-200 px-2 py-1.5 rounded-sm uppercase tracking-tight">
+                                <div className="flex items-center gap-1.5 text-[10px] font-semibold text-red-700 bg-red-50 border border-red-200 px-2 py-1.5 rounded-sm tracking-tight">
                                     <AlertTriangle className="w-3 h-3" /> {t("reservations.overCapacityDialog")} ({party} &gt; {selTable.capacity})
                                 </div>
                             );
@@ -804,20 +804,20 @@ export default function ReservationsPage() {
 
                 <div className="col-span-2 space-y-6 pt-4 border-t border-slate-50">
                     <div className="grid gap-2">
-                        <Label className="text-[10px] font-black uppercase text-blue-600 tracking-[0.2em]">{t("reservations.serviceIntelligence")}</Label>
+                        <Label className="text-[10px] font-semibold text-blue-600 tracking-[0.2em]">{t("reservations.serviceIntelligence")}</Label>
                         <Textarea value={formData.internalNote} onChange={e => setFormData({...formData, internalNote: e.target.value})} className="min-h-[80px] text-sm font-medium border-blue-100 bg-blue-50/20 rounded-sm p-4 focus:ring-0 focus:border-blue-300" placeholder={t("reservations.notesPlaceholder")} />
                     </div>
                     <div className="flex items-center gap-3 bg-slate-900 p-4 rounded-md shadow-lg shadow-slate-900/10">
                         <Checkbox checked={formData.isVIP} onCheckedChange={(c) => setFormData({...formData, isVIP: !!c})} className="border-white/20 data-[state=checked]:bg-blue-500" />
-                        <Label className="text-[10px] font-black uppercase text-white tracking-[0.3em]">{t("reservations.elevateVIP")}</Label>
+                        <Label className="text-[10px] font-semibold text-white tracking-[0.3em]">{t("reservations.elevateVIP")}</Label>
                         <Star className={cn("w-4 h-4 ml-auto", formData.isVIP ? "text-amber-400 fill-amber-400" : "text-slate-600")} />
                     </div>
                 </div>
               </div>
 
               <div className="p-6 bg-slate-50 border-t border-slate-100 flex justify-end gap-3">
-                <Button type="button" variant="ghost" onClick={() => setIsDialogOpen(false)} className="h-11 text-xs font-black text-slate-400 uppercase tracking-widest px-8">{t("reservations.abort")}</Button>
-                <Button type="submit" className="h-11 bg-blue-600 hover:bg-blue-700 text-white text-xs font-black uppercase px-12 rounded-sm shadow-xl shadow-blue-600/20">{t("reservations.commitEntry")}</Button>
+                <Button type="button" variant="ghost" onClick={() => setIsDialogOpen(false)} className="h-11 text-xs font-semibold text-slate-400 px-8">{t("reservations.abort")}</Button>
+                <Button type="submit" className="h-11 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-12 rounded-sm shadow-xl shadow-blue-600/20">{t("reservations.commitEntry")}</Button>
               </div>
             </form>
           </DialogContent>
@@ -828,7 +828,7 @@ export default function ReservationsPage() {
           <DialogContent maxWidth="sm:max-w-md" className="p-0 rounded-md overflow-hidden border-0 shadow-2xl">
             <div className="bg-amber-500 p-6">
               <DialogHeader>
-                <DialogTitle className="text-white text-lg font-black uppercase tracking-tight flex items-center gap-2">
+                <DialogTitle className="text-white text-lg font-semibold tracking-tight flex items-center gap-2">
                   <AlertTriangle className="w-6 h-6" /> {t("reservations.conflictWarningTitle")}
                 </DialogTitle>
               </DialogHeader>
@@ -839,8 +839,8 @@ export default function ReservationsPage() {
               </DialogDescription>
             </div>
             <div className="p-4 bg-slate-50 border-t border-slate-100 flex justify-end gap-2">
-              <Button type="button" variant="ghost" onClick={() => setShowConflictWarning(false)} className="h-10 text-xs font-black text-slate-400 uppercase tracking-widest">{t("reservations.conflictCancel")}</Button>
-              <Button type="button" onClick={() => submitReservation(true)} className="h-10 bg-amber-600 hover:bg-amber-700 text-white text-xs font-black uppercase px-6 rounded-sm">{t("reservations.conflictConfirm")}</Button>
+              <Button type="button" variant="ghost" onClick={() => setShowConflictWarning(false)} className="h-10 text-xs font-semibold text-slate-400">{t("reservations.conflictCancel")}</Button>
+              <Button type="button" onClick={() => submitReservation(true)} className="h-10 bg-amber-600 hover:bg-amber-700 text-white text-xs font-semibold px-6 rounded-sm">{t("reservations.conflictConfirm")}</Button>
             </div>
           </DialogContent>
         </Dialog>
@@ -850,7 +850,7 @@ export default function ReservationsPage() {
           <DialogContent maxWidth="sm:max-w-md" className="p-0 rounded-md overflow-hidden border-0 shadow-2xl">
             <div className="bg-violet-600 p-6">
               <DialogHeader>
-                <DialogTitle className="text-white text-lg font-black uppercase tracking-tight flex items-center gap-2">
+                <DialogTitle className="text-white text-lg font-semibold tracking-tight flex items-center gap-2">
                   <MessageSquare className="w-5 h-5" /> {t("reservations.paymentRequestedTitle")}
                 </DialogTitle>
               </DialogHeader>
@@ -860,18 +860,18 @@ export default function ReservationsPage() {
               {paymentInfo && (
                 <>
                   <div className="flex items-center justify-between rounded-md bg-slate-50 border border-slate-200 px-4 py-3">
-                    <span className="text-xs font-black uppercase tracking-wider text-slate-400">{t("reservations.paymentAmount")}</span>
+                    <span className="text-xs font-semibold text-slate-400">{t("reservations.paymentAmount")}</span>
                     <span className="text-lg font-black text-slate-900">{(paymentInfo.amount / 100).toFixed(2)} {paymentInfo.currency}</span>
                   </div>
                   <div className="grid gap-1.5">
-                    <Label className="text-[10px] font-black uppercase tracking-wider text-slate-400">{t("reservations.paymentLink")}</Label>
+                    <Label className="text-[10px] font-semibold text-slate-400">{t("reservations.paymentLink")}</Label>
                     <div className="flex items-center gap-2">
                       <Input readOnly value={paymentInfo.url} onFocus={(e) => e.target.select()} className="h-9 text-[10px] font-mono border-slate-200 bg-slate-50" />
                       <Button type="button" size="sm" onClick={() => { navigator.clipboard.writeText(paymentInfo.url); toast.success(t("reservations.copied")); }} className="h-9 shrink-0 bg-slate-900 hover:bg-slate-800 text-white">{t("reservations.copy")}</Button>
                     </div>
                   </div>
                   <div className="grid gap-1.5">
-                    <Label className="text-[10px] font-black uppercase tracking-wider text-slate-400">{t("reservations.paymentCode")}</Label>
+                    <Label className="text-[10px] font-semibold text-slate-400">{t("reservations.paymentCode")}</Label>
                     <div className="text-2xl font-black tracking-[0.3em] text-center bg-violet-50 border border-violet-200 rounded-md py-2 text-violet-700">{paymentInfo.code}</div>
                   </div>
                   <p className="text-[11px] text-slate-400 leading-relaxed">{t("reservations.paymentRequestedHint")}</p>
@@ -879,7 +879,7 @@ export default function ReservationsPage() {
               )}
             </div>
             <div className="p-4 bg-slate-50 border-t border-slate-100 flex justify-end">
-              <Button type="button" onClick={() => setPaymentInfo(null)} className="h-10 bg-slate-900 text-white text-xs font-black uppercase px-6 rounded-sm">{t("reservations.close")}</Button>
+              <Button type="button" onClick={() => setPaymentInfo(null)} className="h-10 bg-slate-900 text-white text-xs font-semibold px-6 rounded-sm">{t("reservations.close")}</Button>
             </div>
           </DialogContent>
         </Dialog>
@@ -1051,7 +1051,7 @@ function ReservationTimeline({ tables, reservations, timelineDate, scrollRef, st
   const nowLeft = isToday ? minutesToPx(minutesFromStart(now)) : null;
 
   if (tables.length === 0) {
-    return <div className="p-16 text-center text-xs text-slate-300 font-black uppercase tracking-widest">{t("reservations.noTablesForTimeline")}</div>;
+    return <div className="p-16 text-center text-xs text-slate-300 font-semibold">{t("reservations.noTablesForTimeline")}</div>;
   }
 
   return (
@@ -1059,7 +1059,7 @@ function ReservationTimeline({ tables, reservations, timelineDate, scrollRef, st
       <div className="relative" style={{ width: TIMELINE_LABEL_WIDTH + totalWidth }}>
         {/* Header: time labels */}
         <div className="flex sticky top-0 z-20 bg-white border-b border-slate-200">
-          <div className="sticky left-0 z-30 bg-white shrink-0 border-r border-slate-200 p-2 text-[9px] font-black uppercase tracking-widest text-slate-400 flex items-end" style={{ width: TIMELINE_LABEL_WIDTH }}>
+          <div className="sticky left-0 z-30 bg-white shrink-0 border-r border-slate-200 p-2 text-[9px] font-semibold text-slate-400 flex items-end" style={{ width: TIMELINE_LABEL_WIDTH }}>
             {t("reservations.table")}
           </div>
           {slots.map((s, i) => (

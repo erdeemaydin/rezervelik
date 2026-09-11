@@ -44,7 +44,7 @@ export function ImpersonationBanner() {
       <button
         onClick={handleReturn}
         disabled={returning}
-        className="shrink-0 rounded-md border border-amber-950/30 bg-amber-950/10 px-2.5 py-1 uppercase tracking-wide hover:bg-amber-950/20 transition-colors disabled:opacity-60"
+        className="shrink-0 rounded-md border border-amber-950/30 bg-amber-950/10 px-2.5 py-1 hover:bg-amber-950/20 transition-colors disabled:opacity-60"
       >
         {returning ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : t('admin.returnToAdmin')}
       </button>

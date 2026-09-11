@@ -147,7 +147,7 @@ export default function SystemAdminLayout({ children }: SystemAdminLayoutProps) 
             <div className="w-7 h-7 bg-emerald-600 rounded-sm flex items-center justify-center mr-3 shadow-md">
               <span className="text-white font-bold text-lg leading-none">S</span>
             </div>
-            <span className="font-bold text-lg text-white tracking-tight uppercase">System<span className="text-emerald-400">Adm</span></span>
+            <span className="font-bold text-lg text-white tracking-tight">System<span className="text-emerald-400">Adm</span></span>
           </div>
           <button
             onClick={() => setIsSidebarOpen(false)}
@@ -165,7 +165,7 @@ export default function SystemAdminLayout({ children }: SystemAdminLayoutProps) 
               <p className="text-xs font-bold text-white truncate">
                 {mounted ? `${user?.firstName || 'System'} ${user?.lastName || 'Admin'}` : 'System Admin'}
               </p>
-              <p className="text-[9px] text-emerald-500 font-black uppercase tracking-tighter">
+              <p className="text-[9px] text-emerald-500 font-semibold tracking-tighter">
                 {isRoot ? t('systemAdmin.rootAuthority') : t('systemAdmin.restrictedAdministrator')}
               </p>
             </div>
@@ -174,7 +174,7 @@ export default function SystemAdminLayout({ children }: SystemAdminLayoutProps) 
           <nav className="space-y-6">
             {navigation.map((group, idx) => (
               <div key={idx}>
-                <h3 className="px-6 text-[10px] font-black text-slate-400 uppercase tracking-[0.18em] mb-3">
+                <h3 className="px-6 text-[10px] font-semibold text-slate-400 tracking-[0.18em] mb-3">
                   {group.section}
                 </h3>
                 <ul className="space-y-1 px-2">

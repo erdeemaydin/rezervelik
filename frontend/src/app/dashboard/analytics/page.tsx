@@ -155,11 +155,11 @@ export default function AnalyticsPage() {
             </div>
             {/* Custom date range (#1.4) */}
             <div className="flex flex-col">
-              <label className="text-[10px] font-bold uppercase text-slate-400 mb-1">{t("analytics.from")}</label>
+              <label className="text-[10px] font-bold text-slate-400 mb-1">{t("analytics.from")}</label>
               <Input type="date" value={customFrom} max={customTo || undefined} onChange={(e) => setCustomFrom(e.target.value)} className="h-9 bg-white border-slate-200 shadow-sm text-sm w-40" />
             </div>
             <div className="flex flex-col">
-              <label className="text-[10px] font-bold uppercase text-slate-400 mb-1">{t("analytics.to")}</label>
+              <label className="text-[10px] font-bold text-slate-400 mb-1">{t("analytics.to")}</label>
               <Input type="date" value={customTo} min={customFrom || undefined} onChange={(e) => setCustomTo(e.target.value)} className="h-9 bg-white border-slate-200 shadow-sm text-sm w-40" />
             </div>
             {usingCustom && (
@@ -172,7 +172,7 @@ export default function AnalyticsPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <Card className="border-slate-100 shadow-sm hover:shadow-md transition-shadow">
             <CardHeader className="p-4 pb-2">
-              <CardDescription className="text-[10px] font-black uppercase text-slate-500 tracking-wider">{t("analytics.totalReservations")}</CardDescription>
+              <CardDescription className="text-[10px] font-semibold text-slate-500">{t("analytics.totalReservations")}</CardDescription>
               <CardTitle className="text-2xl font-bold tabular-nums flex items-center justify-between">
                 {data.summary.totalReservations}
                 <CalendarDays className="w-5 h-5 text-blue-500" />
@@ -185,7 +185,7 @@ export default function AnalyticsPage() {
 
           <Card className="border-slate-100 shadow-sm hover:shadow-md transition-shadow">
             <CardHeader className="p-4 pb-2">
-              <CardDescription className="text-[10px] font-black uppercase text-slate-500 tracking-wider">{t("analytics.guestsSeated")}</CardDescription>
+              <CardDescription className="text-[10px] font-semibold text-slate-500">{t("analytics.guestsSeated")}</CardDescription>
               <CardTitle className="text-2xl font-bold tabular-nums flex items-center justify-between">
                 {data.summary.totalGuests}
                 <Users className="w-5 h-5 text-indigo-500" />
@@ -198,7 +198,7 @@ export default function AnalyticsPage() {
 
           <Card className="border-slate-100 shadow-sm hover:shadow-md transition-shadow">
             <CardHeader className="p-4 pb-2">
-              <CardDescription className="text-[10px] font-black uppercase text-slate-500 tracking-wider">{t("analytics.avgPartySize")}</CardDescription>
+              <CardDescription className="text-[10px] font-semibold text-slate-500">{t("analytics.avgPartySize")}</CardDescription>
               <CardTitle className="text-2xl font-bold tabular-nums flex items-center justify-between">
                 {data.summary.avgPartySize}
                 <Users className="w-5 h-5 text-amber-500" />
@@ -213,7 +213,7 @@ export default function AnalyticsPage() {
 
           <Card className="border-slate-100 shadow-sm hover:shadow-md transition-shadow">
             <CardHeader className="p-4 pb-2">
-              <CardDescription className="text-[10px] font-black uppercase text-slate-500 tracking-wider">{t("analytics.vipVisits")}</CardDescription>
+              <CardDescription className="text-[10px] font-semibold text-slate-500">{t("analytics.vipVisits")}</CardDescription>
               <CardTitle className="text-2xl font-bold tabular-nums flex items-center justify-between">
                 {data.summary.vipCount}
                 <Star className="w-5 h-5 text-emerald-500" />
@@ -231,7 +231,7 @@ export default function AnalyticsPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <Card className="border-slate-100 shadow-sm">
             <CardHeader className="p-4 pb-2">
-              <CardDescription className="text-[10px] font-black uppercase text-slate-500 tracking-wider">{t("analytics.cancelRate")}</CardDescription>
+              <CardDescription className="text-[10px] font-semibold text-slate-500">{t("analytics.cancelRate")}</CardDescription>
               <CardTitle className="text-2xl font-bold tabular-nums flex items-center justify-between">
                 {data.summary.cancelRate}%
                 <Ban className="w-5 h-5 text-rose-500" />
@@ -240,7 +240,7 @@ export default function AnalyticsPage() {
           </Card>
           <Card className="border-slate-100 shadow-sm">
             <CardHeader className="p-4 pb-2">
-              <CardDescription className="text-[10px] font-black uppercase text-slate-500 tracking-wider">{t("analytics.noShowRate")}</CardDescription>
+              <CardDescription className="text-[10px] font-semibold text-slate-500">{t("analytics.noShowRate")}</CardDescription>
               <CardTitle className="text-2xl font-bold tabular-nums flex items-center justify-between">
                 {data.summary.noShowRate}%
                 <UserX className="w-5 h-5 text-slate-500" />
@@ -249,7 +249,7 @@ export default function AnalyticsPage() {
           </Card>
           <Card className="border-slate-100 shadow-sm">
             <CardHeader className="p-4 pb-2">
-              <CardDescription className="text-[10px] font-black uppercase text-slate-500 tracking-wider">{t("analytics.avgLeadTime")}</CardDescription>
+              <CardDescription className="text-[10px] font-semibold text-slate-500">{t("analytics.avgLeadTime")}</CardDescription>
               <CardTitle className="text-2xl font-bold tabular-nums flex items-center justify-between">
                 {data.leadTime.avgDays >= 1 ? `${data.leadTime.avgDays} ${t("analytics.days")}` : `${data.leadTime.avgHours} ${t("analytics.hours")}`}
                 <Clock className="w-5 h-5 text-blue-500" />
@@ -261,7 +261,7 @@ export default function AnalyticsPage() {
           </Card>
           <Card className="border-slate-100 shadow-sm">
             <CardHeader className="p-4 pb-2">
-              <CardDescription className="text-[10px] font-black uppercase text-slate-500 tracking-wider">{t("analytics.customerMix")}</CardDescription>
+              <CardDescription className="text-[10px] font-semibold text-slate-500">{t("analytics.customerMix")}</CardDescription>
             </CardHeader>
             <CardContent className="p-4 pt-0 space-y-1.5">
               <div className="flex justify-between items-center text-xs font-semibold text-slate-600">
@@ -284,7 +284,7 @@ export default function AnalyticsPage() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <Card className="border-slate-100 shadow-sm bg-white lg:col-span-2">
             <CardHeader className="border-b border-slate-100 bg-slate-50/50">
-              <CardTitle className="text-sm font-bold uppercase tracking-widest text-slate-700">{t("analytics.reservationTrend")}</CardTitle>
+              <CardTitle className="text-sm font-bold text-slate-700">{t("analytics.reservationTrend")}</CardTitle>
             </CardHeader>
             <CardContent className="p-6">
               <div className="h-[300px] w-full">
@@ -315,7 +315,7 @@ export default function AnalyticsPage() {
 
           <Card className="border-slate-100 shadow-sm bg-white">
             <CardHeader className="border-b border-slate-100 bg-slate-50/50">
-              <CardTitle className="text-sm font-bold uppercase tracking-widest text-slate-700">{t("analytics.statusBreakdown")}</CardTitle>
+              <CardTitle className="text-sm font-bold text-slate-700">{t("analytics.statusBreakdown")}</CardTitle>
             </CardHeader>
             <CardContent className="p-6">
               <div className="h-[200px] w-full">
@@ -361,7 +361,7 @@ export default function AnalyticsPage() {
           {/* Peak Hours Heatmap */}
           <Card className="border-slate-100 shadow-sm bg-white">
             <CardHeader className="border-b border-slate-100 bg-slate-50/50">
-              <CardTitle className="text-sm font-bold uppercase tracking-widest text-slate-700">{t("analytics.peakHoursHeatmap")}</CardTitle>
+              <CardTitle className="text-sm font-bold text-slate-700">{t("analytics.peakHoursHeatmap")}</CardTitle>
             </CardHeader>
             <CardContent className="p-6 overflow-x-auto">
               <div style={{ minWidth: Math.max(500, heatHours.length * 34) }}>
@@ -402,7 +402,7 @@ export default function AnalyticsPage() {
             {/* Zone Utilization */}
             <Card className="border-slate-100 shadow-sm bg-white flex-1">
               <CardHeader className="border-b border-slate-100 bg-slate-50/50 pb-4">
-                <CardTitle className="text-sm font-bold uppercase tracking-widest text-slate-700">{t("analytics.zoneUtilization")}</CardTitle>
+                <CardTitle className="text-sm font-bold text-slate-700">{t("analytics.zoneUtilization")}</CardTitle>
               </CardHeader>
               <CardContent className="p-6 pt-4">
                 <div className="space-y-4">
@@ -431,20 +431,20 @@ export default function AnalyticsPage() {
             {/* Waitlist Metrics */}
             <Card className="border-slate-100 shadow-sm bg-gradient-to-br from-slate-800 to-slate-900 text-white">
               <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-bold uppercase tracking-widest text-slate-300">{t("analytics.waitlistPerformance")}</CardTitle>
+                <CardTitle className="text-sm font-bold text-slate-300">{t("analytics.waitlistPerformance")}</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-3 gap-4 text-center">
                   <div>
-                    <p className="text-[10px] text-slate-400 font-bold uppercase mb-1">{t("analytics.avgWait")}</p>
+                    <p className="text-[10px] text-slate-400 font-bold mb-1">{t("analytics.avgWait")}</p>
                     <p className="text-2xl font-black tabular-nums">{data.waitlistMetrics.avgWaitMinutes}<span className="text-sm font-normal text-slate-400 ml-1">m</span></p>
                   </div>
                   <div>
-                    <p className="text-[10px] text-slate-400 font-bold uppercase mb-1">{t("analytics.conversion")}</p>
+                    <p className="text-[10px] text-slate-400 font-bold mb-1">{t("analytics.conversion")}</p>
                     <p className="text-2xl font-black tabular-nums text-emerald-400">{data.waitlistMetrics.conversionRate}%</p>
                   </div>
                   <div>
-                    <p className="text-[10px] text-slate-400 font-bold uppercase mb-1">{t("analytics.seated")}</p>
+                    <p className="text-[10px] text-slate-400 font-bold mb-1">{t("analytics.seated")}</p>
                     <p className="text-2xl font-black tabular-nums">{data.waitlistMetrics.seated}<span className="text-sm font-normal text-slate-400 ml-1">/{data.waitlistMetrics.totalJoined}</span></p>
                   </div>
                 </div>

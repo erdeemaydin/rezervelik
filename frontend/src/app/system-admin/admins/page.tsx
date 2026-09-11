@@ -78,7 +78,7 @@ function RootAccessSection({
       {warning}
       {!isRoot && (
         <div className="grid gap-1.5">
-          <Label className="text-[10px] font-black uppercase text-slate-400">{t('systemAdmin.admins.permissionsLabel')}</Label>
+          <Label className="text-[10px] font-semibold text-slate-400">{t('systemAdmin.admins.permissionsLabel')}</Label>
           <PermissionPicker value={permissions} onChange={onPermissionsChange} />
         </div>
       )}
@@ -235,7 +235,7 @@ export default function SystemAdminsPage() {
           <CardHeader className="border-b border-slate-100 bg-slate-50/50 p-4">
             <div className="flex items-center gap-2">
               <ShieldCheck className="w-4 h-4 text-emerald-600" />
-              <CardTitle className="text-sm font-bold uppercase tracking-widest text-slate-700">{t('systemAdmin.admins.accessRoster')}</CardTitle>
+              <CardTitle className="text-sm font-bold text-slate-700">{t('systemAdmin.admins.accessRoster')}</CardTitle>
             </div>
           </CardHeader>
           <CardContent className="p-0">
@@ -318,20 +318,20 @@ export default function SystemAdminsPage() {
             <div className="grid gap-4 mt-4">
               <div className="grid grid-cols-2 gap-3">
                 <div className="grid gap-1.5">
-                  <Label className="text-[10px] font-black uppercase text-slate-400">{t('systemAdmin.admins.firstName')}</Label>
+                  <Label className="text-[10px] font-semibold text-slate-400">{t('systemAdmin.admins.firstName')}</Label>
                   <Input required value={addForm.firstName} onChange={(e) => setAddForm({ ...addForm, firstName: e.target.value })} className="h-9 text-sm" />
                 </div>
                 <div className="grid gap-1.5">
-                  <Label className="text-[10px] font-black uppercase text-slate-400">{t('systemAdmin.admins.lastName')}</Label>
+                  <Label className="text-[10px] font-semibold text-slate-400">{t('systemAdmin.admins.lastName')}</Label>
                   <Input required value={addForm.lastName} onChange={(e) => setAddForm({ ...addForm, lastName: e.target.value })} className="h-9 text-sm" />
                 </div>
               </div>
               <div className="grid gap-1.5">
-                <Label className="text-[10px] font-black uppercase text-slate-400">{t('systemAdmin.admins.colEmail')}</Label>
+                <Label className="text-[10px] font-semibold text-slate-400">{t('systemAdmin.admins.colEmail')}</Label>
                 <Input required type="email" value={addForm.email} onChange={(e) => setAddForm({ ...addForm, email: e.target.value })} className="h-9 text-sm" />
               </div>
               <div className="grid gap-1.5">
-                <Label className="text-[10px] font-black uppercase text-slate-400">{t('systemAdmin.admins.password')}</Label>
+                <Label className="text-[10px] font-semibold text-slate-400">{t('systemAdmin.admins.password')}</Label>
                 <Input required type="password" minLength={8} value={addForm.password} onChange={(e) => setAddForm({ ...addForm, password: e.target.value })} placeholder={t('systemAdmin.admins.passwordPlaceholder')} className="h-9 text-sm" />
               </div>
 
@@ -403,7 +403,7 @@ export default function SystemAdminsPage() {
               <Copy className="w-3.5 h-3.5" />
             </Button>
           </div>
-          <p className="text-[9px] text-amber-600 font-bold uppercase tracking-wide">
+          <p className="text-[9px] text-amber-600 font-bold">
             {resetExpiryMins ? `${t('systemAdmin.admins.expiresInPrefix')} ${resetExpiryMins} ${t('systemAdmin.admins.expiresInSuffix')} · ` : ''}{t('systemAdmin.admins.singleUse')}
           </p>
         </DialogContent>

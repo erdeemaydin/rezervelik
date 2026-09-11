@@ -110,7 +110,7 @@ export const PrintableMenuPDFGenerator = ({ menu, restaurantProfile }: { menu: a
     };
 
     return (
-        <Button size="sm" variant="outline" onClick={generatePDF} className="h-9 px-4 text-[10px] font-black uppercase border-slate-200 text-slate-600 shadow-sm bg-white hover:bg-slate-50">
+        <Button size="sm" variant="outline" onClick={generatePDF} className="h-9 px-4 text-[10px] font-semibold border-slate-200 text-slate-600 shadow-sm bg-white hover:bg-slate-50">
             <FileText className="w-3.5 h-3.5 mr-1.5" /> {t('menus.pdf.buttonLabel')}
         </Button>
     );

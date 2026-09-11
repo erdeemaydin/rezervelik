@@ -244,9 +244,9 @@ export default function TenantManagementPage() {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-semibold tracking-tight text-slate-900 font-heading">{t('systemAdmin.tenantEcosystem')}</h1>
-            <p className="text-[10px] text-slate-400 uppercase tracking-[0.2em] font-black">{t('systemAdmin.globalInfrastructure')}</p>
+            <p className="text-[10px] text-slate-400 tracking-[0.2em] font-semibold">{t('systemAdmin.globalInfrastructure')}</p>
           </div>
-          <Button size="sm" onClick={() => setIsDialogOpen(true)} className="bg-emerald-600 hover:bg-emerald-700 h-8 text-[10px] font-black uppercase">{t('systemAdmin.provisionNewRestaurant')}</Button>
+          <Button size="sm" onClick={() => setIsDialogOpen(true)} className="bg-emerald-600 hover:bg-emerald-700 h-8 text-[10px] font-semibold">{t('systemAdmin.provisionNewRestaurant')}</Button>
         </div>
 
         <Card className="rounded-md border-slate-200 shadow-sm overflow-hidden bg-white">
@@ -266,16 +266,16 @@ export default function TenantManagementPage() {
             <Table>
               <TableHeader className="bg-slate-50/80">
                 <TableRow className="h-9">
-                  <TableHead className="text-[9px] font-black text-slate-400 uppercase tracking-widest px-4">{t('systemAdmin.restaurantDomain')}</TableHead>
-                  <TableHead className="text-[9px] font-black text-slate-400 uppercase tracking-widest">{t('systemAdmin.subscription')}</TableHead>
-                  <TableHead className="text-[9px] font-black text-slate-400 uppercase tracking-widest">{t('systemAdmin.featureFlags')}</TableHead>
-                  <TableHead className="text-[9px] font-black text-slate-400 uppercase tracking-widest">{t('systemAdmin.provisioned')}</TableHead>
-                  <TableHead className="text-[9px] font-black text-slate-400 uppercase tracking-widest text-right px-4">{t('systemAdmin.command')}</TableHead>
+                  <TableHead className="text-[9px] font-semibold text-slate-400 px-4">{t('systemAdmin.restaurantDomain')}</TableHead>
+                  <TableHead className="text-[9px] font-semibold text-slate-400">{t('systemAdmin.subscription')}</TableHead>
+                  <TableHead className="text-[9px] font-semibold text-slate-400">{t('systemAdmin.featureFlags')}</TableHead>
+                  <TableHead className="text-[9px] font-semibold text-slate-400">{t('systemAdmin.provisioned')}</TableHead>
+                  <TableHead className="text-[9px] font-semibold text-slate-400 text-right px-4">{t('systemAdmin.command')}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {loading ? (
-                    <TableRow><TableCell colSpan={5} className="h-32 text-center text-[10px] font-black text-slate-400 uppercase tracking-widest">Querying Tenants...</TableCell></TableRow>
+                    <TableRow><TableCell colSpan={5} className="h-32 text-center text-[10px] font-semibold text-slate-400">Querying Tenants...</TableCell></TableRow>
                 ) : filteredTenants.map(tenant => (
                   <TableRow key={tenant.id} className="h-12 hover:bg-slate-50/50 border-b border-slate-100">
                     <TableCell className="px-4">
@@ -284,7 +284,7 @@ export default function TenantManagementPage() {
                             <Building2 className="w-4 h-4" />
                         </div>
                         <div className="min-w-0">
-                            <div className="font-bold text-slate-900 text-xs uppercase tracking-tight truncate">{tenant.name}</div>
+                            <div className="font-bold text-slate-900 text-xs tracking-tight truncate">{tenant.name}</div>
                             <div className="text-[9px] text-slate-400 font-mono truncate">{tenant.slug}.your-domain.com</div>
                             {(() => {
                               const adminUser = tenant.users?.find((u: any) => u.role === 'ADMIN');
@@ -308,7 +308,7 @@ export default function TenantManagementPage() {
                     <TableCell>
                       <div className="flex flex-col items-start justify-center gap-1">
                         <Badge variant="outline" className={cn(
-                          "text-[9px] font-black uppercase px-1.5 py-0 border",
+"text-[9px] font-semibold px-1.5 py-0 border",
                           tenant.subscriptionPlan === 'PREMIUM' ? 'bg-indigo-50 text-indigo-700 border-indigo-200' :
                           tenant.subscriptionPlan === 'PRO' ? 'bg-purple-50 text-purple-700 border-purple-200' :
                           tenant.subscriptionPlan === 'BASIC' ? 'bg-blue-50 text-blue-700 border-blue-200' :
@@ -319,7 +319,7 @@ export default function TenantManagementPage() {
                             {Math.max(0, Math.ceil((new Date(tenant.subscriptionEndsAt).getTime() - new Date().getTime()) / (1000 * 3600 * 24)))} days left
                           </span>
                         ) : tenant.subscriptionStatus !== 'ACTIVE' ? (
-                           <span className="text-[8px] font-bold text-red-500 uppercase">{tenant.subscriptionStatus}</span>
+                           <span className="text-[8px] font-bold text-red-500">{tenant.subscriptionStatus}</span>
                         ) : null}
                       </div>
                     </TableCell>
@@ -356,34 +356,34 @@ export default function TenantManagementPage() {
             <form onSubmit={handleCreateTenant}>
                 <div className="bg-emerald-900 p-4 text-white">
                     <DialogHeader>
-                        <DialogTitle className="text-lg font-bold uppercase tracking-tight">Provision New Tenant</DialogTitle>
+                        <DialogTitle className="text-lg font-bold tracking-tight">Provision New Tenant</DialogTitle>
                     </DialogHeader>
                 </div>
                 <div className="p-6 space-y-4 bg-white">
                     <div className="grid gap-1.5">
-                        <Label className="text-[10px] font-black uppercase text-slate-400 ml-1">Restaurant Name</Label>
+                        <Label className="text-[10px] font-semibold text-slate-400 ml-1">Restaurant Name</Label>
                         <Input required value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} className="h-10 text-sm font-bold border-slate-200 rounded-sm" />
                     </div>
                     <div className="grid gap-1.5">
-                        <Label className="text-[10px] font-black uppercase text-slate-400 ml-1">Admin Email</Label>
+                        <Label className="text-[10px] font-semibold text-slate-400 ml-1">Admin Email</Label>
                         <Input required type="email" value={formData.contactEmail} onChange={e => setFormData({...formData, contactEmail: e.target.value})} className="h-10 text-sm font-bold border-slate-200 rounded-sm" />
                     </div>
                     <div className="grid grid-cols-2 gap-4">
                         <div className="grid gap-1.5">
-                            <Label className="text-[10px] font-black uppercase text-slate-400 ml-1">First Name</Label>
+                            <Label className="text-[10px] font-semibold text-slate-400 ml-1">First Name</Label>
                             <Input required value={formData.adminFirstName} onChange={e => setFormData({...formData, adminFirstName: e.target.value})} className="h-10 text-sm font-bold border-slate-200 rounded-sm" />
                         </div>
                         <div className="grid gap-1.5">
-                            <Label className="text-[10px] font-black uppercase text-slate-400 ml-1">Last Name</Label>
+                            <Label className="text-[10px] font-semibold text-slate-400 ml-1">Last Name</Label>
                             <Input required value={formData.adminLastName} onChange={e => setFormData({...formData, adminLastName: e.target.value})} className="h-10 text-sm font-bold border-slate-200 rounded-sm" />
                         </div>
                     </div>
                     <div className="grid gap-1.5">
-                        <Label className="text-[10px] font-black uppercase text-slate-400 ml-1">Initial Password (Optional)</Label>
+                        <Label className="text-[10px] font-semibold text-slate-400 ml-1">Initial Password (Optional)</Label>
                         <Input type="password" value={formData.adminPassword} onChange={e => setFormData({...formData, adminPassword: e.target.value})} placeholder="Leave blank to generate invite link" className="h-10 text-sm font-bold border-slate-200 rounded-sm" />
                     </div>
                     <div className="grid gap-1.5">
-                        <Label className="text-[10px] font-black uppercase text-slate-400 ml-1">Business Type</Label>
+                        <Label className="text-[10px] font-semibold text-slate-400 ml-1">Business Type</Label>
                         <select
                           value={formData.businessType}
                           onChange={e => setFormData({...formData, businessType: e.target.value})}
@@ -401,7 +401,7 @@ export default function TenantManagementPage() {
                 {inviteLink && (
                   <div className="px-6 pb-4">
                     <div className="bg-emerald-50 border border-emerald-200 p-4 rounded-sm">
-                      <Label className="text-[10px] font-black uppercase text-emerald-700">Setup Invite Link Generated</Label>
+                      <Label className="text-[10px] font-semibold text-emerald-700">Setup Invite Link Generated</Label>
                       <div className="flex mt-1 gap-2">
                         <Input readOnly value={inviteLink} className="h-8 text-xs bg-white" />
                         <Button type="button" size="sm" onClick={() => { navigator.clipboard.writeText(inviteLink); toast.success('Copied to clipboard!'); }} className="h-8 bg-emerald-600 hover:bg-emerald-700">Copy</Button>
@@ -411,7 +411,7 @@ export default function TenantManagementPage() {
                 )}
                 <div className="p-4 bg-slate-50 border-t border-slate-100 flex justify-end gap-2">
                     <Button type="button" variant="ghost" onClick={() => { setIsDialogOpen(false); setInviteLink(null); }} className="h-9 text-xs font-bold text-slate-400">CLOSE</Button>
-                    {!inviteLink && <Button type="submit" className="h-9 bg-emerald-600 hover:bg-emerald-700 text-xs font-black uppercase px-6 rounded-sm">INITIALIZE PROVISIONING</Button>}
+                    {!inviteLink && <Button type="submit" className="h-9 bg-emerald-600 hover:bg-emerald-700 text-xs font-semibold px-6 rounded-sm">INITIALIZE PROVISIONING</Button>}
                 </div>
             </form>
           </DialogContent>
@@ -423,7 +423,7 @@ export default function TenantManagementPage() {
                 <form onSubmit={handleUpdateSettings}>
                     <div className="bg-slate-900 px-6 py-4 text-white rounded-t-lg">
                         <DialogHeader>
-                            <DialogTitle className="text-sm font-bold uppercase tracking-widest">Entitlements</DialogTitle>
+                            <DialogTitle className="text-sm font-bold">Entitlements</DialogTitle>
                             <p className="text-[11px] text-slate-400 font-medium normal-case tracking-normal">{selectedTenant?.name} · {selectedTenant?.slug}.your-domain.com</p>
                         </DialogHeader>
                     </div>
@@ -431,10 +431,10 @@ export default function TenantManagementPage() {
                       <Tabs defaultValue="subscription" className="w-full gap-0">
                         <div className="px-6 pt-4 border-b border-slate-100 sticky top-0 bg-white z-10">
                           <TabsList className="bg-slate-100/60">
-                            <TabsTrigger value="subscription" className="text-[10px] font-black uppercase gap-1.5"><CreditCard className="w-3.5 h-3.5" /> Subscription</TabsTrigger>
-                            <TabsTrigger value="configuration" className="text-[10px] font-black uppercase gap-1.5"><Settings2 className="w-3.5 h-3.5" /> Configuration</TabsTrigger>
-                            <TabsTrigger value="features" className="text-[10px] font-black uppercase gap-1.5"><SlidersHorizontal className="w-3.5 h-3.5" /> Feature Flags</TabsTrigger>
-                            <TabsTrigger value="admin" className="text-[10px] font-black uppercase gap-1.5"><ShieldAlert className="w-3.5 h-3.5" /> Admin &amp; Security</TabsTrigger>
+                            <TabsTrigger value="subscription" className="text-[10px] font-semibold gap-1.5"><CreditCard className="w-3.5 h-3.5" /> Subscription</TabsTrigger>
+                            <TabsTrigger value="configuration" className="text-[10px] font-semibold gap-1.5"><Settings2 className="w-3.5 h-3.5" /> Configuration</TabsTrigger>
+                            <TabsTrigger value="features" className="text-[10px] font-semibold gap-1.5"><SlidersHorizontal className="w-3.5 h-3.5" /> Feature Flags</TabsTrigger>
+                            <TabsTrigger value="admin" className="text-[10px] font-semibold gap-1.5"><ShieldAlert className="w-3.5 h-3.5" /> Admin &amp; Security</TabsTrigger>
                           </TabsList>
                         </div>
                         <div className="p-6">
@@ -442,7 +442,7 @@ export default function TenantManagementPage() {
                         <div>
                             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                                 <div className="space-y-1.5">
-                                    <Label className="text-[10px] font-black uppercase text-slate-400">Plan Tier</Label>
+                                    <Label className="text-[10px] font-semibold text-slate-400">Plan Tier</Label>
                                     <select 
                                       className="w-full h-9 px-3 text-xs font-bold border border-slate-200 rounded-sm bg-slate-50"
                                       value={subscriptionForm.subscriptionPlan}
@@ -468,7 +468,7 @@ export default function TenantManagementPage() {
                                     </select>
                                 </div>
                                 <div className="space-y-1.5">
-                                    <Label className="text-[10px] font-black uppercase text-slate-400">Status</Label>
+                                    <Label className="text-[10px] font-semibold text-slate-400">Status</Label>
                                     <select 
                                       className="w-full h-9 px-3 text-xs font-bold border border-slate-200 rounded-sm bg-slate-50"
                                       value={subscriptionForm.subscriptionStatus}
@@ -480,7 +480,7 @@ export default function TenantManagementPage() {
                                     </select>
                                 </div>
                                 <div className="space-y-1.5">
-                                    <Label className="text-[10px] font-black uppercase text-slate-400">Subscription Ends At</Label>
+                                    <Label className="text-[10px] font-semibold text-slate-400">Subscription Ends At</Label>
                                     <Input 
                                       type="date" 
                                       className="h-9 text-xs font-bold border-slate-200 rounded-sm bg-slate-50"
@@ -490,7 +490,7 @@ export default function TenantManagementPage() {
                                 </div>
                             </div>
                             <div className="mt-4 space-y-1.5">
-                                <Label className="text-[10px] font-black uppercase text-slate-400">SysAdmin Notes</Label>
+                                <Label className="text-[10px] font-semibold text-slate-400">SysAdmin Notes</Label>
                                 <textarea 
                                   className="w-full h-24 p-3 text-xs font-medium border border-slate-200 rounded-sm bg-slate-50 resize-none"
                                   placeholder="Internal notes about billing, integration, or custom agreements..."
@@ -504,12 +504,12 @@ export default function TenantManagementPage() {
                         <TabsContent value="configuration" className="mt-0 space-y-6">
                         <div className="space-y-4">
                             <div className="flex items-center gap-2 mb-2">
-                                <Label className="text-xs font-black uppercase text-slate-800 tracking-tight">Business Vertical</Label>
+                                <Label className="text-xs font-semibold text-slate-800 tracking-tight">Business Vertical</Label>
                             </div>
                             <div className="flex items-center justify-between p-3 border border-slate-100 rounded-sm">
                                 <div className="space-y-0.5">
-                                    <Label className="text-xs font-black uppercase">Business Type</Label>
-                                    <p className="text-[9px] text-slate-400 font-bold uppercase">Terminology & default features</p>
+                                    <Label className="text-xs font-semibold">Business Type</Label>
+                                    <p className="text-[9px] text-slate-400 font-bold">Terminology & default features</p>
                                 </div>
                                 <select
                                   className="h-8 px-2 text-xs font-bold border border-slate-200 rounded-sm bg-slate-50"
@@ -528,12 +528,12 @@ export default function TenantManagementPage() {
 
                         <div className="space-y-4">
                             <div className="flex items-center gap-2 mb-2">
-                                <Label className="text-xs font-black uppercase text-slate-800 tracking-tight">Design Architecture</Label>
+                                <Label className="text-xs font-semibold text-slate-800 tracking-tight">Design Architecture</Label>
                             </div>
                             <div className="flex items-center justify-between p-3 border border-slate-100 rounded-sm">
                                 <div className="space-y-0.5">
-                                    <Label className="text-xs font-black uppercase">Layout Style</Label>
-                                    <p className="text-[9px] text-slate-400 font-bold uppercase">Customer Portal Theme</p>
+                                    <Label className="text-xs font-semibold">Layout Style</Label>
+                                    <p className="text-[9px] text-slate-400 font-bold">Customer Portal Theme</p>
                                 </div>
                                 <select 
                                   className="h-8 px-2 text-xs font-bold border border-slate-200 rounded-sm bg-slate-50"
@@ -554,13 +554,13 @@ export default function TenantManagementPage() {
 
                         <div className="space-y-4">
                             <div className="flex items-center gap-2 mb-2">
-                                <Label className="text-xs font-black uppercase text-slate-800 tracking-tight">Platform Configuration</Label>
+                                <Label className="text-xs font-semibold text-slate-800 tracking-tight">Platform Configuration</Label>
                             </div>
                             {/* Global currency — root-admin-only; tenant admins see it read-only. */}
                             <div className="flex items-center justify-between p-3 border border-slate-100 rounded-sm">
                                 <div className="space-y-0.5">
-                                    <Label className="text-xs font-black uppercase">Currency</Label>
-                                    <p className="text-[9px] text-slate-400 font-bold uppercase">Global Menu & Deposit Currency</p>
+                                    <Label className="text-xs font-semibold">Currency</Label>
+                                    <p className="text-[9px] text-slate-400 font-bold">Global Menu & Deposit Currency</p>
                                 </div>
                                 <select
                                   className="h-8 px-2 text-xs font-bold border border-slate-200 rounded-sm bg-slate-50"
@@ -576,8 +576,8 @@ export default function TenantManagementPage() {
                             {/* Default UI language — applied for users who haven't chosen one. */}
                             <div className="flex items-center justify-between p-3 border border-slate-100 rounded-sm">
                                 <div className="space-y-0.5">
-                                    <Label className="text-xs font-black uppercase">Default Language</Label>
-                                    <p className="text-[9px] text-slate-400 font-bold uppercase">Dashboard UI Language</p>
+                                    <Label className="text-xs font-semibold">Default Language</Label>
+                                    <p className="text-[9px] text-slate-400 font-bold">Dashboard UI Language</p>
                                 </div>
                                 <select
                                   className="h-8 px-2 text-xs font-bold border border-slate-200 rounded-sm bg-slate-50"
@@ -593,92 +593,92 @@ export default function TenantManagementPage() {
 
                         <TabsContent value="features" className="mt-0">
                         <div className="flex items-center gap-2 mb-3">
-                            <Label className="text-xs font-black uppercase text-slate-800 tracking-tight">Feature Flags</Label>
+                            <Label className="text-xs font-semibold text-slate-800 tracking-tight">Feature Flags</Label>
                         </div>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                             <div className="flex items-center justify-between p-3 border border-slate-100 rounded-sm">
                                 <div className="space-y-0.5">
-                                    <Label className="text-xs font-black uppercase">VIP Status</Label>
-                                    <p className="text-[9px] text-slate-400 font-bold uppercase">Staff VIP Marking</p>
+                                    <Label className="text-xs font-semibold">VIP Status</Label>
+                                    <p className="text-[9px] text-slate-400 font-bold">Staff VIP Marking</p>
                                 </div>
                                 <Checkbox checked={settingsForm.isVipEnabled} onCheckedChange={(c) => setSettingsForm({...settingsForm, isVipEnabled: !!c})} />
                             </div>
                             <div className="flex items-center justify-between p-3 border border-slate-100 rounded-sm">
                                 <div className="space-y-0.5">
-                                    <Label className="text-xs font-black uppercase">Internal Notes</Label>
-                                    <p className="text-[9px] text-slate-400 font-bold uppercase">Staff Instructions</p>
+                                    <Label className="text-xs font-semibold">Internal Notes</Label>
+                                    <p className="text-[9px] text-slate-400 font-bold">Staff Instructions</p>
                                 </div>
                                 <Checkbox checked={settingsForm.isInternalNotesEnabled} onCheckedChange={(c) => setSettingsForm({...settingsForm, isInternalNotesEnabled: !!c})} />
                             </div>
                             <div className="flex items-center justify-between p-3 border border-slate-100 rounded-sm">
                                 <div className="space-y-0.5">
-                                    <Label className="text-xs font-black uppercase">Categories</Label>
-                                    <p className="text-[9px] text-slate-400 font-bold uppercase">Source Tracking</p>
+                                    <Label className="text-xs font-semibold">Categories</Label>
+                                    <p className="text-[9px] text-slate-400 font-bold">Source Tracking</p>
                                 </div>
                                 <Checkbox checked={settingsForm.isCategoriesEnabled} onCheckedChange={(c) => setSettingsForm({...settingsForm, isCategoriesEnabled: !!c})} />
                             </div>
                             <div className="flex items-center justify-between p-3 border border-slate-100 rounded-sm bg-indigo-50/30">
                                 <div className="space-y-0.5">
-                                    <Label className="text-xs font-black uppercase text-indigo-900">Wait Time Module</Label>
-                                    <p className="text-[9px] text-indigo-400 font-bold uppercase">Enable Waitlist</p>
+                                    <Label className="text-xs font-semibold text-indigo-900">Wait Time Module</Label>
+                                    <p className="text-[9px] text-indigo-400 font-bold">Enable Waitlist</p>
                                 </div>
                                 <Checkbox checked={settingsForm.hasWaitTimeFeature} onCheckedChange={(c) => setSettingsForm({...settingsForm, hasWaitTimeFeature: !!c})} />
                             </div>
                             <div className="flex items-center justify-between p-3 border border-slate-100 rounded-sm bg-indigo-50/30">
                                 <div className="space-y-0.5">
-                                    <Label className="text-xs font-black uppercase text-indigo-900">Shift Management</Label>
-                                    <p className="text-[9px] text-indigo-400 font-bold uppercase">Staff Rostering</p>
+                                    <Label className="text-xs font-semibold text-indigo-900">Shift Management</Label>
+                                    <p className="text-[9px] text-indigo-400 font-bold">Staff Rostering</p>
                                 </div>
                                 <Checkbox checked={settingsForm.hasShiftFeature} onCheckedChange={(c) => setSettingsForm({...settingsForm, hasShiftFeature: !!c})} />
                             </div>
                             <div className="flex items-center justify-between p-3 border border-slate-100 rounded-sm bg-indigo-50/30">
                                 <div className="space-y-0.5">
-                                    <Label className="text-xs font-black uppercase text-indigo-900">Digital Menu</Label>
-                                    <p className="text-[9px] text-indigo-400 font-bold uppercase">Menu & QR</p>
+                                    <Label className="text-xs font-semibold text-indigo-900">Digital Menu</Label>
+                                    <p className="text-[9px] text-indigo-400 font-bold">Menu & QR</p>
                                 </div>
                                 <Checkbox checked={settingsForm.hasMenuFeature} onCheckedChange={(c) => setSettingsForm({...settingsForm, hasMenuFeature: !!c})} />
                             </div>
                             <div className="flex items-center justify-between p-3 border border-slate-100 rounded-sm bg-indigo-50/30">
                                 <div className="space-y-0.5">
-                                    <Label className="text-xs font-black uppercase text-indigo-900">Paid Reservations</Label>
-                                    <p className="text-[9px] text-indigo-400 font-bold uppercase">Deposits & Payment</p>
+                                    <Label className="text-xs font-semibold text-indigo-900">Paid Reservations</Label>
+                                    <p className="text-[9px] text-indigo-400 font-bold">Deposits & Payment</p>
                                 </div>
                                 <Checkbox checked={settingsForm.hasPaymentFeature} onCheckedChange={(c) => setSettingsForm({...settingsForm, hasPaymentFeature: !!c})} />
                             </div>
                             {/* Online ordering — commercial add-on on the Restaurant row, SysAdmin-only. */}
                             <div className="flex items-center justify-between p-3 border border-slate-100 rounded-sm bg-emerald-50/40">
                                 <div className="space-y-0.5">
-                                    <Label className="text-xs font-black uppercase text-emerald-900">Online Ordering</Label>
-                                    <p className="text-[9px] text-emerald-500 font-bold uppercase">Checkout, Delivery & Kitchen</p>
+                                    <Label className="text-xs font-semibold text-emerald-900">Online Ordering</Label>
+                                    <p className="text-[9px] text-emerald-500 font-bold">Checkout, Delivery & Kitchen</p>
                                 </div>
                                 <Checkbox checked={settingsForm.hasOnlineOrdering} onCheckedChange={(c) => setSettingsForm({...settingsForm, hasOnlineOrdering: !!c})} />
                             </div>
                             {/* Organizer / wedding modules — meaningful for the WEDDING vertical. */}
                             <div className="flex items-center justify-between p-3 border border-slate-100 rounded-sm bg-amber-50/40">
                                 <div className="space-y-0.5">
-                                    <Label className="text-xs font-black uppercase text-amber-900">Event Pipeline</Label>
-                                    <p className="text-[9px] text-amber-500 font-bold uppercase">Lead → Confirmed</p>
+                                    <Label className="text-xs font-semibold text-amber-900">Event Pipeline</Label>
+                                    <p className="text-[9px] text-amber-500 font-bold">Lead → Confirmed</p>
                                 </div>
                                 <Checkbox checked={settingsForm.hasEventPipeline} onCheckedChange={(c) => setSettingsForm({...settingsForm, hasEventPipeline: !!c})} />
                             </div>
                             <div className="flex items-center justify-between p-3 border border-slate-100 rounded-sm bg-amber-50/40">
                                 <div className="space-y-0.5">
-                                    <Label className="text-xs font-black uppercase text-amber-900">Installment Plans</Label>
-                                    <p className="text-[9px] text-amber-500 font-bold uppercase">Kapora & Taksit</p>
+                                    <Label className="text-xs font-semibold text-amber-900">Installment Plans</Label>
+                                    <p className="text-[9px] text-amber-500 font-bold">Kapora & Taksit</p>
                                 </div>
                                 <Checkbox checked={settingsForm.hasInstallmentPlans} onCheckedChange={(c) => setSettingsForm({...settingsForm, hasInstallmentPlans: !!c})} />
                             </div>
                             <div className="flex items-center justify-between p-3 border border-slate-100 rounded-sm bg-amber-50/40">
                                 <div className="space-y-0.5">
-                                    <Label className="text-xs font-black uppercase text-amber-900">Guest List & Seating</Label>
-                                    <p className="text-[9px] text-amber-500 font-bold uppercase">RSVP & Seating</p>
+                                    <Label className="text-xs font-semibold text-amber-900">Guest List & Seating</Label>
+                                    <p className="text-[9px] text-amber-500 font-bold">RSVP & Seating</p>
                                 </div>
                                 <Checkbox checked={settingsForm.hasGuestList} onCheckedChange={(c) => setSettingsForm({...settingsForm, hasGuestList: !!c})} />
                             </div>
                             <div className="flex items-center justify-between p-3 border border-slate-100 rounded-sm bg-amber-50/40">
                                 <div className="space-y-0.5">
-                                    <Label className="text-xs font-black uppercase text-amber-900">Vendor Coordination</Label>
-                                    <p className="text-[9px] text-amber-500 font-bold uppercase">Photographers, DJs…</p>
+                                    <Label className="text-xs font-semibold text-amber-900">Vendor Coordination</Label>
+                                    <p className="text-[9px] text-amber-500 font-bold">Photographers, DJs…</p>
                                 </div>
                                 <Checkbox checked={settingsForm.hasVendors} onCheckedChange={(c) => setSettingsForm({...settingsForm, hasVendors: !!c})} />
                             </div>
@@ -688,7 +688,7 @@ export default function TenantManagementPage() {
                         <TabsContent value="admin" className="mt-0 space-y-6">
                         <div className="space-y-4">
                             <div className="flex items-center gap-2 mb-1">
-                                <Label className="text-xs font-black uppercase text-slate-800 tracking-tight">Platform-Enforced Security</Label>
+                                <Label className="text-xs font-semibold text-slate-800 tracking-tight">Platform-Enforced Security</Label>
                             </div>
                             {/* 2FA — root-admin-only. The SysAdmin both enables 2FA and
                                 picks which roles must use it; tenant admins have no 2FA
@@ -696,8 +696,8 @@ export default function TenantManagementPage() {
                             <div className="p-3 border border-slate-100 rounded-sm bg-rose-50/30 space-y-3">
                                 <div className="flex items-center justify-between">
                                     <div className="space-y-0.5">
-                                        <Label className="text-xs font-black uppercase text-rose-900">Two-Factor Authentication</Label>
-                                        <p className="text-[9px] text-rose-400 font-bold uppercase">Require 2FA For Selected Roles</p>
+                                        <Label className="text-xs font-semibold text-rose-900">Two-Factor Authentication</Label>
+                                        <p className="text-[9px] text-rose-400 font-bold">Require 2FA For Selected Roles</p>
                                     </div>
                                     <Checkbox
                                         checked={settingsForm.twoFactorEnabled}
@@ -723,7 +723,7 @@ export default function TenantManagementPage() {
                                                         if (set.has(role)) set.delete(role); else set.add(role);
                                                         setSettingsForm({ ...settingsForm, twoFactorRoles: Array.from(set).join(',') });
                                                     }}
-                                                    className={`px-1.5 py-1.5 rounded-sm border text-[10px] font-black uppercase tracking-tight transition-all ${active ? 'border-rose-500 bg-rose-500 text-white' : 'border-slate-200 bg-white text-slate-500 hover:border-rose-300'}`}
+ className={`px-1.5 py-1.5 rounded-sm border text-[10px] font-semibold tracking-tight transition-all ${active ?'border-rose-500 bg-rose-500 text-white':'border-slate-200 bg-white text-slate-500 hover:border-rose-300'}`}
                                                 >
                                                     {role}
                                                 </button>
@@ -735,8 +735,8 @@ export default function TenantManagementPage() {
                             {/* Audit log visibility — let this tenant's admins see their own activity log. */}
                             <div className="flex items-center justify-between p-3 border border-slate-100 rounded-sm bg-slate-50/40">
                                 <div className="space-y-0.5">
-                                    <Label className="text-xs font-black uppercase">Audit Log Visibility</Label>
-                                    <p className="text-[9px] text-slate-400 font-bold uppercase">Let Tenant Admins See Their Activity Log</p>
+                                    <Label className="text-xs font-semibold">Audit Log Visibility</Label>
+                                    <p className="text-[9px] text-slate-400 font-bold">Let Tenant Admins See Their Activity Log</p>
                                 </div>
                                 <Checkbox checked={settingsForm.showAuditLogToTenant} onCheckedChange={(c) => setSettingsForm({...settingsForm, showAuditLogToTenant: !!c})} />
                             </div>
@@ -746,12 +746,12 @@ export default function TenantManagementPage() {
                         <div className="space-y-4">
                             <div className="flex items-center gap-2 mb-1">
                                 <ShieldCheck className="w-4 h-4 text-emerald-500" />
-                                <Label className="text-xs font-black uppercase text-slate-800 tracking-tight">Tenant Admin Permissions</Label>
+                                <Label className="text-xs font-semibold text-slate-800 tracking-tight">Tenant Admin Permissions</Label>
                             </div>
                             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
                                 {AVAILABLE_PERMISSIONS.map(perm => (
                                     <div key={perm.id} className={cn("flex items-center justify-between p-2.5 border rounded-sm transition-all", adminPermissions.has(perm.id) ? "border-emerald-200 bg-emerald-50/30" : "border-slate-100 bg-slate-50/50")}>
-                                        <div className={cn("text-[10px] font-black uppercase tracking-tight", adminPermissions.has(perm.id) ? "text-emerald-700" : "text-slate-600")}>{perm.label}</div>
+ <div className={cn("text-[10px] font-semibold tracking-tight", adminPermissions.has(perm.id) ?"text-emerald-700":"text-slate-600")}>{perm.label}</div>
                                         <Checkbox checked={adminPermissions.has(perm.id)} onCheckedChange={() => togglePermission(perm.id)} />
                                     </div>
                                 ))}
@@ -766,7 +766,7 @@ export default function TenantManagementPage() {
                                         <div className="flex items-center justify-between">
                                             <div className="flex items-center gap-2">
                                                 <ShieldCheck className="w-4 h-4 text-emerald-500" />
-                                                <Label className="text-xs font-black uppercase text-slate-800 tracking-tight">Two-Factor (OTP)</Label>
+                                                <Label className="text-xs font-semibold text-slate-800 tracking-tight">Two-Factor (OTP)</Label>
                                             </div>
                                             <Switch checked={otpRequired} disabled={otpBusy} onCheckedChange={(v: boolean) => handleToggleOtp(adminUser.id, v)} />
                                         </div>
@@ -780,7 +780,7 @@ export default function TenantManagementPage() {
                                     <div className="p-4 border border-slate-200 rounded-md space-y-2">
                                         <div className="flex items-center gap-2">
                                             <KeyRound className="w-4 h-4 text-amber-500" />
-                                            <Label className="text-xs font-black uppercase text-slate-800 tracking-tight">Password Reset</Label>
+                                            <Label className="text-xs font-semibold text-slate-800 tracking-tight">Password Reset</Label>
                                         </div>
                                         <p className="text-[10px] text-slate-400 font-medium leading-relaxed">
                                             Generate a secure single-use link to reset <span className="font-bold text-slate-600">{adminUser.email}</span>. The password is never shown or stored in plain text.
@@ -793,12 +793,12 @@ export default function TenantManagementPage() {
                                                         <Copy className="w-3.5 h-3.5" />
                                                     </Button>
                                                 </div>
-                                                <p className="text-[9px] text-amber-600 font-bold uppercase tracking-wide">
+                                                <p className="text-[9px] text-amber-600 font-bold">
                                                     Share securely{resetExpiryMins ? ` · Expires in ${resetExpiryMins} min` : ''} · Single use
                                                 </p>
                                             </div>
                                         ) : (
-                                            <Button type="button" onClick={() => handleGenerateReset(adminUser.id)} disabled={resetLoading} className="h-9 w-full bg-amber-500 hover:bg-amber-600 text-white text-[10px] font-black uppercase rounded-sm">
+                                            <Button type="button" onClick={() => handleGenerateReset(adminUser.id)} disabled={resetLoading} className="h-9 w-full bg-amber-500 hover:bg-amber-600 text-white text-[10px] font-semibold rounded-sm">
                                                 {resetLoading ? 'Generating…' : 'Generate Reset Link'}
                                             </Button>
                                         )}
@@ -813,7 +813,7 @@ export default function TenantManagementPage() {
                     </div>
                     <div className="p-4 bg-slate-50 border-t border-slate-100 flex justify-end gap-2">
                         <Button type="button" variant="ghost" disabled={saving} onClick={() => setIsSettingsOpen(false)} className="h-9 text-xs font-bold text-slate-400">CANCEL</Button>
-                        <Button type="submit" disabled={saving} className="h-9 bg-slate-900 hover:bg-slate-800 text-white text-xs font-black uppercase px-6 rounded-sm disabled:opacity-60">{saving ? 'COMMITTING…' : 'COMMIT ENTITLEMENTS'}</Button>
+                        <Button type="submit" disabled={saving} className="h-9 bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold px-6 rounded-sm disabled:opacity-60">{saving ? 'COMMITTING…' : 'COMMIT ENTITLEMENTS'}</Button>
                     </div>
                 </form>
             </DialogContent>

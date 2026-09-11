@@ -88,7 +88,7 @@ export default function PhoneIdentify({
 
   return (
     <div className="space-y-4">
-      <h2 className="text-sm font-bold uppercase tracking-wide" style={{ color: theme.muted }}>{t('publicOrder.identify.title')}</h2>
+      <h2 className="text-sm font-bold" style={{ color: theme.muted }}>{t('publicOrder.identify.title')}</h2>
 
       {error && (
         <div className="flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
@@ -99,7 +99,7 @@ export default function PhoneIdentify({
       {stage === 'phone' && (
         <form onSubmit={handleRequestOtp} className="space-y-3">
           <div className="space-y-1.5">
-            <Label className="text-xs font-bold uppercase" style={{ color: theme.muted }}>{t('publicOrder.identify.phoneLabel')}</Label>
+            <Label className="text-xs font-bold" style={{ color: theme.muted }}>{t('publicOrder.identify.phoneLabel')}</Label>
             <Input
               required
               type="tel"
@@ -120,7 +120,7 @@ export default function PhoneIdentify({
         <form onSubmit={handleVerify} className="space-y-3">
           <p className="text-xs" style={{ color: theme.muted }}>{t('publicOrder.identify.codeSentTo')} {phone}</p>
           <div className="space-y-1.5">
-            <Label className="text-xs font-bold uppercase" style={{ color: theme.muted }}>{t('publicOrder.identify.codeLabel')}</Label>
+            <Label className="text-xs font-bold" style={{ color: theme.muted }}>{t('publicOrder.identify.codeLabel')}</Label>
             <Input
               required
               inputMode="numeric"
@@ -160,7 +160,7 @@ export default function PhoneIdentify({
         <form onSubmit={handleVerify} className="space-y-3">
           <p className="text-xs" style={{ color: theme.muted }}>{t('publicOrder.identify.nameSubtitle')}</p>
           <div className="space-y-1.5">
-            <Label className="text-xs font-bold uppercase" style={{ color: theme.muted }}>{t('publicOrder.identify.nameLabel')}</Label>
+            <Label className="text-xs font-bold" style={{ color: theme.muted }}>{t('publicOrder.identify.nameLabel')}</Label>
             <Input
               required
               autoFocus

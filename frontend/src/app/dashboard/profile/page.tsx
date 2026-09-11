@@ -92,7 +92,7 @@ export default function ProfilePage() {
       <div className="flex flex-col gap-6 max-w-3xl">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight text-slate-900 font-heading">{t('profile.title')}</h1>
-          <p className="text-[10px] text-slate-400 font-black uppercase tracking-[0.2em] mt-1">{t('profile.subtitle')}</p>
+          <p className="text-[10px] text-slate-400 font-semibold tracking-[0.2em] mt-1">{t('profile.subtitle')}</p>
         </div>
 
         {/* Identity */}
@@ -100,10 +100,10 @@ export default function ProfilePage() {
           <CardHeader className="p-6 bg-slate-50/50 border-b border-slate-100 flex flex-row items-center gap-4">
             <div className="p-3 bg-blue-100 rounded-lg text-blue-600"><UserIcon className="w-6 h-6" /></div>
             <div>
-              <CardTitle className="text-lg font-black uppercase tracking-tight">{me ? `${me.firstName} ${me.lastName}` : '—'}</CardTitle>
+              <CardTitle className="text-lg font-semibold tracking-tight">{me ? `${me.firstName} ${me.lastName}` : '—'}</CardTitle>
               <CardDescription className="text-sm">{me?.email}</CardDescription>
             </div>
-            {me && <Badge className="ml-auto bg-blue-50 text-blue-700 border-blue-200 uppercase text-[10px] font-black">{me.role}</Badge>}
+            {me && <Badge className="ml-auto bg-blue-50 text-blue-700 border-blue-200 text-[10px] font-semibold">{me.role}</Badge>}
           </CardHeader>
         </Card>
 
@@ -112,29 +112,29 @@ export default function ProfilePage() {
           <CardHeader className="p-6 bg-slate-50/50 border-b border-slate-100 flex flex-row items-center gap-4">
             <div className="p-3 bg-amber-100 rounded-lg text-amber-600"><Lock className="w-6 h-6" /></div>
             <div>
-              <CardTitle className="text-lg font-black uppercase tracking-tight">{t('profile.changePassword')}</CardTitle>
+              <CardTitle className="text-lg font-semibold tracking-tight">{t('profile.changePassword')}</CardTitle>
               <CardDescription className="text-sm">{t('profile.changePasswordDesc')}</CardDescription>
             </div>
           </CardHeader>
           <CardContent className="p-6">
             <form onSubmit={handleChangePassword} className="space-y-4 max-w-md">
               <div className="grid gap-2">
-                <Label className="text-xs font-black uppercase tracking-wider text-slate-500">{t('profile.currentPassword')}</Label>
+                <Label className="text-xs font-semibold text-slate-500">{t('profile.currentPassword')}</Label>
                 <PasswordInput required value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)} autoComplete="current-password" className="h-11" placeholder="••••••••" showLabel={t('auth.showPassword')} hideLabel={t('auth.hidePassword')} />
               </div>
               <div className="grid gap-2">
-                <Label className="text-xs font-black uppercase tracking-wider text-slate-500">{t('profile.newPassword')}</Label>
+                <Label className="text-xs font-semibold text-slate-500">{t('profile.newPassword')}</Label>
                 <PasswordInput required value={newPassword} onChange={(e) => setNewPassword(e.target.value)} autoComplete="new-password" className="h-11" placeholder="••••••••" showLabel={t('auth.showPassword')} hideLabel={t('auth.hidePassword')} />
                 <PasswordStrength password={newPassword} className="pt-1" />
               </div>
               <div className="grid gap-2">
-                <Label className="text-xs font-black uppercase tracking-wider text-slate-500">{t('profile.confirmNewPassword')}</Label>
+                <Label className="text-xs font-semibold text-slate-500">{t('profile.confirmNewPassword')}</Label>
                 <PasswordInput required value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} autoComplete="new-password" className="h-11" placeholder="••••••••" showLabel={t('auth.showPassword')} hideLabel={t('auth.hidePassword')} />
                 {confirmPassword.length > 0 && !pwMatches && (
                   <p className="text-xs font-medium text-red-600">{t('profile.passwordsMismatch')}</p>
                 )}
               </div>
-              <Button type="submit" disabled={savingPw || !pwValid || !pwMatches} className="h-11 bg-slate-900 hover:bg-slate-800 text-white text-xs font-black uppercase px-8 rounded-md">
+              <Button type="submit" disabled={savingPw || !pwValid || !pwMatches} className="h-11 bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold px-8 rounded-md">
                 {savingPw ? t('profile.saving') : t('profile.updatePassword')}
               </Button>
             </form>
@@ -146,11 +146,11 @@ export default function ProfilePage() {
           <CardHeader className="p-6 bg-slate-50/50 border-b border-slate-100 flex flex-row items-center gap-4">
             <div className="p-3 bg-emerald-100 rounded-lg text-emerald-600"><ShieldCheck className="w-6 h-6" /></div>
             <div>
-              <CardTitle className="text-lg font-black uppercase tracking-tight">{t('profile.twoFactor')}</CardTitle>
+              <CardTitle className="text-lg font-semibold tracking-tight">{t('profile.twoFactor')}</CardTitle>
               <CardDescription className="text-sm">{t('profile.twoFactorDesc')}</CardDescription>
             </div>
             {me && (
-              <Badge className={`ml-auto uppercase text-[10px] font-black ${me.otpEnrolled ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : me.otpRequired ? 'bg-amber-50 text-amber-700 border-amber-200' : 'bg-slate-100 text-slate-500 border-slate-200'}`}>
+ <Badge className={`ml-auto text-[10px] font-semibold ${me.otpEnrolled ?'bg-emerald-50 text-emerald-700 border-emerald-200': me.otpRequired ?'bg-amber-50 text-amber-700 border-amber-200':'bg-slate-100 text-slate-500 border-slate-200'}`}>
                 {me.otpEnrolled ? t('profile.twoFactorActive') : me.otpRequired ? t('profile.twoFactorPending') : t('profile.twoFactorOff')}
               </Badge>
             )}
@@ -177,14 +177,14 @@ export default function ProfilePage() {
                   </div>
                   <div className="space-y-3 flex-1">
                     <div className="grid gap-1.5">
-                      <Label className="text-[10px] font-black uppercase tracking-wider text-slate-400">{t('profile.twoFactorManualKey')}</Label>
+                      <Label className="text-[10px] font-semibold text-slate-400">{t('profile.twoFactorManualKey')}</Label>
                       <code className="text-xs font-mono bg-slate-50 border border-slate-200 rounded px-3 py-2 break-all">{setupSecret}</code>
                     </div>
                     <div className="grid gap-1.5 max-w-[220px]">
-                      <Label className="text-[10px] font-black uppercase tracking-wider text-slate-400">{t('profile.twoFactorEnterCode')}</Label>
+                      <Label className="text-[10px] font-semibold text-slate-400">{t('profile.twoFactorEnterCode')}</Label>
                       <Input value={otpCode} onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, '').slice(0, 6))} inputMode="numeric" placeholder="123456" className="h-11 text-lg font-black tracking-[0.3em] text-center" />
                     </div>
-                    <Button onClick={confirmSetup} disabled={otpBusy || otpCode.length !== 6} className="h-10 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-black uppercase px-6 rounded-md">
+                    <Button onClick={confirmSetup} disabled={otpBusy || otpCode.length !== 6} className="h-10 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold px-6 rounded-md">
                       {otpBusy ? t('profile.verifying') : t('profile.twoFactorVerifyEnable')}
                     </Button>
                   </div>
@@ -196,7 +196,7 @@ export default function ProfilePage() {
                   <ShieldAlert className="w-5 h-5" />
                   <p className="text-sm font-bold">{t('profile.twoFactorRequiredNotice')}</p>
                 </div>
-                <Button onClick={startSetup} disabled={otpBusy} className="h-11 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-black uppercase px-8 rounded-md">
+                <Button onClick={startSetup} disabled={otpBusy} className="h-11 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold px-8 rounded-md">
                   <KeyRound className="w-4 h-4 mr-2" /> {otpBusy ? t('profile.saving') : t('profile.twoFactorSetUp')}
                 </Button>
               </div>

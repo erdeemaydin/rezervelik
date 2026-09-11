@@ -140,7 +140,7 @@ export default function ItemCustomizeDialog({
                 <div key={mod.id}>
                   <div className="flex items-baseline justify-between">
                     <p className="text-sm font-semibold" style={{ color: theme.text }}>{mod.name}</p>
-                    <p className="text-[11px] font-medium uppercase tracking-wide" style={{ color: theme.muted }}>
+                    <p className="text-[11px] font-medium" style={{ color: theme.muted }}>
                       {mod.isRequired ? t('publicOrder.item.required') : t('publicOrder.item.optional')}
                     </p>
                   </div>

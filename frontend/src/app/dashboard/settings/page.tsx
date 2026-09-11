@@ -256,10 +256,10 @@ export default function SettingsPage() {
                         </Button>
                         <div>
                             <h1 className="text-2xl font-semibold tracking-tight text-slate-900 font-heading">{t("settings.title")}</h1>
-                            <p className="text-[10px] text-slate-400 font-black uppercase tracking-[0.2em] mt-1">{t("settings.subtitle")}</p>
+                            <p className="text-[10px] text-slate-400 font-semibold tracking-[0.2em] mt-1">{t("settings.subtitle")}</p>
                         </div>
                     </div>
-                    <Button onClick={handleSave} disabled={loading} className="bg-blue-600 hover:bg-blue-700 text-white font-black uppercase text-xs px-8 h-12 rounded-md shadow-md shadow-blue-600/20 transition-all active:scale-95">
+                    <Button onClick={handleSave} disabled={loading} className="bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs px-8 h-12 rounded-md shadow-md shadow-blue-600/20 transition-all active:scale-95">
                         {loading ? t("settings.saving") : <><Save className="w-5 h-5 mr-3" /> {t("settings.saveChanges")}</>}
                     </Button>
                 </div>
@@ -281,7 +281,7 @@ export default function SettingsPage() {
                                 <CardHeader className="p-6 bg-slate-50/50 border-b border-slate-100 flex flex-row items-center gap-4">
                                     <div className="p-3 bg-purple-100 rounded-lg text-purple-600"><Clock className="w-6 h-6" /></div>
                                     <div>
-                                        <CardTitle className="text-lg font-black uppercase tracking-tight">{t("settings.reservationLogic")}</CardTitle>
+                                        <CardTitle className="text-lg font-semibold tracking-tight">{t("settings.reservationLogic")}</CardTitle>
                                         <CardDescription className="text-sm">{t("settings.reservationLogicDesc")}</CardDescription>
                                     </div>
                                 </CardHeader>
@@ -291,11 +291,11 @@ export default function SettingsPage() {
                                         <Switch checked={settings.isReservationEnabled} onCheckedChange={(v: boolean) => setSettings(prev => ({...prev, isReservationEnabled: v}))} className="scale-125" />
                                     </div>
                                     <div className="grid gap-3 pt-4">
-                                        <Label className="text-xs font-black uppercase tracking-wider text-slate-500">{t("settings.defaultDuration")}</Label>
+                                        <Label className="text-xs font-semibold text-slate-500">{t("settings.defaultDuration")}</Label>
                                         <Input type="number" value={settings.defaultDurationMinutes} onChange={(e) => setSettings({...settings, defaultDurationMinutes: parseInt(e.target.value)})} className="h-12 text-base font-bold rounded-lg px-4" />
                                     </div>
                                     <div className="grid gap-3 pt-2">
-                                        <Label className="text-xs font-black uppercase tracking-wider text-slate-500">{t("settings.assignmentLogic")}</Label>
+                                        <Label className="text-xs font-semibold text-slate-500">{t("settings.assignmentLogic")}</Label>
                                         <Select value={settings.logic || 'DYNAMIC_DURATION'} onValueChange={(v: string | null) => setSettings(prev => ({...prev, logic: v || 'DYNAMIC_DURATION'}))}>
                                             <SelectTrigger className="h-12 text-sm font-bold rounded-lg px-4">
                                                 <SelectValue placeholder={t("settings.selectLogic")} />
@@ -312,7 +312,7 @@ export default function SettingsPage() {
                                         </p>
                                     </div>
                                     <div className="grid gap-3 pt-2">
-                                        <Label className="text-xs font-black uppercase tracking-wider text-slate-500">{t("settings.maxPartySize")}</Label>
+                                        <Label className="text-xs font-semibold text-slate-500">{t("settings.maxPartySize")}</Label>
                                         <Input type="number" min="1" max="30" value={settings.maxPartySize}
                                             onChange={(e) => setSettings(prev => ({...prev, maxPartySize: Math.max(1, parseInt(e.target.value) || 1)}))}
                                             className="h-12 text-base font-bold rounded-lg px-4" />
@@ -321,13 +321,13 @@ export default function SettingsPage() {
                                     {/* Opening / closing hours (#1.3) — bounds booking times and the analytics heatmap axis */}
                                     <div className="grid grid-cols-2 gap-4 pt-2">
                                         <div className="grid gap-3">
-                                            <Label className="text-xs font-black uppercase tracking-wider text-slate-500">{t("settings.openingHour")}</Label>
+                                            <Label className="text-xs font-semibold text-slate-500">{t("settings.openingHour")}</Label>
                                             <Input type="number" min="0" max="23" value={settings.openingHour}
                                                 onChange={(e) => setSettings(prev => ({...prev, openingHour: Math.min(23, Math.max(0, parseInt(e.target.value) || 0))}))}
                                                 className="h-12 text-base font-bold rounded-lg px-4" />
                                         </div>
                                         <div className="grid gap-3">
-                                            <Label className="text-xs font-black uppercase tracking-wider text-slate-500">{t("settings.closingHour")}</Label>
+                                            <Label className="text-xs font-semibold text-slate-500">{t("settings.closingHour")}</Label>
                                             <Input type="number" min="0" max="23" value={settings.closingHour}
                                                 onChange={(e) => setSettings(prev => ({...prev, closingHour: Math.min(23, Math.max(0, parseInt(e.target.value) || 0))}))}
                                                 className="h-12 text-base font-bold rounded-lg px-4" />
@@ -335,7 +335,7 @@ export default function SettingsPage() {
                                         <p className="text-[10px] text-slate-400 leading-relaxed col-span-2">{t("settings.openingHoursHint")}</p>
                                     </div>
                                     <div className="grid gap-3 pt-2">
-                                        <Label className="text-xs font-black uppercase tracking-wider text-slate-500">{t("settings.timezone")}</Label>
+                                        <Label className="text-xs font-semibold text-slate-500">{t("settings.timezone")}</Label>
                                         <Select value={settings.timezone || 'Europe/Istanbul'} onValueChange={(v: string | null) => setSettings(prev => ({...prev, timezone: v || 'Europe/Istanbul'}))}>
                                             <SelectTrigger className="h-12 text-sm font-bold rounded-lg px-4">
                                                 <SelectValue placeholder={t("settings.timezone")} />
@@ -355,7 +355,7 @@ export default function SettingsPage() {
                                 <CardHeader className="p-6 bg-slate-50/50 border-b border-slate-100 flex flex-row items-center gap-4">
                                     <div className="p-3 bg-amber-100 rounded-lg text-amber-600"><Users className="w-6 h-6" /></div>
                                     <div>
-                                        <CardTitle className="text-lg font-black uppercase tracking-tight">{t("settings.overbooking")}</CardTitle>
+                                        <CardTitle className="text-lg font-semibold tracking-tight">{t("settings.overbooking")}</CardTitle>
                                         <CardDescription className="text-sm">{t("settings.overbookingDesc")}</CardDescription>
                                     </div>
                                 </CardHeader>
@@ -367,7 +367,7 @@ export default function SettingsPage() {
                                     <p className="text-[10px] text-slate-400 leading-relaxed">{t("settings.allowOverbookingHint")}</p>
                                     <div className="grid grid-cols-2 gap-4 pt-2">
                                         <div className="grid gap-3">
-                                            <Label className="text-xs font-black uppercase tracking-wider text-slate-500">{t("settings.overbookingMaxExtraCovers")}</Label>
+                                            <Label className="text-xs font-semibold text-slate-500">{t("settings.overbookingMaxExtraCovers")}</Label>
                                             <Input type="number" min="1" disabled={!settings.allowOverbooking}
                                                 value={settings.overbookingMaxExtraCovers ?? ''}
                                                 onChange={(e) => setSettings(prev => ({...prev, overbookingMaxExtraCovers: e.target.value === '' ? null : parseInt(e.target.value)}))}
@@ -375,7 +375,7 @@ export default function SettingsPage() {
                                             <p className="text-[10px] text-slate-400 leading-relaxed">{t("settings.overbookingMaxExtraCoversHint")}</p>
                                         </div>
                                         <div className="grid gap-3">
-                                            <Label className="text-xs font-black uppercase tracking-wider text-slate-500">{t("settings.overbookingMaxExtraReservations")}</Label>
+                                            <Label className="text-xs font-semibold text-slate-500">{t("settings.overbookingMaxExtraReservations")}</Label>
                                             <Input type="number" min="1" disabled={!settings.allowOverbooking}
                                                 value={settings.overbookingMaxExtraReservations ?? ''}
                                                 onChange={(e) => setSettings(prev => ({...prev, overbookingMaxExtraReservations: e.target.value === '' ? null : parseInt(e.target.value)}))}
@@ -390,13 +390,13 @@ export default function SettingsPage() {
                                 <CardHeader className="p-6 bg-slate-50/50 border-b border-slate-100 flex flex-row items-center gap-4">
                                     <div className="p-3 bg-indigo-100 rounded-lg text-indigo-600"><CalendarClock className="w-6 h-6" /></div>
                                     <div>
-                                        <CardTitle className="text-lg font-black uppercase tracking-tight">{t("settings.calendarCustomization")}</CardTitle>
+                                        <CardTitle className="text-lg font-semibold tracking-tight">{t("settings.calendarCustomization")}</CardTitle>
                                         <CardDescription className="text-sm">{t("settings.calendarCustomizationDesc")}</CardDescription>
                                     </div>
                                 </CardHeader>
                                 <CardContent className="p-8 space-y-6">
                                     <div className="grid gap-4 max-w-2xl">
-                                        <Label className="text-sm font-black uppercase tracking-wider text-slate-500">{t("settings.setFutureMode")}</Label>
+                                        <Label className="text-sm font-semibold text-slate-500">{t("settings.setFutureMode")}</Label>
                                         <Select value={futureModeAction || ''} onValueChange={(v) => { setFutureModeAction(v); setIsFutureDialogOpen(true); }}>
                                             <SelectTrigger className="h-14 text-base font-bold rounded-lg border-slate-200 px-4">
                                                 <SelectValue placeholder={t("settings.selectBulkAction")} />
@@ -422,14 +422,14 @@ export default function SettingsPage() {
                                 <CardHeader className="p-6 bg-slate-50/50 border-b border-slate-100 flex flex-row items-center gap-4">
                                     <div className="p-3 bg-blue-100 rounded-lg text-blue-600"><Calendar className="w-6 h-6" /></div>
                                     <div>
-                                        <CardTitle className="text-lg font-black uppercase tracking-tight">{t("settings.schedulingOperations")}</CardTitle>
+                                        <CardTitle className="text-lg font-semibold tracking-tight">{t("settings.schedulingOperations")}</CardTitle>
                                         <CardDescription className="text-sm">{t("settings.configureRosters")}</CardDescription>
                                     </div>
                                 </CardHeader>
                                 <CardContent className="p-6">
                                     <div className="grid gap-6">
                                         <div className="flex flex-col gap-3">
-                                            <Label className="text-xs font-black uppercase text-slate-500">{t("settings.rosterPreference")}</Label>
+                                            <Label className="text-xs font-semibold text-slate-500">{t("settings.rosterPreference")}</Label>
                                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                                 <div
                                                     onClick={() => setSettings({...settings, schedulingSystem: 'WEEKLY'})}
@@ -506,7 +506,7 @@ export default function SettingsPage() {
                                 <CardHeader className="p-6 bg-slate-50/50 border-b border-slate-100 flex flex-row items-center gap-4">
                                     <div className="p-3 bg-emerald-100 rounded-lg text-emerald-600"><CreditCard className="w-6 h-6" /></div>
                                     <div>
-                                        <CardTitle className="text-lg font-black uppercase tracking-tight">{t("settings.paymentsDeposits")}</CardTitle>
+                                        <CardTitle className="text-lg font-semibold tracking-tight">{t("settings.paymentsDeposits")}</CardTitle>
                                         <CardDescription className="text-sm">{t("settings.secureBookings")}</CardDescription>
                                     </div>
                                 </CardHeader>
@@ -516,7 +516,7 @@ export default function SettingsPage() {
                                         <Switch checked={settings.isPaidReservationEnabled} onCheckedChange={(v: boolean) => setSettings(prev => ({...prev, isPaidReservationEnabled: v}))} className="scale-125" />
                                     </div>
                                     <div className="grid gap-3 pt-4">
-                                        <Label className="text-xs font-black uppercase tracking-wider text-slate-500">{t("settings.depositAmount")}</Label>
+                                        <Label className="text-xs font-semibold text-slate-500">{t("settings.depositAmount")}</Label>
                                         <div className="relative">
                                             <Input type="number" disabled={!settings.isPaidReservationEnabled} value={settings.depositAmount || 0} onChange={(e) => {
                                                 const val = parseFloat(e.target.value);
@@ -526,12 +526,12 @@ export default function SettingsPage() {
                                         </div>
                                     </div>
                                     <div className="grid gap-3 pt-2">
-                                        <Label className="text-xs font-black uppercase tracking-wider text-slate-500">{t("settings.currency")}</Label>
+                                        <Label className="text-xs font-semibold text-slate-500">{t("settings.currency")}</Label>
                                         {/* Currency is a platform-wide setting configured by the system
                                             administrator — shown read-only to the tenant admin. */}
                                         <div className="h-12 flex items-center justify-between rounded-lg px-4 border border-slate-200 bg-slate-50">
                                             <span className="text-base font-black text-slate-700">{settings.currency || 'TRY'}</span>
-                                            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">{t("settings.currencyManagedBySystem")}</span>
+                                            <span className="text-[10px] font-bold text-slate-400">{t("settings.currencyManagedBySystem")}</span>
                                         </div>
                                         <p className="text-[10px] text-slate-400 leading-relaxed">{t("settings.currencyHint")}</p>
                                     </div>
@@ -556,7 +556,7 @@ export default function SettingsPage() {
                                 <CardHeader className="p-6 bg-slate-50/50 border-b border-slate-100 flex flex-row items-center gap-4">
                                     <div className="p-3 bg-blue-100 rounded-lg text-blue-600"><Palette className="w-6 h-6" /></div>
                                     <div>
-                                        <CardTitle className="text-lg font-black uppercase tracking-tight">{t("settings.appearance")}</CardTitle>
+                                        <CardTitle className="text-lg font-semibold tracking-tight">{t("settings.appearance")}</CardTitle>
                                         <CardDescription className="text-sm">{t("settings.appearanceDesc")}</CardDescription>
                                     </div>
                                 </CardHeader>
@@ -580,7 +580,7 @@ export default function SettingsPage() {
                                                         </span>
                                                     </div>
                                                     <span className="flex items-center justify-between">
-                                                        <span className="text-[11px] font-black uppercase tracking-tight text-slate-700">{t(th.labelKey)}</span>
+                                                        <span className="text-[11px] font-semibold tracking-tight text-slate-700">{t(th.labelKey)}</span>
                                                         {active && <Check className="h-3.5 w-3.5 text-slate-800" />}
                                                     </span>
                                                 </button>
@@ -599,7 +599,7 @@ export default function SettingsPage() {
                 <DialogContent className="sm:max-w-md bg-white border-0 shadow-2xl p-0 rounded-md overflow-hidden">
                     <div className="bg-amber-500 p-6">
                         <DialogHeader>
-                            <DialogTitle className="text-white text-xl font-black uppercase tracking-tight flex items-center gap-2">
+                            <DialogTitle className="text-white text-xl font-semibold tracking-tight flex items-center gap-2">
                                 <AlertCircle className="w-6 h-6" /> {t("settings.futureOverrideWarning")}
                             </DialogTitle>
                         </DialogHeader>
@@ -614,21 +614,21 @@ export default function SettingsPage() {
                     <div className="p-4 bg-slate-50 flex flex-col gap-2 border-t border-slate-100">
                         <Button 
                             onClick={() => handleFutureApply(true)} 
-                            className="w-full h-12 bg-red-600 hover:bg-red-700 text-white font-black uppercase"
+                            className="w-full h-12 bg-red-600 hover:bg-red-700 text-white font-semibold"
                         >
                             {t("settings.overwriteAll")}
                         </Button>
                         <Button 
                             onClick={() => handleFutureApply(false)} 
                             variant="outline"
-                            className="w-full h-12 border-blue-200 text-blue-700 hover:bg-blue-50 font-black uppercase"
+                            className="w-full h-12 border-blue-200 text-blue-700 hover:bg-blue-50 font-semibold"
                         >
                             {t("settings.overwriteUnmodified")}
                         </Button>
                         <Button 
                             onClick={() => { setIsFutureDialogOpen(false); setFutureModeAction(null); }} 
                             variant="ghost"
-                            className="w-full h-10 text-slate-400 hover:text-slate-600 font-bold uppercase"
+                            className="w-full h-10 text-slate-400 hover:text-slate-600 font-bold"
                         >
                             {t("settings.cancelAction")}
                         </Button>

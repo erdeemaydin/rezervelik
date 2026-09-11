@@ -312,7 +312,7 @@ export default function ClassicLayout({ slug, initialRestaurant, initialView = '
             {customization.showAboutUs && (
               <section className="mx-auto grid max-w-6xl grid-cols-1 items-center gap-12 px-6 py-24 md:grid-cols-2 md:px-12">
                 <div className="order-2 md:order-1">
-                  <span className="mb-3 block text-xs font-medium uppercase tracking-[0.2em] text-neutral-400">{t('public.ourStory')}</span>
+                  <span className="mb-3 block text-xs font-medium tracking-[0.2em] text-neutral-400">{t('public.ourStory')}</span>
                   <h2 className="mb-6 text-3xl font-semibold tracking-tight text-neutral-900 md:text-4xl">About {restaurant.name}</h2>
                   <p className="whitespace-pre-wrap text-base leading-relaxed text-neutral-500">
                     {customization.aboutUsText || 'Welcome to our restaurant. We are passionate about delivering exceptional culinary experiences.'}
@@ -411,7 +411,7 @@ export default function ClassicLayout({ slug, initialRestaurant, initialView = '
                 <div className="flex flex-col items-center">
                     <div className="text-lg font-semibold tracking-tight text-neutral-900">{restaurant.name}</div>
                     {getWaitTimeText() && (
-                        <div className="flex items-center mt-0.5 text-[10px] font-medium uppercase tracking-wide text-amber-600">
+                        <div className="flex items-center mt-0.5 text-[10px] font-medium text-amber-600">
                             <Hourglass className="w-3 h-3 mr-1" /> {getWaitTimeText()}
                         </div>
                     )}
@@ -509,7 +509,7 @@ export default function ClassicLayout({ slug, initialRestaurant, initialView = '
             <div className="flex flex-col items-center">
                 <div className="text-base font-semibold tracking-tight text-neutral-900">Secure Your Table</div>
                 {getWaitTimeText() && (
-                    <div className="flex items-center mt-0.5 text-[10px] font-medium uppercase tracking-wide text-amber-600">
+                    <div className="flex items-center mt-0.5 text-[10px] font-medium text-amber-600">
                         <Hourglass className="w-3 h-3 mr-1" /> {getWaitTimeText()}
                     </div>
                 )}
@@ -528,7 +528,7 @@ export default function ClassicLayout({ slug, initialRestaurant, initialView = '
                             </div>
                             <div>
                                 <h2 className="text-xl font-semibold tracking-tight text-neutral-900">{restaurant.name}</h2>
-                                <p className="text-xs font-medium uppercase tracking-wide text-neutral-400">Reservation</p>
+                                <p className="text-xs font-medium text-neutral-400">Reservation</p>
                             </div>
                         </div>
 
@@ -554,7 +554,7 @@ export default function ClassicLayout({ slug, initialRestaurant, initialView = '
                         <div className="flex items-start gap-4 rounded-3xl bg-amber-500 p-6 text-white animate-in fade-in duration-300">
                             <Clock className="h-5 w-5 shrink-0 mt-1" />
                             <div>
-                                <p className="mb-1 text-xs font-medium uppercase tracking-wide opacity-80">{selectedDateLabel}</p>
+                                <p className="mb-1 text-xs font-medium opacity-80">{selectedDateLabel}</p>
                                 <p className="mb-1.5 font-semibold leading-none">Fully Booked</p>
                                 <p className="text-sm font-medium opacity-90">We are fully booked for reservations on this day. Please choose another date, or call us directly.</p>
                             </div>
@@ -563,7 +563,7 @@ export default function ClassicLayout({ slug, initialRestaurant, initialView = '
                         <div className="flex items-start gap-4 rounded-3xl bg-red-500 p-6 text-white animate-in fade-in duration-300">
                             <XCircle className="h-5 w-5 shrink-0 mt-1" />
                             <div>
-                                <p className="mb-1 text-xs font-medium uppercase tracking-wide opacity-80">{selectedDateLabel}</p>
+                                <p className="mb-1 text-xs font-medium opacity-80">{selectedDateLabel}</p>
                                 <p className="mb-1.5 font-semibold leading-none">Sold Out / Closed</p>
                                 <p className="text-sm font-medium opacity-90">Unfortunately we&apos;re closed to the reservations for that day.</p>
                             </div>
@@ -572,7 +572,7 @@ export default function ClassicLayout({ slug, initialRestaurant, initialView = '
                         <div className="flex items-start gap-4 rounded-3xl bg-emerald-500 p-6 text-white animate-in fade-in duration-300">
                             <CheckCircle2 className="h-5 w-5 shrink-0 mt-1" />
                             <div>
-                                <p className="mb-1 text-xs font-medium uppercase tracking-wide opacity-80">{selectedDateLabel}</p>
+                                <p className="mb-1 text-xs font-medium opacity-80">{selectedDateLabel}</p>
                                 <p className="mb-1.5 font-semibold leading-none">Immediate Booking</p>
                                 <p className="text-sm font-medium opacity-90">Good news! We have a table for you. Your reservation will be confirmed automatically.</p>
                             </div>
@@ -581,7 +581,7 @@ export default function ClassicLayout({ slug, initialRestaurant, initialView = '
                          <div className="flex items-start gap-4 rounded-3xl bg-blue-500 p-6 text-white animate-in fade-in duration-300">
                             <Info className="h-5 w-5 shrink-0 mt-1" />
                             <div>
-                                <p className="mb-1 text-xs font-medium uppercase tracking-wide opacity-80">{selectedDateLabel}</p>
+                                <p className="mb-1 text-xs font-medium opacity-80">{selectedDateLabel}</p>
                                 <p className="mb-1.5 font-semibold leading-none">Confirmation Queue</p>
                                 <p className="text-sm font-medium opacity-90">This date requires manual staff review. You&apos;ll receive a notification once confirmed.</p>
                             </div>
@@ -611,17 +611,17 @@ export default function ClassicLayout({ slug, initialRestaurant, initialView = '
                         )}
                         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
                             <div className="space-y-2">
-                                <Label className="text-xs font-medium uppercase tracking-wide text-neutral-500">Full Name</Label>
+                                <Label className="text-xs font-medium text-neutral-500">Full Name</Label>
                                 <Input required className="h-14 rounded-2xl border-black/10 bg-neutral-50 px-5 text-base font-medium focus:bg-white focus:ring-4 focus:ring-black/5" value={resForm.customerName} onChange={e => setResForm({...resForm, customerName: e.target.value})} placeholder="Ex: John Doe" />
                             </div>
                             <div className="space-y-2">
-                                <Label className="text-xs font-medium uppercase tracking-wide text-neutral-500">Phone Number</Label>
+                                <Label className="text-xs font-medium text-neutral-500">Phone Number</Label>
                                 <Input required type="tel" className="h-14 rounded-2xl border-black/10 bg-neutral-50 px-5 text-base font-medium focus:bg-white focus:ring-4 focus:ring-black/5" value={resForm.customerPhone} onChange={e => setResForm({...resForm, customerPhone: e.target.value})} placeholder="+90 ..." />
                             </div>
                         </div>
 
                         <div className="space-y-4">
-                             <Label className="text-xs font-medium uppercase tracking-wide text-neutral-500">Date Selection</Label>
+                             <Label className="text-xs font-medium text-neutral-500">Date Selection</Label>
                              <div className="rounded-2xl border border-black/10 bg-white p-4">
                                 <ReservationCalendar value={selectedDate} onChange={setSelectedDate} tz={tz} accent="var(--primary)" />
                              </div>
@@ -629,7 +629,7 @@ export default function ClassicLayout({ slug, initialRestaurant, initialView = '
 
                         <div className="space-y-8 border-t border-black/5 pt-8">
                             <div className="space-y-4">
-                                <Label className="text-xs font-medium uppercase tracking-wide text-neutral-500">Preferred Time</Label>
+                                <Label className="text-xs font-medium text-neutral-500">Preferred Time</Label>
                                 <div className="grid grid-cols-4 gap-2">
                                     {[...times.lunch, ...times.dinner].map(t => (
                                         <Button key={t} type="button" variant={selectedTime === t ? 'default' : 'outline'} className={cn("h-11 rounded-xl text-sm font-medium border-black/10", selectedTime === t ? "bg-[var(--primary)] border-[var(--primary)] text-white" : "bg-white hover:bg-neutral-50")} onClick={() => setSelectedTime(t)}>{t}</Button>
@@ -637,7 +637,7 @@ export default function ClassicLayout({ slug, initialRestaurant, initialView = '
                                 </div>
                             </div>
                             <div className="space-y-4">
-                                <Label className="text-xs font-medium uppercase tracking-wide text-neutral-500">Guest Count</Label>
+                                <Label className="text-xs font-medium text-neutral-500">Guest Count</Label>
                                 <div className="flex flex-wrap gap-2">
                                     {Array.from({ length: maxPartySize }, (_, i) => i + 1).map(n => (
                                         <button key={n} type="button" onClick={() => setResForm(f => ({...f, guestCount: String(n)}))} className={cn("h-12 w-12 rounded-full border text-base font-semibold transition-all", resForm.guestCount === String(n) ? "bg-[var(--primary)] border-[var(--primary)] text-white scale-105" : "border-black/10 bg-white hover:bg-neutral-50")}>{n}</button>
@@ -677,11 +677,11 @@ export default function ClassicLayout({ slug, initialRestaurant, initialView = '
               </h1>
               <div className="mb-12 max-w-lg text-center text-lg font-light leading-relaxed text-neutral-500">
                   You are going to receive an SMS confirmation soon. We are excited that you chose <span className="font-medium text-neutral-900">{restaurant.name}</span>.
-                  <p className="mt-4 text-sm font-medium uppercase tracking-wide text-emerald-600">See you soon!</p>
+                  <p className="mt-4 text-sm font-medium text-emerald-600">See you soon!</p>
               </div>
               {confirmationCode && (
                   <div className="mb-8 flex flex-col items-center rounded-2xl border border-black/5 bg-neutral-50 px-8 py-5">
-                      <span className="text-xs font-medium uppercase tracking-wide text-neutral-400">{t('public.confirmationCodeLabel')}</span>
+                      <span className="text-xs font-medium text-neutral-400">{t('public.confirmationCodeLabel')}</span>
                       <span className="mt-1 text-3xl font-semibold tracking-[0.2em] text-neutral-900">{confirmationCode}</span>
                       <span className="mt-2 max-w-xs text-center text-xs text-neutral-400">{t('public.confirmationCodeHint')}</span>
                   </div>

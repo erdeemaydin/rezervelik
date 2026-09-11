@@ -117,7 +117,7 @@ export default function ReviewsPage() {
         </div>
       </CardHeader>
       <CardContent className="p-5 space-y-3">
-        <label className="text-[11px] font-black uppercase tracking-wider text-slate-500">{t('reviews.mapsLinkLabel')}</label>
+        <label className="text-[11px] font-semibold text-slate-500">{t('reviews.mapsLinkLabel')}</label>
         <div className="flex flex-col sm:flex-row gap-2">
           <Input
             value={linkInput}
@@ -169,7 +169,7 @@ export default function ReviewsPage() {
             {/* Summary */}
             <Card className="border-slate-100 shadow-sm bg-slate-900 text-white md:col-span-1 h-fit">
               <CardHeader className="p-4 pb-2">
-                <CardDescription className="text-[10px] font-black uppercase text-slate-400 tracking-wider">{t('reviews.averageRating')}</CardDescription>
+                <CardDescription className="text-[10px] font-semibold text-slate-400">{t('reviews.averageRating')}</CardDescription>
                 <CardTitle className="text-4xl font-black mt-2">{data.rating?.toFixed(1) ?? '—'}</CardTitle>
               </CardHeader>
               <CardContent className="p-4 pt-0">
@@ -186,7 +186,7 @@ export default function ReviewsPage() {
 
             {/* Review list */}
             <div className="md:col-span-3 space-y-4">
-              <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400">{t('reviews.fromGoogle')}</p>
+              <p className="text-[11px] font-bold text-slate-400">{t('reviews.fromGoogle')}</p>
               {(!data.reviews || data.reviews.length === 0) ? (
                 <Card className="border-slate-100 shadow-sm"><CardContent className="p-8 text-center text-sm text-slate-500">{t('reviews.noReviews')}</CardContent></Card>
               ) : (

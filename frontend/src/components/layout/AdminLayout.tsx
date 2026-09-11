@@ -436,7 +436,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
                 <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center shrink-0">
                   <vIcon.brand className="w-5 h-5 text-white" />
                 </div>
-                <span className="font-black text-sm tracking-tight text-white uppercase whitespace-nowrap">
+                <span className="font-semibold text-sm tracking-tight text-white whitespace-nowrap">
                   Reserve<span className="text-blue-500">Pro</span>
                 </span>
               </div>
@@ -473,7 +473,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
               return (
                 <div key={group.section}>
                   {isSidebarOpen && (
-                    <h3 className="px-3 text-[10px] font-black text-slate-400 uppercase tracking-[0.18em] mb-3">
+                    <h3 className="px-3 text-[10px] font-semibold text-slate-400 tracking-[0.18em] mb-3">
                       {group.section}
                     </h3>
                   )}
@@ -527,7 +527,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
         <div className="border-t border-slate-800 bg-[#1e293b]/20 mt-auto">
           {isSidebarOpen ? (
             <div className="p-3 space-y-2">
-              <span className="block px-1 text-[9px] font-black uppercase tracking-[0.18em] text-slate-500">{t('admin.userSettings')}</span>
+              <span className="block px-1 text-[9px] font-semibold tracking-[0.18em] text-slate-500">{t('admin.userSettings')}</span>
               <Link
                 href="/dashboard/profile"
                 onClick={() => { if (window.innerWidth < 1024) setIsSidebarOpen(false); }}
@@ -536,11 +536,11 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
               >
                 <Avatar className="w-9 h-9 border border-slate-700 shrink-0">
                   <AvatarImage src={`https://avatar.iran.liara.run/username?username=${user?.firstName}+${user?.lastName}`} />
-                  <AvatarFallback className="bg-blue-600 text-white text-[10px] font-black uppercase">{user?.firstName?.[0]}{user?.lastName?.[0]}</AvatarFallback>
+                  <AvatarFallback className="bg-blue-600 text-white text-[10px] font-semibold">{user?.firstName?.[0]}{user?.lastName?.[0]}</AvatarFallback>
                 </Avatar>
                 <div className="flex flex-col min-w-0 flex-1">
                   <span className="text-xs font-black text-white truncate capitalize">{user?.firstName} {user?.lastName}</span>
-                  <span className="text-[9px] font-bold text-blue-400 uppercase tracking-tighter">{user?.role}</span>
+                  <span className="text-[9px] font-bold text-blue-400 tracking-tighter">{user?.role}</span>
                 </div>
                 <Settings className="w-4 h-4 text-slate-500 group-hover:text-white transition-colors shrink-0" />
               </Link>
@@ -562,7 +562,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
               <Link href="/dashboard/profile" title={t('admin.userSettings')}>
                 <Avatar className="w-8 h-8 border border-slate-700">
                   <AvatarImage src={`https://avatar.iran.liara.run/username?username=${user?.firstName}+${user?.lastName}`} />
-                  <AvatarFallback className="bg-blue-600 text-white text-[9px] font-black uppercase">{user?.firstName?.[0]}{user?.lastName?.[0]}</AvatarFallback>
+                  <AvatarFallback className="bg-blue-600 text-white text-[9px] font-semibold">{user?.firstName?.[0]}{user?.lastName?.[0]}</AvatarFallback>
                 </Avatar>
               </Link>
               <button
@@ -576,7 +576,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
           )}
           <div className="px-4 py-2 flex items-center gap-2 border-t border-slate-800/60 justify-center lg:justify-start">
             <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shrink-0" />
-            {isSidebarOpen && <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">System Online</span>}
+            {isSidebarOpen && <span className="text-[10px] font-semibold text-slate-500">System Online</span>}
           </div>
         </div>
       </aside>

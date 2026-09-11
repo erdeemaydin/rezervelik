@@ -66,13 +66,13 @@ export default function OrderCard({
           ) : (
             <ShoppingBag className="h-4 w-4 shrink-0 text-emerald-600" />
           )}
-          <span className="truncate text-xs font-bold uppercase tracking-tight text-slate-500">
+          <span className="truncate text-xs font-bold tracking-tight text-slate-500">
             {t(`publicOrder.fulfillment.${order.fulfillmentType === 'DELIVERY' ? 'delivery' : 'pickup'}`)}
           </span>
         </div>
         <Badge
           variant="outline"
-          className={cn('shrink-0 text-[10px] font-black uppercase', isOverdue ? 'border-rose-300 bg-rose-100 text-rose-700 animate-pulse' : 'text-slate-500')}
+ className={cn('shrink-0 text-[10px] font-semibold', isOverdue ?'border-rose-300 bg-rose-100 text-rose-700 animate-pulse':'text-slate-500')}
         >
           {elapsedLabel(order.createdAt, t)}
         </Badge>
@@ -116,7 +116,7 @@ export default function OrderCard({
         {next && (
           <Button
             onClick={() => onAdvance(order)}
-            className="h-10 flex-1 min-w-0 bg-emerald-600 text-[11px] font-black uppercase tracking-wide text-white hover:bg-emerald-700 active:scale-[0.97]"
+            className="h-10 flex-1 min-w-0 bg-emerald-600 text-[11px] font-semibold text-white hover:bg-emerald-700 active:scale-[0.97]"
           >
             <ArrowRight className="h-3.5 w-3.5" />
             <span className="truncate">{t('orderStation.card.advanceTo').replace('{status}', t(`publicOrder.status.${next}`))}</span>
@@ -138,7 +138,7 @@ export default function OrderCard({
         <Button
           onClick={() => onPrint(order, 'kitchen')}
           variant="ghost"
-          className="h-8 flex-1 min-w-0 text-[10px] font-bold uppercase text-slate-500 hover:bg-slate-100"
+          className="h-8 flex-1 min-w-0 text-[10px] font-bold text-slate-500 hover:bg-slate-100"
         >
           <Printer className="h-3 w-3" /> <span className="truncate">{t('orderStation.print.kitchenTicket')}</span>
         </Button>
@@ -146,7 +146,7 @@ export default function OrderCard({
           <Button
             onClick={() => onPrint(order, 'courier')}
             variant="ghost"
-            className="h-8 flex-1 min-w-0 text-[10px] font-bold uppercase text-slate-500 hover:bg-slate-100"
+            className="h-8 flex-1 min-w-0 text-[10px] font-bold text-slate-500 hover:bg-slate-100"
           >
             <Printer className="h-3 w-3" /> <span className="truncate">{t('orderStation.print.courierSlip')}</span>
           </Button>
@@ -154,7 +154,7 @@ export default function OrderCard({
         <Button
           onClick={() => onPrint(order, 'receipt')}
           variant="ghost"
-          className="h-8 flex-1 min-w-0 text-[10px] font-bold uppercase text-slate-500 hover:bg-slate-100"
+          className="h-8 flex-1 min-w-0 text-[10px] font-bold text-slate-500 hover:bg-slate-100"
         >
           <Printer className="h-3 w-3" /> <span className="truncate">{t('orderStation.print.receipt')}</span>
         </Button>

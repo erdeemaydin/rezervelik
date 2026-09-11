@@ -485,7 +485,7 @@ export default function HostConsolePage() {
               <button
                 onClick={() => { setActiveTab('reservations'); }}
                 className={cn(
-                  "px-2 sm:px-4 h-11 sm:h-12 text-[11px] sm:text-xs font-black uppercase rounded-md transition-all flex items-center justify-center gap-1.5 sm:gap-2 border border-transparent active:scale-[0.97] min-w-0 flex-1 sm:flex-none",
+"px-2 sm:px-4 h-11 sm:h-12 text-[11px] sm:text-xs font-semibold rounded-md transition-all flex items-center justify-center gap-1.5 sm:gap-2 border border-transparent active:scale-[0.97] min-w-0 flex-1 sm:flex-none",
                   activeTab === 'reservations'
                     ? "bg-blue-600 text-white shadow-md shadow-blue-600/20 border-blue-500"
                     : "text-slate-400 hover:text-white"
@@ -498,7 +498,7 @@ export default function HostConsolePage() {
               <button
                 onClick={() => { setActiveTab('waitlist'); }}
                 className={cn(
-                  "px-2 sm:px-4 h-11 sm:h-12 text-[11px] sm:text-xs font-black uppercase rounded-md transition-all flex items-center justify-center gap-1.5 sm:gap-2 border border-transparent active:scale-[0.97] min-w-0 flex-1 sm:flex-none",
+"px-2 sm:px-4 h-11 sm:h-12 text-[11px] sm:text-xs font-semibold rounded-md transition-all flex items-center justify-center gap-1.5 sm:gap-2 border border-transparent active:scale-[0.97] min-w-0 flex-1 sm:flex-none",
                   activeTab === 'waitlist'
                     ? "bg-blue-600 text-white shadow-md shadow-blue-600/20 border-blue-500"
                     : "text-slate-400 hover:text-white"
@@ -529,7 +529,7 @@ export default function HostConsolePage() {
                   setIsWalkinModalOpen(true);
                 }
               }}
-              className="bg-emerald-600 hover:bg-emerald-700 text-white h-11 sm:h-12 px-3 sm:px-5 font-black uppercase tracking-wider text-xs rounded-lg shadow-md shadow-emerald-600/20 active:scale-95 transition-all shrink-0"
+              className="bg-emerald-600 hover:bg-emerald-700 text-white h-11 sm:h-12 px-3 sm:px-5 font-semibold text-xs rounded-lg shadow-md shadow-emerald-600/20 active:scale-95 transition-all shrink-0"
             >
               <Plus className="w-5 h-5 md:mr-1.5 stroke-[3]" />
               <span className="hidden md:inline truncate">{activeTab === 'reservations' ? t("host.bookTableBtn") : t("host.addWalkinBtn")}</span>
@@ -552,7 +552,7 @@ export default function HostConsolePage() {
           <Button
             variant="outline"
             onClick={() => setIsHistoryDrawerOpen(true)}
-            className="h-12 px-3.5 shrink-0 rounded-lg border-slate-200 hover:bg-slate-50 flex items-center gap-1.5 font-bold text-[11px] uppercase text-slate-600 whitespace-nowrap"
+            className="h-12 px-3.5 shrink-0 rounded-lg border-slate-200 hover:bg-slate-50 flex items-center gap-1.5 font-bold text-[11px] text-slate-600 whitespace-nowrap"
           >
             <RotateCcw className="w-4 h-4 text-blue-600 stroke-[2.5]" />
             <span className="hidden sm:inline">{t("host.activityLogBtn")}</span>
@@ -577,7 +577,7 @@ export default function HostConsolePage() {
 
               {/* Hour Slot Navigator Panel (Left Side on iPad) */}
               <div className="w-full sm:w-28 lg:w-32 shrink-0 bg-white border border-slate-200 rounded-lg p-1.5 flex sm:flex-col gap-1.5 overflow-x-auto sm:overflow-y-auto hide-scrollbar">
-                <div className="hidden sm:block text-[9px] font-black uppercase text-slate-400 tracking-wider mb-0.5 px-1.5">{t("host.filterByTime")}</div>
+                <div className="hidden sm:block text-[9px] font-semibold text-slate-400 mb-0.5 px-1.5">{t("host.filterByTime")}</div>
                 {hourSlots.map((hour) => {
                   const isActive = selectedHour === hour.value;
                   const resInHour = reservations.filter(r => {
@@ -591,7 +591,7 @@ export default function HostConsolePage() {
                       key={hour.label}
                       onClick={() => setSelectedHour(hour.value)}
                       className={cn(
-                        "h-10 min-w-0 shrink-0 px-2 rounded-md font-black text-[11px] uppercase text-left transition-all flex items-center justify-between gap-1 border active:scale-[0.97]",
+"h-10 min-w-0 shrink-0 px-2 rounded-md font-semibold text-[11px] text-left transition-all flex items-center justify-between gap-1 border active:scale-[0.97]",
                         isActive
                           ? "bg-slate-900 border-slate-900 text-white shadow-md shadow-slate-900/10"
                           : "bg-slate-50 border-slate-100 text-slate-600 hover:bg-slate-100"
@@ -619,12 +619,12 @@ export default function HostConsolePage() {
                 {loading && !initialLoadDone ? (
                   <div className="h-64 flex flex-col items-center justify-center gap-3">
                     <RefreshCw className="w-8 h-8 animate-spin text-blue-600" />
-                    <div className="text-slate-400 text-xs font-black uppercase tracking-widest">{t("host.updatingTimeline")}</div>
+                    <div className="text-slate-400 text-xs font-semibold">{t("host.updatingTimeline")}</div>
                   </div>
                 ) : filteredReservations.length === 0 ? (
                   <div className="bg-white border border-slate-200 border-dashed rounded-xl p-16 text-center">
                     <Calendar className="w-12 h-12 text-slate-300 mx-auto mb-4" />
-                    <h3 className="font-black text-slate-800 uppercase tracking-tight text-sm mb-1">{t("host.noActiveBookings")}</h3>
+                    <h3 className="font-semibold text-slate-800 tracking-tight text-sm mb-1">{t("host.noActiveBookings")}</h3>
                     <p className="text-slate-400 text-xs max-w-xs mx-auto">{t("host.noActiveBookingsDesc")}</p>
                   </div>
                 ) : (
@@ -643,7 +643,7 @@ export default function HostConsolePage() {
                       >
                         {/* Status (top) + Time (bottom) */}
                         <div className="w-16 shrink-0 flex flex-col items-center justify-center gap-1">
-                          <Badge className={cn("text-[7px] font-black uppercase px-1 py-0 rounded-sm border leading-tight shrink-0 whitespace-nowrap", getStatusBadgeClass(res.status))}>
+ <Badge className={cn("text-[7px] font-semibold px-1 py-0 rounded-sm border leading-tight shrink-0 whitespace-nowrap", getStatusBadgeClass(res.status))}>
                             {res.status}
                           </Badge>
                           <div className="text-sm font-black text-slate-900 tracking-tight leading-tight">{formattedTime}</div>
@@ -661,7 +661,7 @@ export default function HostConsolePage() {
                             </span>
                           )}
                           <div className="flex items-center gap-2 min-w-0">
-                            <span className="font-black text-slate-900 text-base uppercase tracking-tight truncate">{res.customerName}</span>
+                            <span className="font-semibold text-slate-900 text-base tracking-tight truncate">{res.customerName}</span>
                             {res.isVIP && <Star className="w-3.5 h-3.5 text-amber-500 fill-amber-500 shrink-0" />}
                           </div>
                         </div>
@@ -673,7 +673,7 @@ export default function HostConsolePage() {
                               {res.table.identifier}
                             </span>
                           ) : (
-                            <span className="block text-center text-[9px] font-bold text-slate-300 uppercase">{t("host.noTableAssigned")}</span>
+                            <span className="block text-center text-[9px] font-bold text-slate-300">{t("host.noTableAssigned")}</span>
                           )}
                           <span className="flex items-center gap-1 text-[10px] font-bold text-slate-500">
                             <Users className="w-3 h-3" /> {res.guestCount}
@@ -707,14 +707,14 @@ export default function HostConsolePage() {
                           {res.status === 'PENDING' && (
                             <button
                               onClick={() => handleUpdateResStatus(res.id, 'CONFIRMED', res.status)}
-                              className="h-11 px-3 bg-blue-50 border border-blue-200 hover:bg-blue-100 text-blue-700 font-black uppercase text-[10px] tracking-wider rounded-lg transition-all flex items-center justify-center gap-1 active:scale-[0.97] whitespace-nowrap shrink-0"
+                              className="h-11 px-3 bg-blue-50 border border-blue-200 hover:bg-blue-100 text-blue-700 font-semibold text-[10px] rounded-lg transition-all flex items-center justify-center gap-1 active:scale-[0.97] whitespace-nowrap shrink-0"
                             >
                               {t("host.confirmBtn")}
                             </button>
                           )}
                           <button
                             onClick={() => handleUpdateResStatus(res.id, 'COMPLETED', res.status)}
-                            className="h-11 px-3.5 bg-emerald-600 hover:bg-emerald-700 text-white font-black uppercase text-[10px] tracking-wider rounded-lg shadow-sm shadow-emerald-600/10 transition-all flex items-center justify-center gap-1.5 active:scale-[0.97] whitespace-nowrap shrink-0"
+                            className="h-11 px-3.5 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-[10px] rounded-lg shadow-sm shadow-emerald-600/10 transition-all flex items-center justify-center gap-1.5 active:scale-[0.97] whitespace-nowrap shrink-0"
                           >
                             <Check className="w-4 h-4 stroke-[3]" /> {t("host.seatBtn")}
                           </button>
@@ -740,12 +740,12 @@ export default function HostConsolePage() {
               {loading && !initialLoadDone ? (
                 <div className="h-64 flex flex-col items-center justify-center gap-3">
                   <RefreshCw className="w-8 h-8 animate-spin text-blue-600" />
-                  <div className="text-slate-400 text-xs font-black uppercase tracking-widest">{t("host.updatingWaitlist")}</div>
+                  <div className="text-slate-400 text-xs font-semibold">{t("host.updatingWaitlist")}</div>
                 </div>
               ) : filteredWaitlist.length === 0 ? (
                 <div className="bg-white border border-slate-200 border-dashed rounded-xl p-16 text-center">
                   <Clock className="w-12 h-12 text-slate-300 mx-auto mb-4" />
-                  <h3 className="font-black text-slate-800 uppercase tracking-tight text-sm mb-1">{t("host.waitlistEmpty")}</h3>
+                  <h3 className="font-semibold text-slate-800 tracking-tight text-sm mb-1">{t("host.waitlistEmpty")}</h3>
                   <p className="text-slate-400 text-xs max-w-xs mx-auto">{t("host.waitlistEmptyDesc")}</p>
                 </div>
               ) : (
@@ -773,7 +773,7 @@ export default function HostConsolePage() {
                                 ? "bg-purple-600"
                                 : "bg-blue-600"
                         )}>
-                          <span className="text-[8px] font-black uppercase opacity-75 tracking-wider leading-none mb-1">
+                          <span className="text-[8px] font-semibold opacity-75 leading-none mb-1">
                             {entry.targetDate ? t("host.bookWait") : t("host.waiting")}
                           </span>
                           <span className="text-[13px] font-black tracking-tight leading-none">
@@ -788,21 +788,21 @@ export default function HostConsolePage() {
                             reservation row's code-over-name treatment. */}
                         <div className="flex-1 min-w-0 flex flex-col justify-center gap-0.5">
                           <div className="flex items-center gap-1.5 flex-wrap">
-                            <Badge className={cn("text-[9px] font-black uppercase px-1.5 py-0.5 rounded-sm border shrink-0", getStatusBadgeClass(entry.status))}>
+ <Badge className={cn("text-[9px] font-semibold px-1.5 py-0.5 rounded-sm border shrink-0", getStatusBadgeClass(entry.status))}>
                               {entry.status}
                             </Badge>
                             {entry.targetDate && (
-                              <Badge className="hidden sm:inline-flex bg-amber-100 text-amber-800 border-amber-200 text-[8px] font-black uppercase px-1.5 py-0.5 rounded-sm shrink-0">
+                              <Badge className="hidden sm:inline-flex bg-amber-100 text-amber-800 border-amber-200 text-[8px] font-semibold px-1.5 py-0.5 rounded-sm shrink-0">
                                 {t("host.dateWaitlist")} ({entry.targetDate})
                               </Badge>
                             )}
                             {entry.quotedWaitTime && !entry.targetDate && (
-                              <span className="hidden sm:inline text-[10px] font-bold text-slate-400 uppercase tracking-tight shrink-0">
+                              <span className="hidden sm:inline text-[10px] font-bold text-slate-400 tracking-tight shrink-0">
                                 ({t("host.quotePrefix")} {entry.quotedWaitTime} {t("host.minSuffix")})
                               </span>
                             )}
                           </div>
-                          <span className="font-black text-slate-800 text-base uppercase tracking-tight truncate">{entry.customerName}</span>
+                          <span className="font-semibold text-slate-800 text-base tracking-tight truncate">{entry.customerName}</span>
                           <span className="hidden sm:flex items-center gap-1 text-[11px] font-bold text-slate-400 truncate">
                             <Phone className="w-3 h-3 shrink-0" /> {entry.customerPhone}
                           </span>
@@ -823,14 +823,14 @@ export default function HostConsolePage() {
                         <div className="flex items-center gap-1.5 shrink-0">
                           <button
                             onClick={() => handleUpdateWaitlistStatus(entry.id, 'NOTIFIED', entry.status)}
-                            className="h-11 px-3 bg-purple-50 border border-purple-200 hover:bg-purple-100 text-purple-700 font-black uppercase text-[10px] tracking-wider rounded-lg transition-all flex items-center justify-center gap-1.5 active:scale-[0.97] whitespace-nowrap shrink-0"
+                            className="h-11 px-3 bg-purple-50 border border-purple-200 hover:bg-purple-100 text-purple-700 font-semibold text-[10px] rounded-lg transition-all flex items-center justify-center gap-1.5 active:scale-[0.97] whitespace-nowrap shrink-0"
                             title={t("host.notifyReadyBtn")}
                           >
                             <Bell className="w-4 h-4 stroke-[2.5]" /> <span className="hidden md:inline">{t("host.notifyReadyBtn")}</span>
                           </button>
                           <button
                             onClick={() => handleUpdateWaitlistStatus(entry.id, 'SEATED', entry.status)}
-                            className="h-11 px-3.5 bg-emerald-600 hover:bg-emerald-700 text-white font-black uppercase text-[10px] tracking-wider rounded-lg shadow-sm shadow-emerald-600/10 transition-all flex items-center justify-center gap-1.5 active:scale-[0.97] whitespace-nowrap shrink-0"
+                            className="h-11 px-3.5 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-[10px] rounded-lg shadow-sm shadow-emerald-600/10 transition-all flex items-center justify-center gap-1.5 active:scale-[0.97] whitespace-nowrap shrink-0"
                           >
                             <Check className="w-4 h-4 stroke-[3]" /> {t("host.seatGuestBtn")}
                           </button>
@@ -859,7 +859,7 @@ export default function HostConsolePage() {
           <form onSubmit={handleAddWalkinSubmit}>
             <div className="bg-slate-900 p-6 text-white">
               <DialogHeader>
-                <DialogTitle className="text-base font-black uppercase tracking-widest flex items-center gap-2">
+                <DialogTitle className="text-base font-semibold flex items-center gap-2">
                   <Plus className="w-5 h-5 text-blue-400 stroke-[3]" /> {t("host.addToWaitlistTitle")}
                 </DialogTitle>
                 <DialogDescription className="text-slate-400 text-xs">
@@ -872,7 +872,7 @@ export default function HostConsolePage() {
               
               {/* Customer Name */}
               <div className="space-y-2">
-                <Label className="text-[10px] font-black uppercase text-slate-400 tracking-wider">{t("host.guestNameLabel")}</Label>
+                <Label className="text-[10px] font-semibold text-slate-400">{t("host.guestNameLabel")}</Label>
                 <Input 
                   placeholder={t("host.guestNamePlaceholder")}
                   value={walkinForm.customerName}
@@ -884,7 +884,7 @@ export default function HostConsolePage() {
 
               {/* Customer Phone */}
               <div className="space-y-2">
-                <Label className="text-[10px] font-black uppercase text-slate-400 tracking-wider">{t("host.phoneLabel")}</Label>
+                <Label className="text-[10px] font-semibold text-slate-400">{t("host.phoneLabel")}</Label>
                 <Input 
                   type="tel"
                   placeholder={t("host.phonePlaceholder")}
@@ -897,7 +897,7 @@ export default function HostConsolePage() {
 
               {/* Touch Preset: Party Size */}
               <div className="space-y-2">
-                <Label className="text-[10px] font-black uppercase text-slate-400 tracking-wider">{t("host.partySizeLabel")} ({walkinForm.partySize} {t("host.guests")})</Label>
+                <Label className="text-[10px] font-semibold text-slate-400">{t("host.partySizeLabel")} ({walkinForm.partySize} {t("host.guests")})</Label>
                 <div className="grid grid-cols-5 gap-2">
                   {['1', '2', '3', '4', '6', '8', '10', '12'].map((size) => (
                     <button
@@ -919,7 +919,7 @@ export default function HostConsolePage() {
 
               {/* Touch Preset: Quoted Wait Time */}
               <div className="space-y-2">
-                <Label className="text-[10px] font-black uppercase text-slate-400 tracking-wider">{t("host.quotedWaitTimeLabel")} ({walkinForm.quotedWaitTime} {t("host.minSuffix")})</Label>
+                <Label className="text-[10px] font-semibold text-slate-400">{t("host.quotedWaitTimeLabel")} ({walkinForm.quotedWaitTime} {t("host.minSuffix")})</Label>
                 <div className="grid grid-cols-4 gap-2">
                   {['0', '15', '30', '45', '60', '75', '90'].map((time) => (
                     <button
@@ -941,7 +941,7 @@ export default function HostConsolePage() {
 
               {/* Notes */}
               <div className="space-y-2">
-                <Label className="text-[10px] font-black uppercase text-slate-400 tracking-wider">{t("host.seatingNotesLabel")}</Label>
+                <Label className="text-[10px] font-semibold text-slate-400">{t("host.seatingNotesLabel")}</Label>
                 <Textarea 
                   placeholder={t("host.seatingNotesPlaceholder")}
                   value={walkinForm.notes}
@@ -957,21 +957,21 @@ export default function HostConsolePage() {
                 type="button" 
                 variant="ghost" 
                 onClick={() => setIsWalkinModalOpen(false)}
-                className="h-12 text-slate-500 font-bold uppercase text-[10px] tracking-wider"
+                className="h-12 text-slate-500 font-bold text-[10px]"
               >
                 {t("host.closeBtn")}
               </Button>
               <Button 
                 type="button" 
                 onClick={(e) => handleAddWalkinSubmit(e, true)}
-                className="h-12 bg-emerald-600 hover:bg-emerald-700 text-white font-black uppercase text-[10px] tracking-wider px-6 rounded-lg shadow-md shadow-emerald-600/10"
+                className="h-12 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-[10px] px-6 rounded-lg shadow-md shadow-emerald-600/10"
               >
                 {t("host.seatInstantlyBtn")}
               </Button>
               <Button 
                 type="submit" 
                 onClick={(e) => handleAddWalkinSubmit(e, false)}
-                className="h-12 bg-blue-600 hover:bg-blue-700 text-white font-black uppercase text-[10px] tracking-wider px-6 rounded-lg shadow-md shadow-blue-600/10"
+                className="h-12 bg-blue-600 hover:bg-blue-700 text-white font-semibold text-[10px] px-6 rounded-lg shadow-md shadow-blue-600/10"
               >
                 {t("host.addToWaitlistBtn")}
               </Button>
@@ -986,7 +986,7 @@ export default function HostConsolePage() {
           <form onSubmit={handleResSubmit}>
             <div className="bg-slate-900 p-6 text-white">
               <DialogHeader>
-                <DialogTitle className="text-base font-black uppercase tracking-widest flex items-center gap-2">
+                <DialogTitle className="text-base font-semibold flex items-center gap-2">
                   <Calendar className="w-5 h-5 text-blue-400 stroke-[3]" />
                   {selectedReservation ? t("host.resDetailsTitle") : t("host.newResTitle")}
                 </DialogTitle>
@@ -1000,7 +1000,7 @@ export default function HostConsolePage() {
               
               {/* Guest Name */}
               <div className="space-y-2">
-                <Label className="text-[10px] font-black uppercase text-slate-400 tracking-wider">{t("host.guestNameLabel")}</Label>
+                <Label className="text-[10px] font-semibold text-slate-400">{t("host.guestNameLabel")}</Label>
                 <Input 
                   placeholder={t("host.resGuestNamePlaceholder")}
                   value={resForm.customerName}
@@ -1012,7 +1012,7 @@ export default function HostConsolePage() {
 
               {/* Phone */}
               <div className="space-y-2">
-                <Label className="text-[10px] font-black uppercase text-slate-400 tracking-wider">{t("host.resPhoneLabel")}</Label>
+                <Label className="text-[10px] font-semibold text-slate-400">{t("host.resPhoneLabel")}</Label>
                 <Input 
                   placeholder={t("host.resPhonePlaceholder")}
                   value={resForm.customerPhone}
@@ -1024,7 +1024,7 @@ export default function HostConsolePage() {
 
               {/* Touch Preset: Guests Count */}
               <div className="space-y-2">
-                <Label className="text-[10px] font-black uppercase text-slate-400 tracking-wider">{t("host.guestCountLabel")} ({resForm.guestCount} {t("host.guests")})</Label>
+                <Label className="text-[10px] font-semibold text-slate-400">{t("host.guestCountLabel")} ({resForm.guestCount} {t("host.guests")})</Label>
                 <div className="grid grid-cols-5 gap-2">
                   {['1', '2', '3', '4', '6', '8', '10'].map((size) => (
                     <button
@@ -1047,7 +1047,7 @@ export default function HostConsolePage() {
               <div className="grid grid-cols-2 gap-4">
                 {/* Time Selection */}
                 <div className="space-y-2">
-                  <Label className="text-[10px] font-black uppercase text-slate-400 tracking-wider">{t("host.resTimeLabel")}</Label>
+                  <Label className="text-[10px] font-semibold text-slate-400">{t("host.resTimeLabel")}</Label>
                   <TimeSelect
                     value={resForm.selectedTime}
                     onChange={(v) => setResForm({...resForm, selectedTime: v})}
@@ -1057,7 +1057,7 @@ export default function HostConsolePage() {
 
                 {/* Table Assignment Select */}
                 <div className="space-y-2">
-                  <Label className="text-[10px] font-black uppercase text-slate-400 tracking-wider">{t("host.assignTableLabel")}</Label>
+                  <Label className="text-[10px] font-semibold text-slate-400">{t("host.assignTableLabel")}</Label>
                   <select 
                     value={resForm.tableId}
                     onChange={(e) => setResForm({...resForm, tableId: e.target.value})}
@@ -1076,14 +1076,14 @@ export default function HostConsolePage() {
               {/* VIP Toggle Switch-like layout */}
               <div className="flex items-center justify-between p-3 border border-slate-200 rounded-xl bg-slate-50">
                 <div className="space-y-0.5">
-                  <Label className="text-xs font-black uppercase text-slate-800">{t("host.vipStatusLabel")}</Label>
+                  <Label className="text-xs font-semibold text-slate-800">{t("host.vipStatusLabel")}</Label>
                   <p className="text-[10px] text-slate-400">{t("host.vipStatusDesc")}</p>
                 </div>
                 <button
                   type="button"
                   onClick={() => setResForm({...resForm, isVIP: !resForm.isVIP})}
                   className={cn(
-                    "w-20 h-10 font-black uppercase text-[10px] tracking-wider rounded-lg transition-all border",
+"w-20 h-10 font-semibold text-[10px] rounded-lg transition-all border",
                     resForm.isVIP 
                       ? "bg-amber-500 border-amber-500 text-white shadow-md shadow-amber-500/10" 
                       : "bg-white border-slate-200 text-slate-400"
@@ -1095,7 +1095,7 @@ export default function HostConsolePage() {
 
               {/* Notes */}
               <div className="space-y-2">
-                <Label className="text-[10px] font-black uppercase text-slate-400 tracking-wider">{t("host.guestNotesLabel")}</Label>
+                <Label className="text-[10px] font-semibold text-slate-400">{t("host.guestNotesLabel")}</Label>
                 <Textarea 
                   placeholder={t("host.guestNotesPlaceholder")}
                   value={resForm.notes}
@@ -1106,7 +1106,7 @@ export default function HostConsolePage() {
 
               {/* Internal Notes */}
               <div className="space-y-2">
-                <Label className="text-[10px] font-black uppercase text-slate-400 tracking-wider">{t("host.hostInternalNoteLabel")}</Label>
+                <Label className="text-[10px] font-semibold text-slate-400">{t("host.hostInternalNoteLabel")}</Label>
                 <Textarea 
                   placeholder={t("host.hostInternalNotePlaceholder")}
                   value={resForm.internalNote}
@@ -1122,13 +1122,13 @@ export default function HostConsolePage() {
                 type="button" 
                 variant="ghost" 
                 onClick={() => setIsResModalOpen(false)}
-                className="h-12 text-slate-500 font-bold uppercase text-[10px] tracking-wider"
+                className="h-12 text-slate-500 font-bold text-[10px]"
               >
                 {t("host.cancelBtn")}
               </Button>
               <Button 
                 type="submit" 
-                className="h-12 bg-blue-600 hover:bg-blue-700 text-white font-black uppercase text-[10px] tracking-wider px-6 rounded-lg shadow-md shadow-blue-600/10"
+                className="h-12 bg-blue-600 hover:bg-blue-700 text-white font-semibold text-[10px] px-6 rounded-lg shadow-md shadow-blue-600/10"
               >
                 {selectedReservation ? t("host.saveChangesBtn") : t("host.createBookingBtn")}
               </Button>
@@ -1142,7 +1142,7 @@ export default function HostConsolePage() {
         <DialogContent className="!fixed !top-0 !left-auto !right-0 !-translate-x-0 !-translate-y-0 !h-screen !rounded-r-none !rounded-l-2xl !max-w-md !gap-0 !p-0 flex flex-col animate-in slide-in-from-right duration-300">
           <div className="bg-slate-900 p-6 text-white shrink-0">
             <DialogHeader>
-              <DialogTitle className="text-base font-black uppercase tracking-widest flex items-center gap-2">
+              <DialogTitle className="text-base font-semibold flex items-center gap-2">
                 <RotateCcw className="w-5 h-5 text-blue-400 stroke-[3]" /> {t("host.activityRecoveryLogTitle")}
               </DialogTitle>
               <DialogDescription className="text-slate-400 text-xs">
@@ -1155,7 +1155,7 @@ export default function HostConsolePage() {
             
             {/* Reservations Resolved History */}
             <div className="space-y-3">
-              <h3 className="text-xs font-black uppercase text-slate-400 tracking-wider">{t("host.recentlySeatedCancelledBookings")}</h3>
+              <h3 className="text-xs font-semibold text-slate-400">{t("host.recentlySeatedCancelledBookings")}</h3>
               <div className="space-y-3">
                 {reservationsHistory.length === 0 ? (
                   <div className="text-xs text-slate-400 italic py-4 bg-slate-50 text-center rounded-lg border border-slate-100">{t("host.noRecentResChanges")}</div>
@@ -1163,13 +1163,13 @@ export default function HostConsolePage() {
                   reservationsHistory.map((res) => (
                     <div key={res.id} className="p-3 border border-slate-200 rounded-xl bg-slate-50 flex items-center justify-between gap-3">
                       <div>
-                        <div className="font-bold text-xs uppercase text-slate-800 flex items-center gap-1.5">
+                        <div className="font-bold text-xs text-slate-800 flex items-center gap-1.5">
                           {res.customerName}
-                          <Badge variant="outline" className="text-[8px] font-black uppercase px-1">
+                          <Badge variant="outline" className="text-[8px] font-semibold px-1">
                             {res.status === 'COMPLETED' ? t("host.seated") : res.status.toLowerCase()}
                           </Badge>
                         </div>
-                        <div className="text-[10px] text-slate-400 font-bold uppercase mt-0.5">
+                        <div className="text-[10px] text-slate-400 font-bold mt-0.5">
                           {res.guestCount} {t("host.paxDivider")} {new Date(res.startTime).toLocaleTimeString([], { hour12: false, hour: '2-digit', minute: '2-digit' })}
                         </div>
                       </div>
@@ -1180,7 +1180,7 @@ export default function HostConsolePage() {
                           handleRevertResStatus(res.id, 'CONFIRMED');
                           setIsHistoryDrawerOpen(false);
                         }}
-                        className="h-8 text-[10px] font-black uppercase tracking-wider text-blue-600 border-blue-200 bg-blue-50/50 hover:bg-blue-100 hover:text-blue-700"
+                        className="h-8 text-[10px] font-semibold text-blue-600 border-blue-200 bg-blue-50/50 hover:bg-blue-100 hover:text-blue-700"
                       >
                         {t("host.undoBtn")}
                       </Button>
@@ -1192,7 +1192,7 @@ export default function HostConsolePage() {
 
             {/* Waitlist Resolved History */}
             <div className="space-y-3 pt-4 border-t border-slate-100">
-              <h3 className="text-xs font-black uppercase text-slate-400 tracking-wider">{t("host.recentlySeatedCancelledWalkins")}</h3>
+              <h3 className="text-xs font-semibold text-slate-400">{t("host.recentlySeatedCancelledWalkins")}</h3>
               <div className="space-y-3">
                 {filteredWaitlistHistory.length === 0 ? (
                   <div className="text-xs text-slate-400 italic py-4 bg-slate-50 text-center rounded-lg border border-slate-100">{t("host.noRecentWaitlistChanges")}</div>
@@ -1200,13 +1200,13 @@ export default function HostConsolePage() {
                   filteredWaitlistHistory.map((entry) => (
                     <div key={entry.id} className="p-3 border border-slate-200 rounded-xl bg-slate-50 flex items-center justify-between gap-3">
                       <div>
-                        <div className="font-bold text-xs uppercase text-slate-800 flex items-center gap-1.5">
+                        <div className="font-bold text-xs text-slate-800 flex items-center gap-1.5">
                           {entry.customerName}
-                          <Badge variant="outline" className="text-[8px] font-black uppercase px-1">
+                          <Badge variant="outline" className="text-[8px] font-semibold px-1">
                             {entry.status === 'SEATED' ? t("host.seated") : entry.status.toLowerCase()}
                           </Badge>
                         </div>
-                        <div className="text-[10px] text-slate-400 font-bold uppercase mt-0.5">
+                        <div className="text-[10px] text-slate-400 font-bold mt-0.5">
                           {entry.partySize} {t("host.paxDivider")} {entry.targetDate ? `${t("host.dateWaitlist")} (${entry.targetDate})` : `${t("host.waited")} ${getElapsedTime(entry.joinedAt)}`}
                         </div>
                       </div>
@@ -1217,7 +1217,7 @@ export default function HostConsolePage() {
                           handleRevertWaitlistStatus(entry.id, 'WAITING');
                           setIsHistoryDrawerOpen(false);
                         }}
-                        className="h-8 text-[10px] font-black uppercase tracking-wider text-blue-600 border-blue-200 bg-blue-50/50 hover:bg-blue-100 hover:text-blue-700"
+                        className="h-8 text-[10px] font-semibold text-blue-600 border-blue-200 bg-blue-50/50 hover:bg-blue-100 hover:text-blue-700"
                       >
                         {t("host.undoBtn")}
                       </Button>
@@ -1233,7 +1233,7 @@ export default function HostConsolePage() {
             <Button 
               variant="outline" 
               onClick={() => setIsHistoryDrawerOpen(false)}
-              className="w-full h-12 font-black uppercase text-xs"
+              className="w-full h-12 font-semibold text-xs"
             >
               {t("host.closeActivityLogBtn")}
             </Button>

@@ -377,13 +377,13 @@ export default function MenuManagementPage() {
         <Table>
           <TableHeader className="bg-slate-50/50">
             <TableRow className="h-8">
-              <TableHead className="text-[9px] font-black text-slate-400 uppercase tracking-widest px-4">{t('menus.table.dishInfo')}</TableHead>
-              <TableHead className="text-[9px] font-black text-slate-400 uppercase tracking-widest text-center">{t('menus.table.tagsSpecs')}</TableHead>
-              <TableHead className="text-[9px] font-black text-slate-400 uppercase tracking-widest text-right">{t('menus.table.price')}</TableHead>
+              <TableHead className="text-[9px] font-semibold text-slate-400 px-4">{t('menus.table.dishInfo')}</TableHead>
+              <TableHead className="text-[9px] font-semibold text-slate-400 text-center">{t('menus.table.tagsSpecs')}</TableHead>
+              <TableHead className="text-[9px] font-semibold text-slate-400 text-right">{t('menus.table.price')}</TableHead>
               {showOnlineOrderingColumn && (
-                <TableHead className="text-[9px] font-black text-slate-400 uppercase tracking-widest text-center">{t('menus.table.onlineOrdering')}</TableHead>
+                <TableHead className="text-[9px] font-semibold text-slate-400 text-center">{t('menus.table.onlineOrdering')}</TableHead>
               )}
-              <TableHead className="text-[9px] font-black text-slate-400 uppercase tracking-widest text-right px-4">{t('menus.table.actions')}</TableHead>
+              <TableHead className="text-[9px] font-semibold text-slate-400 text-right px-4">{t('menus.table.actions')}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -452,7 +452,7 @@ export default function MenuManagementPage() {
           </TableBody>
         </Table>
         <div className="p-2 bg-slate-50/50 border-t border-slate-100 flex justify-center">
-            <Button variant="ghost" size="sm" className="h-7 text-[10px] font-black uppercase text-blue-600 hover:bg-blue-50 w-full" onClick={() => handleOpenItem(categoryId)}>
+            <Button variant="ghost" size="sm" className="h-7 text-[10px] font-semibold text-blue-600 hover:bg-blue-50 w-full" onClick={() => handleOpenItem(categoryId)}>
                 <Plus className="w-3.5 h-3.5 mr-1" /> {t('menus.buttons.addDish')}
             </Button>
         </div>
@@ -477,7 +477,7 @@ export default function MenuManagementPage() {
                           <div className="w-8 h-8 rounded bg-slate-100 flex items-center justify-center border border-slate-200"><Layers className="w-3.5 h-3.5 text-slate-300" /></div>
                       )}
                       <div>
-                          <div className="font-black text-slate-800 text-sm uppercase tracking-tight flex items-center gap-2">
+                          <div className="font-semibold text-slate-800 text-sm tracking-tight flex items-center gap-2">
                               {cat.name}
                               <Badge className="bg-slate-200 text-slate-600 hover:bg-slate-200 border-0 text-[9px] px-1.5 shadow-none">{cat.items?.length || 0} {t('menus.badges.items')}</Badge>
                           </div>
@@ -486,7 +486,7 @@ export default function MenuManagementPage() {
                   </div>
                   <div className="flex items-center gap-1">
                       {!isSub && (
-                          <Button variant="outline" size="sm" className="h-7 px-3 text-[10px] font-black uppercase text-blue-600 border-blue-200 bg-blue-50 hover:bg-blue-100" onClick={(e) => { e.stopPropagation(); handleOpenCategory(activeMenuId!, cat.id); }}>
+                          <Button variant="outline" size="sm" className="h-7 px-3 text-[10px] font-semibold text-blue-600 border-blue-200 bg-blue-50 hover:bg-blue-100" onClick={(e) => { e.stopPropagation(); handleOpenCategory(activeMenuId!, cat.id); }}>
                               <Plus className="w-3 h-3 mr-1" /> {t('menus.buttons.subCategory')}
                           </Button>
                       )}
@@ -519,24 +519,24 @@ export default function MenuManagementPage() {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-semibold tracking-tight text-slate-900 font-heading">{t('menus.title.menuArchitecture')}</h1>
-            <p className="text-[10px] text-slate-400 font-black uppercase tracking-[0.2em] mt-1 italic">{t('menus.title.digitalCatalogue')}</p>
+            <p className="text-[10px] text-slate-400 font-semibold tracking-[0.2em] mt-1 italic">{t('menus.title.digitalCatalogue')}</p>
           </div>
           <div className="flex gap-2">
             <Link href="/dashboard/menus/bulk-prices">
-              <Button size="sm" variant="outline" className="h-9 px-4 text-[10px] font-black uppercase border-blue-200 text-blue-700 shadow-sm bg-blue-50 hover:bg-blue-100">
+              <Button size="sm" variant="outline" className="h-9 px-4 text-[10px] font-semibold border-blue-200 text-blue-700 shadow-sm bg-blue-50 hover:bg-blue-100">
                 <ListChecks className="w-3.5 h-3.5 mr-1.5" /> {t('menus.buttons.bulkPriceUpdate')}
               </Button>
             </Link>
-            <Button size="sm" variant="outline" onClick={() => { setIsEditMode(false); setMenuForm({name:'', isActive:true, footnotes: ''}); setIsMenuDialogOpen(true); }} className="h-9 px-4 text-[10px] font-black uppercase border-slate-200 text-slate-600 shadow-sm bg-white">
+            <Button size="sm" variant="outline" onClick={() => { setIsEditMode(false); setMenuForm({name:'', isActive:true, footnotes: ''}); setIsMenuDialogOpen(true); }} className="h-9 px-4 text-[10px] font-semibold border-slate-200 text-slate-600 shadow-sm bg-white">
                 <Plus className="w-3.5 h-3.5 mr-1.5" /> {t('menus.buttons.quickCreate')}
             </Button>
-            <Button size="sm" onClick={() => window.location.href = '/dashboard/menus/wizard'} className="h-9 px-4 text-[10px] font-black uppercase border-0 text-white shadow-sm bg-blue-600 hover:bg-blue-700">
+            <Button size="sm" onClick={() => window.location.href = '/dashboard/menus/wizard'} className="h-9 px-4 text-[10px] font-semibold border-0 text-white shadow-sm bg-blue-600 hover:bg-blue-700">
                 {t('menus.buttons.menuWizard')}
             </Button>
             {restaurantProfile && menus.length > 0 && (
                 <PrintableMenuPDFGenerator menu={menus.find(m => m.id === (activeMenuId || menus[0].id)) || menus[0]} restaurantProfile={restaurantProfile} />
             )}
-            <Button size="sm" variant="outline" onClick={() => setIsQRDialogOpen(true)} className="h-9 px-4 text-[10px] font-black uppercase border-slate-200 text-slate-600 shadow-sm bg-white hover:bg-slate-50">
+            <Button size="sm" variant="outline" onClick={() => setIsQRDialogOpen(true)} className="h-9 px-4 text-[10px] font-semibold border-slate-200 text-slate-600 shadow-sm bg-white hover:bg-slate-50">
                 <QrCode className="w-3.5 h-3.5 mr-1.5" /> {t('menus.buttons.downloadQR') || "QR Etiket"}
             </Button>
           </div>
@@ -568,20 +568,20 @@ export default function MenuManagementPage() {
             <CardHeader className="p-3 bg-slate-50/50 border-b border-slate-200 flex flex-row items-center justify-between">
                 <div className="flex items-center gap-4">
                     <Select value={activeMenuId || ''} onValueChange={setActiveMenuId}>
-                        <SelectTrigger className="h-10 w-[250px] text-sm font-black border-slate-200 shadow-sm bg-white uppercase">
+                        <SelectTrigger className="h-10 w-[250px] text-sm font-semibold border-slate-200 shadow-sm bg-white">
                             <SelectValue placeholder={t('menus.form.selectActiveMenu')}>
                                 {menus.find(m => m.id === activeMenuId)?.name || t('menus.form.selectActiveMenu')}
                             </SelectValue>
                         </SelectTrigger>
                         <SelectContent>
                             {menus.map(m => (
-                                <SelectItem key={m.id} value={m.id} className="font-bold text-xs uppercase">{m.name} {m.isActive ? `(${t('menus.badges.live')})` : ''}</SelectItem>
+                                <SelectItem key={m.id} value={m.id} className="font-bold text-xs">{m.name} {m.isActive ? `(${t('menus.badges.live')})` : ''}</SelectItem>
                             ))}
                         </SelectContent>
                     </Select>
                     {activeMenu && (
                         <div className="flex items-center gap-2">
-                            <Badge className={cn("text-[9px] font-black uppercase px-2 shadow-none rounded-sm", activeMenu.isActive ? "bg-green-100 text-green-700" : "bg-slate-200 text-slate-600")}>
+ <Badge className={cn("text-[9px] font-semibold px-2 shadow-none rounded-sm", activeMenu.isActive ?"bg-green-100 text-green-700":"bg-slate-200 text-slate-600")}>
                                 {activeMenu.isActive ? t('menus.badges.live') : t('menus.badges.draft')}
                             </Badge>
                             <Button variant="ghost" size="sm" className="h-8 text-[10px] font-bold text-blue-600 hover:bg-blue-50" onClick={() => {
@@ -596,7 +596,7 @@ export default function MenuManagementPage() {
                     )}
                 </div>
                 {activeMenu && (
-                    <Button size="sm" onClick={() => handleOpenCategory(activeMenu.id)} className="bg-blue-600 hover:bg-blue-700 text-white rounded-sm h-9 px-6 font-black text-[10px] uppercase shadow-md shadow-blue-600/20">
+                    <Button size="sm" onClick={() => handleOpenCategory(activeMenu.id)} className="bg-blue-600 hover:bg-blue-700 text-white rounded-sm h-9 px-6 font-semibold text-[10px] shadow-md shadow-blue-600/20">
                         <Plus className="w-3.5 h-3.5 mr-1.5 stroke-[3]" /> {t('menus.buttons.addRootCategory')}
                     </Button>
                 )}
@@ -605,20 +605,20 @@ export default function MenuManagementPage() {
                 {loading ? (
                     <div className="flex flex-col items-center justify-center h-64">
                         <div className="animate-spin rounded-full h-8 w-8 border-4 border-slate-200 border-t-blue-600 mb-4"></div>
-                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{t('menus.title.loadingCatalog')}</p>
+                        <p className="text-[10px] font-semibold text-slate-400">{t('menus.title.loadingCatalog')}</p>
                     </div>
                 ) : !activeMenu ? (
                     <div className="flex flex-col items-center justify-center h-64 text-center border-2 border-dashed border-slate-200 rounded-lg bg-white">
                         <List className="w-12 h-12 text-slate-300 mb-4" />
-                        <h3 className="text-sm font-black text-slate-700 uppercase tracking-widest">{t('menus.title.noMenuSelected')}</h3>
+                        <h3 className="text-sm font-semibold text-slate-700">{t('menus.title.noMenuSelected')}</h3>
                         <p className="text-xs text-slate-400 font-medium mt-1">{t('menus.title.noMenuDesc')}</p>
                     </div>
                 ) : activeMenu.categories.length === 0 ? (
                     <div className="flex flex-col items-center justify-center h-64 text-center border-2 border-dashed border-slate-200 rounded-lg bg-white">
                         <Layers className="w-12 h-12 text-slate-300 mb-4" />
-                        <h3 className="text-sm font-black text-slate-700 uppercase tracking-widest">{t('menus.title.emptyMenuStructure')}</h3>
+                        <h3 className="text-sm font-semibold text-slate-700">{t('menus.title.emptyMenuStructure')}</h3>
                         <p className="text-xs text-slate-400 font-medium mt-1 mb-4">{t('menus.title.emptyMenuDesc')}</p>
-                        <Button size="sm" onClick={() => handleOpenCategory(activeMenu.id)} className="bg-blue-600 hover:bg-blue-700 text-white rounded-sm h-9 px-6 font-black text-[10px] uppercase">{t('menus.buttons.addRootCategory')}</Button>
+                        <Button size="sm" onClick={() => handleOpenCategory(activeMenu.id)} className="bg-blue-600 hover:bg-blue-700 text-white rounded-sm h-9 px-6 font-semibold text-[10px]">{t('menus.buttons.addRootCategory')}</Button>
                     </div>
                 ) : (
                     <div className="space-y-1">
@@ -635,15 +635,15 @@ export default function MenuManagementPage() {
             <DialogContent maxWidth="sm:max-w-md" className="p-0 rounded-md border-0 shadow-2xl">
                 <form onSubmit={handleMenuSubmit}>
                     <div className="bg-slate-900 p-4 text-white">
-                        <DialogHeader><DialogTitle className="text-sm font-bold uppercase tracking-widest">{isEditMode ? t('menus.title.editMenu') : t('menus.title.createMenu')}</DialogTitle></DialogHeader>
+                        <DialogHeader><DialogTitle className="text-sm font-bold">{isEditMode ? t('menus.title.editMenu') : t('menus.title.createMenu')}</DialogTitle></DialogHeader>
                     </div>
                     <div className="p-6 space-y-4 bg-white">
                         <div className="grid gap-1.5">
-                            <Label className="text-[10px] font-black uppercase text-slate-400 ml-1">{t('menus.form.menuTitle')}</Label>
+                            <Label className="text-[10px] font-semibold text-slate-400 ml-1">{t('menus.form.menuTitle')}</Label>
                             <Input required value={menuForm.name} onChange={e => setMenuForm({...menuForm, name: e.target.value})} placeholder={t('menus.form.menuTitlePlaceholder')} className="h-10 text-sm font-bold border-slate-200 rounded-sm" />
                         </div>
                         <div className="grid gap-1.5">
-                            <Label className="text-[10px] font-black uppercase text-slate-400 ml-1">{t('menus.form.footnotes')}</Label>
+                            <Label className="text-[10px] font-semibold text-slate-400 ml-1">{t('menus.form.footnotes')}</Label>
                             <Textarea value={menuForm.footnotes} onChange={e => setMenuForm({...menuForm, footnotes: e.target.value})} placeholder={t('menus.form.footnotesPlaceholder')} className="min-h-[60px] text-xs font-medium border-slate-200 rounded-sm" />
                         </div>
                         <div className="flex items-center gap-2 p-2 bg-slate-50 border border-slate-100 rounded-sm">
@@ -652,8 +652,8 @@ export default function MenuManagementPage() {
                         </div>
                     </div>
                     <div className="p-4 bg-slate-50 border-t border-slate-100 flex justify-end gap-2">
-                        <Button type="button" variant="ghost" onClick={() => setIsMenuDialogOpen(false)} disabled={isSavingMenu} className="h-9 text-xs font-bold text-slate-400 uppercase">{t('menus.buttons.cancel')}</Button>
-                        <Button type="submit" disabled={isSavingMenu} className="h-9 bg-blue-600 hover:bg-blue-700 text-xs font-black uppercase px-6 rounded-sm disabled:opacity-60">{isSavingMenu ? t('menus.buttons.saving') || '...' : t('menus.buttons.saveMenu')}</Button>
+                        <Button type="button" variant="ghost" onClick={() => setIsMenuDialogOpen(false)} disabled={isSavingMenu} className="h-9 text-xs font-bold text-slate-400">{t('menus.buttons.cancel')}</Button>
+                        <Button type="submit" disabled={isSavingMenu} className="h-9 bg-blue-600 hover:bg-blue-700 text-xs font-semibold px-6 rounded-sm disabled:opacity-60">{isSavingMenu ? t('menus.buttons.saving') || '...' : t('menus.buttons.saveMenu')}</Button>
                     </div>
                 </form>
             </DialogContent>
@@ -664,19 +664,19 @@ export default function MenuManagementPage() {
             <DialogContent maxWidth="sm:max-w-md" className="p-0 rounded-md border-0 shadow-2xl">
                 <form onSubmit={handleCategorySubmit}>
                     <div className="bg-slate-900 p-4 text-white">
-                        <DialogHeader><DialogTitle className="text-sm font-bold uppercase tracking-widest">{isEditMode ? t('menus.title.editCategory') : t('menus.title.createCategory')}</DialogTitle></DialogHeader>
+                        <DialogHeader><DialogTitle className="text-sm font-bold">{isEditMode ? t('menus.title.editCategory') : t('menus.title.createCategory')}</DialogTitle></DialogHeader>
                     </div>
                     <div className="p-6 space-y-4 bg-white">
                         <div className="grid gap-1.5">
-                            <Label className="text-[10px] font-black uppercase text-slate-400 ml-1">{t('menus.form.categoryName')}</Label>
+                            <Label className="text-[10px] font-semibold text-slate-400 ml-1">{t('menus.form.categoryName')}</Label>
                             <Input required value={categoryForm.name} onChange={e => setCategoryForm({...categoryForm, name: e.target.value})} placeholder={t('menus.form.categoryNamePlaceholder')} className="h-10 text-sm font-bold border-slate-200 rounded-sm" />
                         </div>
                         <div className="grid gap-1.5">
-                            <Label className="text-[10px] font-black uppercase text-slate-400 ml-1">{t('menus.form.description')}</Label>
+                            <Label className="text-[10px] font-semibold text-slate-400 ml-1">{t('menus.form.description')}</Label>
                             <Textarea value={categoryForm.description} onChange={e => setCategoryForm({...categoryForm, description: e.target.value})} className="min-h-[60px] text-xs font-medium border-slate-200 rounded-sm" placeholder={t('menus.form.descriptionPlaceholder')} />
                         </div>
                         <div className="grid gap-1.5">
-                            <Label className="text-[10px] font-black uppercase text-slate-400 ml-1">{t('menus.form.coverImage')}</Label>
+                            <Label className="text-[10px] font-semibold text-slate-400 ml-1">{t('menus.form.coverImage')}</Label>
                             <Input value={categoryForm.imageUrl} onChange={e => setCategoryForm({...categoryForm, imageUrl: e.target.value})} placeholder="https://..." className="h-10 text-xs font-medium border-slate-200 rounded-sm" />
                         </div>
                         <div className="grid gap-1.5 hidden">
@@ -685,8 +685,8 @@ export default function MenuManagementPage() {
                         </div>
                     </div>
                     <div className="p-4 bg-slate-50 border-t border-slate-100 flex justify-end gap-2">
-                        <Button type="button" variant="ghost" onClick={() => setIsCategoryDialogOpen(false)} className="h-9 text-xs font-bold text-slate-400 uppercase">{t('menus.buttons.cancel')}</Button>
-                        <Button type="submit" className="h-9 bg-blue-600 hover:bg-blue-700 text-xs font-black uppercase px-6 rounded-sm">{t('menus.buttons.saveCategory')}</Button>
+                        <Button type="button" variant="ghost" onClick={() => setIsCategoryDialogOpen(false)} className="h-9 text-xs font-bold text-slate-400">{t('menus.buttons.cancel')}</Button>
+                        <Button type="submit" className="h-9 bg-blue-600 hover:bg-blue-700 text-xs font-semibold px-6 rounded-sm">{t('menus.buttons.saveCategory')}</Button>
                     </div>
                 </form>
             </DialogContent>
@@ -697,34 +697,34 @@ export default function MenuManagementPage() {
             <DialogContent maxWidth="sm:max-w-2xl" className="p-0 rounded-md border-0 shadow-2xl">
                 <form onSubmit={handleItemSubmit}>
                     <div className="bg-slate-900 p-4 text-white">
-                        <DialogHeader><DialogTitle className="text-sm font-bold uppercase tracking-widest">{isEditMode ? t('menus.title.editDish') : t('menus.title.addNewDish')}</DialogTitle></DialogHeader>
+                        <DialogHeader><DialogTitle className="text-sm font-bold">{isEditMode ? t('menus.title.editDish') : t('menus.title.addNewDish')}</DialogTitle></DialogHeader>
                     </div>
                     <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-6 bg-white">
                         <div className="space-y-4">
                             <div className="grid gap-1.5">
-                                <Label className="text-[10px] font-black uppercase text-slate-400 ml-1">{t('menus.form.dishName')}</Label>
+                                <Label className="text-[10px] font-semibold text-slate-400 ml-1">{t('menus.form.dishName')}</Label>
                                 <Input required value={itemForm.name} onChange={e => setItemForm({...itemForm, name: e.target.value})} placeholder={t('menus.form.dishNamePlaceholder')} className="h-10 text-sm font-bold border-slate-200 rounded-sm" />
                             </div>
                             <div className="grid gap-1.5">
-                                <Label className="text-[10px] font-black uppercase text-slate-400 ml-1">{t('menus.form.ingredients')}</Label>
+                                <Label className="text-[10px] font-semibold text-slate-400 ml-1">{t('menus.form.ingredients')}</Label>
                                 <Textarea value={itemForm.description} onChange={e => setItemForm({...itemForm, description: e.target.value})} className="min-h-[80px] text-xs font-medium border-slate-200 rounded-sm" placeholder="..." />
                             </div>
                             <div className="grid gap-1.5">
-                                <Label className="text-[10px] font-black uppercase text-slate-400 ml-1">{t('menus.form.exactIngredients')}</Label>
+                                <Label className="text-[10px] font-semibold text-slate-400 ml-1">{t('menus.form.exactIngredients')}</Label>
                                 <Textarea value={itemForm.ingredients} onChange={e => setItemForm({...itemForm, ingredients: e.target.value})} className="min-h-[60px] text-xs font-medium border-slate-200 rounded-sm" placeholder="..." />
                             </div>
                             <div className="grid gap-1.5">
-                                <Label className="text-[10px] font-black uppercase text-slate-400 ml-1">{t('menus.form.priceTry')}</Label>
+                                <Label className="text-[10px] font-semibold text-slate-400 ml-1">{t('menus.form.priceTry')}</Label>
                                 <Input type="number" step="0.01" required value={itemForm.price} onChange={e => setItemForm({...itemForm, price: e.target.value})} className="h-10 text-sm font-bold border-slate-200 rounded-sm font-mono" />
                             </div>
                             {/* Service/treatment duration — drives the booking window for
                                 appointment verticals (salon/clinic). Optional; blank for menu dishes. */}
                             <div className="grid gap-1.5">
-                                <Label className="text-[10px] font-black uppercase text-slate-400 ml-1">{t('menus.form.serviceDuration')}</Label>
+                                <Label className="text-[10px] font-semibold text-slate-400 ml-1">{t('menus.form.serviceDuration')}</Label>
                                 <Input type="number" min="0" step="5" value={itemForm.durationMinutes} onChange={e => setItemForm({...itemForm, durationMinutes: e.target.value})} placeholder="—" className="h-10 text-sm font-bold border-slate-200 rounded-sm font-mono" />
                             </div>
                             <div className="grid gap-1.5">
-                                <Label className="text-[10px] font-black uppercase text-slate-400 ml-1">{t('menus.form.imageUpload')}</Label>
+                                <Label className="text-[10px] font-semibold text-slate-400 ml-1">{t('menus.form.imageUpload')}</Label>
                                 <div className="flex items-center gap-3">
                                     {itemForm.imageUrl && (
                                         <img src={itemForm.imageUrl} alt="Preview" className="w-12 h-12 rounded object-cover border border-slate-200" />
@@ -738,15 +738,15 @@ export default function MenuManagementPage() {
 
                         <div className="space-y-4 border-l border-slate-100 pl-6">
                             <div className="grid gap-1.5">
-                                <Label className="text-[10px] font-black uppercase text-green-600 tracking-[0.2em] flex items-center gap-1"><Leaf className="w-3 h-3" /> {t('menus.form.dietaryTags')}</Label>
+                                <Label className="text-[10px] font-semibold text-green-600 tracking-[0.2em] flex items-center gap-1"><Leaf className="w-3 h-3" /> {t('menus.form.dietaryTags')}</Label>
                                 <Input value={itemForm.dietaryTags} onChange={e => setItemForm({...itemForm, dietaryTags: e.target.value})} placeholder={t('menus.form.dietaryTagsPlaceholder')} className="h-10 text-xs font-bold border-green-200 bg-green-50/30 rounded-sm focus:border-green-400" />
                             </div>
                             <div className="grid gap-1.5">
-                                <Label className="text-[10px] font-black uppercase text-orange-600 tracking-[0.2em] flex items-center gap-1"><AlertTriangle className="w-3 h-3" /> {t('menus.form.allergens')}</Label>
+                                <Label className="text-[10px] font-semibold text-orange-600 tracking-[0.2em] flex items-center gap-1"><AlertTriangle className="w-3 h-3" /> {t('menus.form.allergens')}</Label>
                                 <Input value={itemForm.allergens} onChange={e => setItemForm({...itemForm, allergens: e.target.value})} placeholder={t('menus.form.allergensPlaceholder')} className="h-10 text-xs font-bold border-orange-200 bg-orange-50/30 rounded-sm focus:border-orange-400" />
                             </div>
                             <div className="grid gap-1.5">
-                                <Label className="text-[10px] font-black uppercase text-red-600 tracking-[0.2em] flex items-center gap-1"><Flame className="w-3 h-3" /> {t('menus.form.spiceLevel')}</Label>
+                                <Label className="text-[10px] font-semibold text-red-600 tracking-[0.2em] flex items-center gap-1"><Flame className="w-3 h-3" /> {t('menus.form.spiceLevel')}</Label>
                                 <Select value={itemForm.spiceLevel} onValueChange={v => setItemForm({...itemForm, spiceLevel: v || '0'})}>
                                     <SelectTrigger className="h-10 text-xs font-bold border-red-200 bg-red-50/30 rounded-sm">
                                         <SelectValue>
@@ -767,7 +767,7 @@ export default function MenuManagementPage() {
                                 </Select>
                             </div>
                             <div className="grid gap-1.5">
-                                <Label className="text-[10px] font-black uppercase text-blue-600 tracking-[0.2em] flex items-center gap-1">{t('menus.form.calories')}</Label>
+                                <Label className="text-[10px] font-semibold text-blue-600 tracking-[0.2em] flex items-center gap-1">{t('menus.form.calories')}</Label>
                                 <Input type="number" value={itemForm.calories} onChange={e => setItemForm({...itemForm, calories: e.target.value})} placeholder="0" className="h-10 text-xs font-bold border-blue-200 bg-blue-50/30 rounded-sm focus:border-blue-400" />
                             </div>
                             <div className="flex flex-col gap-3 mt-4">
@@ -783,8 +783,8 @@ export default function MenuManagementPage() {
                         </div>
                     </div>
                     <div className="p-4 bg-slate-50 border-t border-slate-100 flex justify-end gap-2">
-                        <Button type="button" variant="ghost" onClick={() => setIsItemDialogOpen(false)} className="h-9 text-xs font-bold text-slate-400 uppercase">{t('menus.buttons.cancel')}</Button>
-                        <Button type="submit" className="h-9 bg-blue-600 hover:bg-blue-700 text-xs font-black uppercase px-8 rounded-sm">{t('menus.buttons.saveDishDetails')}</Button>
+                        <Button type="button" variant="ghost" onClick={() => setIsItemDialogOpen(false)} className="h-9 text-xs font-bold text-slate-400">{t('menus.buttons.cancel')}</Button>
+                        <Button type="submit" className="h-9 bg-blue-600 hover:bg-blue-700 text-xs font-semibold px-8 rounded-sm">{t('menus.buttons.saveDishDetails')}</Button>
                     </div>
                 </form>
             </DialogContent>

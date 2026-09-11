@@ -186,7 +186,7 @@ export default function NordicMinimalLayout({ slug, initialRestaurant, initialVi
       </div>
       {item.description && <p className="text-sm text-[color:var(--muted)] mt-2 leading-relaxed font-light max-w-xl">{item.description}</p>}
       {item.ingredients && <p className="text-xs text-[color:var(--muted)]/80 mt-1 font-light max-w-xl">{t('public.ingredients')}: {item.ingredients}</p>}
-      <div className="flex flex-wrap items-center gap-3 mt-3 text-[10px] uppercase tracking-widest text-[color:var(--muted)]">
+      <div className="flex flex-wrap items-center gap-3 mt-3 text-[10px] text-[color:var(--muted)]">
         {item.calories && <span>{item.calories} {t('public.calories')}</span>}
         {item.containsAlcohol && <span>· {t('public.containsAlcohol')}</span>}
         {item.containsPork && <span>· {t('public.containsPork')}</span>}
@@ -194,7 +194,7 @@ export default function NordicMinimalLayout({ slug, initialRestaurant, initialVi
           <span key={i}>· {tag.trim()}</span>
         ))}
       </div>
-      {item.allergens && <p className="mt-2 text-[10px] font-light uppercase tracking-widest text-[color:var(--muted)]">{t('public.allergens')}: {item.allergens}</p>}
+      {item.allergens && <p className="mt-2 text-[10px] font-light text-[color:var(--muted)]">{t('public.allergens')}: {item.allergens}</p>}
     </div>
   );
 
@@ -202,7 +202,7 @@ export default function NordicMinimalLayout({ slug, initialRestaurant, initialVi
     <div className={cn("min-h-screen selection:bg-[color:var(--accent)] selection:text-white", fontClass)} style={rootStyle}>
 
       {customization.announcementText && (
-        <div className="w-full text-center py-3 px-4 text-xs tracking-[0.2em] uppercase border-b border-[color:var(--line)]" style={{ color: 'var(--accent)' }}>
+        <div className="w-full text-center py-3 px-4 text-xs tracking-[0.2em] border-b border-[color:var(--line)]" style={{ color: 'var(--accent)' }}>
           {customization.announcementText}
         </div>
       )}
@@ -210,37 +210,37 @@ export default function NordicMinimalLayout({ slug, initialRestaurant, initialVi
       {/* Header — thin hairline, no blur/background change on scroll (deliberately static, unlike every other layout) */}
       {menuOnly ? (
         <nav className="w-full flex justify-between items-center px-6 md:px-16 py-8 border-b border-[color:var(--line)]">
-          <Link href={`/r/${slug}`} className="inline-flex items-center gap-2 text-xs tracking-[0.2em] uppercase text-[color:var(--muted)] hover:text-[color:var(--text)] transition-colors">
+          <Link href={`/r/${slug}`} className="inline-flex items-center gap-2 text-xs tracking-[0.2em] text-[color:var(--muted)] hover:text-[color:var(--text)] transition-colors">
             <ArrowLeft className="h-3.5 w-3.5" /> {restaurant.name}
           </Link>
           <div className="flex items-center gap-6">
             <LanguageSwitcher />
-            <Link href={`/r/${slug}?view=booking`} className="text-xs tracking-[0.2em] uppercase border-b border-[color:var(--accent)] pb-0.5" style={{ color: 'var(--accent)' }}>
+            <Link href={`/r/${slug}?view=booking`} className="text-xs tracking-[0.2em] border-b border-[color:var(--accent)] pb-0.5" style={{ color: 'var(--accent)' }}>
               {t('public.bookATable')}
             </Link>
           </div>
         </nav>
       ) : bookingOnly ? (
         <nav className="w-full flex justify-between items-center px-6 md:px-16 py-8 border-b border-[color:var(--line)]">
-          <Link href={`/r/${slug}`} className="inline-flex items-center gap-2 text-xs tracking-[0.2em] uppercase text-[color:var(--muted)] hover:text-[color:var(--text)] transition-colors">
+          <Link href={`/r/${slug}`} className="inline-flex items-center gap-2 text-xs tracking-[0.2em] text-[color:var(--muted)] hover:text-[color:var(--text)] transition-colors">
             <ArrowLeft className="h-3.5 w-3.5" /> {restaurant.name}
           </Link>
           <div className="flex items-center gap-6">
             <LanguageSwitcher />
-            <Link href={`/r/${slug}/menu`} className="text-xs tracking-[0.2em] uppercase border-b border-[color:var(--accent)] pb-0.5" style={{ color: 'var(--accent)' }}>
+            <Link href={`/r/${slug}/menu`} className="text-xs tracking-[0.2em] border-b border-[color:var(--accent)] pb-0.5" style={{ color: 'var(--accent)' }}>
               {t('public.menu')}
             </Link>
           </div>
         </nav>
       ) : (
         <nav className="w-full flex items-center px-6 md:px-16 py-8 border-b border-[color:var(--line)] relative">
-          <div className="hidden md:flex items-center gap-10 text-[11px] tracking-[0.25em] uppercase text-[color:var(--muted)]">
+          <div className="hidden md:flex items-center gap-10 text-[11px] tracking-[0.25em] text-[color:var(--muted)]">
             <button onClick={() => scrollToSection('about')} className="hover:text-[color:var(--text)] transition-colors">{t('public.ourStory')}</button>
             <button onClick={() => scrollToSection('menu')} className="hover:text-[color:var(--text)] transition-colors">{t('public.menu')}</button>
           </div>
-          <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-base tracking-[0.3em] uppercase whitespace-nowrap">{restaurant.name}</div>
+          <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-base tracking-[0.3em] whitespace-nowrap">{restaurant.name}</div>
           <div className="ml-auto flex items-center gap-8">
-            <div className="hidden md:flex items-center gap-8 text-[11px] tracking-[0.25em] uppercase text-[color:var(--muted)]">
+            <div className="hidden md:flex items-center gap-8 text-[11px] tracking-[0.25em] text-[color:var(--muted)]">
               <LanguageSwitcher />
               <button onClick={() => scrollToSection('contact')} className="hover:text-[color:var(--text)] transition-colors">{t('public.contact')}</button>
               <button onClick={() => scrollToSection('reservations')} className="border-b pb-0.5" style={{ color: 'var(--accent)', borderColor: 'var(--accent)' }}>{t('public.reservations')}</button>
@@ -255,10 +255,10 @@ export default function NordicMinimalLayout({ slug, initialRestaurant, initialVi
 
       {!menuOnly && !bookingOnly && isMobileMenuOpen && (
         <div className="fixed inset-0 z-30 bg-[var(--bg)] flex flex-col items-center justify-center space-y-10 animate-in fade-in duration-300 md:hidden">
-          <button onClick={() => { setIsMobileMenuOpen(false); scrollToSection('about'); }} className="text-xl tracking-widest uppercase">{t('public.ourStory')}</button>
-          <button onClick={() => { setIsMobileMenuOpen(false); scrollToSection('menu'); }} className="text-xl tracking-widest uppercase">{t('public.menu')}</button>
-          <button onClick={() => { setIsMobileMenuOpen(false); scrollToSection('contact'); }} className="text-xl tracking-widest uppercase">{t('public.contact')}</button>
-          <button onClick={() => { setIsMobileMenuOpen(false); scrollToSection('reservations'); }} className="mt-6 text-xl tracking-widest uppercase" style={{ color: 'var(--accent)' }}>{t('public.reservations')}</button>
+          <button onClick={() => { setIsMobileMenuOpen(false); scrollToSection('about'); }} className="text-xl">{t('public.ourStory')}</button>
+          <button onClick={() => { setIsMobileMenuOpen(false); scrollToSection('menu'); }} className="text-xl">{t('public.menu')}</button>
+          <button onClick={() => { setIsMobileMenuOpen(false); scrollToSection('contact'); }} className="text-xl">{t('public.contact')}</button>
+          <button onClick={() => { setIsMobileMenuOpen(false); scrollToSection('reservations'); }} className="mt-6 text-xl" style={{ color: 'var(--accent)' }}>{t('public.reservations')}</button>
           <button onClick={() => setIsMobileMenuOpen(false)} className="absolute top-8 right-6 p-2"><X className="w-6 h-6" /></button>
         </div>
       )}
@@ -267,10 +267,10 @@ export default function NordicMinimalLayout({ slug, initialRestaurant, initialVi
         <>
           {/* Hero — no photo at all, just enormous whitespace + a thin rule. The defining structural difference in the library. */}
           <section className="min-h-[85vh] w-full flex flex-col items-center justify-center px-6 text-center">
-            <span className="text-[11px] tracking-[0.4em] uppercase text-[color:var(--muted)] mb-10">Est. {restaurant.createdAt ? new Date(restaurant.createdAt).getFullYear() : ''}</span>
+            <span className="text-[11px] tracking-[0.4em] text-[color:var(--muted)] mb-10">Est. {restaurant.createdAt ? new Date(restaurant.createdAt).getFullYear() : ''}</span>
             <h1 className="text-5xl md:text-8xl font-light tracking-tight leading-[1.05] mb-10">{restaurant.name}</h1>
             <span className="h-px w-16" style={{ background: 'var(--accent)' }} />
-            <button onClick={() => scrollToSection('reservations')} className="mt-14 text-xs tracking-[0.3em] uppercase border-b pb-1 hover:opacity-70 transition-opacity" style={{ color: 'var(--accent)', borderColor: 'var(--accent)' }}>
+            <button onClick={() => scrollToSection('reservations')} className="mt-14 text-xs tracking-[0.3em] border-b pb-1 hover:opacity-70 transition-opacity" style={{ color: 'var(--accent)', borderColor: 'var(--accent)' }}>
               {t('public.bookATable')}
             </button>
           </section>
@@ -281,7 +281,7 @@ export default function NordicMinimalLayout({ slug, initialRestaurant, initialVi
                 <img src={ABOUT_IMAGE} alt={`Inside ${restaurant.name}`} className="h-full w-full object-cover grayscale-[15%]" />
               </div>
               <div className="space-y-8">
-                <span className="text-[11px] tracking-[0.35em] uppercase text-[color:var(--muted)]">{t('public.ourStory')}</span>
+                <span className="text-[11px] tracking-[0.35em] text-[color:var(--muted)]">{t('public.ourStory')}</span>
                 <p className="text-[color:var(--muted)] leading-loose font-light text-lg whitespace-pre-wrap">
                   {customization.aboutUsText || 'Welcome to our restaurant. We are passionate about delivering exceptional culinary experiences.'}
                 </p>
@@ -296,7 +296,7 @@ export default function NordicMinimalLayout({ slug, initialRestaurant, initialVi
       <section id="menu" className={cn("px-6 md:px-16", menuOnly ? "pt-24 pb-32" : "py-32")}>
         <div className="max-w-2xl mx-auto">
           <div className="text-center mb-20">
-            <span className="text-[11px] tracking-[0.35em] uppercase text-[color:var(--muted)]">{t('public.menu')}</span>
+            <span className="text-[11px] tracking-[0.35em] text-[color:var(--muted)]">{t('public.menu')}</span>
             <h2 className="text-4xl md:text-5xl font-light tracking-tight mt-4">Our Table</h2>
           </div>
 
@@ -306,13 +306,13 @@ export default function NordicMinimalLayout({ slug, initialRestaurant, initialVi
             <div className="space-y-16">
               {restaurant.menus[0].categories.map((cat: any) => (
                 <div key={cat.id}>
-                  <h3 className="text-xs uppercase tracking-[0.3em] mb-2 pb-4 border-b" style={{ color: 'var(--accent)', borderColor: 'var(--accent)' }}>{cat.name}</h3>
+                  <h3 className="text-xs tracking-[0.3em] mb-2 pb-4 border-b" style={{ color: 'var(--accent)', borderColor: 'var(--accent)' }}>{cat.name}</h3>
                   <div>{cat.items?.map((item: any) => <div key={item.id}>{renderMenuItem(item)}</div>)}</div>
                   {cat.children && cat.children.length > 0 && (
                     <div className="mt-8 space-y-10">
                       {cat.children.map((sub: any) => (
                         <div key={sub.id}>
-                          <h4 className="text-[11px] uppercase tracking-[0.25em] mb-2 text-[color:var(--muted)]">{sub.name}</h4>
+                          <h4 className="text-[11px] tracking-[0.25em] mb-2 text-[color:var(--muted)]">{sub.name}</h4>
                           <div>{sub.items?.map((item: any) => <div key={item.id}>{renderMenuItem(item)}</div>)}</div>
                         </div>
                       ))}
@@ -323,7 +323,7 @@ export default function NordicMinimalLayout({ slug, initialRestaurant, initialVi
             </div>
           )}
           {restaurant.menus?.[0]?.updatedAt && (
-            <div className="text-center mt-16 text-[11px] font-light text-[color:var(--muted)] uppercase tracking-widest">
+            <div className="text-center mt-16 text-[11px] font-light text-[color:var(--muted)]">
               Son Fiyat Güncelleme Tarihi: {new Date(restaurant.menus[0].updatedAt).toLocaleDateString('tr-TR')}
             </div>
           )}
@@ -340,7 +340,7 @@ export default function NordicMinimalLayout({ slug, initialRestaurant, initialVi
               {restaurant.contactEmail && <a href={`mailto:${restaurant.contactEmail}`} className="hover:text-[color:var(--text)]">{restaurant.contactEmail}</a>}
             </div>
           )}
-          <Link href={`/r/${slug}?view=booking`} className="inline-block mt-10 text-xs tracking-[0.3em] uppercase border-b pb-1" style={{ color: 'var(--accent)', borderColor: 'var(--accent)' }}>
+          <Link href={`/r/${slug}?view=booking`} className="inline-block mt-10 text-xs tracking-[0.3em] border-b pb-1" style={{ color: 'var(--accent)', borderColor: 'var(--accent)' }}>
             {t('public.bookATable')}
           </Link>
           <p className="mt-12 text-[11px] text-[color:var(--muted)]">© {new Date().getFullYear()} {restaurant.name}</p>
@@ -359,7 +359,7 @@ export default function NordicMinimalLayout({ slug, initialRestaurant, initialVi
             )}
             {customization.showLegal && customization.legalText && (
               <div className="mt-24 pt-12 border-t border-[color:var(--line)] text-xs text-[color:var(--muted)] font-light text-left max-w-2xl mx-auto space-y-4">
-                <h4 className="text-[11px] uppercase tracking-[0.3em] mb-2 text-center" style={{ color: 'var(--accent)' }}>Legal Terms</h4>
+                <h4 className="text-[11px] tracking-[0.3em] mb-2 text-center" style={{ color: 'var(--accent)' }}>Legal Terms</h4>
                 <div className="whitespace-pre-wrap">{customization.legalText}</div>
               </div>
             )}
@@ -374,7 +374,7 @@ export default function NordicMinimalLayout({ slug, initialRestaurant, initialVi
           <section id="reservations" className="py-32 px-6 md:px-16 border-t border-[color:var(--line)]">
             <div className="max-w-xl mx-auto">
               <div className="text-center mb-16">
-                <span className="text-[11px] tracking-[0.35em] uppercase text-[color:var(--muted)]">{t('public.reservations')}</span>
+                <span className="text-[11px] tracking-[0.35em] text-[color:var(--muted)]">{t('public.reservations')}</span>
                 <h2 className="text-3xl md:text-4xl font-light tracking-tight mt-4">Reserve a Table</h2>
               </div>
 
@@ -385,7 +385,7 @@ export default function NordicMinimalLayout({ slug, initialRestaurant, initialVi
                   <p className="text-[color:var(--muted)] font-light text-sm">We look forward to welcoming you.</p>
                   {confirmationCode && (
                     <div className="mx-auto mt-8 flex max-w-[220px] flex-col items-center border py-4" style={{ borderColor: 'var(--line)' }}>
-                      <span className="text-[10px] uppercase tracking-[0.3em] text-[color:var(--muted)]">{t('public.confirmationCodeLabel')}</span>
+                      <span className="text-[10px] tracking-[0.3em] text-[color:var(--muted)]">{t('public.confirmationCodeLabel')}</span>
                       <span className="mt-1 text-2xl font-normal tracking-[0.3em]" style={{ color: 'var(--accent)' }}>{confirmationCode}</span>
                       <span className="mt-2 px-4 text-center text-[10px] font-light text-[color:var(--muted)]">{t('public.confirmationCodeHint')}</span>
                     </div>
@@ -406,14 +406,14 @@ export default function NordicMinimalLayout({ slug, initialRestaurant, initialVi
                   )}
 
                   <div className="space-y-4">
-                    <Label className="text-[11px] uppercase tracking-[0.3em] text-[color:var(--muted)]">Date</Label>
+                    <Label className="text-[11px] tracking-[0.3em] text-[color:var(--muted)]">Date</Label>
                     <div className="border p-4" style={{ borderColor: 'var(--line)' }}>
                       <ReservationCalendar value={selectedDate} onChange={setSelectedDate} tz={tz} accent="var(--accent)" accentText="#ffffff" />
                     </div>
                   </div>
 
                   <div className="space-y-4">
-                    <Label className="text-[11px] uppercase tracking-[0.3em] text-[color:var(--muted)]">Time</Label>
+                    <Label className="text-[11px] tracking-[0.3em] text-[color:var(--muted)]">Time</Label>
                     <div className="grid grid-cols-4 gap-2">
                       {[...times.lunch, ...times.dinner].map(tm => (
                         <button key={tm} type="button" onClick={() => setSelectedTime(tm)} className={cn("h-11 border text-sm font-light transition-all", selectedTime === tm ? "text-white" : "hover:border-[color:var(--accent)]")}
@@ -432,7 +432,7 @@ export default function NordicMinimalLayout({ slug, initialRestaurant, initialVi
                     <div className="border-l-2 border-amber-500 bg-amber-50 p-6 text-sm font-light text-amber-800 flex items-start gap-4">
                       <Clock className="w-4 h-4 shrink-0 mt-0.5" />
                       <div>
-                        <span className="mb-1 block text-[11px] uppercase tracking-widest">{selectedDateLabel}</span>
+                        <span className="mb-1 block text-[11px]">{selectedDateLabel}</span>
                         <strong className="block mb-2 font-normal text-base">Fully Booked</strong>
                         We are fully booked for reservations on this day. Please choose another date, or call us directly.
                       </div>
@@ -441,7 +441,7 @@ export default function NordicMinimalLayout({ slug, initialRestaurant, initialVi
                     <div className="border-l-2 border-red-500 bg-red-50 p-6 text-sm font-light text-red-800 flex items-start gap-4">
                       <X className="w-4 h-4 shrink-0 mt-0.5" />
                       <div>
-                        <span className="mb-1 block text-[11px] uppercase tracking-widest">{selectedDateLabel}</span>
+                        <span className="mb-1 block text-[11px]">{selectedDateLabel}</span>
                         <strong className="block mb-2 font-normal text-base">Reservations Closed</strong>
                         Unfortunately, we&apos;re not accepting reservations for this day.
                       </div>
@@ -450,7 +450,7 @@ export default function NordicMinimalLayout({ slug, initialRestaurant, initialVi
                     <div className="border-l-2 bg-emerald-50 p-6 text-sm font-light text-emerald-800 flex items-start gap-4" style={{ borderColor: 'var(--accent)' }}>
                       <CheckCircle2 className="w-4 h-4 shrink-0 mt-0.5" />
                       <div>
-                        <span className="mb-1 block text-[11px] uppercase tracking-widest">{selectedDateLabel}</span>
+                        <span className="mb-1 block text-[11px]">{selectedDateLabel}</span>
                         <strong className="block mb-2 font-normal text-base">Immediate Booking</strong>
                         Your reservation will be confirmed automatically.
                       </div>
@@ -459,7 +459,7 @@ export default function NordicMinimalLayout({ slug, initialRestaurant, initialVi
                     <div className="border-l-2 border-sky-500 bg-sky-50 p-6 text-sm font-light text-sky-800 flex items-start gap-4">
                       <CalendarIcon className="w-4 h-4 shrink-0 mt-0.5" />
                       <div>
-                        <span className="mb-1 block text-[11px] uppercase tracking-widest">{selectedDateLabel}</span>
+                        <span className="mb-1 block text-[11px]">{selectedDateLabel}</span>
                         <strong className="block mb-2 font-normal text-base">Confirmation Queue</strong>
                         This date requires manual staff review. You&apos;ll receive a notification.
                       </div>
@@ -477,7 +477,7 @@ export default function NordicMinimalLayout({ slug, initialRestaurant, initialVi
                   )}
 
                   <div className="space-y-4 text-center">
-                    <Label className="block text-[11px] uppercase tracking-[0.3em] text-[color:var(--muted)]">Guests</Label>
+                    <Label className="block text-[11px] tracking-[0.3em] text-[color:var(--muted)]">Guests</Label>
                     <div className="flex flex-wrap justify-center gap-2">
                       {Array.from({ length: maxPartySize }, (_, i) => i + 1).map(n => (
                         <button key={n} type="button" onClick={() => setResForm({ ...resForm, guestCount: String(n) })}
@@ -491,12 +491,12 @@ export default function NordicMinimalLayout({ slug, initialRestaurant, initialVi
 
                   <div className="grid grid-cols-1 gap-8 sm:grid-cols-2">
                     <div className="space-y-3">
-                      <Label className="text-[11px] uppercase tracking-[0.3em] text-[color:var(--muted)]">Name</Label>
+                      <Label className="text-[11px] tracking-[0.3em] text-[color:var(--muted)]">Name</Label>
                       <Input required value={resForm.customerName} onChange={e => setResForm({ ...resForm, customerName: e.target.value })}
                         className="border-0 border-b rounded-none h-12 px-0 text-base focus-visible:ring-0" style={{ borderColor: 'var(--line)' }} />
                     </div>
                     <div className="space-y-3">
-                      <Label className="text-[11px] uppercase tracking-[0.3em] text-[color:var(--muted)]">Phone</Label>
+                      <Label className="text-[11px] tracking-[0.3em] text-[color:var(--muted)]">Phone</Label>
                       <Input required value={resForm.customerPhone} onChange={e => setResForm({ ...resForm, customerPhone: e.target.value })}
                         className="border-0 border-b rounded-none h-12 px-0 text-base focus-visible:ring-0" style={{ borderColor: 'var(--line)' }} />
                     </div>
@@ -512,7 +512,7 @@ export default function NordicMinimalLayout({ slug, initialRestaurant, initialVi
                   />
 
                   <button type="submit" disabled={checkingDay || dayStatus?.daySetting?.isFullyBooked || (dayStatus?.daySetting?.isReservationEnabled === false && !dayStatus?.daySetting?.isFullyBooked)}
-                    className="w-full h-14 text-sm font-normal tracking-[0.25em] uppercase mt-8 disabled:opacity-40 transition-all hover:opacity-85"
+                    className="w-full h-14 text-sm font-normal tracking-[0.25em] mt-8 disabled:opacity-40 transition-all hover:opacity-85"
                     style={{ background: 'var(--accent)', color: '#ffffff' }}>
                     {dayStatus?.daySetting?.isFullyBooked ? 'Fully Booked' : 'Reserve'}
                   </button>
@@ -530,7 +530,7 @@ export default function NordicMinimalLayout({ slug, initialRestaurant, initialVi
                   {restaurant.contactEmail && <a href={`mailto:${restaurant.contactEmail}`} className="hover:text-[color:var(--text)]">{restaurant.contactEmail}</a>}
                 </div>
               )}
-              <Link href={`/r/${slug}/menu`} className="inline-block mt-10 text-xs tracking-[0.3em] uppercase border-b pb-1" style={{ color: 'var(--accent)', borderColor: 'var(--accent)' }}>
+              <Link href={`/r/${slug}/menu`} className="inline-block mt-10 text-xs tracking-[0.3em] border-b pb-1" style={{ color: 'var(--accent)', borderColor: 'var(--accent)' }}>
                 {t('public.menu')}
               </Link>
               <p className="mt-12 text-[11px] text-[color:var(--muted)]">© {new Date().getFullYear()} {restaurant.name}</p>
