@@ -86,7 +86,12 @@ export default function VendorsPage() {
         </div>
 
         {loading ? <p className="text-sm text-slate-400">{t('common.loading')}</p> : shown.length === 0 ? (
-          <Card><CardContent className="py-10 text-center text-sm text-slate-400">{t('vendors.empty')}</CardContent></Card>
+          <Card><CardContent className="py-10 text-center flex flex-col items-center gap-3">
+            <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center">
+              <Handshake className="w-5 h-5 text-slate-400" />
+            </div>
+            <p className="text-sm text-slate-400">{t('vendors.empty')}</p>
+          </CardContent></Card>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
             {shown.map(v => (

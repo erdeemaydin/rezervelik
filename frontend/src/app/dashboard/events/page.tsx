@@ -101,7 +101,10 @@ export default function EventsPage() {
         {loading ? (
           <p className="text-sm text-slate-400">{t('common.loading')}</p>
         ) : events.length === 0 ? (
-          <div className="border border-dashed border-slate-200 rounded-md p-10 text-center">
+          <div className="border border-dashed border-slate-200 rounded-md p-10 text-center flex flex-col items-center gap-3">
+            <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center">
+              <CalendarDays className="w-5 h-5 text-slate-400" />
+            </div>
             <p className="text-sm font-bold text-slate-500">{t('events.empty')}</p>
           </div>
         ) : (
