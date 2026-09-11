@@ -45,7 +45,7 @@ export default function SystemAdminLayout({ children }: SystemAdminLayoutProps) 
     if (typeof window !== 'undefined' && window.innerWidth >= 1024) {
       setIsSidebarOpen(true);
     }
-    // HardDrives-side route protection was removed (token is in localStorage, not a
+    // Server-side route protection was removed (token is in localStorage, not a
     // cookie), so guard here: bounce unauthenticated users to login, and
     // non-superadmins to their tenant dashboard.
     if (!user) {
@@ -55,7 +55,7 @@ export default function SystemAdminLayout({ children }: SystemAdminLayoutProps) 
     }
   }, [user, router]);
 
-  // Load the system-admin surface theme (set by the root admin in Global Gear).
+  // Load the system-admin surface theme (set by the root admin in Global Settings).
   useEffect(() => {
     if (!user || user.role !== 'SUPER_ADMIN') return;
     // Seed from this surface's cache first (the shared store may still hold a
@@ -104,7 +104,7 @@ export default function SystemAdminLayout({ children }: SystemAdminLayoutProps) 
   };
 
   return (
-    <div data-admin-theme={theme} className="admin-surface-system flex h-dvh bg-[var(--admin-bg)] font-sans">
+    <div data-admin-theme={theme} className="admin-surface-system flex h-dvh bg-background font-sans">
       {/* Mobile/tablet overlay — clicking off the sidebar closes it. */}
       {isSidebarOpen && (
         <div
@@ -128,21 +128,21 @@ export default function SystemAdminLayout({ children }: SystemAdminLayoutProps) 
         className={cn(
           // h-dvh, not h-screen: 100vh reaches behind iOS Safari's bottom toolbar,
           // hiding the logout button under Safari's chrome. dvh = visible height.
-          "w-64 bg-[var(--admin-sidebar)] text-stone-700 border-r border-stone-300 flex flex-col z-50 transition-transform duration-300 ease-in-out fixed lg:static top-0 h-dvh",
+          "w-64 bg-sidebar text-sidebar-foreground border-r border-sidebar-border flex flex-col z-50 transition-transform duration-300 ease-in-out fixed lg:static top-0 h-dvh",
           isSidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
         )}
       >
-        <div className="h-16 flex items-center justify-between px-6 border-b border-stone-300">
+        <div className="h-16 flex items-center justify-between px-6 border-b border-sidebar-border">
           <div className="flex items-center">
-            <div className="w-7 h-7 bg-[#111111] rounded-sm flex items-center justify-center mr-3">
-              <span className="text-white font-bold text-lg leading-none">S</span>
+            <div className="w-7 h-7 bg-sidebar-primary rounded-sm flex items-center justify-center mr-3">
+              <span className="text-sidebar-primary-foreground font-bold text-lg leading-none">S</span>
             </div>
-            <span className="font-bold text-lg text-stone-900 tracking-tight">System<span className="text-[var(--admin-accent)]">Adm</span></span>
+            <span className="font-bold text-lg text-sidebar-foreground tracking-tight">System<span className="text-[var(--admin-accent)]">Adm</span></span>
           </div>
           <button
             onClick={() => setIsSidebarOpen(false)}
             aria-label="Close navigation"
-            className="lg:hidden text-stone-400 hover:text-stone-900 w-8 h-8 flex items-center justify-center rounded-md hover:bg-stone-100"
+            className="lg:hidden text-muted-foreground hover:text-sidebar-accent-foreground w-8 h-8 flex items-center justify-center rounded-md hover:bg-sidebar-accent"
           >
             <X className="w-5 h-5" />
           </button>
@@ -150,9 +150,9 @@ export default function SystemAdminLayout({ children }: SystemAdminLayoutProps) 
 
         <div className="flex-1 overflow-y-auto py-6">
           <div className="px-6 mb-8 flex items-center space-x-3">
-            <div className="h-9 w-9 rounded-md bg-stone-100 border border-stone-300 flex items-center justify-center text-[var(--admin-accent)] font-semibold text-xs">SA</div>
+            <div className="h-9 w-9 rounded-md bg-sidebar-accent border border-sidebar-border flex items-center justify-center text-[var(--admin-accent)] font-semibold text-xs">SA</div>
             <div className="overflow-hidden">
-              <p className="text-xs font-semibold text-stone-900 truncate">
+              <p className="text-xs font-semibold text-sidebar-foreground truncate">
                 {mounted ? `${user?.firstName || 'System'} ${user?.lastName || 'Admin'}` : 'System Admin'}
               </p>
               <p className="text-[9px] text-[var(--admin-accent)] font-semibold tracking-tighter">
@@ -164,7 +164,7 @@ export default function SystemAdminLayout({ children }: SystemAdminLayoutProps) 
           <nav className="space-y-6">
             {navigation.map((group, idx) => (
               <div key={idx}>
-                <h3 className="px-6 text-[10px] font-semibold text-stone-400 tracking-[0.18em] mb-3">
+                <h3 className="px-6 text-[10px] font-semibold text-muted-foreground tracking-[0.18em] mb-3">
                   {group.section}
                 </h3>
                 <ul className="space-y-1 px-2">
@@ -181,11 +181,11 @@ export default function SystemAdminLayout({ children }: SystemAdminLayoutProps) 
                             // muted pastel fill + left edge, not a color swap.
                             isActive
                               ? 'bg-[var(--admin-accent-tint)] text-[var(--admin-accent-strong)] border-l-2 border-[var(--admin-accent)] pl-3.5 pr-4'
-                              : 'px-4 text-stone-500 hover:bg-stone-100 hover:text-stone-900'
+                              : 'px-4 text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground'
                           )}
                         >
                           <div className="flex items-center">
-                            <item.icon weight={isActive ? 'bold' : 'regular'} className={cn('mr-3 h-4 w-4', isActive ? 'text-[var(--admin-accent-strong)]' : 'text-stone-400')} />
+                            <item.icon weight={isActive ? 'bold' : 'regular'} className={cn('mr-3 h-4 w-4', isActive ? 'text-[var(--admin-accent-strong)]' : 'text-muted-foreground')} />
                             {item.name}
                           </div>
                         </Link>
@@ -198,16 +198,16 @@ export default function SystemAdminLayout({ children }: SystemAdminLayoutProps) 
           </nav>
         </div>
 
-        <div className="p-4 border-t border-stone-300">
-          <Button variant="ghost" className="w-full justify-start text-stone-500 hover:text-red-600 hover:bg-red-50" onClick={handleLogout}>
+        <div className="p-4 border-t border-sidebar-border">
+          <Button variant="ghost" className="w-full justify-start text-muted-foreground hover:text-red-600 hover:bg-destructive/10" onClick={handleLogout}>
             <SignOut className="mr-3 h-5 w-5" /> {t('systemAdmin.logoutSystem')}
           </Button>
         </div>
       </aside>
 
       <div className="flex-1 flex flex-col overflow-hidden min-w-0">
-        <header className="h-16 bg-white border-b border-stone-300 flex items-center justify-between pl-16 pr-4 lg:px-8 shrink-0">
-          <h2 className="text-base sm:text-xl font-semibold text-stone-900 truncate font-heading">{t('systemAdmin.systemManagement')}</h2>
+        <header className="h-16 bg-card border-b border-sidebar-border flex items-center justify-between pl-16 pr-4 lg:px-8 shrink-0">
+          <h2 className="text-base sm:text-xl font-semibold text-sidebar-foreground truncate font-heading">{t('systemAdmin.systemManagement')}</h2>
           <div className="flex items-center gap-2 sm:gap-4 shrink-0">
             <LanguageSwitcher />
             <Badge variant="outline" className="hidden sm:inline-flex text-[var(--admin-accent-strong)] border-[var(--admin-accent-tint-3)] bg-[var(--admin-accent-tint)]">{t('systemAdmin.globalClusterActive')}</Badge>

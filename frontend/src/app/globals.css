@@ -96,25 +96,39 @@
 }
 
 .dark {
-  --background: #1a1918;
-  --foreground: #f7f6f3;
-  --card: #232120;
-  --card-foreground: #f7f6f3;
-  --popover: #232120;
-  --popover-foreground: #f7f6f3;
-  --primary: #f7f6f3;
-  --primary-foreground: #1a1918;
-  --secondary: #2c2a28;
-  --secondary-foreground: #f7f6f3;
-  --muted: #2c2a28;
-  --muted-foreground: #a39e97;
-  --accent: #2c2a28;
-  --accent-foreground: #f7f6f3;
+  /* Same warm-monochrome language, inverted — warm charcoal canvas, warm
+     off-white text, never pure black. Borders get the same treatment as
+     light mode: real, clearly visible contrast, not just "a border exists". */
+  --background: #1c1a17;
+  --foreground: #ece7de;
+  --card: #262320;
+  --card-foreground: #ece7de;
+  --popover: #262320;
+  --popover-foreground: #ece7de;
+  --primary: #f0ece3;
+  --primary-foreground: #1c1a17;
+  --secondary: #322e29;
+  --secondary-foreground: #ece7de;
+  --muted: #322e29;
+  --muted-foreground: #a89f8f;
+  --accent: #322e29;
+  --accent-foreground: #ece7de;
   --destructive: #e0655c;
-  --destructive-foreground: #1a1918;
-  --border: #35322f;
-  --input: #35322f;
-  --ring: #78716c;
+  --destructive-foreground: #1c1a17;
+  --border: #5c5549;
+  --input: #665e50;
+  --ring: #9c9280;
+
+  /* Sidebar: a slightly distinct dark panel, separated by a clearly visible
+     border rather than a color jump. */
+  --sidebar: #211e1a;
+  --sidebar-foreground: #ece7de;
+  --sidebar-primary: #f0ece3;
+  --sidebar-primary-foreground: #1c1a17;
+  --sidebar-accent: #322e29;
+  --sidebar-accent-foreground: #ece7de;
+  --sidebar-border: #5c5549;
+  --sidebar-ring: #9c9280;
 }
 
 @layer base {
@@ -144,17 +158,19 @@
    filled surfaces). Sidebar is the same warm-bone surface for every theme;
    only the accent and its pastel tint change. */
 
+/* Tints are derived from the accent mixed into the *current* --background,
+   not hardcoded — so they land as pale pastels in light mode and as subtle
+   dark-tinted panels in dark mode automatically, from one rule each. */
+
 [data-admin-theme] {
   /* Fallback = muted denim, so an unknown value never breaks the accent. */
   --admin-accent: #3d6a8a;
   --admin-accent-hover: #2f5470;
   --admin-accent-strong: #24425a;
   --admin-accent-mid: #5b87a3;
-  --admin-accent-tint: #e1f3fe;
-  --admin-accent-tint-2: #cfe9fb;
-  --admin-accent-tint-3: #b4dcf6;
-  --admin-sidebar: #f7f6f3;
-  --admin-bg: #fbfbfa;
+  --admin-accent-tint: color-mix(in oklab, var(--admin-accent) 12%, var(--background));
+  --admin-accent-tint-2: color-mix(in oklab, var(--admin-accent) 22%, var(--background));
+  --admin-accent-tint-3: color-mix(in oklab, var(--admin-accent) 35%, var(--background));
 }
 
 [data-admin-theme="terracotta"] {
@@ -162,11 +178,9 @@
   --admin-accent-hover: #8a4f33;
   --admin-accent-strong: #6b3d28;
   --admin-accent-mid: #bf7c5b;
-  --admin-accent-tint: #f5e6dd;
-  --admin-accent-tint-2: #eed4c4;
-  --admin-accent-tint-3: #e3bea6;
-  --admin-sidebar: #f7f6f3;
-  --admin-bg: #fbfbfa;
+  --admin-accent-tint: color-mix(in oklab, var(--admin-accent) 12%, var(--background));
+  --admin-accent-tint-2: color-mix(in oklab, var(--admin-accent) 22%, var(--background));
+  --admin-accent-tint-3: color-mix(in oklab, var(--admin-accent) 35%, var(--background));
 }
 
 [data-admin-theme="forest"] {
@@ -174,11 +188,9 @@
   --admin-accent-hover: #3b5334;
   --admin-accent-strong: #2d4027;
   --admin-accent-mid: #6b8560;
-  --admin-accent-tint: #edf3ec;
-  --admin-accent-tint-2: #dde8db;
-  --admin-accent-tint-3: #c5d8c1;
-  --admin-sidebar: #f7f6f3;
-  --admin-bg: #fbfbfa;
+  --admin-accent-tint: color-mix(in oklab, var(--admin-accent) 12%, var(--background));
+  --admin-accent-tint-2: color-mix(in oklab, var(--admin-accent) 22%, var(--background));
+  --admin-accent-tint-3: color-mix(in oklab, var(--admin-accent) 35%, var(--background));
 }
 
 [data-admin-theme="burgundy"] {
@@ -186,11 +198,9 @@
   --admin-accent-hover: #612e34;
   --admin-accent-strong: #4a2328;
   --admin-accent-mid: #98595f;
-  --admin-accent-tint: #fdebec;
-  --admin-accent-tint-2: #f8d7d9;
-  --admin-accent-tint-3: #f0b9bd;
-  --admin-sidebar: #f7f6f3;
-  --admin-bg: #fbfbfa;
+  --admin-accent-tint: color-mix(in oklab, var(--admin-accent) 12%, var(--background));
+  --admin-accent-tint-2: color-mix(in oklab, var(--admin-accent) 22%, var(--background));
+  --admin-accent-tint-3: color-mix(in oklab, var(--admin-accent) 35%, var(--background));
 }
 
 [data-admin-theme="amber"] {
@@ -198,12 +208,21 @@
   --admin-accent-hover: #6f572f;
   --admin-accent-strong: #544224;
   --admin-accent-mid: #a68a5c;
-  --admin-accent-tint: #fbf3db;
-  --admin-accent-tint-2: #f5e7bd;
-  --admin-accent-tint-3: #ecd695;
-  --admin-sidebar: #f7f6f3;
-  --admin-bg: #fbfbfa;
+  --admin-accent-tint: color-mix(in oklab, var(--admin-accent) 12%, var(--background));
+  --admin-accent-tint-2: color-mix(in oklab, var(--admin-accent) 22%, var(--background));
+  --admin-accent-tint-3: color-mix(in oklab, var(--admin-accent) 35%, var(--background));
 }
+
+/* --admin-accent-strong is used as FOREGROUND text over the tint above — a
+   dark navy that reads fine on a pale-blue tint in light mode goes
+   near-invisible on a dark-tinted panel in dark mode, so it needs an actual
+   override (not derivable by mixing toward --background like the tints
+   above), one hand-picked light variant per theme. */
+.dark [data-admin-theme] { --admin-accent-strong: #8ec4e8; }
+.dark [data-admin-theme="terracotta"] { --admin-accent-strong: #e3a480; }
+.dark [data-admin-theme="forest"] { --admin-accent-strong: #9fc494; }
+.dark [data-admin-theme="burgundy"] { --admin-accent-strong: #e8a3a8; }
+.dark [data-admin-theme="amber"] { --admin-accent-strong: #e3c98a; }
 
 /* --- Remap hardcoded blue utilities to the active theme accent --- */
 

@@ -383,7 +383,7 @@ export default function HostConsolePage() {
       // Filter out canceled or fully checked-out entries from the main active screen
       if (res.status === 'CANCELLED' || res.status === 'COMPLETED') return false;
 
-      // MagnifyingGlass match
+      // Search match
       const nameMatch = res.customerName.toLowerCase().includes(searchQuery.toLowerCase());
       const phoneMatch = res.customerPhone.includes(searchQuery);
       const tableMatch = res.table?.identifier.toLowerCase().includes(searchQuery.toLowerCase()) || false;

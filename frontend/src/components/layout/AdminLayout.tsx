@@ -343,7 +343,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
   // live /settings request resolves (success → dashboard; maintenance → redirect).
   if (!verifiedLive) {
     return (
-      <div data-admin-theme={theme} className="flex min-h-dvh items-center justify-center bg-[var(--admin-bg)]">
+      <div data-admin-theme={theme} className="flex min-h-dvh items-center justify-center bg-background">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-slate-400" />
       </div>
     );
@@ -363,7 +363,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
   );
 
   return (
-    <div data-admin-theme={theme} className="flex min-h-dvh bg-[var(--admin-bg)]">
+    <div data-admin-theme={theme} className="flex min-h-dvh bg-background">
       <CommandPalette items={paletteItems} />
 
       {/* Mobile/tablet overlay — clicking anywhere off the sidebar closes it. */}
@@ -394,27 +394,27 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
           // 100vh extends behind the browser's bottom toolbar, hiding the sidebar
           // footer (logout/language) under Safari's own buttons so they can't be
           // tapped. dvh is the actually-visible height, keeping the footer reachable.
-          "bg-[var(--admin-sidebar)] text-stone-700 border-r border-stone-300 transition-all duration-300 ease-in-out flex flex-col z-50 fixed lg:sticky top-0 h-dvh",
+          "bg-sidebar text-sidebar-foreground border-r border-sidebar-border transition-all duration-300 ease-in-out flex flex-col z-50 fixed lg:sticky top-0 h-dvh",
           isSidebarOpen ? "w-64 translate-x-0" : "w-64 -translate-x-full lg:w-16 lg:translate-x-0"
         )}
       >
         {/* Sidebar Header — logo + collapse/expand toggle (works on desktop too,
             since there's no top bar anymore). */}
-        <div className="h-16 flex items-center justify-between px-4 border-b border-stone-300">
+        <div className="h-16 flex items-center justify-between px-4 border-b border-sidebar-border">
           {isSidebarOpen ? (
             <>
               <div className="flex items-center gap-3 overflow-hidden">
-                <div className="w-8 h-8 rounded-lg bg-[#111111] flex items-center justify-center shrink-0">
-                  <vIcon.brand className="w-5 h-5 text-white" />
+                <div className="w-8 h-8 rounded-lg bg-sidebar-primary flex items-center justify-center shrink-0">
+                  <vIcon.brand className="w-5 h-5 text-sidebar-primary-foreground" />
                 </div>
-                <span className="font-semibold text-sm tracking-tight text-stone-900 whitespace-nowrap">
+                <span className="font-semibold text-sm tracking-tight text-sidebar-foreground whitespace-nowrap">
                   Reserve<span className="text-[var(--admin-accent)]">Pro</span>
                 </span>
               </div>
               <button
                 onClick={() => setIsSidebarOpen(false)}
                 aria-label="Collapse navigation"
-                className="text-stone-400 hover:text-stone-900 hover:bg-stone-100 rounded-md w-8 h-8 flex items-center justify-center shrink-0"
+                className="text-muted-foreground hover:text-sidebar-accent-foreground hover:bg-sidebar-accent rounded-md w-8 h-8 flex items-center justify-center shrink-0"
               >
                 <CaretLeft className="w-5 h-5" />
               </button>
@@ -426,8 +426,8 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
               title="Expand"
               className="w-full flex items-center justify-center group"
             >
-              <div className="w-8 h-8 rounded-lg bg-[#111111] flex items-center justify-center shrink-0 group-hover:hidden">
-                <vIcon.brand className="w-5 h-5 text-white" />
+              <div className="w-8 h-8 rounded-lg bg-sidebar-primary flex items-center justify-center shrink-0 group-hover:hidden">
+                <vIcon.brand className="w-5 h-5 text-sidebar-primary-foreground" />
               </div>
               <CaretRight className="w-6 h-6 text-[var(--admin-accent)] hidden group-hover:block" />
             </button>
@@ -444,7 +444,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
               return (
                 <div key={group.section}>
                   {isSidebarOpen && (
-                    <h3 className="px-3 text-[10px] font-semibold text-stone-400 tracking-[0.18em] mb-3">
+                    <h3 className="px-3 text-[10px] font-semibold text-muted-foreground tracking-[0.18em] mb-3">
                       {group.section}
                     </h3>
                   )}
@@ -472,7 +472,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
                               // rather than just "this row happens to be blue."
                               isActive
                                 ? "bg-[var(--admin-accent-tint)] text-[var(--admin-accent-strong)] font-bold border-l-2 border-[var(--admin-accent)] pl-2.5 pr-3"
-                                : "px-3 hover:bg-stone-100 hover:text-stone-900"
+                                : "px-3 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
                             )}
                           >
                             <div className="flex items-center gap-3">
@@ -480,7 +480,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
                                 weight={isActive ? "bold" : "regular"}
                                 className={cn(
                                   "w-[18px] h-[18px] shrink-0",
-                                  isActive ? "text-[var(--admin-accent-strong)]" : "text-stone-400 group-hover:text-stone-700"
+                                  isActive ? "text-[var(--admin-accent-strong)]" : "text-muted-foreground group-hover:text-sidebar-accent-foreground"
                                 )}
                               />
                               {isSidebarOpen && <span>{item.name}</span>}
@@ -498,33 +498,33 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
 
         {/* Sidebar Footer — the account area. All the old top-bar controls
             (profile/user settings, language, logout) live here now. */}
-        <div className="border-t border-stone-300 mt-auto">
+        <div className="border-t border-sidebar-border mt-auto">
           {isSidebarOpen ? (
             <div className="p-3 space-y-2">
-              <span className="block px-1 text-[9px] font-semibold tracking-[0.18em] text-stone-400">{t('admin.userSettings')}</span>
+              <span className="block px-1 text-[9px] font-semibold tracking-[0.18em] text-muted-foreground">{t('admin.userSettings')}</span>
               <Link
                 href="/dashboard/profile"
                 onClick={() => { if (window.innerWidth < 1024) setIsSidebarOpen(false); }}
                 title={t('admin.userSettings')}
-                className="flex items-center gap-3 p-2 rounded-md hover:bg-stone-100 transition-colors group"
+                className="flex items-center gap-3 p-2 rounded-md hover:bg-sidebar-accent transition-colors group"
               >
-                <Avatar className="w-9 h-9 border border-stone-300 shrink-0">
+                <Avatar className="w-9 h-9 border border-sidebar-border shrink-0">
                   <AvatarImage src={`https://avatar.iran.liara.run/username?username=${user?.firstName}+${user?.lastName}`} />
-                  <AvatarFallback className="bg-[#111111] text-white text-[10px] font-semibold">{user?.firstName?.[0]}{user?.lastName?.[0]}</AvatarFallback>
+                  <AvatarFallback className="bg-sidebar-primary text-sidebar-primary-foreground text-[10px] font-semibold">{user?.firstName?.[0]}{user?.lastName?.[0]}</AvatarFallback>
                 </Avatar>
                 <div className="flex flex-col min-w-0 flex-1">
-                  <span className="text-xs font-semibold text-stone-900 truncate capitalize">{user?.firstName} {user?.lastName}</span>
+                  <span className="text-xs font-semibold text-sidebar-foreground truncate capitalize">{user?.firstName} {user?.lastName}</span>
                   <span className="text-[9px] font-semibold text-[var(--admin-accent)] tracking-tighter">{user?.role}</span>
                 </div>
-                <Gear className="w-4 h-4 text-stone-400 group-hover:text-stone-700 transition-colors shrink-0" />
+                <Gear className="w-4 h-4 text-muted-foreground group-hover:text-sidebar-accent-foreground transition-colors shrink-0" />
               </Link>
-              <div className="flex items-center justify-between gap-2 pt-2 border-t border-stone-300">
+              <div className="flex items-center justify-between gap-2 pt-2 border-t border-sidebar-border">
                 <LanguageSwitcher />
                 <Button
                   variant="ghost"
                   size="sm"
                   onClick={handleLogout}
-                  className="text-stone-400 hover:text-red-600 hover:bg-red-50 font-semibold text-xs gap-2 px-2 h-9"
+                  className="text-muted-foreground hover:text-red-600 hover:bg-destructive/10 font-semibold text-xs gap-2 px-2 h-9"
                 >
                   <SignOut className="w-4 h-4" /> {t('admin.logout')}
                 </Button>
@@ -534,23 +534,23 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
             /* Collapsed rail: icon-only profile + logout. */
             <div className="py-3 flex flex-col items-center gap-2">
               <Link href="/dashboard/profile" title={t('admin.userSettings')}>
-                <Avatar className="w-8 h-8 border border-stone-300">
+                <Avatar className="w-8 h-8 border border-sidebar-border">
                   <AvatarImage src={`https://avatar.iran.liara.run/username?username=${user?.firstName}+${user?.lastName}`} />
-                  <AvatarFallback className="bg-[#111111] text-white text-[9px] font-semibold">{user?.firstName?.[0]}{user?.lastName?.[0]}</AvatarFallback>
+                  <AvatarFallback className="bg-sidebar-primary text-sidebar-primary-foreground text-[9px] font-semibold">{user?.firstName?.[0]}{user?.lastName?.[0]}</AvatarFallback>
                 </Avatar>
               </Link>
               <button
                 onClick={handleLogout}
                 title={t('admin.logout')}
-                className="text-stone-400 hover:text-red-600 hover:bg-red-50 w-8 h-8 flex items-center justify-center rounded-md transition-colors"
+                className="text-muted-foreground hover:text-red-600 hover:bg-destructive/10 w-8 h-8 flex items-center justify-center rounded-md transition-colors"
               >
                 <SignOut className="w-4 h-4" />
               </button>
             </div>
           )}
-          <div className="px-4 py-2 flex items-center gap-2 border-t border-stone-300 justify-center lg:justify-start">
+          <div className="px-4 py-2 flex items-center gap-2 border-t border-sidebar-border justify-center lg:justify-start">
             <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shrink-0" />
-            {isSidebarOpen && <span className="text-[10px] font-semibold text-stone-400">System Online</span>}
+            {isSidebarOpen && <span className="text-[10px] font-semibold text-muted-foreground">System Online</span>}
           </div>
         </div>
       </aside>
