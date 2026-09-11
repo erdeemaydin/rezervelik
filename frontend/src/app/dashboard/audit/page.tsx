@@ -34,7 +34,7 @@ const categoryColor = (c: string) => {
     case 'RESERVATION': return 'bg-teal-50 text-teal-700 border-teal-200';
     case 'PERMISSIONS': return 'bg-indigo-50 text-indigo-700 border-indigo-200';
     case 'SUBSCRIPTION': return 'bg-purple-50 text-purple-700 border-purple-200';
-    default: return 'bg-slate-100 text-slate-600 border-slate-200';
+    default: return 'bg-slate-100 text-slate-600 border-border';
   }
 };
 
@@ -90,14 +90,14 @@ export default function TenantAuditPage() {
           </div>
           <button
             onClick={fetchLogs}
-            className="flex items-center gap-2 h-8 px-3 text-xs font-bold text-slate-600 border border-slate-200 rounded-md hover:bg-slate-50"
+            className="flex items-center gap-2 h-8 px-3 text-xs font-bold text-slate-600 border border-border rounded-md hover:bg-slate-50"
           >
             <ArrowClockwise className={cn('w-3.5 h-3.5', loading && 'animate-spin')} /> {t('audit.refresh')}
           </button>
         </div>
 
-        <Card className="border-slate-200 shadow-sm bg-white overflow-hidden">
-          <CardHeader className="border-b border-slate-100 bg-slate-50/50 p-4">
+        <Card className="border-border shadow-sm bg-white overflow-hidden">
+          <CardHeader className="border-b border-border bg-slate-50/50 p-4">
             <div className="flex items-center justify-between flex-wrap gap-3">
               <div className="flex items-center gap-2">
                 <Scroll className="w-4 h-4 text-slate-600" />
@@ -106,7 +106,7 @@ export default function TenantAuditPage() {
               <select
                 value={category}
                 onChange={(e) => setCategory(e.target.value)}
-                className="h-8 px-2 text-xs font-bold border border-slate-200 rounded-md bg-white"
+                className="h-8 px-2 text-xs font-bold border border-border rounded-md bg-white transition-colors outline-none hover:border-ring focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
               >
                 {CATEGORIES.map((c) => (
                   <option key={c} value={c}>{c === 'ALL' ? t('audit.allCategories') : c}</option>
@@ -211,11 +211,11 @@ export default function TenantAuditPage() {
                 <div>
                   <div className="text-[10px] font-semibold text-slate-400 mb-1.5">{t('audit.detailChanges')}</div>
                   {selectedLog.metadata && Object.keys(selectedLog.metadata).length > 0 ? (
-                    <pre className="bg-slate-50 border border-slate-200 rounded-lg p-3 text-[11px] font-mono text-slate-700 overflow-x-auto whitespace-pre-wrap break-words">
+                    <pre className="bg-slate-50 border border-border rounded-lg p-3 text-[11px] font-mono text-slate-700 overflow-x-auto whitespace-pre-wrap break-words">
                       {JSON.stringify(selectedLog.metadata, null, 2)}
                     </pre>
                   ) : (
-                    <div className="text-xs text-slate-400 italic bg-slate-50 border border-slate-100 rounded-lg p-3">
+                    <div className="text-xs text-slate-400 italic bg-slate-50 border border-border rounded-lg p-3">
                       {t('audit.detailNoChanges')}
                     </div>
                   )}

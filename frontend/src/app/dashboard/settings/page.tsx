@@ -277,8 +277,8 @@ export default function SettingsPage() {
                         silently affects Reservations/Host/Tables elsewhere in the app. */}
                     <TabsContent value="reservations" className="mt-6">
                         <div className="grid grid-cols-1 gap-8">
-                            <Card className="rounded-xl border-slate-200 shadow-sm overflow-hidden bg-white">
-                                <CardHeader className="p-6 bg-slate-50/50 border-b border-slate-100 flex flex-row items-center gap-4">
+                            <Card className="rounded-xl border-border shadow-sm overflow-hidden bg-white">
+                                <CardHeader className="p-6 bg-slate-50/50 border-b border-border flex flex-row items-center gap-4">
                                     <div className="p-3 bg-purple-100 rounded-lg text-purple-600"><Clock className="w-6 h-6" /></div>
                                     <div>
                                         <CardTitle className="text-lg font-semibold tracking-tight">{t("settings.reservationLogic")}</CardTitle>
@@ -307,7 +307,7 @@ export default function SettingsPage() {
                                                 </SelectContent>
                                         </Select>
                                         {/* Explain how the chosen mode computes a booking's end time / conflict check. */}
-                                        <p className="text-[11px] text-slate-500 leading-relaxed bg-slate-50 border border-slate-100 rounded-md p-2.5">
+                                        <p className="text-[11px] text-slate-500 leading-relaxed bg-slate-50 border border-border rounded-md p-2.5">
                                             {t(`settings.logicExplain.${settings.logic === 'DYNAMIC_DURATION' || settings.logic === 'MANUAL_AVAILABILITY' ? settings.logic : 'FIXED_SLOTS'}`)}
                                         </p>
                                     </div>
@@ -351,8 +351,8 @@ export default function SettingsPage() {
                                 </CardContent>
                             </Card>
 
-                            <Card className="rounded-xl border-slate-200 shadow-sm overflow-hidden bg-white">
-                                <CardHeader className="p-6 bg-slate-50/50 border-b border-slate-100 flex flex-row items-center gap-4">
+                            <Card className="rounded-xl border-border shadow-sm overflow-hidden bg-white">
+                                <CardHeader className="p-6 bg-slate-50/50 border-b border-border flex flex-row items-center gap-4">
                                     <div className="p-3 bg-amber-100 rounded-lg text-amber-600"><Users className="w-6 h-6" /></div>
                                     <div>
                                         <CardTitle className="text-lg font-semibold tracking-tight">{t("settings.overbooking")}</CardTitle>
@@ -386,8 +386,8 @@ export default function SettingsPage() {
                                 </CardContent>
                             </Card>
 
-                            <Card className="rounded-xl border-slate-200 shadow-sm overflow-hidden bg-white">
-                                <CardHeader className="p-6 bg-slate-50/50 border-b border-slate-100 flex flex-row items-center gap-4">
+                            <Card className="rounded-xl border-border shadow-sm overflow-hidden bg-white">
+                                <CardHeader className="p-6 bg-slate-50/50 border-b border-border flex flex-row items-center gap-4">
                                     <div className="p-3 bg-indigo-100 rounded-lg text-indigo-600"><CalendarCheck className="w-6 h-6" /></div>
                                     <div>
                                         <CardTitle className="text-lg font-semibold tracking-tight">{t("settings.calendarCustomization")}</CardTitle>
@@ -398,7 +398,7 @@ export default function SettingsPage() {
                                     <div className="grid gap-4 max-w-2xl">
                                         <Label className="text-sm font-semibold text-slate-500">{t("settings.setFutureMode")}</Label>
                                         <Select value={futureModeAction || ''} onValueChange={(v) => { setFutureModeAction(v); setIsFutureDialogOpen(true); }}>
-                                            <SelectTrigger className="h-14 text-base font-bold rounded-lg border-slate-200 px-4">
+                                            <SelectTrigger className="h-14 text-base font-bold rounded-lg border-border px-4">
                                                 <SelectValue placeholder={t("settings.selectBulkAction")} />
                                             </SelectTrigger>
                                             <SelectContent>
@@ -418,8 +418,8 @@ export default function SettingsPage() {
                         Scheduling page (shift assignment); this is the config that page reads. */}
                     <TabsContent value="scheduling" className="mt-6">
                         <div className="grid grid-cols-1 gap-8">
-                            <Card className="rounded-xl border-slate-200 shadow-sm overflow-hidden bg-white">
-                                <CardHeader className="p-6 bg-slate-50/50 border-b border-slate-100 flex flex-row items-center gap-4">
+                            <Card className="rounded-xl border-border shadow-sm overflow-hidden bg-white">
+                                <CardHeader className="p-6 bg-slate-50/50 border-b border-border flex flex-row items-center gap-4">
                                     <div className="p-3 bg-blue-100 rounded-lg text-blue-600"><Calendar className="w-6 h-6" /></div>
                                     <div>
                                         <CardTitle className="text-lg font-semibold tracking-tight">{t("settings.schedulingOperations")}</CardTitle>
@@ -433,14 +433,14 @@ export default function SettingsPage() {
                                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                                 <div
                                                     onClick={() => setSettings({...settings, schedulingSystem: 'WEEKLY'})}
-                                                    className={`p-4 border-2 rounded-md cursor-pointer transition-all ${settings.schedulingSystem === 'WEEKLY' ? 'border-blue-600 bg-blue-50/50' : 'border-slate-100 hover:border-slate-300'}`}
+                                                    className={`p-4 border-2 rounded-md cursor-pointer transition-all ${settings.schedulingSystem === 'WEEKLY' ? 'border-blue-600 bg-blue-50/50' : 'border-border hover:border-ring'}`}
                                                 >
                                                     <div className="font-black text-sm text-slate-800">{t("settings.weeklyView")}</div>
                                                     <p className="text-[10px] text-slate-500 mt-1 leading-relaxed">{t("settings.weeklyDesc")}</p>
                                                 </div>
                                                 <div
                                                     onClick={() => setSettings({...settings, schedulingSystem: 'MONTHLY'})}
-                                                    className={`p-4 border-2 rounded-md cursor-pointer transition-all ${settings.schedulingSystem === 'MONTHLY' ? 'border-blue-600 bg-blue-50/50' : 'border-slate-100 hover:border-slate-300'}`}
+                                                    className={`p-4 border-2 rounded-md cursor-pointer transition-all ${settings.schedulingSystem === 'MONTHLY' ? 'border-blue-600 bg-blue-50/50' : 'border-border hover:border-ring'}`}
                                                 >
                                                     <div className="font-black text-sm text-slate-800">{t("settings.monthlyView")}</div>
                                                     <p className="text-[10px] text-slate-500 mt-1 leading-relaxed">{t("settings.monthlyDesc")}</p>
@@ -448,7 +448,7 @@ export default function SettingsPage() {
                                             </div>
                                         </div>
 
-                                        <div className="pt-4 border-t border-slate-100 space-y-3">
+                                        <div className="pt-4 border-t border-border space-y-3">
                                             <div className="space-y-0.5">
                                                 <Label className="text-xs font-bold text-slate-700">{t("settings.staffPrivacy")}</Label>
                                                 <p className="text-[10px] text-slate-400">{t("settings.staffPrivacyDesc")}</p>
@@ -467,12 +467,12 @@ export default function SettingsPage() {
                                                 </SelectContent>
                                             </Select>
                                             {/* What the selected privacy mode actually exposes to staff. */}
-                                            <p className="text-[11px] text-slate-500 leading-relaxed bg-slate-50 border border-slate-100 rounded-md p-2.5">
+                                            <p className="text-[11px] text-slate-500 leading-relaxed bg-slate-50 border border-border rounded-md p-2.5">
                                                 {t(`settings.privacyExplain.${settings.staffScheduleView}`)}
                                             </p>
                                         </div>
 
-                                        <div className="pt-4 border-t border-slate-100 space-y-3">
+                                        <div className="pt-4 border-t border-border space-y-3">
                                             <div className="space-y-0.5">
                                                 <Label className="text-xs font-bold text-slate-700">{t("settings.defaultBreak")}</Label>
                                                 <p className="text-[10px] text-slate-400">{t("settings.defaultBreakDesc")}</p>
@@ -502,8 +502,8 @@ export default function SettingsPage() {
                         which is the transaction ledger. */}
                     <TabsContent value="payments" className="mt-6">
                         <div className="grid grid-cols-1 gap-8">
-                            <Card className="rounded-xl border-slate-200 shadow-sm overflow-hidden bg-white">
-                                <CardHeader className="p-6 bg-slate-50/50 border-b border-slate-100 flex flex-row items-center gap-4">
+                            <Card className="rounded-xl border-border shadow-sm overflow-hidden bg-white">
+                                <CardHeader className="p-6 bg-slate-50/50 border-b border-border flex flex-row items-center gap-4">
                                     <div className="p-3 bg-emerald-100 rounded-lg text-emerald-600"><CreditCard className="w-6 h-6" /></div>
                                     <div>
                                         <CardTitle className="text-lg font-semibold tracking-tight">{t("settings.paymentsDeposits")}</CardTitle>
@@ -529,7 +529,7 @@ export default function SettingsPage() {
                                         <Label className="text-xs font-semibold text-slate-500">{t("settings.currency")}</Label>
                                         {/* Currency is a platform-wide setting configured by the system
                                             administrator — shown read-only to the tenant admin. */}
-                                        <div className="h-12 flex items-center justify-between rounded-lg px-4 border border-slate-200 bg-slate-50">
+                                        <div className="h-12 flex items-center justify-between rounded-lg px-4 border border-border bg-slate-50">
                                             <span className="text-base font-black text-slate-700">{settings.currency || 'TRY'}</span>
                                             <span className="text-[10px] font-bold text-slate-400">{t("settings.currencyManagedBySystem")}</span>
                                         </div>
@@ -552,8 +552,8 @@ export default function SettingsPage() {
                         public-facing site's branding. */}
                     <TabsContent value="appearance" className="mt-6">
                         <div className="grid grid-cols-1 gap-8">
-                            <Card className="rounded-xl border-slate-200 shadow-sm overflow-hidden bg-white">
-                                <CardHeader className="p-6 bg-slate-50/50 border-b border-slate-100 flex flex-row items-center gap-4">
+                            <Card className="rounded-xl border-border shadow-sm overflow-hidden bg-white">
+                                <CardHeader className="p-6 bg-slate-50/50 border-b border-border flex flex-row items-center gap-4">
                                     <div className="p-3 bg-blue-100 rounded-lg text-blue-600"><Palette className="w-6 h-6" /></div>
                                     <div>
                                         <CardTitle className="text-lg font-semibold tracking-tight">{t("settings.appearance")}</CardTitle>
@@ -569,11 +569,11 @@ export default function SettingsPage() {
                                                     key={th.id}
                                                     type="button"
                                                     onClick={() => { setSettings(prev => ({ ...prev, dashboardTheme: th.id })); useAdminThemeStore.getState().setTheme(th.id); }}
-                                                    className={`relative flex flex-col items-stretch gap-2 rounded-lg border-2 p-2.5 text-left transition-all ${active ? 'border-slate-800 shadow-sm' : 'border-slate-200 hover:border-slate-300'}`}
+                                                    className={`relative flex flex-col items-stretch gap-2 rounded-lg border-2 p-2.5 text-left transition-all ${active ? 'border-slate-800 shadow-sm' : 'border-border hover:border-ring'}`}
                                                     aria-pressed={active}
                                                 >
                                                     {/* Palette preview: sidebar rail + surface + accent dot */}
-                                                    <div className="flex h-12 overflow-hidden rounded-md border border-slate-200">
+                                                    <div className="flex h-12 overflow-hidden rounded-md border border-border">
                                                         <span className="w-1/4" style={{ backgroundColor: th.swatch.sidebar }} />
                                                         <span className="flex flex-1 items-center justify-center" style={{ backgroundColor: th.swatch.bg }}>
                                                             <span className="h-4 w-4 rounded-full" style={{ backgroundColor: th.swatch.accent }} />
@@ -611,7 +611,7 @@ export default function SettingsPage() {
                             </span> {t("settings.changeDefaultMode2")}
                         </DialogDescription>
                     </div>
-                    <div className="p-4 bg-slate-50 flex flex-col gap-2 border-t border-slate-100">
+                    <div className="p-4 bg-slate-50 flex flex-col gap-2 border-t border-border">
                         <Button 
                             onClick={() => handleFutureApply(true)} 
                             className="w-full h-12 bg-red-600 hover:bg-red-700 text-white font-semibold"

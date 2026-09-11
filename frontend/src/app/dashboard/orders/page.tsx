@@ -216,7 +216,7 @@ export default function OrdersPage() {
           <p className="text-[10px] text-slate-400 font-semibold tracking-[0.2em] mt-1 italic">{t('orders.subtitle')}</p>
         </div>
         <Link href="/dashboard/orders/settings">
-          <Button variant="outline" size="sm" className="h-9 px-4 text-[10px] font-semibold border-slate-200 text-slate-600 shadow-sm bg-white">
+          <Button variant="outline" size="sm" className="h-9 px-4 text-[10px] font-semibold border-border text-slate-600 shadow-sm bg-white">
             <GearSix className="w-3.5 h-3.5 mr-1.5" /> {t('orders.settingsBtn')}
           </Button>
         </Link>
@@ -230,29 +230,29 @@ export default function OrdersPage() {
 
         {/* ---- ORDER HISTORY ---- */}
         <TabsContent value="orders" className="mt-4">
-          <Card className="rounded-md border-slate-200 shadow-sm overflow-hidden bg-white">
-            <CardHeader className="p-0 border-b border-slate-100">
+          <Card className="rounded-md border-border shadow-sm overflow-hidden bg-white">
+            <CardHeader className="p-0 border-b border-border">
               <div className="flex flex-wrap items-center justify-between p-3 gap-3">
-                <div className="flex items-center gap-1 bg-slate-100/50 p-1 rounded-md border border-slate-200/60 flex-wrap">
+                <div className="flex items-center gap-1 bg-slate-100/50 p-1 rounded-md border border-border/60 flex-wrap">
                   {([
                     { label: t('orders.filters.today'), value: 'today' as const },
                     { label: t('orders.filters.thisWeek'), value: 'week' as const },
                     { label: t('orders.filters.thisMonth'), value: 'month' as const },
                     { label: t('orders.filters.allTime'), value: 'all' as const },
                   ]).map((f) => (
- <Button key={f.value} variant="ghost"size="sm"onClick={() => setTimeFilter(f.value)} className={cn('h-7 text-[9px] font-semibold px-3 rounded-sm transition-all', timeFilter === f.value ?'bg-white text-slate-900 shadow-sm border border-slate-200/50':'text-slate-500 hover:text-slate-700')}>{f.label}</Button>
+ <Button key={f.value} variant="ghost"size="sm"onClick={() => setTimeFilter(f.value)} className={cn('h-7 text-[9px] font-semibold px-3 rounded-sm transition-all', timeFilter === f.value ?'bg-white text-slate-900 shadow-sm border border-border/50':'text-slate-500 hover:text-slate-700')}>{f.label}</Button>
                   ))}
                   <div className="w-px h-4 bg-slate-300 mx-1" />
                   <input
                     type="date"
                     value={customDate}
                     onChange={(e) => { setCustomDate(e.target.value); setTimeFilter('custom'); }}
-                    className={cn('h-7 text-[10px] font-bold border rounded px-1.5 bg-white', timeFilter === 'custom' ? 'border-blue-400' : 'border-slate-200')}
+                    className={cn('h-7 text-[10px] font-bold border rounded px-1.5 bg-white', timeFilter === 'custom' ? 'border-blue-400' : 'border-border')}
                   />
                 </div>
                 <div className="flex items-center gap-2 flex-wrap">
                   <Select value={statusFilter} onValueChange={(v) => { if (v) setStatusFilter(v); }}>
-                    <SelectTrigger className="h-9 w-[160px] text-[10px] font-black rounded-md border-slate-200 focus:ring-0 shadow-none">
+                    <SelectTrigger className="h-9 w-[160px] text-[10px] font-black rounded-md border-border focus:ring-0 shadow-none">
                       <SelectValue>{statusFilter === 'ALL' ? t('orders.filters.statusAll') : t(`orders.status.${statusFilter}`)}</SelectValue>
                     </SelectTrigger>
                     <SelectContent>
@@ -262,7 +262,7 @@ export default function OrdersPage() {
                   </Select>
                   <div className="relative flex-1 min-w-[200px] max-w-sm">
                     <MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                    <Input placeholder={t('orders.searchPlaceholder')} className="pl-10 h-9 text-xs bg-slate-50 border-slate-200 focus:bg-white rounded-md font-bold" value={orderSearch} onChange={(e) => setOrderSearch(e.target.value)} />
+                    <Input placeholder={t('orders.searchPlaceholder')} className="pl-10 h-9 text-xs bg-slate-50 border-border focus:bg-white rounded-md font-bold" value={orderSearch} onChange={(e) => setOrderSearch(e.target.value)} />
                   </div>
                 </div>
               </div>
@@ -270,7 +270,7 @@ export default function OrdersPage() {
             <CardContent className="p-0">
               <Table>
                 <TableHeader className="bg-slate-50/80">
-                  <TableRow className="h-10 hover:bg-transparent border-b border-slate-200">
+                  <TableRow className="h-10 hover:bg-transparent border-b border-border">
                     <TableHead className="text-[10px] font-semibold text-slate-500 px-6">{t('orders.table.orderNumber')}</TableHead>
                     <TableHead className="text-[10px] font-semibold text-slate-500">{t('orders.table.customer')}</TableHead>
                     <TableHead className="text-[10px] font-semibold text-slate-500">{t('orders.table.fulfillment')}</TableHead>
@@ -296,7 +296,7 @@ export default function OrdersPage() {
                         </div>
                       </TableCell>
                       <TableCell>
-                        <Badge variant="outline" className="text-[9px] font-semibold border-slate-200 bg-white text-slate-600 shadow-none">
+                        <Badge variant="outline" className="text-[9px] font-semibold border-border bg-white text-slate-600 shadow-none">
                           {t(`orders.fulfillment.${o.fulfillmentType}`)}
                         </Badge>
                       </TableCell>
@@ -317,21 +317,21 @@ export default function OrdersPage() {
 
         {/* ---- CUSTOMERS ---- */}
         <TabsContent value="customers" className="mt-4">
-          <Card className="rounded-md border-slate-200 shadow-sm overflow-hidden bg-white">
-            <CardHeader className="p-3 bg-slate-50/50 border-b border-slate-200 flex flex-row items-center justify-between">
+          <Card className="rounded-md border-border shadow-sm overflow-hidden bg-white">
+            <CardHeader className="p-3 bg-slate-50/50 border-b border-border flex flex-row items-center justify-between">
               <div className="flex items-center gap-2">
                 <Users className="w-4 h-4 text-blue-500" />
                 <span className="text-xs font-bold text-slate-700">{t('orders.tabs.customers')}</span>
               </div>
               <div className="relative w-64">
                 <MagnifyingGlass className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
-                <Input placeholder={t('orders.customers.searchPlaceholder')} className="pl-8 h-8 text-xs bg-white border-slate-200 rounded-sm" value={customerSearch} onChange={(e) => setCustomerSearch(e.target.value)} />
+                <Input placeholder={t('orders.customers.searchPlaceholder')} className="pl-8 h-8 text-xs bg-white border-border rounded-sm" value={customerSearch} onChange={(e) => setCustomerSearch(e.target.value)} />
               </div>
             </CardHeader>
             <CardContent className="p-0">
               <Table>
                 <TableHeader className="bg-slate-50/80">
-                  <TableRow className="h-9 border-b border-slate-200">
+                  <TableRow className="h-9 border-b border-border">
                     <TableHead className="text-[9px] font-semibold text-slate-400 px-6">{t('orders.customers.table.name')}</TableHead>
                     <TableHead className="text-[9px] font-semibold text-slate-400">{t('orders.customers.table.phone')}</TableHead>
                     <TableHead className="text-[9px] font-semibold text-slate-400 text-center">{t('orders.customers.table.orderCount')}</TableHead>
@@ -344,13 +344,13 @@ export default function OrdersPage() {
                   ) : filteredCustomers.length === 0 ? (
                     <TableRow><TableCell colSpan={4} className="h-48 text-center text-[10px] font-semibold text-slate-400">{t('orders.customers.table.noCustomers')}</TableCell></TableRow>
                   ) : filteredCustomers.map((c) => (
-                    <TableRow key={c.id} onClick={() => openCustomerDetail(c.id)} className="h-14 hover:bg-slate-50/50 border-b border-slate-100 transition-colors cursor-pointer">
+                    <TableRow key={c.id} onClick={() => openCustomerDetail(c.id)} className="h-14 hover:bg-slate-50/50 border-b border-border transition-colors cursor-pointer">
                       <TableCell className="px-6 py-3">
                         <span className="font-black text-slate-900 text-sm">{c.name}</span>
                       </TableCell>
                       <TableCell className="text-[10px] font-mono text-slate-500">{c.phone}</TableCell>
                       <TableCell className="text-center">
-                        <Badge variant="outline" className="text-[9px] font-black border-slate-200 bg-white text-slate-600 shadow-none">{c._count.orders}</Badge>
+                        <Badge variant="outline" className="text-[9px] font-black border-border bg-white text-slate-600 shadow-none">{c._count.orders}</Badge>
                       </TableCell>
                       <TableCell className="px-6 text-right text-[10px] font-bold text-slate-400">{new Date(c.createdAt).toLocaleDateString(localeTag)}</TableCell>
                     </TableRow>
@@ -411,7 +411,7 @@ export default function OrdersPage() {
                 </div>
 
                 {selectedOrder.fulfillmentType === 'DELIVERY' && (
-                  <div className="rounded-md border border-slate-200 bg-slate-50/50 p-3">
+                  <div className="rounded-md border border-border bg-slate-50/50 p-3">
                     <div className="text-[9px] font-semibold text-slate-400 flex items-center gap-1 mb-1"><MapPin className="w-3 h-3" /> {t('orders.detail.address')}</div>
                     {selectedOrder.addressSnapshot ? (
                       <div className="text-xs text-slate-700 font-medium">
@@ -428,9 +428,9 @@ export default function OrdersPage() {
 
                 <div>
                   <div className="text-[9px] font-semibold text-slate-400 mb-2">{t('orders.detail.items')}</div>
-                  <div className="rounded-md border border-slate-200 overflow-hidden">
+                  <div className="rounded-md border border-border overflow-hidden">
                     {selectedOrder.items.map((it) => (
-                      <div key={it.id} className="flex items-start justify-between p-3 border-b border-slate-100 last:border-0 bg-white">
+                      <div key={it.id} className="flex items-start justify-between p-3 border-b border-border last:border-0 bg-white">
                         <div>
                           <div className="text-xs font-bold text-slate-800">{it.quantity}× {it.nameSnapshot}</div>
                           {it.modifiersSnapshot && it.modifiersSnapshot.length > 0 && (
@@ -449,7 +449,7 @@ export default function OrdersPage() {
                   </div>
                 </div>
 
-                <div className="space-y-1.5 text-xs border-t border-slate-100 pt-3">
+                <div className="space-y-1.5 text-xs border-t border-border pt-3">
                   <div className="flex justify-between text-slate-500 font-bold">
                     <span>{t('orders.detail.subtotal')}</span><span>{formatPrice(selectedOrder.subtotal)}</span>
                   </div>
@@ -496,7 +496,7 @@ export default function OrdersPage() {
                   {selectedCustomer.phoneVerifiedAt ? (
                     <Badge className="bg-emerald-100 text-emerald-700 border-0 text-[9px] font-black"><SealCheck className="w-3 h-3 mr-1" /> {t('orders.customerDetail.phoneVerified')}</Badge>
                   ) : (
-                    <Badge variant="outline" className="text-[9px] font-black border-slate-200 text-slate-500">{t('orders.customerDetail.phoneNotVerified')}</Badge>
+                    <Badge variant="outline" className="text-[9px] font-black border-border text-slate-500">{t('orders.customerDetail.phoneNotVerified')}</Badge>
                   )}
                 </div>
 
@@ -507,7 +507,7 @@ export default function OrdersPage() {
                   ) : (
                     <div className="space-y-2">
                       {selectedCustomer.addresses.map((a) => (
-                        <div key={a.id} className="rounded-md border border-slate-200 bg-slate-50/50 p-2.5 text-xs text-slate-700">
+                        <div key={a.id} className="rounded-md border border-border bg-slate-50/50 p-2.5 text-xs text-slate-700">
                           {a.label && <span className="font-black mr-1">{a.label}:</span>}
                           {a.neighborhood && <span className="mr-1">{a.neighborhood},</span>}
                           {a.fullAddress}
@@ -522,9 +522,9 @@ export default function OrdersPage() {
                   {selectedCustomer.orders.length === 0 ? (
                     <div className="text-xs text-slate-400 italic">{t('orders.customerDetail.noOrders')}</div>
                   ) : (
-                    <div className="rounded-md border border-slate-200 overflow-hidden">
+                    <div className="rounded-md border border-border overflow-hidden">
                       {selectedCustomer.orders.map((o) => (
-                        <div key={o.id} className="flex items-center justify-between p-2.5 border-b border-slate-100 last:border-0 bg-white text-xs">
+                        <div key={o.id} className="flex items-center justify-between p-2.5 border-b border-border last:border-0 bg-white text-xs">
                           <div className="flex items-center gap-2">
                             <span className="font-black text-slate-900">#{o.orderNumber}</span>
  <Badge className={cn('text-[8px] font-semibold px-1.5 py-0 rounded-sm shadow-none border-0', statusBadgeClass(o.status))}>{t(`orders.status.${o.status}`)}</Badge>

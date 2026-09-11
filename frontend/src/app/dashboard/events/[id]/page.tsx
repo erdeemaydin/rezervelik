@@ -48,7 +48,7 @@ export default function EventDetailPage() {
   const [vendorPick, setVendorPick] = useState('');
 
   const money = (minor: number | null | undefined) => (minor == null ? '—' : `₺${(minor / 100).toLocaleString('tr-TR')}`);
-  const selectClass = 'h-10 px-2 text-sm font-bold border border-slate-200 rounded-sm bg-white';
+  const selectClass = 'h-10 px-2 text-sm font-bold border border-border rounded-sm bg-white transition-colors outline-none hover:border-ring focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50';
 
   const load = useCallback(async () => {
     try {
@@ -232,7 +232,7 @@ export default function EventDetailPage() {
           <div className="flex flex-wrap gap-1">
             {STAGES.map(s => (
               <button key={s} onClick={() => setStage(s)}
- className={`text-[10px] font-semibold px-2 py-1 rounded-sm border ${form.stage === s ?'bg-slate-900 text-white border-slate-900':'bg-white text-slate-500 border-slate-200 hover:border-slate-400'}`}>
+ className={`text-[10px] font-semibold px-2 py-1 rounded-sm border ${form.stage === s ?'bg-slate-900 text-white border-slate-900':'bg-white text-slate-500 border-border hover:border-ring'}`}>
                 {t(`events.stages.${s}`)}
               </button>
             ))}
@@ -307,13 +307,13 @@ export default function EventDetailPage() {
               <div className="space-y-1.5">
                 {guests.length === 0 && <p className="text-xs text-slate-400">{t('events.noGuests')}</p>}
                 {guests.map(g => (
-                  <div key={g.id} className="flex items-center gap-2 border border-slate-100 rounded-sm px-2 py-1.5">
+                  <div key={g.id} className="flex items-center gap-2 border border-border rounded-sm px-2 py-1.5">
                     <span className="font-bold text-sm truncate flex-1">
                       {g.name}
                       {g.respondedAt && <span title={t('events.selfResponded')} className="ml-1 text-emerald-500">•</span>}
                     </span>
                     <span className="text-[10px] font-bold text-slate-400">×{g.partySize}</span>
-                    <select value={g.rsvp} onChange={e => patchGuest(g.id, { rsvp: e.target.value })} className="h-7 text-[10px] font-bold border border-slate-200 rounded-sm bg-white">
+                    <select value={g.rsvp} onChange={e => patchGuest(g.id, { rsvp: e.target.value })} className="h-7 text-[10px] font-bold border border-border rounded-sm bg-white transition-colors outline-none hover:border-ring focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50">
                       {RSVP.map(r => <option key={r} value={r}>{t(`events.rsvp.${r}`)}</option>)}
                     </select>
                     <button onClick={() => delGuest(g.id)} className="text-slate-300 hover:text-rose-500"><Trash className="w-3.5 h-3.5" /></button>
@@ -345,7 +345,7 @@ export default function EventDetailPage() {
               <div className="space-y-1.5">
                 {installments.length === 0 && <p className="text-xs text-slate-400">{t('events.noInstallments')}</p>}
                 {installments.map(inst => (
-                  <div key={inst.id} className="flex items-center gap-2 border border-slate-100 rounded-sm px-2 py-1.5">
+                  <div key={inst.id} className="flex items-center gap-2 border border-border rounded-sm px-2 py-1.5">
                     <button onClick={() => toggleInstallmentPaid(inst)} title={t('events.markPaid')}>
                       <CheckCircle className={`w-4 h-4 ${inst.status === 'PAID' ? 'text-emerald-500' : 'text-slate-300'}`} />
                     </button>
@@ -418,13 +418,13 @@ export default function EventDetailPage() {
             <div className="space-y-1.5">
               {vendors.length === 0 && <p className="text-xs text-slate-400">{t('events.noVendors')}</p>}
               {vendors.map(v => (
-                <div key={v.id} className="flex items-center gap-2 border border-slate-100 rounded-sm px-2 py-1.5 flex-wrap">
+                <div key={v.id} className="flex items-center gap-2 border border-border rounded-sm px-2 py-1.5 flex-wrap">
                   <span className="font-bold text-sm truncate flex-1 min-w-[120px]">{v.vendor.name}
                     <span className="ml-1.5 text-[10px] font-bold text-slate-400">{t(`vendors.categories.${v.vendor.category}`)}</span>
                   </span>
                   <Input defaultValue={v.role || ''} onBlur={e => e.target.value !== (v.role || '') && patchVendor(v.id, { role: e.target.value })} placeholder={t('events.vendorRole')} className="h-8 w-28 text-xs font-bold" />
                   <Input type="number" min="0" step="0.01" defaultValue={v.cost != null ? String(v.cost / 100) : ''} onBlur={e => patchVendor(v.id, { cost: e.target.value === '' ? null : Math.round(parseFloat(e.target.value) * 100) })} placeholder="₺" className="h-8 w-20 text-xs font-bold font-mono" />
-                  <select value={v.status} onChange={e => patchVendor(v.id, { status: e.target.value })} className="h-8 text-[10px] font-bold border border-slate-200 rounded-sm bg-white">
+                  <select value={v.status} onChange={e => patchVendor(v.id, { status: e.target.value })} className="h-8 text-[10px] font-bold border border-border rounded-sm bg-white transition-colors outline-none hover:border-ring focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50">
                     {VENDOR_LINK_STATUS.map(s => <option key={s} value={s}>{t(`events.vendorStatuses.${s}`)}</option>)}
                   </select>
                   <button onClick={() => delVendor(v.id)} className="text-slate-300 hover:text-rose-500"><Trash className="w-3.5 h-3.5" /></button>
@@ -492,7 +492,7 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 
 function SeatingGroup({ title, count, capacity, over, children }: { title: string; count: number; capacity?: number; over?: boolean; children: React.ReactNode }) {
   return (
-    <div className="border border-slate-200 rounded-md p-2.5 space-y-1.5 bg-slate-50/50">
+    <div className="border border-border rounded-md p-2.5 space-y-1.5 bg-slate-50/50">
       <div className="flex items-center justify-between">
         <span className="text-[11px] font-semibold truncate">{title}</span>
         <span className={`text-[10px] font-black font-mono ${over ? 'text-rose-500' : 'text-slate-400'}`}>{count}{capacity != null ? `/${capacity}` : ''}</span>
@@ -506,7 +506,7 @@ function SeatRow({ guest, resources, onAssign, label, noneLabel }: { guest: Gues
   return (
     <div className="flex items-center gap-1.5">
       <span className="text-xs font-bold truncate flex-1">{guest.name} <span className="text-[10px] text-slate-400">×{guest.partySize}</span></span>
-      <select value={guest.resourceId || ''} onChange={e => onAssign(e.target.value)} title={label} className="h-7 max-w-[110px] text-[10px] font-bold border border-slate-200 rounded-sm bg-white">
+      <select value={guest.resourceId || ''} onChange={e => onAssign(e.target.value)} title={label} className="h-7 max-w-[110px] text-[10px] font-bold border border-border rounded-sm bg-white transition-colors outline-none hover:border-ring focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50">
         <option value="">{noneLabel}</option>
         {resources.map(r => <option key={r.id} value={r.id}>{r.identifier}</option>)}
       </select>

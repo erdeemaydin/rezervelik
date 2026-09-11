@@ -227,8 +227,8 @@ export default function CustomizationPage() {
                             </TabsList>
                             
                             <TabsContent value="theming" className="mt-6">
-                                <Card className="rounded-xl border-slate-200 shadow-sm bg-white">
-                                    <CardHeader className="p-8 border-b border-slate-100">
+                                <Card className="rounded-xl border-border shadow-sm bg-white">
+                                    <CardHeader className="p-8 border-b border-border">
                                         <CardTitle className="text-lg font-semibold tracking-tight">{t("customization.theming.title")}</CardTitle>
                                         <CardDescription className="text-sm mt-1">{t("customization.theming.desc")}</CardDescription>
                                     </CardHeader>
@@ -250,7 +250,7 @@ export default function CustomizationPage() {
                                             </Select>
                                         </div>
 
-                                        <div className="space-y-3 pt-4 border-t border-slate-100">
+                                        <div className="space-y-3 pt-4 border-t border-border">
                                             <Label className="text-[10px] font-semibold text-slate-400">{t("customization.theming.colorPalette")}</Label>
                                             <Select 
                                                 value={customization.colorPalette} 
@@ -268,7 +268,7 @@ export default function CustomizationPage() {
                                             </Select>
                                         </div>
 
-                                        <div className="space-y-3 pt-4 border-t border-slate-100">
+                                        <div className="space-y-3 pt-4 border-t border-border">
                                             <Label className="text-[10px] font-semibold text-slate-400">{t("customization.theming.primaryColor")}</Label>
                                             <div className="flex gap-4">
                                                 <Input 
@@ -290,8 +290,8 @@ export default function CustomizationPage() {
                             </TabsContent>
 
                             <TabsContent value="announcements" className="mt-4">
-                                <Card className="rounded-sm border-slate-200 shadow-sm bg-white">
-                                    <CardHeader className="p-6 border-b border-slate-100">
+                                <Card className="rounded-sm border-border shadow-sm bg-white">
+                                    <CardHeader className="p-6 border-b border-border">
                                         <CardTitle className="text-sm font-semibold tracking-tight">{t("customization.banner.title")}</CardTitle>
                                         <CardDescription className="text-xs">{t("customization.banner.desc")}</CardDescription>
                                     </CardHeader>
@@ -311,8 +311,8 @@ export default function CustomizationPage() {
                             </TabsContent>
 
                             <TabsContent value="pages" className="mt-4 space-y-6">
-                                <Card className="rounded-sm border-slate-200 shadow-sm bg-white">
-                                    <CardHeader className="p-4 border-b border-slate-100 flex flex-row items-center justify-between">
+                                <Card className="rounded-sm border-border shadow-sm bg-white">
+                                    <CardHeader className="p-4 border-b border-border flex flex-row items-center justify-between">
                                         <div>
                                             <CardTitle className="text-sm font-semibold tracking-tight">{t("customization.pages.aboutUs.title")}</CardTitle>
                                             <CardDescription className="text-[10px]">{t("customization.pages.aboutUs.desc")}</CardDescription>
@@ -331,8 +331,8 @@ export default function CustomizationPage() {
                                     )}
                                 </Card>
 
-                                <Card className="rounded-sm border-slate-200 shadow-sm bg-white">
-                                    <CardHeader className="p-4 border-b border-slate-100 flex flex-row items-center justify-between">
+                                <Card className="rounded-sm border-border shadow-sm bg-white">
+                                    <CardHeader className="p-4 border-b border-border flex flex-row items-center justify-between">
                                         <div>
                                             <CardTitle className="text-sm font-semibold tracking-tight">{t("customization.pages.legal.title")}</CardTitle>
                                             <CardDescription className="text-[10px]">{t("customization.pages.legal.desc")}</CardDescription>
@@ -351,8 +351,8 @@ export default function CustomizationPage() {
                                     )}
                                 </Card>
 
-                                <Card className="rounded-sm border-slate-200 shadow-sm bg-white">
-                                    <CardHeader className="p-4 border-b border-slate-100">
+                                <Card className="rounded-sm border-border shadow-sm bg-white">
+                                    <CardHeader className="p-4 border-b border-border">
                                         <CardTitle className="text-sm font-semibold tracking-tight">{t("customization.pages.privacyNotice.title")}</CardTitle>
                                         <CardDescription className="text-[10px]">{t("customization.pages.privacyNotice.desc")}</CardDescription>
                                     </CardHeader>
@@ -367,8 +367,8 @@ export default function CustomizationPage() {
                                     </CardContent>
                                 </Card>
 
-                                <Card className="rounded-sm border-slate-200 shadow-sm bg-white">
-                                    <CardHeader className="p-4 border-b border-slate-100">
+                                <Card className="rounded-sm border-border shadow-sm bg-white">
+                                    <CardHeader className="p-4 border-b border-border">
                                         <CardTitle className="text-sm font-semibold tracking-tight">{t("customization.pages.social.title")}</CardTitle>
                                         <CardDescription className="text-[10px]">{t("customization.pages.social.desc")}</CardDescription>
                                     </CardHeader>
@@ -409,8 +409,8 @@ export default function CustomizationPage() {
                             </TabsContent>
 
                             <TabsContent value="reservation" className="mt-4 space-y-6">
-                                <Card className="rounded-sm border-slate-200 shadow-sm bg-white">
-                                    <CardHeader className="p-6 border-b border-slate-100">
+                                <Card className="rounded-sm border-border shadow-sm bg-white">
+                                    <CardHeader className="p-6 border-b border-border">
                                         <CardTitle className="text-sm font-semibold tracking-tight">{t("customization.rules.title")}</CardTitle>
                                         <CardDescription className="text-xs">{t("customization.rules.desc")}</CardDescription>
                                     </CardHeader>
@@ -426,7 +426,7 @@ export default function CustomizationPage() {
                                             <p className="text-[10px] text-slate-500">{t("customization.rules.infoHint")}</p>
                                         </div>
 
-                                        <div className="space-y-3 pt-4 border-t border-slate-100">
+                                        <div className="space-y-3 pt-4 border-t border-border">
                                             <Label className="text-[10px] font-semibold text-slate-400">{t("customization.rules.warningLabel")}</Label>
                                             <Textarea 
                                                 placeholder={t("customization.rules.warningPlaceholder")} 
@@ -444,8 +444,8 @@ export default function CustomizationPage() {
 
                     {/* Preview / Instructions */}
                     <div className="lg:col-span-1">
-                        <Card className="rounded-sm border-slate-200 shadow-sm bg-slate-50 sticky top-6 overflow-hidden">
-                            <CardHeader className="p-6 border-b border-slate-200 flex flex-row items-center justify-between gap-2 space-y-0">
+                        <Card className="rounded-sm border-border shadow-sm bg-slate-50 sticky top-6 overflow-hidden">
+                            <CardHeader className="p-6 border-b border-border flex flex-row items-center justify-between gap-2 space-y-0">
                                 <CardTitle className="text-sm font-semibold tracking-tight flex items-center gap-2">
                                     <DeviceMobile className="w-4 h-4" /> {t("customization.preview.title")}
                                 </CardTitle>
@@ -472,7 +472,7 @@ export default function CustomizationPage() {
                                 </div>
                             </CardHeader>
                             <CardContent className="p-0">
-                                <div className="text-xs text-slate-500 px-6 py-4 leading-relaxed border-b border-slate-200 bg-white">
+                                <div className="text-xs text-slate-500 px-6 py-4 leading-relaxed border-b border-border bg-white">
                                     {t("customization.preview.desc")}
                                 </div>
                                 {slug ? (

@@ -124,8 +124,8 @@ export default function MenuWizardPage() {
 
         {/* STEP 1: Basic Info */}
         {step === 1 && (
-          <Card className="border-slate-200 shadow-sm animate-in fade-in slide-in-from-bottom-4">
-            <CardHeader className="bg-slate-50/50 border-b border-slate-100 flex flex-row items-center justify-between">
+          <Card className="border-border shadow-sm animate-in fade-in slide-in-from-bottom-4">
+            <CardHeader className="bg-slate-50/50 border-b border-border flex flex-row items-center justify-between">
               <div>
                 <CardTitle className="text-lg">{t("menusWizard.basicInfo")}</CardTitle>
                 <CardDescription>{t("menusWizard.basicInfoDesc")}</CardDescription>
@@ -145,7 +145,7 @@ export default function MenuWizardPage() {
                 <Label className="text-xs font-semibold text-slate-500 flex items-center gap-1"><Info className="w-3.5 h-3.5"/> {t("menusWizard.footnotes")}</Label>
                 <Textarea value={menuInfo.footnotes} onChange={(e) => setMenuInfo({...menuInfo, footnotes: e.target.value})} placeholder={t("menusWizard.footnotesPlaceholder")} className="min-h-[100px]" />
               </div>
-              <div className="flex items-center gap-2 p-4 bg-slate-50 rounded-lg border border-slate-200">
+              <div className="flex items-center gap-2 p-4 bg-slate-50 rounded-lg border border-border">
                 <Checkbox checked={menuInfo.isActive} onCheckedChange={(c) => setMenuInfo({...menuInfo, isActive: !!c})} id="active" />
                 <Label htmlFor="active" className="font-bold text-slate-700">{t("menusWizard.makeActive")}</Label>
               </div>
@@ -162,16 +162,16 @@ export default function MenuWizardPage() {
         {step === 2 && (
           <div className="space-y-6 animate-in fade-in slide-in-from-right-4">
             {categories.map((cat, cIdx) => (
-              <Card key={cat.id} className="border-slate-200 shadow-sm overflow-hidden border-t-4 border-t-blue-500">
-                <CardHeader className="bg-slate-50 p-4 border-b border-slate-100">
+              <Card key={cat.id} className="border-border shadow-sm overflow-hidden border-t-4 border-t-blue-500">
+                <CardHeader className="bg-slate-50 p-4 border-b border-border">
                   <Input value={cat.name} onChange={(e) => updateCategory(cIdx, 'name', e.target.value)} placeholder={t("menusWizard.categoryNamePlaceholder")} className="h-10 font-bold text-base bg-white" />
                   <Input value={cat.description} onChange={(e) => updateCategory(cIdx, 'description', e.target.value)} placeholder={t("menusWizard.categoryDescPlaceholder")} className="h-8 text-xs bg-white mt-2" />
                 </CardHeader>
                 <CardContent className="p-0">
-                  <div className="divide-y divide-slate-100">
+                  <div className="divide-y divide-border">
                     {cat.items.map((item, iIdx) => (
                       <div key={item.id} className="p-4 bg-white flex flex-col md:flex-row gap-4">
-                        <div className="w-24 h-24 shrink-0 rounded-md bg-slate-100 border-2 border-dashed border-slate-200 flex flex-col items-center justify-center relative overflow-hidden group">
+                        <div className="w-24 h-24 shrink-0 rounded-md bg-slate-100 border-2 border-dashed border-border flex flex-col items-center justify-center relative overflow-hidden group">
                           {item.imageUrl ? (
                             <img src={item.imageUrl} alt="preview" className="w-full h-full object-cover" />
                           ) : (
@@ -189,7 +189,7 @@ export default function MenuWizardPage() {
                       </div>
                     ))}
                   </div>
-                  <div className="p-3 bg-slate-50 border-t border-slate-100 flex justify-center">
+                  <div className="p-3 bg-slate-50 border-t border-border flex justify-center">
                     <Button variant="outline" size="sm" onClick={() => addItem(cIdx)} className="text-xs font-bold text-blue-600 border-blue-200 bg-blue-50 hover:bg-blue-100"><ForkKnife className="w-3.5 h-3.5 mr-2"/> {t("menusWizard.addDish")}</Button>
                   </div>
                 </CardContent>
@@ -197,12 +197,12 @@ export default function MenuWizardPage() {
             ))}
 
             <div className="flex justify-center mt-6">
-              <Button variant="outline" onClick={addCategory} className="w-full h-14 border-2 border-dashed border-slate-300 text-slate-500 font-bold hover:border-blue-400 hover:text-blue-600">
+              <Button variant="outline" onClick={addCategory} className="w-full h-14 border-2 border-dashed border-border text-slate-500 font-bold hover:border-ring hover:text-foreground">
                 {t("menusWizard.addAnotherCategory")}
               </Button>
             </div>
 
-            <div className="flex justify-between pt-8 border-t border-slate-200">
+            <div className="flex justify-between pt-8 border-t border-border">
               <Button variant="ghost" onClick={() => setStep(1)} className="font-bold text-slate-500">{t("menusWizard.back")}</Button>
               <Button onClick={() => setStep(3)} className="h-12 px-8 bg-blue-600 hover:bg-blue-700 text-white font-semibold">
                 {t("menusWizard.reviewPublish")} <CaretRight className="w-4 h-4 ml-2" />
@@ -213,7 +213,7 @@ export default function MenuWizardPage() {
 
         {/* STEP 3: Review */}
         {step === 3 && (
-          <Card className="border-slate-200 shadow-sm animate-in fade-in slide-in-from-right-4">
+          <Card className="border-border shadow-sm animate-in fade-in slide-in-from-right-4">
             <CardHeader className="text-center pb-8 pt-10">
               <div className="w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-4">
                 <CheckCircle className="w-8 h-8 text-emerald-600" />
@@ -222,7 +222,7 @@ export default function MenuWizardPage() {
               <CardDescription>{t("menusWizard.reviewDesc")}</CardDescription>
             </CardHeader>
             <CardContent className="max-w-md mx-auto space-y-6 pb-10">
-              <div className="bg-slate-50 p-4 rounded-lg border border-slate-200 text-center">
+              <div className="bg-slate-50 p-4 rounded-lg border border-border text-center">
                 <h3 className="font-black text-lg text-slate-800">{menuInfo.name}</h3>
                 <p className="text-xs text-slate-500 font-bold mt-1">{categories.length} {t("menusWizard.categories")} • {categories.reduce((acc, cat) => acc + cat.items.length, 0)} {t("menusWizard.items")}</p>
               </div>

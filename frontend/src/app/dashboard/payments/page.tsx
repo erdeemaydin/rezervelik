@@ -90,7 +90,7 @@ export default function PaymentsPage() {
       PAID: 'bg-emerald-50 text-emerald-700 border-emerald-200',
       PENDING: 'bg-amber-50 text-amber-700 border-amber-200',
       FAILED: 'bg-red-50 text-red-700 border-red-200',
-      EXPIRED: 'bg-slate-100 text-slate-500 border-slate-200',
+      EXPIRED: 'bg-slate-100 text-slate-500 border-border',
       REFUNDED: 'bg-violet-50 text-violet-700 border-violet-200',
     };
  return <Badge className={`${map[status] ||''} hover:opacity-100 border font-semibold text-[10px]`}>{t(`payments.status.${status.toLowerCase()}`) || status}</Badge>;
@@ -115,14 +115,14 @@ export default function PaymentsPage() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <Card className="border-slate-100 shadow-sm bg-gradient-to-br from-emerald-600 to-teal-700 text-white">
+          <Card className="border-border shadow-sm bg-gradient-to-br from-emerald-600 to-teal-700 text-white">
             <CardHeader className="p-4 pb-2">
               <CardDescription className="text-[10px] font-semibold text-emerald-100">{t('payments.totalCollected')}</CardDescription>
               <CardTitle className="text-2xl font-bold tabular-nums">{money(stats.collected, stats.currency)}</CardTitle>
             </CardHeader>
             <CardContent className="p-4 pt-0 text-[11px] font-bold text-emerald-100">{stats.paidCount} {t('payments.paidDeposits')}</CardContent>
           </Card>
-          <Card className="border-slate-100 shadow-sm">
+          <Card className="border-border shadow-sm">
             <CardHeader className="p-4 pb-2">
               <CardDescription className="text-[10px] font-semibold text-slate-400">{t('payments.awaiting')}</CardDescription>
               <CardTitle className="text-2xl font-bold tabular-nums text-slate-800">{stats.pending}</CardTitle>
@@ -136,7 +136,7 @@ export default function PaymentsPage() {
             </CardHeader>
             <CardContent className="p-4 pt-0 text-[11px] font-bold text-rose-400">{stats.forfeitedCount} {t('payments.forfeitedHint')}</CardContent>
           </Card>
-          <Card className="border-slate-100 shadow-sm">
+          <Card className="border-border shadow-sm">
             <CardHeader className="p-4 pb-2">
               <CardDescription className="text-[10px] font-semibold text-slate-400">{t('payments.totalTransactions')}</CardDescription>
               <CardTitle className="text-2xl font-bold tabular-nums text-slate-800">{stats.count}</CardTitle>
@@ -145,8 +145,8 @@ export default function PaymentsPage() {
           </Card>
         </div>
 
-        <Card className="border-slate-200 shadow-sm bg-white overflow-hidden">
-          <CardHeader className="border-b border-slate-100 bg-slate-50/50 p-4">
+        <Card className="border-border shadow-sm bg-white overflow-hidden">
+          <CardHeader className="border-b border-border bg-slate-50/50 p-4">
             <div className="flex items-center gap-2">
               <CreditCard className="w-4 h-4 text-slate-500" />
               <CardTitle className="text-sm font-bold text-slate-700">{t('payments.transactions')}</CardTitle>

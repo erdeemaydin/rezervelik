@@ -199,8 +199,8 @@ export default function WaitlistPage() {
                         (rarely touched) lives in the dialog above instead of a
                         permanent side column. */}
                     <div>
-                        <Card className="rounded-xl border-slate-200 shadow-sm overflow-hidden bg-white h-full">
-                            <CardHeader className="p-6 bg-slate-50/50 border-b border-slate-200 flex flex-row items-center justify-between">
+                        <Card className="rounded-xl border-border shadow-sm overflow-hidden bg-white h-full">
+                            <CardHeader className="p-6 bg-slate-50/50 border-b border-border flex flex-row items-center justify-between">
                                 <div className="text-sm font-semibold text-slate-700">{t("waitTime.tabs.walkins")}</div>
                                 <Button onClick={() => setIsAddModalOpen(true)} className="bg-blue-600 hover:bg-blue-700 h-10 text-sm font-bold px-4 rounded-lg">
                                     <Plus className="w-5 h-5 mr-2" /> {t("waitTime.tabs.addWalkIn")}
@@ -379,14 +379,14 @@ export default function WaitlistPage() {
                         </DialogHeader>
                     </div>
                     <div className="p-6 space-y-6 bg-white">
-                        <div className="flex items-center justify-between bg-slate-50 p-4 rounded-xl border border-slate-100">
+                        <div className="flex items-center justify-between bg-slate-50 p-4 rounded-xl border border-border">
                             <div className="space-y-1">
                                 <Label className="text-sm font-bold text-slate-800">{t("waitTime.config.acceptPublic")}</Label>
                                 <p className="text-xs text-slate-500">{t("waitTime.config.acceptPublicDesc")}</p>
                             </div>
                             <Switch checked={config.isWaitlistOpen} onCheckedChange={(v: boolean) => setConfig(prev => ({...prev, isWaitlistOpen: v}))} className="scale-125" />
                         </div>
-                        <div className="flex items-center justify-between bg-slate-50 p-4 rounded-xl border border-slate-100">
+                        <div className="flex items-center justify-between bg-slate-50 p-4 rounded-xl border border-border">
                             <div className="space-y-1">
                                 <Label className="text-sm font-bold text-slate-800">{t("waitTime.config.displayEstimatedTime")}</Label>
                                 <p className="text-xs text-slate-500">{t("waitTime.config.displayEstimatedTimeDesc")}</p>

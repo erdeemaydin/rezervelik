@@ -200,21 +200,21 @@ export default function StaffManagementPage() {
         </div>
 
         {/* Command Center */}
-        <Card className="rounded-md border-slate-200 shadow-sm overflow-hidden bg-white">
-          <CardHeader className="p-3 bg-slate-50/50 border-b border-slate-200 flex flex-row items-center justify-between">
+        <Card className="rounded-md border-border shadow-sm overflow-hidden bg-white">
+          <CardHeader className="p-3 bg-slate-50/50 border-b border-border flex flex-row items-center justify-between">
             <div className="flex items-center gap-2">
                 <Users className="w-4 h-4 text-blue-500" />
                 <span className="text-xs font-bold text-slate-700">{t("staff.activePersonnel")}</span>
             </div>
             <div className="relative w-64">
                 <MagnifyingGlass className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
-                <Input placeholder={t("staff.searchPlaceholder")} className="pl-8 h-8 text-xs bg-white border-slate-200 rounded-sm" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
+                <Input placeholder={t("staff.searchPlaceholder")} className="pl-8 h-8 text-xs bg-white border-border rounded-sm" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
             </div>
           </CardHeader>
           <CardContent className="p-0">
             <Table>
               <TableHeader className="bg-slate-50/80">
-                <TableRow className="h-9 border-b border-slate-200">
+                <TableRow className="h-9 border-b border-border">
                   <TableHead className="text-[9px] font-semibold text-slate-400 px-6">{t("staff.table.identity")}</TableHead>
                   <TableHead className="text-[9px] font-semibold text-slate-400">{t("staff.table.baseRole")}</TableHead>
                   <TableHead className="text-[9px] font-semibold text-slate-400">{t("staff.table.customEntitlements")}</TableHead>
@@ -228,7 +228,7 @@ export default function StaffManagementPage() {
                 ) : filteredStaff.length === 0 ? (
                     <TableRow><TableCell colSpan={5} className="h-48 text-center text-[10px] font-semibold text-slate-400">{t("staff.table.noResults")}</TableCell></TableRow>
                 ) : filteredStaff.map((member) => (
-                  <TableRow key={member.id} className="h-14 hover:bg-slate-50/50 border-b border-slate-100 transition-colors">
+                  <TableRow key={member.id} className="h-14 hover:bg-slate-50/50 border-b border-border transition-colors">
                     <TableCell className="px-6 py-3">
                       <div className="flex flex-col">
                         <span className="font-black text-slate-900 text-sm tracking-tight">{member.firstName} {member.lastName}</span>
@@ -246,7 +246,7 @@ export default function StaffManagementPage() {
                             <Badge variant="outline" className="text-[8px] font-semibold bg-emerald-50 text-emerald-700 border-emerald-200 px-1 py-0 shadow-none"><ShieldCheck className="w-2.5 h-2.5 mr-1" /> {t("staff.table.fullAccess")}</Badge>
                         ) : member.permissions ? (
                             member.permissions.split(',').map(p => (
-                                <Badge key={p} variant="outline" className="text-[8px] font-semibold bg-white text-slate-500 border-slate-200 px-1 py-0 shadow-none">
+                                <Badge key={p} variant="outline" className="text-[8px] font-semibold bg-white text-slate-500 border-border px-1 py-0 shadow-none">
                                     {t(`staff.permissions.${p}.label`)}
                                 </Badge>
                             ))
@@ -291,16 +291,16 @@ export default function StaffManagementPage() {
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="grid gap-1.5">
                                     <Label className="text-[10px] font-semibold text-slate-400 ml-1">{t("staff.dialog.firstName")}</Label>
-                                    <Input required value={formData.firstName} onChange={e => setFormData({...formData, firstName: e.target.value})} className="h-10 text-sm font-bold border-slate-200 rounded-sm" />
+                                    <Input required value={formData.firstName} onChange={e => setFormData({...formData, firstName: e.target.value})} className="h-10 text-sm font-bold border-border rounded-sm" />
                                 </div>
                                 <div className="grid gap-1.5">
                                     <Label className="text-[10px] font-semibold text-slate-400 ml-1">{t("staff.dialog.lastName")}</Label>
-                                    <Input required value={formData.lastName} onChange={e => setFormData({...formData, lastName: e.target.value})} className="h-10 text-sm font-bold border-slate-200 rounded-sm" />
+                                    <Input required value={formData.lastName} onChange={e => setFormData({...formData, lastName: e.target.value})} className="h-10 text-sm font-bold border-border rounded-sm" />
                                 </div>
                             </div>
                             <div className="grid gap-1.5">
                                 <Label className="text-[10px] font-semibold text-slate-400 ml-1">{t("staff.dialog.email")}</Label>
-                                <Input type="email" required value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} className="h-10 text-sm font-bold border-slate-200 rounded-sm font-mono" />
+                                <Input type="email" required value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} className="h-10 text-sm font-bold border-border rounded-sm font-mono" />
                             </div>
                             <div className="grid gap-1.5">
                                 <Label className="text-[10px] font-semibold text-slate-400 ml-1">{t("staff.dialog.phone")}</Label>
@@ -308,11 +308,11 @@ export default function StaffManagementPage() {
                             </div>
                             {/* Passwords are set by the staff member via a reset link, never by the admin (#7.1) */}
                             {!isEditMode ? (
-                                <p className="text-[10px] font-bold text-slate-400 leading-relaxed bg-slate-50 border border-slate-100 rounded-sm p-2 flex items-start gap-1.5">
+                                <p className="text-[10px] font-bold text-slate-400 leading-relaxed bg-slate-50 border border-border rounded-sm p-2 flex items-start gap-1.5">
                                     <LinkSimple className="w-3 h-3 mt-0.5 text-blue-500 shrink-0" /> {t("staff.dialog.resetLinkOnCreate")}
                                 </p>
                             ) : (
-                                <div className={cn("flex items-center justify-between p-3 border rounded-sm transition-all", formData.sendResetLink ? "border-blue-200 bg-blue-50/30" : "border-slate-100 bg-slate-50/50")}>
+                                <div className={cn("flex items-center justify-between p-3 border rounded-sm transition-all", formData.sendResetLink ? "border-blue-200 bg-blue-50/30" : "border-border bg-slate-50/50")}>
                                     <div className="space-y-0.5">
                                         <div className="text-xs font-semibold tracking-tight text-slate-600">{t("staff.dialog.sendResetLink")}</div>
                                         <div className="text-[9px] font-bold text-slate-400">{t("staff.dialog.sendResetLinkDesc")}</div>
@@ -320,10 +320,10 @@ export default function StaffManagementPage() {
                                     <Checkbox checked={formData.sendResetLink} onCheckedChange={() => setFormData(prev => ({...prev, sendResetLink: !prev.sendResetLink}))} />
                                 </div>
                             )}
-                            <div className="grid gap-1.5 pt-4 border-t border-slate-100">
+                            <div className="grid gap-1.5 pt-4 border-t border-border">
                                 <Label className="text-[10px] font-semibold text-slate-400 ml-1">{t("staff.dialog.baseRoleTemplate")}</Label>
                                 <Select value={formData.role} onValueChange={handleRoleChange}>
-                                    <SelectTrigger className="h-10 text-sm font-bold border-slate-200 rounded-sm bg-slate-50"><SelectValue /></SelectTrigger>
+                                    <SelectTrigger className="h-10 text-sm font-bold border-border rounded-sm bg-slate-50"><SelectValue /></SelectTrigger>
                                     <SelectContent>
                                         <SelectItem value="MANAGER" className="text-xs font-bold text-blue-700">{t("staff.dialog.roleManager")}</SelectItem>
                                         <SelectItem value="HOST" className="text-xs font-bold text-slate-700">{t("staff.dialog.roleHost")}</SelectItem>
@@ -334,7 +334,7 @@ export default function StaffManagementPage() {
                             </div>
                         </div>
 
-                        <div className="space-y-4 border-l border-slate-100 pl-6">
+                        <div className="space-y-4 border-l border-border pl-6">
                             <div className="flex items-center gap-2 mb-2">
                                 <Shield className="w-4 h-4 text-blue-500" />
                                 <Label className="text-xs font-semibold text-slate-800 tracking-tight">{t("staff.dialog.granularEntitlements")}</Label>
@@ -343,7 +343,7 @@ export default function StaffManagementPage() {
                             
                             <div className="grid gap-3">
                                 {AVAILABLE_PERMISSIONS.map(perm => (
-                                    <div key={perm.id} className={cn("flex items-center justify-between p-3 border rounded-sm transition-all", formData.permissions.has(perm.id) ? "border-blue-200 bg-blue-50/30" : "border-slate-100 bg-slate-50/50")}>
+                                    <div key={perm.id} className={cn("flex items-center justify-between p-3 border rounded-sm transition-all", formData.permissions.has(perm.id) ? "border-blue-200 bg-blue-50/30" : "border-border bg-slate-50/50")}>
                                         <div className="space-y-0.5">
  <div className={cn("text-xs font-semibold tracking-tight", formData.permissions.has(perm.id) ?"text-blue-700":"text-slate-600")}>{t(`staff.permissions.${perm.id}.label`)}</div>
                                             <div className="text-[9px] font-bold text-slate-400">{t(`staff.permissions.${perm.id}.desc`)}</div>
@@ -354,7 +354,7 @@ export default function StaffManagementPage() {
                             </div>
                         </div>
                     </div>
-                    <div className="p-4 bg-slate-50 border-t border-slate-100 flex justify-end gap-2">
+                    <div className="p-4 bg-slate-50 border-t border-border flex justify-end gap-2">
                         <Button type="button" variant="ghost" onClick={() => setIsDialogOpen(false)} className="h-9 text-xs font-bold text-slate-400 px-6">{t("staff.dialog.cancel")}</Button>
                         <Button type="submit" className="h-9 bg-blue-600 hover:bg-blue-700 text-xs font-semibold px-8 rounded-sm shadow-lg shadow-blue-600/20">{t("staff.dialog.commit")}</Button>
                     </div>

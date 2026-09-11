@@ -83,7 +83,7 @@ export default function EventsPage() {
     }
   };
 
-  const selectClass = 'h-10 px-2 text-sm font-bold border border-slate-200 rounded-sm bg-white w-full';
+  const selectClass = 'h-10 px-2 text-sm font-bold border border-border rounded-sm bg-white w-full transition-colors outline-none hover:border-ring focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50';
 
   return (
     <>
@@ -101,7 +101,7 @@ export default function EventsPage() {
         {loading ? (
           <p className="text-sm text-slate-400">{t('common.loading')}</p>
         ) : events.length === 0 ? (
-          <div className="border border-dashed border-slate-200 rounded-md p-10 text-center flex flex-col items-center gap-3">
+          <div className="border border-dashed border-border rounded-md p-10 text-center flex flex-col items-center gap-3">
             <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center">
               <CalendarDots className="w-5 h-5 text-slate-400" />
             </div>
@@ -122,7 +122,7 @@ export default function EventsPage() {
                       <button
                         key={ev.id}
                         onClick={() => router.push(`/dashboard/events/${ev.id}`)}
-                        className="w-full text-left bg-white border border-slate-200 rounded-sm p-3 hover:border-slate-400 transition-colors"
+                        className="w-full text-left bg-white border border-border rounded-sm p-3 hover:border-ring transition-colors"
                       >
                         <div className="flex items-center justify-between gap-2">
                           <span className="font-black text-sm truncate">{ev.clientName}</span>

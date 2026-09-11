@@ -242,8 +242,8 @@ export default function BulkPricesPage() {
         </div>
 
         {/* Bulk tools */}
-        <Card className="rounded-xl border-slate-200 shadow-sm">
-          <CardHeader className="p-5 border-b border-slate-100">
+        <Card className="rounded-xl border-border shadow-sm">
+          <CardHeader className="p-5 border-b border-border">
             <CardTitle className="text-sm font-semibold tracking-tight">{t('menus.bulkEditor.toolsTitle')}</CardTitle>
           </CardHeader>
           <CardContent className="p-5 flex flex-wrap items-end gap-4">
@@ -261,7 +261,7 @@ export default function BulkPricesPage() {
               <Label className="text-[10px] font-semibold text-slate-500">{t('menus.bulkEditor.roundUpLabel')}</Label>
               <div className="flex items-center gap-2">
                 {[10, 50, 100].map(step => (
-                  <Button key={step} variant="outline" onClick={() => roundUpAll(step)} className="h-10 text-xs font-black border-slate-200">{step}</Button>
+                  <Button key={step} variant="outline" onClick={() => roundUpAll(step)} className="h-10 text-xs font-black border-border">{step}</Button>
                 ))}
               </div>
             </div>
@@ -273,7 +273,7 @@ export default function BulkPricesPage() {
             </div>
 
             {/* Schedule for later: store the target prices to apply at a future time. */}
-            <div className="w-full flex flex-wrap items-center gap-3 pt-4 border-t border-slate-100">
+            <div className="w-full flex flex-wrap items-center gap-3 pt-4 border-t border-border">
               <label className="flex items-center gap-2 cursor-pointer">
                 <input type="checkbox" checked={scheduleEnabled} onChange={(e) => setScheduleEnabled(e.target.checked)} className="h-4 w-4 accent-blue-600" />
                 <span className="text-xs font-semibold text-slate-600">{t('menus.bulkEditor.scheduleForLater')}</span>
@@ -298,8 +298,8 @@ export default function BulkPricesPage() {
 
         {/* Pending scheduled changes: view, cancel, or edit before the worker applies them. */}
         {scheduled.length > 0 && (
-          <Card className="rounded-xl border-slate-200 shadow-sm">
-            <CardHeader className="p-5 border-b border-slate-100">
+          <Card className="rounded-xl border-border shadow-sm">
+            <CardHeader className="p-5 border-b border-border">
               <CardTitle className="text-sm font-semibold tracking-tight flex items-center gap-2">
                 <Clock className="w-4 h-4 text-amber-600" /> {t('menus.bulkEditor.scheduledTitle')}
               </CardTitle>
@@ -316,7 +316,7 @@ export default function BulkPricesPage() {
                       {update.items.length > 0 && ` · ${update.items.slice(0, 3).map(i => i.name || '?').join(', ')}${update.items.length > 3 ? '…' : ''}`}
                     </p>
                   </div>
-                  <Button variant="outline" size="sm" onClick={() => editScheduled(update)} className="h-8 text-[10px] font-semibold border-slate-200">
+                  <Button variant="outline" size="sm" onClick={() => editScheduled(update)} className="h-8 text-[10px] font-semibold border-border">
                     <Pencil className="w-3 h-3 mr-1" /> {t('menus.bulkEditor.editButton')}
                   </Button>
                   <Button
@@ -333,8 +333,8 @@ export default function BulkPricesPage() {
 
         {/* Recent changes: history of applied price changes, with undo. */}
         {history.length > 0 && (
-          <Card className="rounded-xl border-slate-200 shadow-sm">
-            <CardHeader className="p-5 border-b border-slate-100">
+          <Card className="rounded-xl border-border shadow-sm">
+            <CardHeader className="p-5 border-b border-border">
               <CardTitle className="text-sm font-semibold tracking-tight flex items-center gap-2">
                 <ClockCounterClockwise className="w-4 h-4 text-slate-500" /> {t('menus.bulkEditor.historyTitle')}
               </CardTitle>
@@ -357,7 +357,7 @@ export default function BulkPricesPage() {
                   {update.status === 'APPLIED' && (
                     <Button
                       variant="outline" size="sm" onClick={() => undoChange(update.id)} disabled={undoingId === update.id}
-                      className="h-8 text-[10px] font-semibold border-slate-200"
+                      className="h-8 text-[10px] font-semibold border-border"
                     >
                       <ArrowUUpLeft className="w-3 h-3 mr-1" /> {t('menus.bulkEditor.undoButton')}
                     </Button>
@@ -377,8 +377,8 @@ export default function BulkPricesPage() {
         ) : (
           <div className="space-y-6">
             {groups.map(group => (
-              <Card key={group.key} className="rounded-xl border-slate-200 shadow-sm overflow-hidden">
-                <CardHeader className="p-4 bg-slate-50/60 border-b border-slate-100">
+              <Card key={group.key} className="rounded-xl border-border shadow-sm overflow-hidden">
+                <CardHeader className="p-4 bg-slate-50/60 border-b border-border">
                   <CardTitle className="text-xs font-semibold text-slate-600">{group.label}</CardTitle>
                 </CardHeader>
                 <CardContent className="p-0 divide-y divide-slate-50">
@@ -411,7 +411,7 @@ export default function BulkPricesPage() {
                           <Label className="text-[9px] font-semibold text-slate-400">{t('menus.bulkEditor.roundUpShort')}</Label>
                           <div className="flex items-center gap-1">
                             {[10, 50, 100].map(step => (
-                              <Button key={step} type="button" variant="outline" size="sm" onClick={() => roundUpItem(item, step)} className="h-8 px-2 text-[10px] font-black border-slate-200">{step}</Button>
+                              <Button key={step} type="button" variant="outline" size="sm" onClick={() => roundUpItem(item, step)} className="h-8 px-2 text-[10px] font-black border-border">{step}</Button>
                             ))}
                           </div>
                         </div>
@@ -426,7 +426,7 @@ export default function BulkPricesPage() {
       </div>
 
       {/* Sticky save bar */}
-      <div className="fixed bottom-0 left-0 right-0 md:left-16 z-40 bg-white/95 backdrop-blur border-t border-slate-200 px-6 py-3 flex items-center justify-between">
+      <div className="fixed bottom-0 left-0 right-0 md:left-16 z-40 bg-white/95 backdrop-blur border-t border-border px-6 py-3 flex items-center justify-between">
         <p className="text-xs font-bold text-slate-500">
           {changed.length > 0
             ? <span className="text-emerald-600">{changed.length} {t('menus.bulkEditor.pendingChanges')}</span>

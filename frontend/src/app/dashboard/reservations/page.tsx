@@ -451,25 +451,25 @@ export default function ReservationsPage() {
         <StatusDots items={periodReservations} onSelect={handleStatusSelect} activeStatus={statusFilter} />
 
         {/* Command Center - Integrated & High Density */}
-        <Card className="rounded-md border-slate-200 shadow-sm overflow-hidden bg-white">
-          <CardHeader className="p-0 border-b border-slate-100">
+        <Card className="rounded-md border-border shadow-sm overflow-hidden bg-white">
+          <CardHeader className="p-0 border-b border-border">
             <div className="flex flex-col">
               {/* Tab Selector */}
               <div className="flex items-center border-b border-slate-50 p-1 bg-slate-50/50">
- <Button variant="ghost"size="sm"onClick={() => { setActiveTab('upcoming'); setStatusFilter(null); if (!['today','tomorrow','this-week','next-week','all','custom','interval'].includes(timeFilter)) setTimeFilter('today'); }} className={cn("flex-1 h-9 text-[10px] font-semibold rounded-sm transition-all", activeTab ==='upcoming'?"bg-white text-blue-600 shadow-sm border border-slate-100":"text-slate-400 hover:text-slate-600")}>
+ <Button variant="ghost"size="sm"onClick={() => { setActiveTab('upcoming'); setStatusFilter(null); if (!['today','tomorrow','this-week','next-week','all','custom','interval'].includes(timeFilter)) setTimeFilter('today'); }} className={cn("flex-1 h-9 text-[10px] font-semibold rounded-sm transition-all", activeTab ==='upcoming'?"bg-white text-blue-600 shadow-sm border border-border":"text-slate-400 hover:text-slate-600")}>
                     <Timer className="w-3.5 h-3.5 mr-2" /> {t("reservations.liveAndPending")}
                 </Button>
- <Button variant="ghost"size="sm"onClick={() => { setActiveTab('timeline'); setStatusFilter(null); }} className={cn("flex-1 h-9 text-[10px] font-semibold rounded-sm transition-all", activeTab ==='timeline'?"bg-white text-blue-600 shadow-sm border border-slate-100":"text-slate-400 hover:text-slate-600")}>
+ <Button variant="ghost"size="sm"onClick={() => { setActiveTab('timeline'); setStatusFilter(null); }} className={cn("flex-1 h-9 text-[10px] font-semibold rounded-sm transition-all", activeTab ==='timeline'?"bg-white text-blue-600 shadow-sm border border-border":"text-slate-400 hover:text-slate-600")}>
                     <CalendarDots className="w-3.5 h-3.5 mr-2" /> {t("reservations.timeline")}
                 </Button>
- <Button variant="ghost"size="sm"onClick={() => { setActiveTab('history'); setStatusFilter(null); if (!['today','this-week','last-week','last-month','custom','interval'].includes(timeFilter)) setTimeFilter('today'); }} className={cn("flex-1 h-9 text-[10px] font-semibold rounded-sm transition-all", activeTab ==='history'?"bg-white text-blue-600 shadow-sm border border-slate-100":"text-slate-400 hover:text-slate-600")}>
+ <Button variant="ghost"size="sm"onClick={() => { setActiveTab('history'); setStatusFilter(null); if (!['today','this-week','last-week','last-month','custom','interval'].includes(timeFilter)) setTimeFilter('today'); }} className={cn("flex-1 h-9 text-[10px] font-semibold rounded-sm transition-all", activeTab ==='history'?"bg-white text-blue-600 shadow-sm border border-border":"text-slate-400 hover:text-slate-600")}>
                     <CheckCircle className="w-3.5 h-3.5 mr-2" /> {t("reservations.reservationDatabase")}
                 </Button>
               </div>
 
               {activeTab === 'timeline' ? (
                 <div className="flex flex-wrap items-center justify-between p-3 gap-4">
-                  <div className="flex items-center gap-1 bg-slate-100/50 p-1 rounded-md border border-slate-200/60">
+                  <div className="flex items-center gap-1 bg-slate-100/50 p-1 rounded-md border border-border/60">
                     <Button variant="ghost" size="icon" onClick={() => shiftTimelineDate(-1)} className="h-8 w-8 text-slate-500"><CaretLeft className="w-4 h-4" /></Button>
  <Button variant="ghost"size="sm"onClick={() => setTimelineDate(todayLocalDate())} className={cn("h-7 text-[9px] font-semibold px-3 rounded-sm", timelineDate === todayLocalDate() ?"bg-blue-600 text-white":"text-slate-500")}>{t("reservations.filterToday")}</Button>
                     <div className="relative">
@@ -482,10 +482,10 @@ export default function ReservationsPage() {
                   </div>
                   <div className="flex items-center gap-2">
                     {timelineZones.length > 0 && (
-                      <div className="flex items-center gap-1.5 bg-slate-100/50 p-1 rounded-md border border-slate-200/60">
+                      <div className="flex items-center gap-1.5 bg-slate-100/50 p-1 rounded-md border border-border/60">
                         <span className="text-[9px] font-semibold text-slate-400 pl-1.5">{t("reservations.zone")}</span>
                         <Select value={timelineZoneId} onValueChange={(v) => { if (v) setTimelineZoneId(v); }}>
-                          <SelectTrigger className="h-7 min-w-[96px] text-[10px] font-black rounded-sm border-slate-200 focus:ring-0 shadow-none"><SelectValue /></SelectTrigger>
+                          <SelectTrigger className="h-7 min-w-[96px] text-[10px] font-black rounded-sm border-border focus:ring-0 shadow-none"><SelectValue /></SelectTrigger>
                           <SelectContent>
                             <SelectItem value="all" className="text-xs">{t("reservations.allZones")}</SelectItem>
                             {timelineZones.map(z => <SelectItem key={z.id} value={z.id} className="text-xs">{z.name}</SelectItem>)}
@@ -493,30 +493,30 @@ export default function ReservationsPage() {
                         </Select>
                       </div>
                     )}
-                    <div className="flex items-center gap-1.5 bg-slate-100/50 p-1 rounded-md border border-slate-200/60">
+                    <div className="flex items-center gap-1.5 bg-slate-100/50 p-1 rounded-md border border-border/60">
                       <span className="text-[9px] font-semibold text-slate-400 pl-1.5">{t("reservations.displayHours")}</span>
                       <Select value={String(timelineStartHour)} onValueChange={(v) => { if (!v) return; const h = parseInt(v); setTimelineStartHour(h); if (h >= timelineEndHour) setTimelineEndHour(Math.min(24, h + 1)); }}>
-                        <SelectTrigger className="h-7 w-[64px] text-[10px] font-black rounded-sm border-slate-200 focus:ring-0 shadow-none"><SelectValue /></SelectTrigger>
+                        <SelectTrigger className="h-7 w-[64px] text-[10px] font-black rounded-sm border-border focus:ring-0 shadow-none"><SelectValue /></SelectTrigger>
                         <SelectContent>
                           {Array.from({ length: 24 }, (_, i) => i).map(h => <SelectItem key={h} value={String(h)} className="text-xs">{String(h).padStart(2, '0')}:00</SelectItem>)}
                         </SelectContent>
                       </Select>
                       <span className="text-[10px] font-black text-slate-300">–</span>
                       <Select value={String(timelineEndHour)} onValueChange={(v) => { if (!v) return; setTimelineEndHour(parseInt(v)); }}>
-                        <SelectTrigger className="h-7 w-[64px] text-[10px] font-black rounded-sm border-slate-200 focus:ring-0 shadow-none"><SelectValue /></SelectTrigger>
+                        <SelectTrigger className="h-7 w-[64px] text-[10px] font-black rounded-sm border-border focus:ring-0 shadow-none"><SelectValue /></SelectTrigger>
                         <SelectContent>
                           {Array.from({ length: 24 }, (_, i) => i + 1).filter(h => h > timelineStartHour).map(h => <SelectItem key={h} value={String(h)} className="text-xs">{String(h).padStart(2, '0')}:00</SelectItem>)}
                         </SelectContent>
                       </Select>
                     </div>
-                    <Button variant="outline" size="sm" onClick={() => scrollTimelineToNow(true)} className="h-8 text-[10px] font-semibold border-slate-200 text-slate-600">
+                    <Button variant="outline" size="sm" onClick={() => scrollTimelineToNow(true)} className="h-8 text-[10px] font-semibold border-border text-slate-600">
                       <Timer className="w-3.5 h-3.5 mr-1.5" /> {t("reservations.jumpToNow")}
                     </Button>
                   </div>
                 </div>
               ) : (
               <div className="flex flex-wrap items-center justify-between p-3 gap-4">
-                <div className="flex items-center gap-1 bg-slate-100/50 p-1 rounded-md border border-slate-200/60 flex-wrap">
+                <div className="flex items-center gap-1 bg-slate-100/50 p-1 rounded-md border border-border/60 flex-wrap">
                   {(activeTab === 'history'
                     ? [
                         { label: t("reservations.filterLastMonth"), value: 'last-month' },
@@ -532,7 +532,7 @@ export default function ReservationsPage() {
                         { label: t("reservations.filterAllTime"), value: 'all' },
                       ]
                   ).map(f => (
- <Button key={f.value} variant="ghost"size="sm"onClick={() => setTimeFilter(f.value)} className={cn("h-7 text-[9px] font-semibold px-3 rounded-sm transition-all", timeFilter === f.value ?"bg-white text-slate-900 shadow-sm border border-slate-200/50":"text-slate-500 hover:text-slate-700")}>{f.label}</Button>
+ <Button key={f.value} variant="ghost"size="sm"onClick={() => setTimeFilter(f.value)} className={cn("h-7 text-[9px] font-semibold px-3 rounded-sm transition-all", timeFilter === f.value ?"bg-white text-slate-900 shadow-sm border border-border/50":"text-slate-500 hover:text-slate-700")}>{f.label}</Button>
                   ))}
                   <div className="w-px h-4 bg-slate-300 mx-1" />
                   <div className="relative">
@@ -547,9 +547,9 @@ export default function ReservationsPage() {
                   </Button>
                   {timeFilter === 'interval' && (
                     <div className="flex items-center gap-1">
-                      <input type="date" value={customFrom} onChange={(e) => { setCustomFrom(e.target.value); setTimeFilter('interval'); }} className="h-7 text-[10px] font-bold border border-slate-200 rounded px-1.5 bg-white" />
+                      <input type="date" value={customFrom} onChange={(e) => { setCustomFrom(e.target.value); setTimeFilter('interval'); }} className="h-7 text-[10px] font-bold border border-border rounded px-1.5 bg-white" />
                       <span className="text-[10px] font-black text-slate-400">–</span>
-                      <input type="date" value={customTo} onChange={(e) => { setCustomTo(e.target.value); setTimeFilter('interval'); }} className="h-7 text-[10px] font-bold border border-slate-200 rounded px-1.5 bg-white" />
+                      <input type="date" value={customTo} onChange={(e) => { setCustomTo(e.target.value); setTimeFilter('interval'); }} className="h-7 text-[10px] font-bold border border-border rounded px-1.5 bg-white" />
                     </div>
                   )}
                 </div>
@@ -557,19 +557,19 @@ export default function ReservationsPage() {
                 <div className="flex items-center gap-3 flex-wrap">
                   {/* Reservation Database scope: all / active / deactive. */}
                   {activeTab === 'history' && (
-                    <div className="flex items-center gap-1 bg-slate-100/50 p-1 rounded-md border border-slate-200/60">
+                    <div className="flex items-center gap-1 bg-slate-100/50 p-1 rounded-md border border-border/60">
                       {[
                         { label: t("reservations.dbAll"), value: 'all' as const },
                         { label: t("reservations.dbActive"), value: 'active' as const },
                         { label: t("reservations.dbDeactive"), value: 'deactive' as const },
                       ].map(f => (
- <Button key={f.value} variant="ghost"size="sm"onClick={() => setDbFilter(f.value)} className={cn("h-7 text-[9px] font-semibold px-3 rounded-sm transition-all", dbFilter === f.value ?"bg-white text-slate-900 shadow-sm border border-slate-200/50":"text-slate-500 hover:text-slate-700")}>{f.label}</Button>
+ <Button key={f.value} variant="ghost"size="sm"onClick={() => setDbFilter(f.value)} className={cn("h-7 text-[9px] font-semibold px-3 rounded-sm transition-all", dbFilter === f.value ?"bg-white text-slate-900 shadow-sm border border-border/50":"text-slate-500 hover:text-slate-700")}>{f.label}</Button>
                       ))}
                     </div>
                   )}
                   <div className="relative flex-1 min-w-[180px] max-w-sm">
                     <MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                    <Input placeholder={t("reservations.searchPlaceholder")} className="pl-10 h-10 text-xs bg-slate-50 border-slate-200 focus:bg-white focus:ring-4 focus:ring-blue-500/5 rounded-md transition-all font-bold" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
+                    <Input placeholder={t("reservations.searchPlaceholder")} className="pl-10 h-10 text-xs bg-slate-50 border-border focus:bg-white focus:ring-4 focus:ring-blue-500/5 rounded-md transition-all font-bold" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
                   </div>
                 </div>
               </div>
@@ -594,7 +594,7 @@ export default function ReservationsPage() {
             ) : (
             <Table>
               <TableHeader className="bg-slate-50/80">
-                <TableRow className="h-10 hover:bg-transparent border-b border-slate-200">
+                <TableRow className="h-10 hover:bg-transparent border-b border-border">
                   <TableHead className="text-[10px] font-semibold text-slate-500 px-6">
                     <button type="button" onClick={() => toggleSort('time')} className="inline-flex items-center gap-1 hover:text-slate-800 transition-colors">
                       {t("reservations.schedule")}<span className="text-[8px] w-2">{sortBy === 'time' ? (sortDir === 'asc' ? '▲' : '▼') : ''}</span>
@@ -641,7 +641,7 @@ export default function ReservationsPage() {
                         </div>
                         <div className="flex items-center gap-3">
                             <span className="text-[10px] text-slate-400 font-mono font-bold">{res.customerPhone}</span>
-                            <Badge variant="outline" className="text-[8px] h-4 border-slate-200 bg-white font-semibold text-slate-400 rounded-sm shadow-none">{res.category?.name || t("reservations.manual")}</Badge>
+                            <Badge variant="outline" className="text-[8px] h-4 border-border bg-white font-semibold text-slate-400 rounded-sm shadow-none">{res.category?.name || t("reservations.manual")}</Badge>
                         </div>
                         {res.phoneHistory && res.phoneHistory.noShowCount > 0 && (
                             <div title={t("reservations.noShowHistoryHint")} className="flex items-center gap-1 w-fit text-[9px] font-semibold text-red-700 bg-red-50 border border-red-200 px-1.5 py-0.5 rounded-sm">
@@ -670,7 +670,7 @@ export default function ReservationsPage() {
                       <div className="flex flex-col gap-2 max-w-[280px]">
                         <div className="flex items-center gap-2">{getStatusBadge(res.status)}</div>
                         {res.internalNote ? (
-                          <div className="text-[10px] text-slate-700 font-bold bg-white/60 p-2 rounded border border-slate-200/50 shadow-sm italic leading-tight">
+                          <div className="text-[10px] text-slate-700 font-bold bg-white/60 p-2 rounded border border-border/50 shadow-sm italic leading-tight">
                             <Info className="w-2.5 h-2.5 text-blue-500 inline mr-1" /> {res.internalNote}
                           </div>
                         ) : (
@@ -704,7 +704,7 @@ export default function ReservationsPage() {
                             {t("reservations.skipPayment")}
                           </button>
                         )}
-                        <div className="flex items-center space-x-1 bg-white/40 p-0.5 rounded border border-slate-100/50">
+                        <div className="flex items-center space-x-1 bg-white/40 p-0.5 rounded border border-border/50">
                             <Button variant="ghost" size="icon" onClick={() => handleOpenEdit(res)} className="h-7 w-7 text-slate-300 hover:text-blue-600"><PencilSimple className="w-3.5 h-3.5" /></Button>
                             <Button variant="ghost" size="icon" onClick={() => handleDelete(res)} className="h-7 w-7 text-slate-300 hover:text-red-600"><Trash className="w-3.5 h-3.5" /></Button>
                         </div>
@@ -732,21 +732,21 @@ export default function ReservationsPage() {
                 <div className="space-y-6">
                   <div className="grid gap-2">
                     <Label className="text-[10px] font-semibold text-slate-400">{t("reservations.fullName")}</Label>
-                    <Input required value={formData.customerName} onChange={e => setFormData({...formData, customerName: e.target.value})} className="h-12 text-sm font-bold border-slate-200 focus:border-blue-500 rounded-sm" />
+                    <Input required value={formData.customerName} onChange={e => setFormData({...formData, customerName: e.target.value})} className="h-12 text-sm font-bold border-border focus:border-blue-500 rounded-sm" />
                   </div>
                   <div className="grid gap-2">
                     <Label className="text-[10px] font-semibold text-slate-400">{t("reservations.mobileContact")}</Label>
-                    <Input required value={formData.customerPhone} onChange={e => setFormData({...formData, customerPhone: e.target.value})} className="h-12 text-sm font-bold border-slate-200 focus:border-blue-500 rounded-sm" />
+                    <Input required value={formData.customerPhone} onChange={e => setFormData({...formData, customerPhone: e.target.value})} className="h-12 text-sm font-bold border-border focus:border-blue-500 rounded-sm" />
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div className="grid gap-2">
                         <Label className="text-[10px] font-semibold text-slate-400">{t("reservations.partyPax")}</Label>
-                        <Input type="number" min="1" required value={formData.guestCount} onChange={e => setFormData({...formData, guestCount: e.target.value})} className="h-12 text-sm font-black text-center border-slate-200 rounded-sm" />
+                        <Input type="number" min="1" required value={formData.guestCount} onChange={e => setFormData({...formData, guestCount: e.target.value})} className="h-12 text-sm font-black text-center border-border rounded-sm" />
                     </div>
                     <div className="grid gap-2">
                         <Label className="text-[10px] font-semibold text-slate-400">{t("reservations.entrySource")}</Label>
                         <Select value={formData.categoryId} onValueChange={(v) => setFormData({...formData, categoryId: v || 'none'})}>
-                            <SelectTrigger className="h-12 text-sm font-bold rounded-sm border-slate-200 focus:ring-0 shadow-none">
+                            <SelectTrigger className="h-12 text-sm font-bold rounded-sm border-border focus:ring-0 shadow-none">
                                 <SelectValue>
                                     {categories.find(c => c.id === formData.categoryId)?.name || t("reservations.standardService")}
                                 </SelectValue>
@@ -763,16 +763,16 @@ export default function ReservationsPage() {
                 <div className="space-y-6">
                   <div className="grid gap-2">
                     <Label className="text-[10px] font-semibold text-slate-400">{t("reservations.calendarDate")}</Label>
-                    <Input type="date" value={selectedDate} onChange={e => setSelectedDate(e.target.value)} className="h-12 text-sm font-bold border-slate-200 focus:border-blue-500 rounded-sm" />
+                    <Input type="date" value={selectedDate} onChange={e => setSelectedDate(e.target.value)} className="h-12 text-sm font-bold border-border focus:border-blue-500 rounded-sm" />
                   </div>
                   <div className="grid gap-2">
                     <Label className="text-[10px] font-semibold text-slate-400">{t("reservations.arrivalTime")}</Label>
-                    <TimeSelect value={selectedTime} onChange={setSelectedTime} className="w-full h-12 text-sm font-bold border-slate-200 focus:border-blue-500 rounded-sm" />
+                    <TimeSelect value={selectedTime} onChange={setSelectedTime} className="w-full h-12 text-sm font-bold border-border focus:border-blue-500 rounded-sm" />
                   </div>
                   <div className="grid gap-2">
                     <Label className="text-[10px] font-semibold text-slate-400">{t("reservations.tableLocation")}</Label>
                     <Select value={formData.tableId} onValueChange={(v) => setFormData({...formData, tableId: v || 'none'})}>
-                        <SelectTrigger className="h-12 text-sm font-bold rounded-sm border-slate-200 focus:ring-0 shadow-none">
+                        <SelectTrigger className="h-12 text-sm font-bold rounded-sm border-border focus:ring-0 shadow-none">
                             <SelectValue>
                                 {tables.find(t => t.id === formData.tableId)?.identifier || t("reservations.autoSelection")}
                             </SelectValue>
@@ -810,7 +810,7 @@ export default function ReservationsPage() {
                 </div>
               </div>
 
-              <div className="p-6 bg-slate-50 border-t border-slate-100 flex justify-end gap-3">
+              <div className="p-6 bg-slate-50 border-t border-border flex justify-end gap-3">
                 <Button type="button" variant="ghost" onClick={() => setIsDialogOpen(false)} className="h-11 text-xs font-semibold text-slate-400 px-8">{t("reservations.abort")}</Button>
                 <Button type="submit" className="h-11 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-12 rounded-sm shadow-xl shadow-blue-600/20">{t("reservations.commitEntry")}</Button>
               </div>
@@ -833,7 +833,7 @@ export default function ReservationsPage() {
                 {t("reservations.conflictWarningDesc")}
               </DialogDescription>
             </div>
-            <div className="p-4 bg-slate-50 border-t border-slate-100 flex justify-end gap-2">
+            <div className="p-4 bg-slate-50 border-t border-border flex justify-end gap-2">
               <Button type="button" variant="ghost" onClick={() => setShowConflictWarning(false)} className="h-10 text-xs font-semibold text-slate-400">{t("reservations.conflictCancel")}</Button>
               <Button type="button" onClick={() => submitReservation(true)} className="h-10 bg-amber-600 hover:bg-amber-700 text-white text-xs font-semibold px-6 rounded-sm">{t("reservations.conflictConfirm")}</Button>
             </div>
@@ -854,14 +854,14 @@ export default function ReservationsPage() {
               <p className="text-sm text-slate-600 font-medium leading-relaxed">{t("reservations.paymentRequestedDesc")}</p>
               {paymentInfo && (
                 <>
-                  <div className="flex items-center justify-between rounded-md bg-slate-50 border border-slate-200 px-4 py-3">
+                  <div className="flex items-center justify-between rounded-md bg-slate-50 border border-border px-4 py-3">
                     <span className="text-xs font-semibold text-slate-400">{t("reservations.paymentAmount")}</span>
                     <span className="text-lg font-black text-slate-900">{(paymentInfo.amount / 100).toFixed(2)} {paymentInfo.currency}</span>
                   </div>
                   <div className="grid gap-1.5">
                     <Label className="text-[10px] font-semibold text-slate-400">{t("reservations.paymentLink")}</Label>
                     <div className="flex items-center gap-2">
-                      <Input readOnly value={paymentInfo.url} onFocus={(e) => e.target.select()} className="h-9 text-[10px] font-mono border-slate-200 bg-slate-50" />
+                      <Input readOnly value={paymentInfo.url} onFocus={(e) => e.target.select()} className="h-9 text-[10px] font-mono border-border bg-slate-50" />
                       <Button type="button" size="sm" onClick={() => { navigator.clipboard.writeText(paymentInfo.url); toast.success(t("reservations.copied")); }} className="h-9 shrink-0 bg-slate-900 hover:bg-slate-800 text-white">{t("reservations.copy")}</Button>
                     </div>
                   </div>
@@ -873,7 +873,7 @@ export default function ReservationsPage() {
                 </>
               )}
             </div>
-            <div className="p-4 bg-slate-50 border-t border-slate-100 flex justify-end">
+            <div className="p-4 bg-slate-50 border-t border-border flex justify-end">
               <Button type="button" onClick={() => setPaymentInfo(null)} className="h-10 bg-slate-900 text-white text-xs font-semibold px-6 rounded-sm">{t("reservations.close")}</Button>
             </div>
           </DialogContent>
@@ -1053,12 +1053,12 @@ function ReservationTimeline({ tables, reservations, timelineDate, scrollRef, st
     <div ref={scrollRef} className="overflow-x-auto select-none">
       <div className="relative" style={{ width: TIMELINE_LABEL_WIDTH + totalWidth }}>
         {/* Header: time labels */}
-        <div className="flex sticky top-0 z-20 bg-white border-b border-slate-200">
-          <div className="sticky left-0 z-30 bg-white shrink-0 border-r border-slate-200 p-2 text-[9px] font-semibold text-slate-400 flex items-end" style={{ width: TIMELINE_LABEL_WIDTH }}>
+        <div className="flex sticky top-0 z-20 bg-white border-b border-border">
+          <div className="sticky left-0 z-30 bg-white shrink-0 border-r border-border p-2 text-[9px] font-semibold text-slate-400 flex items-end" style={{ width: TIMELINE_LABEL_WIDTH }}>
             {t("reservations.table")}
           </div>
           {slots.map((s, i) => (
-            <div key={i} className="shrink-0 border-r border-slate-100 py-2 text-center text-[9px] font-bold text-slate-400" style={{ width: TIMELINE_PX_PER_SLOT }}>
+            <div key={i} className="shrink-0 border-r border-border py-2 text-center text-[9px] font-bold text-slate-400" style={{ width: TIMELINE_PX_PER_SLOT }}>
               {s.minute === 0 ? `${String(s.hour % 24).padStart(2, '0')}:00` : ''}
             </div>
           ))}
@@ -1069,8 +1069,8 @@ function ReservationTimeline({ tables, reservations, timelineDate, scrollRef, st
           {tables.map((table, tableIdx) => {
             const tableReservations = dayReservations.filter(r => r.table?.id === table.id);
             return (
-              <div key={table.id} className="flex border-b border-slate-100" style={{ height: TIMELINE_ROW_HEIGHT }}>
-                <div className="sticky left-0 z-10 bg-white shrink-0 border-r border-slate-200 p-2 flex flex-col justify-center" style={{ width: TIMELINE_LABEL_WIDTH }}>
+              <div key={table.id} className="flex border-b border-border" style={{ height: TIMELINE_ROW_HEIGHT }}>
+                <div className="sticky left-0 z-10 bg-white shrink-0 border-r border-border p-2 flex flex-col justify-center" style={{ width: TIMELINE_LABEL_WIDTH }}>
                   <div className="text-xs font-black text-slate-800">{table.identifier}</div>
                   <div className="text-[9px] text-slate-400 font-bold">{table.capacity} {t("reservations.pax")} · {table.tableType?.name || ''}</div>
                 </div>

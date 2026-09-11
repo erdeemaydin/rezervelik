@@ -142,7 +142,7 @@ export default function AnalyticsPage() {
           <div className="flex flex-wrap items-end gap-3">
             <div className="w-40">
               <Select value={usingCustom ? '' : period} onValueChange={(v) => { if (v) { setPeriod(v); setCustomFrom(''); setCustomTo(''); } }}>
-                <SelectTrigger className="bg-white border-slate-200 shadow-sm font-semibold text-slate-700">
+                <SelectTrigger className="bg-white border-border shadow-sm font-semibold text-slate-700">
                   <SelectValue placeholder={usingCustom ? t("analytics.customRange") : t("analytics.selectPeriod")} />
                 </SelectTrigger>
                 <SelectContent>
@@ -156,11 +156,11 @@ export default function AnalyticsPage() {
             {/* Custom date range (#1.4) */}
             <div className="flex flex-col">
               <label className="text-[10px] font-bold text-slate-400 mb-1">{t("analytics.from")}</label>
-              <Input type="date" value={customFrom} max={customTo || undefined} onChange={(e) => setCustomFrom(e.target.value)} className="h-9 bg-white border-slate-200 shadow-sm text-sm w-40" />
+              <Input type="date" value={customFrom} max={customTo || undefined} onChange={(e) => setCustomFrom(e.target.value)} className="h-9 bg-white border-border shadow-sm text-sm w-40" />
             </div>
             <div className="flex flex-col">
               <label className="text-[10px] font-bold text-slate-400 mb-1">{t("analytics.to")}</label>
-              <Input type="date" value={customTo} min={customFrom || undefined} onChange={(e) => setCustomTo(e.target.value)} className="h-9 bg-white border-slate-200 shadow-sm text-sm w-40" />
+              <Input type="date" value={customTo} min={customFrom || undefined} onChange={(e) => setCustomTo(e.target.value)} className="h-9 bg-white border-border shadow-sm text-sm w-40" />
             </div>
             {usingCustom && (
               <Button variant="outline" className="h-9" onClick={() => { setCustomFrom(''); setCustomTo(''); }}>{t("analytics.clear")}</Button>
@@ -170,7 +170,7 @@ export default function AnalyticsPage() {
 
         {/* Top Summary Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <Card className="border-slate-100 shadow-sm hover:shadow-md transition-shadow">
+          <Card className="border-border shadow-sm hover:shadow-md transition-shadow">
             <CardHeader className="p-4 pb-2">
               <CardDescription className="text-[10px] font-semibold text-slate-500">{t("analytics.totalReservations")}</CardDescription>
               <CardTitle className="text-2xl font-bold tabular-nums flex items-center justify-between">
@@ -183,7 +183,7 @@ export default function AnalyticsPage() {
             </CardContent>
           </Card>
 
-          <Card className="border-slate-100 shadow-sm hover:shadow-md transition-shadow">
+          <Card className="border-border shadow-sm hover:shadow-md transition-shadow">
             <CardHeader className="p-4 pb-2">
               <CardDescription className="text-[10px] font-semibold text-slate-500">{t("analytics.guestsSeated")}</CardDescription>
               <CardTitle className="text-2xl font-bold tabular-nums flex items-center justify-between">
@@ -196,7 +196,7 @@ export default function AnalyticsPage() {
             </CardContent>
           </Card>
 
-          <Card className="border-slate-100 shadow-sm hover:shadow-md transition-shadow">
+          <Card className="border-border shadow-sm hover:shadow-md transition-shadow">
             <CardHeader className="p-4 pb-2">
               <CardDescription className="text-[10px] font-semibold text-slate-500">{t("analytics.avgPartySize")}</CardDescription>
               <CardTitle className="text-2xl font-bold tabular-nums flex items-center justify-between">
@@ -211,7 +211,7 @@ export default function AnalyticsPage() {
             </CardContent>
           </Card>
 
-          <Card className="border-slate-100 shadow-sm hover:shadow-md transition-shadow">
+          <Card className="border-border shadow-sm hover:shadow-md transition-shadow">
             <CardHeader className="p-4 pb-2">
               <CardDescription className="text-[10px] font-semibold text-slate-500">{t("analytics.vipVisits")}</CardDescription>
               <CardTitle className="text-2xl font-bold tabular-nums flex items-center justify-between">
@@ -229,7 +229,7 @@ export default function AnalyticsPage() {
 
         {/* Secondary metrics: cancellation / no-show rate, lead time, customer mix */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <Card className="border-slate-100 shadow-sm">
+          <Card className="border-border shadow-sm">
             <CardHeader className="p-4 pb-2">
               <CardDescription className="text-[10px] font-semibold text-slate-500">{t("analytics.cancelRate")}</CardDescription>
               <CardTitle className="text-2xl font-bold tabular-nums flex items-center justify-between">
@@ -238,7 +238,7 @@ export default function AnalyticsPage() {
               </CardTitle>
             </CardHeader>
           </Card>
-          <Card className="border-slate-100 shadow-sm">
+          <Card className="border-border shadow-sm">
             <CardHeader className="p-4 pb-2">
               <CardDescription className="text-[10px] font-semibold text-slate-500">{t("analytics.noShowRate")}</CardDescription>
               <CardTitle className="text-2xl font-bold tabular-nums flex items-center justify-between">
@@ -247,7 +247,7 @@ export default function AnalyticsPage() {
               </CardTitle>
             </CardHeader>
           </Card>
-          <Card className="border-slate-100 shadow-sm">
+          <Card className="border-border shadow-sm">
             <CardHeader className="p-4 pb-2">
               <CardDescription className="text-[10px] font-semibold text-slate-500">{t("analytics.avgLeadTime")}</CardDescription>
               <CardTitle className="text-2xl font-bold tabular-nums flex items-center justify-between">
@@ -259,7 +259,7 @@ export default function AnalyticsPage() {
               <div className="text-xs text-slate-500 font-bold mt-2">{t("analytics.leadTimeHint")}</div>
             </CardContent>
           </Card>
-          <Card className="border-slate-100 shadow-sm">
+          <Card className="border-border shadow-sm">
             <CardHeader className="p-4 pb-2">
               <CardDescription className="text-[10px] font-semibold text-slate-500">{t("analytics.customerMix")}</CardDescription>
             </CardHeader>
@@ -282,8 +282,8 @@ export default function AnalyticsPage() {
 
         {/* Charts Row 1: Trend & Status */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <Card className="border-slate-100 shadow-sm bg-white lg:col-span-2">
-            <CardHeader className="border-b border-slate-100 bg-slate-50/50">
+          <Card className="border-border shadow-sm bg-white lg:col-span-2">
+            <CardHeader className="border-b border-border bg-slate-50/50">
               <CardTitle className="text-sm font-bold text-slate-700">{t("analytics.reservationTrend")}</CardTitle>
             </CardHeader>
             <CardContent className="p-6">
@@ -313,8 +313,8 @@ export default function AnalyticsPage() {
             </CardContent>
           </Card>
 
-          <Card className="border-slate-100 shadow-sm bg-white">
-            <CardHeader className="border-b border-slate-100 bg-slate-50/50">
+          <Card className="border-border shadow-sm bg-white">
+            <CardHeader className="border-b border-border bg-slate-50/50">
               <CardTitle className="text-sm font-bold text-slate-700">{t("analytics.statusBreakdown")}</CardTitle>
             </CardHeader>
             <CardContent className="p-6">
@@ -359,8 +359,8 @@ export default function AnalyticsPage() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           
           {/* Peak Hours Heatmap */}
-          <Card className="border-slate-100 shadow-sm bg-white">
-            <CardHeader className="border-b border-slate-100 bg-slate-50/50">
+          <Card className="border-border shadow-sm bg-white">
+            <CardHeader className="border-b border-border bg-slate-50/50">
               <CardTitle className="text-sm font-bold text-slate-700">{t("analytics.peakHoursHeatmap")}</CardTitle>
             </CardHeader>
             <CardContent className="p-6 overflow-x-auto">
@@ -382,7 +382,7 @@ export default function AnalyticsPage() {
                         return (
                           <div
                             key={`${dIdx}-${hour}`}
-                            className="aspect-square rounded-sm border border-slate-100/50 transition-all hover:scale-110 hover:shadow-md cursor-pointer group relative"
+                            className="aspect-square rounded-sm border border-border/50 transition-all hover:scale-110 hover:shadow-md cursor-pointer group relative"
                             style={{ backgroundColor: count > 0 ? getHeatmapColor(count, maxPeakCount) : '#f8fafc' }}
                           >
                             <div className="absolute opacity-0 group-hover:opacity-100 z-10 bg-slate-800 text-white text-[10px] px-2 py-1 rounded bottom-full left-1/2 -translate-x-1/2 mb-1 whitespace-nowrap pointer-events-none">
@@ -400,8 +400,8 @@ export default function AnalyticsPage() {
 
           <div className="flex flex-col gap-6">
             {/* Zone Utilization */}
-            <Card className="border-slate-100 shadow-sm bg-white flex-1">
-              <CardHeader className="border-b border-slate-100 bg-slate-50/50 pb-4">
+            <Card className="border-border shadow-sm bg-white flex-1">
+              <CardHeader className="border-b border-border bg-slate-50/50 pb-4">
                 <CardTitle className="text-sm font-bold text-slate-700">{t("analytics.zoneUtilization")}</CardTitle>
               </CardHeader>
               <CardContent className="p-6 pt-4">
@@ -429,7 +429,7 @@ export default function AnalyticsPage() {
             </Card>
 
             {/* Waitlist Metrics */}
-            <Card className="border-slate-100 shadow-sm bg-gradient-to-br from-slate-800 to-slate-900 text-white">
+            <Card className="border-border shadow-sm bg-gradient-to-br from-slate-800 to-slate-900 text-white">
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm font-bold text-slate-300">{t("analytics.waitlistPerformance")}</CardTitle>
               </CardHeader>

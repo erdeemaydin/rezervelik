@@ -79,9 +79,9 @@ export default function VendorsPage() {
         </div>
 
         <div className="flex gap-1.5 flex-wrap">
- <button onClick={() => setFilter('')} className={`text-[10px] font-semibold px-2 py-1 rounded-sm border ${filter ===''?'bg-slate-900 text-white border-slate-900':'bg-white text-slate-500 border-slate-200'}`}>{t('vendors.all')}</button>
+ <button onClick={() => setFilter('')} className={`text-[10px] font-semibold px-2 py-1 rounded-sm border transition-colors ${filter ===''?'bg-slate-900 text-white border-slate-900':'bg-white text-slate-500 border-border hover:bg-slate-50 hover:border-ring'}`}>{t('vendors.all')}</button>
           {CATEGORIES.map(c => (
- <button key={c} onClick={() => setFilter(c)} className={`text-[10px] font-semibold px-2 py-1 rounded-sm border ${filter === c ?'bg-slate-900 text-white border-slate-900':'bg-white text-slate-500 border-slate-200'}`}>{t(`vendors.categories.${c}`)}</button>
+ <button key={c} onClick={() => setFilter(c)} className={`text-[10px] font-semibold px-2 py-1 rounded-sm border transition-colors ${filter === c ?'bg-slate-900 text-white border-slate-900':'bg-white text-slate-500 border-border hover:bg-slate-50 hover:border-ring'}`}>{t(`vendors.categories.${c}`)}</button>
           ))}
         </div>
 
@@ -128,7 +128,7 @@ export default function VendorsPage() {
             </div>
             <div className="grid gap-1.5">
               <Label className="text-[10px] font-semibold text-slate-400">{t('vendors.category')}</Label>
-              <select value={form.category} onChange={e => setForm({ ...form, category: e.target.value })} className="h-10 px-2 text-sm font-bold border border-slate-200 rounded-sm bg-white">
+              <select value={form.category} onChange={e => setForm({ ...form, category: e.target.value })} className="h-10 px-2 text-sm font-bold border border-border rounded-sm bg-white transition-colors outline-none hover:border-ring focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50">
                 {CATEGORIES.map(c => <option key={c} value={c}>{t(`vendors.categories.${c}`)}</option>)}
               </select>
             </div>

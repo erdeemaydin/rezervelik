@@ -96,8 +96,8 @@ export default function ProfilePage() {
         </div>
 
         {/* Identity */}
-        <Card className="rounded-xl border-slate-200 shadow-sm bg-white overflow-hidden">
-          <CardHeader className="p-6 bg-slate-50/50 border-b border-slate-100 flex flex-row items-center gap-4">
+        <Card className="rounded-xl border-border shadow-sm bg-white overflow-hidden">
+          <CardHeader className="p-6 bg-slate-50/50 border-b border-border flex flex-row items-center gap-4">
             <div className="p-3 bg-blue-100 rounded-lg text-blue-600"><UserIcon className="w-6 h-6" /></div>
             <div>
               <CardTitle className="text-lg font-semibold tracking-tight">{me ? `${me.firstName} ${me.lastName}` : '—'}</CardTitle>
@@ -108,8 +108,8 @@ export default function ProfilePage() {
         </Card>
 
         {/* Change password */}
-        <Card className="rounded-xl border-slate-200 shadow-sm bg-white overflow-hidden">
-          <CardHeader className="p-6 bg-slate-50/50 border-b border-slate-100 flex flex-row items-center gap-4">
+        <Card className="rounded-xl border-border shadow-sm bg-white overflow-hidden">
+          <CardHeader className="p-6 bg-slate-50/50 border-b border-border flex flex-row items-center gap-4">
             <div className="p-3 bg-amber-100 rounded-lg text-amber-600"><Lock className="w-6 h-6" /></div>
             <div>
               <CardTitle className="text-lg font-semibold tracking-tight">{t('profile.changePassword')}</CardTitle>
@@ -142,15 +142,15 @@ export default function ProfilePage() {
         </Card>
 
         {/* Two-factor */}
-        <Card className="rounded-xl border-slate-200 shadow-sm bg-white overflow-hidden">
-          <CardHeader className="p-6 bg-slate-50/50 border-b border-slate-100 flex flex-row items-center gap-4">
+        <Card className="rounded-xl border-border shadow-sm bg-white overflow-hidden">
+          <CardHeader className="p-6 bg-slate-50/50 border-b border-border flex flex-row items-center gap-4">
             <div className="p-3 bg-emerald-100 rounded-lg text-emerald-600"><ShieldCheck className="w-6 h-6" /></div>
             <div>
               <CardTitle className="text-lg font-semibold tracking-tight">{t('profile.twoFactor')}</CardTitle>
               <CardDescription className="text-sm">{t('profile.twoFactorDesc')}</CardDescription>
             </div>
             {me && (
- <Badge className={`ml-auto text-[10px] font-semibold ${me.otpEnrolled ?'bg-emerald-50 text-emerald-700 border-emerald-200': me.otpRequired ?'bg-amber-50 text-amber-700 border-amber-200':'bg-slate-100 text-slate-500 border-slate-200'}`}>
+ <Badge className={`ml-auto text-[10px] font-semibold ${me.otpEnrolled ?'bg-emerald-50 text-emerald-700 border-emerald-200': me.otpRequired ?'bg-amber-50 text-amber-700 border-amber-200':'bg-slate-100 text-slate-500 border-border'}`}>
                 {me.otpEnrolled ? t('profile.twoFactorActive') : me.otpRequired ? t('profile.twoFactorPending') : t('profile.twoFactorOff')}
               </Badge>
             )}
@@ -172,13 +172,13 @@ export default function ProfilePage() {
               <div className="space-y-4">
                 <p className="text-sm text-slate-600 font-medium">{t('profile.twoFactorScan')}</p>
                 <div className="flex flex-col sm:flex-row gap-6 items-start">
-                  <div className="p-3 bg-white border border-slate-200 rounded-lg shadow-sm">
+                  <div className="p-3 bg-white border border-border rounded-lg shadow-sm">
                     <QRCodeSVG value={setupUri} size={160} />
                   </div>
                   <div className="space-y-3 flex-1">
                     <div className="grid gap-1.5">
                       <Label className="text-[10px] font-semibold text-slate-400">{t('profile.twoFactorManualKey')}</Label>
-                      <code className="text-xs font-mono bg-slate-50 border border-slate-200 rounded px-3 py-2 break-all">{setupSecret}</code>
+                      <code className="text-xs font-mono bg-slate-50 border border-border rounded px-3 py-2 break-all">{setupSecret}</code>
                     </div>
                     <div className="grid gap-1.5 max-w-[220px]">
                       <Label className="text-[10px] font-semibold text-slate-400">{t('profile.twoFactorEnterCode')}</Label>

@@ -141,7 +141,7 @@ export default function CalendarSettingsPage() {
     const padding = firstDay === 0 ? 6 : firstDay - 1;
     
     const days = [];
-    for (let i = 0; i < padding; i++) days.push(<div key={`pad-${i}`} className="h-32 bg-slate-50/20 border border-slate-100/30" />);
+    for (let i = 0; i < padding; i++) days.push(<div key={`pad-${i}`} className="h-32 bg-slate-50/20 border border-border/30" />);
 
     for (let d = 1; d <= totalDays; d++) {
       const dateStr = formatLocalDate(new Date(year, month, d));
@@ -163,7 +163,7 @@ export default function CalendarSettingsPage() {
           key={d} 
           onClick={() => handleDayClick(dateStr)}
           className={cn(
-            "h-32 border border-slate-200 p-3 cursor-pointer transition-all group relative overflow-hidden",
+            "h-32 border border-border p-3 cursor-pointer transition-all group relative overflow-hidden",
             bgColor,
             isSelected && "ring-4 ring-slate-900 ring-inset z-10 shadow-2xl scale-[0.98]",
             isToday && !isSelected && "border-blue-600 border-4"
@@ -212,7 +212,7 @@ export default function CalendarSettingsPage() {
           
           <div className="flex flex-col items-end gap-2">
             <div className="flex items-center gap-6 mt-2">
-                <div className="flex items-center gap-2 bg-slate-100 p-1 rounded-md border border-slate-200">
+                <div className="flex items-center gap-2 bg-slate-100 p-1 rounded-md border border-border">
                     <Button 
                         variant={!isBulkMode ? "default" : "ghost"} 
                         size="sm" 
@@ -231,7 +231,7 @@ export default function CalendarSettingsPage() {
                     </Button>
                 </div>
 
-                <div className="flex items-center gap-4 bg-white p-1 rounded-md shadow-sm border border-slate-200">
+                <div className="flex items-center gap-4 bg-white p-1 rounded-md shadow-sm border border-border">
                     <Button variant="ghost" size="icon" className="h-8 w-8 rounded-sm hover:bg-slate-100" onClick={() => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1))}>
                         <CaretLeft className="h-4 h-4" />
                     </Button>
@@ -247,7 +247,7 @@ export default function CalendarSettingsPage() {
         </div>
 
         <div className="grid grid-cols-1 xl:grid-cols-4 gap-6 items-start">
-            <Card className="xl:col-span-3 border-slate-200 shadow-sm rounded-md overflow-hidden bg-white ring-1 ring-slate-200">
+            <Card className="xl:col-span-3 border-border shadow-sm rounded-md overflow-hidden bg-white ring-1 ring-slate-200">
                 <div className="grid grid-cols-7 bg-slate-900 text-white font-semibold text-[9px] tracking-[0.4em] text-center py-4">
                     {[t("calendar.days.mon"), t("calendar.days.tue"), t("calendar.days.wed"), t("calendar.days.thu"), t("calendar.days.fri"), t("calendar.days.sat"), t("calendar.days.sun")].map(day => <div key={day}>{day}</div>)}
                 </div>
@@ -258,7 +258,7 @@ export default function CalendarSettingsPage() {
 
             <div className="sticky top-6 flex flex-col gap-4">
                 {selectedDays.size > 0 ? (
-                    <Card className="border-slate-200 shadow-xl rounded-md overflow-hidden animate-in slide-in-from-right duration-300">
+                    <Card className="border-border shadow-xl rounded-md overflow-hidden animate-in slide-in-from-right duration-300">
                         <CardHeader className={cn("p-6 text-white", isBulkMode ? "bg-blue-900" : "bg-slate-900")}>
                             <div className="flex items-center justify-between mb-2">
                                 <CardTitle className="text-sm font-semibold flex items-center gap-2">
@@ -274,7 +274,7 @@ export default function CalendarSettingsPage() {
                         <CardContent className="p-6 space-y-8 bg-white">
                             <div className="space-y-2">
                                 <Label className="text-[9px] font-semibold text-slate-400">{t("calendar.panel.eventTitle")}</Label>
-                                <Input placeholder="..." value={form.eventTitle} onChange={e => setForm({...form, eventTitle: e.target.value})} className="h-10 text-xs font-bold bg-slate-50 border-slate-200 rounded-sm" />
+                                <Input placeholder="..." value={form.eventTitle} onChange={e => setForm({...form, eventTitle: e.target.value})} className="h-10 text-xs font-bold bg-slate-50 border-border rounded-sm" />
                             </div>
 
                              <div className="space-y-6 py-4 border-y border-slate-50">
@@ -352,13 +352,13 @@ export default function CalendarSettingsPage() {
                                                  <Label className="text-[9px] font-semibold text-slate-400">{t("calendar.panel.overbookingOverrideMaxCovers")}</Label>
                                                  <Input type="number" min="1" value={form.overbookingMaxExtraCoversOverride ?? ''}
                                                      onChange={(e) => setForm(prev => ({ ...prev, overbookingMaxExtraCoversOverride: e.target.value === '' ? null : parseInt(e.target.value) }))}
-                                                     className="h-9 text-xs font-bold bg-slate-50 border-slate-200 rounded-sm" />
+                                                     className="h-9 text-xs font-bold bg-slate-50 border-border rounded-sm" />
                                              </div>
                                              <div className="space-y-1">
                                                  <Label className="text-[9px] font-semibold text-slate-400">{t("calendar.panel.overbookingOverrideMaxReservations")}</Label>
                                                  <Input type="number" min="1" value={form.overbookingMaxExtraReservationsOverride ?? ''}
                                                      onChange={(e) => setForm(prev => ({ ...prev, overbookingMaxExtraReservationsOverride: e.target.value === '' ? null : parseInt(e.target.value) }))}
-                                                     className="h-9 text-xs font-bold bg-slate-50 border-slate-200 rounded-sm" />
+                                                     className="h-9 text-xs font-bold bg-slate-50 border-border rounded-sm" />
                                              </div>
                                          </div>
                                      )}
@@ -367,7 +367,7 @@ export default function CalendarSettingsPage() {
 
                             <div className="flex gap-2">
                                 {isBulkMode && (
-                                    <Button variant="outline" onClick={() => setSelectedDays(new Set())} className="flex-1 h-12 text-[10px] font-semibold rounded-sm border-slate-200 text-slate-400">{t("calendar.panel.clear")}</Button>
+                                    <Button variant="outline" onClick={() => setSelectedDays(new Set())} className="flex-1 h-12 text-[10px] font-semibold rounded-sm border-border text-slate-400">{t("calendar.panel.clear")}</Button>
                                 )}
                                 <Button onClick={handleSave} className="flex-[2] h-12 bg-slate-900 hover:bg-black text-white font-semibold text-[10px] rounded-sm shadow-xl transition-all active:scale-95">
                                     {isBulkMode ? `${t("calendar.panel.saveDaysPrefix")}${selectedDays.size}${t("calendar.panel.saveDaysSuffix")}` : t("calendar.panel.applySettings")}
@@ -376,7 +376,7 @@ export default function CalendarSettingsPage() {
                         </CardContent>
                     </Card>
                 ) : (
-                    <div className="h-96 flex flex-col items-center justify-center text-center p-8 bg-white rounded-md border-2 border-dashed border-slate-200 shadow-inner">
+                    <div className="h-96 flex flex-col items-center justify-center text-center p-8 bg-white rounded-md border-2 border-dashed border-border shadow-inner">
                         <div className="w-16 h-16 rounded-xl bg-slate-50 flex items-center justify-center mb-6">
                             {isBulkMode ? <Stack className="h-8 w-8 text-slate-200" /> : <Cursor className="h-8 w-8 text-slate-200" />}
                         </div>

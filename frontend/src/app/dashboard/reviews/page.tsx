@@ -108,8 +108,8 @@ export default function ReviewsPage() {
 
   // Shared link editor / connect form.
   const LinkForm = () => (
-    <Card className="border-slate-200 shadow-sm">
-      <CardHeader className="p-5 border-b border-slate-100 bg-slate-50/50 flex flex-row items-center gap-3">
+    <Card className="border-border shadow-sm">
+      <CardHeader className="p-5 border-b border-border bg-slate-50/50 flex flex-row items-center gap-3">
         <div className="p-2.5 bg-blue-50 rounded-lg text-blue-600"><MapPin className="w-5 h-5" /></div>
         <div>
           <CardTitle className="text-base font-black text-slate-800">{t('reviews.connectTitle')}</CardTitle>
@@ -167,7 +167,7 @@ export default function ReviewsPage() {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             {/* Summary */}
-            <Card className="border-slate-100 shadow-sm bg-slate-900 text-white md:col-span-1 h-fit">
+            <Card className="border-border shadow-sm bg-slate-900 text-white md:col-span-1 h-fit">
               <CardHeader className="p-4 pb-2">
                 <CardDescription className="text-[10px] font-semibold text-slate-400">{t('reviews.averageRating')}</CardDescription>
                 <CardTitle className="text-4xl font-black mt-2">{data.rating?.toFixed(1) ?? '—'}</CardTitle>
@@ -188,10 +188,10 @@ export default function ReviewsPage() {
             <div className="md:col-span-3 space-y-4">
               <p className="text-[11px] font-bold text-slate-400">{t('reviews.fromGoogle')}</p>
               {(!data.reviews || data.reviews.length === 0) ? (
-                <Card className="border-slate-100 shadow-sm"><CardContent className="p-8 text-center text-sm text-slate-500">{t('reviews.noReviews')}</CardContent></Card>
+                <Card className="border-border shadow-sm"><CardContent className="p-8 text-center text-sm text-slate-500">{t('reviews.noReviews')}</CardContent></Card>
               ) : (
                 data.reviews.map((review, idx) => (
-                  <Card key={idx} className="border-slate-100 shadow-sm overflow-hidden">
+                  <Card key={idx} className="border-border shadow-sm overflow-hidden">
                     <CardContent className="p-4">
                       <div className="flex items-start gap-3">
                         {review.photo ? (

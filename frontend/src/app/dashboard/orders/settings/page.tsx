@@ -55,7 +55,7 @@ function WeeklyHoursEditor({ value, onChange }: { value: WeekHours; onChange: (v
   return (
     <div className="space-y-2">
       {DAY_KEYS.map((d) => (
-        <div key={d} className="flex items-center gap-3 rounded-md border border-slate-100 bg-slate-50/50 p-2">
+        <div key={d} className="flex items-center gap-3 rounded-md border border-border bg-slate-50/50 p-2">
           <span className="w-24 shrink-0 text-[10px] font-semibold text-slate-500">{t(`orders.settings.hours.days.${d}`)}</span>
           <Switch
             checked={!value[d].closed}
@@ -318,12 +318,12 @@ export default function OrderSettingsPage() {
             </CardContent>
           </Card>
 
-          <Card className="rounded-md border-slate-200 shadow-sm bg-white">
-            <CardHeader className="p-4 border-b border-slate-100">
+          <Card className="rounded-md border-border shadow-sm bg-white">
+            <CardHeader className="p-4 border-b border-border">
               <span className="text-xs font-semibold text-slate-700">{t('orders.settings.fulfillment.title')}</span>
             </CardHeader>
             <CardContent className="p-4 space-y-3">
-              <div className="flex items-center justify-between p-3 border border-slate-100 rounded-md bg-slate-50/50">
+              <div className="flex items-center justify-between p-3 border border-border rounded-md bg-slate-50/50">
                 <div className="flex items-center gap-3">
                   <Truck className="w-4 h-4 text-blue-500" />
                   <div>
@@ -333,7 +333,7 @@ export default function OrderSettingsPage() {
                 </div>
                 <Switch checked={form.deliveryEnabled} onCheckedChange={(c) => setForm((f) => ({ ...f, deliveryEnabled: c }))} />
               </div>
-              <div className="flex items-center justify-between p-3 border border-slate-100 rounded-md bg-slate-50/50">
+              <div className="flex items-center justify-between p-3 border border-border rounded-md bg-slate-50/50">
                 <div className="flex items-center gap-3">
                   <ShoppingBag className="w-4 h-4 text-blue-500" />
                   <div>
@@ -346,12 +346,12 @@ export default function OrderSettingsPage() {
             </CardContent>
           </Card>
 
-          <Card className="rounded-md border-slate-200 shadow-sm bg-white">
-            <CardHeader className="p-4 border-b border-slate-100">
+          <Card className="rounded-md border-border shadow-sm bg-white">
+            <CardHeader className="p-4 border-b border-border">
               <span className="text-xs font-semibold text-slate-700">{t('orders.settings.payment.title')}</span>
             </CardHeader>
             <CardContent className="p-4 space-y-3">
-              <div className="flex items-center justify-between p-3 border border-slate-100 rounded-md bg-slate-50/50">
+              <div className="flex items-center justify-between p-3 border border-border rounded-md bg-slate-50/50">
                 <div className="flex items-center gap-3">
                   <Wallet className="w-4 h-4 text-blue-500" />
                   <div>
@@ -371,7 +371,7 @@ export default function OrderSettingsPage() {
                   than hiding it) documents the capability exists but isn't
                   wired up yet, and the settings PUT never sends this field so
                   it can't be silently flipped on through this page either. */}
-              <div className="flex items-center justify-between p-3 border border-slate-100 rounded-md bg-slate-50/50 opacity-70">
+              <div className="flex items-center justify-between p-3 border border-border rounded-md bg-slate-50/50 opacity-70">
                 <div className="flex items-center gap-3">
                   <CreditCard className="w-4 h-4 text-slate-400" />
                   <div>
@@ -387,25 +387,25 @@ export default function OrderSettingsPage() {
             </CardContent>
           </Card>
 
-          <Card className="rounded-md border-slate-200 shadow-sm bg-white">
-            <CardHeader className="p-4 border-b border-slate-100">
+          <Card className="rounded-md border-border shadow-sm bg-white">
+            <CardHeader className="p-4 border-b border-border">
               <span className="text-xs font-semibold text-slate-700 flex items-center gap-2"><Gauge className="w-4 h-4 text-blue-500" /> {t('orders.settings.capacity.title')}</span>
             </CardHeader>
             <CardContent className="p-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="grid gap-1.5">
                 <Label className="text-[10px] font-semibold text-slate-400">{t('orders.settings.capacity.maxConcurrent')}</Label>
-                <Input type="number" min="0" placeholder={t('orders.settings.capacity.maxConcurrentHint')} value={form.maxConcurrentOrders} onChange={(e) => setForm((f) => ({ ...f, maxConcurrentOrders: e.target.value }))} className="h-10 text-sm font-bold border-slate-200 rounded-sm" />
+                <Input type="number" min="0" placeholder={t('orders.settings.capacity.maxConcurrentHint')} value={form.maxConcurrentOrders} onChange={(e) => setForm((f) => ({ ...f, maxConcurrentOrders: e.target.value }))} className="h-10 text-sm font-bold border-border rounded-sm" />
               </div>
               <div className="grid gap-1.5">
                 <Label className="text-[10px] font-semibold text-slate-400">{t('orders.settings.capacity.prepTime')}</Label>
-                <Input type="number" min="0" value={form.prepTimeMinutes} onChange={(e) => setForm((f) => ({ ...f, prepTimeMinutes: e.target.value }))} className="h-10 text-sm font-bold border-slate-200 rounded-sm" />
+                <Input type="number" min="0" value={form.prepTimeMinutes} onChange={(e) => setForm((f) => ({ ...f, prepTimeMinutes: e.target.value }))} className="h-10 text-sm font-bold border-border rounded-sm" />
                 <span className="text-[9px] text-slate-400 font-bold">{t('orders.settings.capacity.prepTimeHint')}</span>
               </div>
             </CardContent>
           </Card>
 
-          <Card className="rounded-md border-slate-200 shadow-sm bg-white">
-            <CardHeader className="p-4 border-b border-slate-100">
+          <Card className="rounded-md border-border shadow-sm bg-white">
+            <CardHeader className="p-4 border-b border-border">
               <span className="text-xs font-semibold text-slate-700 flex items-center gap-2"><Clock className="w-4 h-4 text-blue-500" /> {t('orders.settings.hours.title')}</span>
               <p className="text-[10px] text-slate-400 font-bold mt-1">{t('orders.settings.hours.desc')}</p>
             </CardHeader>
@@ -423,8 +423,8 @@ export default function OrderSettingsPage() {
 
         {/* ---- DELIVERY ZONES ---- */}
         <TabsContent value="zones" className="mt-4">
-          <Card className="rounded-md border-slate-200 shadow-sm overflow-hidden bg-white">
-            <CardHeader className="p-3 bg-slate-50/50 border-b border-slate-200 flex flex-row items-center justify-between">
+          <Card className="rounded-md border-border shadow-sm overflow-hidden bg-white">
+            <CardHeader className="p-3 bg-slate-50/50 border-b border-border flex flex-row items-center justify-between">
               <span className="text-xs font-semibold text-slate-700">{t('orders.settings.zones.title')}</span>
               <Button size="sm" onClick={openCreateZone} className="bg-blue-600 hover:bg-blue-700 text-white rounded-sm h-9 px-4 font-semibold text-[10px] shadow-md shadow-blue-600/20">
                 <Plus className="w-3.5 h-3.5 mr-1.5" /> {t('orders.settings.zones.addBtn')}
@@ -433,7 +433,7 @@ export default function OrderSettingsPage() {
             <CardContent className="p-0">
               <Table>
                 <TableHeader className="bg-slate-50/80">
-                  <TableRow className="h-9 border-b border-slate-200">
+                  <TableRow className="h-9 border-b border-border">
                     <TableHead className="text-[9px] font-semibold text-slate-400 px-6">{t('orders.settings.zones.table.name')}</TableHead>
                     <TableHead className="text-[9px] font-semibold text-slate-400">{t('orders.settings.zones.table.matchType')}</TableHead>
                     <TableHead className="text-[9px] font-semibold text-slate-400 text-right">{t('orders.settings.zones.table.fee')}</TableHead>
@@ -448,10 +448,10 @@ export default function OrderSettingsPage() {
                   ) : zones.length === 0 ? (
                     <TableRow><TableCell colSpan={6} className="h-32 text-center text-[10px] font-semibold text-slate-400">{t('orders.settings.zones.table.noZones')}</TableCell></TableRow>
                   ) : zones.map((z) => (
-                    <TableRow key={z.id} className="h-14 hover:bg-slate-50/50 border-b border-slate-100 transition-colors">
+                    <TableRow key={z.id} className="h-14 hover:bg-slate-50/50 border-b border-border transition-colors">
                       <TableCell className="px-6 py-3 font-black text-slate-900 text-sm">{z.name}</TableCell>
                       <TableCell>
-                        <Badge variant="outline" className="text-[9px] font-semibold border-slate-200 bg-white text-slate-600">{t(`orders.settings.zones.matchType.${z.matchType}`)}</Badge>
+                        <Badge variant="outline" className="text-[9px] font-semibold border-border bg-white text-slate-600">{t(`orders.settings.zones.matchType.${z.matchType}`)}</Badge>
                       </TableCell>
                       <TableCell className="text-right font-bold text-slate-700 text-xs">{z.deliveryFee}</TableCell>
                       <TableCell className="text-right font-bold text-slate-700 text-xs">{z.minOrderAmount}</TableCell>
@@ -487,13 +487,13 @@ export default function OrderSettingsPage() {
             <div className="p-6 space-y-4 bg-white max-h-[65vh] overflow-y-auto">
               <div className="grid gap-1.5">
                 <Label className="text-[10px] font-semibold text-slate-400 ml-1">{t('orders.settings.zones.dialog.name')}</Label>
-                <Input required value={zoneForm.name} onChange={(e) => setZoneForm({ ...zoneForm, name: e.target.value })} placeholder={t('orders.settings.zones.dialog.namePlaceholder')} className="h-10 text-sm font-bold border-slate-200 rounded-sm" />
+                <Input required value={zoneForm.name} onChange={(e) => setZoneForm({ ...zoneForm, name: e.target.value })} placeholder={t('orders.settings.zones.dialog.namePlaceholder')} className="h-10 text-sm font-bold border-border rounded-sm" />
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="grid gap-1.5">
                   <Label className="text-[10px] font-semibold text-slate-400 ml-1">{t('orders.settings.zones.dialog.matchType')}</Label>
                   <Select value={zoneForm.matchType} onValueChange={(v) => { if (v) setZoneForm({ ...zoneForm, matchType: v as 'RADIUS' | 'AREA' }); }}>
-                    <SelectTrigger className="h-10 text-sm font-bold rounded-sm border-slate-200 focus:ring-0 shadow-none">
+                    <SelectTrigger className="h-10 text-sm font-bold rounded-sm border-border focus:ring-0 shadow-none">
                       <SelectValue>{t(`orders.settings.zones.matchType.${zoneForm.matchType}`)}</SelectValue>
                     </SelectTrigger>
                     <SelectContent>
@@ -505,30 +505,30 @@ export default function OrderSettingsPage() {
                 {zoneForm.matchType === 'RADIUS' && (
                   <div className="grid gap-1.5">
                     <Label className="text-[10px] font-semibold text-slate-400 ml-1">{t('orders.settings.zones.dialog.radiusMeters')}</Label>
-                    <Input type="number" min="0" value={zoneForm.radiusMeters} onChange={(e) => setZoneForm({ ...zoneForm, radiusMeters: e.target.value })} className="h-10 text-sm font-bold border-slate-200 rounded-sm font-mono" />
+                    <Input type="number" min="0" value={zoneForm.radiusMeters} onChange={(e) => setZoneForm({ ...zoneForm, radiusMeters: e.target.value })} className="h-10 text-sm font-bold border-border rounded-sm font-mono" />
                   </div>
                 )}
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="grid gap-1.5">
                   <Label className="text-[10px] font-semibold text-slate-400 ml-1">{t('orders.settings.zones.dialog.deliveryFee')}</Label>
-                  <Input type="number" min="0" step="0.01" required value={zoneForm.deliveryFee} onChange={(e) => setZoneForm({ ...zoneForm, deliveryFee: e.target.value })} className="h-10 text-sm font-bold border-slate-200 rounded-sm font-mono" />
+                  <Input type="number" min="0" step="0.01" required value={zoneForm.deliveryFee} onChange={(e) => setZoneForm({ ...zoneForm, deliveryFee: e.target.value })} className="h-10 text-sm font-bold border-border rounded-sm font-mono" />
                 </div>
                 <div className="grid gap-1.5">
                   <Label className="text-[10px] font-semibold text-slate-400 ml-1">{t('orders.settings.zones.dialog.minOrderAmount')}</Label>
-                  <Input type="number" min="0" step="0.01" value={zoneForm.minOrderAmount} onChange={(e) => setZoneForm({ ...zoneForm, minOrderAmount: e.target.value })} className="h-10 text-sm font-bold border-slate-200 rounded-sm font-mono" />
+                  <Input type="number" min="0" step="0.01" value={zoneForm.minOrderAmount} onChange={(e) => setZoneForm({ ...zoneForm, minOrderAmount: e.target.value })} className="h-10 text-sm font-bold border-border rounded-sm font-mono" />
                 </div>
               </div>
-              <div className="flex items-center gap-2 p-2 bg-slate-50 border border-slate-100 rounded-sm">
+              <div className="flex items-center gap-2 p-2 bg-slate-50 border border-border rounded-sm">
                 <Switch checked={zoneForm.isActive} onCheckedChange={(c) => setZoneForm({ ...zoneForm, isActive: c })} />
                 <Label className="text-xs font-bold text-slate-700">{t('orders.settings.zones.dialog.active')}</Label>
               </div>
-              <div className="pt-2 border-t border-slate-100">
+              <div className="pt-2 border-t border-border">
                 <Label className="text-[10px] font-semibold text-slate-400 ml-1 mb-2 block">{t('orders.settings.hours.title')}</Label>
                 <WeeklyHoursEditor value={zoneForm.openHours} onChange={(v) => setZoneForm({ ...zoneForm, openHours: v })} />
               </div>
             </div>
-            <div className="p-4 bg-slate-50 border-t border-slate-100 flex justify-end gap-2">
+            <div className="p-4 bg-slate-50 border-t border-border flex justify-end gap-2">
               <Button type="button" variant="ghost" onClick={() => setZoneDialogOpen(false)} disabled={savingZone} className="h-9 text-xs font-bold text-slate-400">{t('common.cancel')}</Button>
               <Button type="submit" disabled={savingZone} className="h-9 bg-blue-600 hover:bg-blue-700 text-xs font-semibold px-6 rounded-sm disabled:opacity-60">{t('orders.settings.zones.dialog.save')}</Button>
             </div>

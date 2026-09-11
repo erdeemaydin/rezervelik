@@ -91,7 +91,7 @@ export default function DashboardPage() {
               type="date"
               value={selectedDate}
               onChange={(e) => setSelectedDate(e.target.value || localDateStr(new Date()))}
-              className="h-9 w-44 bg-white border-slate-200 shadow-sm text-sm font-semibold"
+              className="h-9 w-44 bg-white border-border shadow-sm text-sm font-semibold"
             />
             {!isViewingToday && (
               <Button variant="outline" className="h-9" onClick={() => setSelectedDate(localDateStr(new Date()))}>
@@ -104,7 +104,7 @@ export default function DashboardPage() {
                 {t('dashboard.liveData')}
               </span>
             ) : (
-              <span className="text-xs font-bold text-slate-500 bg-slate-100 border border-slate-200 px-3 py-1.5 rounded-full flex items-center shadow-sm">
+              <span className="text-xs font-bold text-slate-500 bg-slate-100 border border-border px-3 py-1.5 rounded-full flex items-center shadow-sm">
                 {new Date(`${selectedDate}T00:00:00`).toLocaleDateString([], { weekday: 'long', day: 'numeric', month: 'long' })}
               </span>
             )}
@@ -181,8 +181,8 @@ export default function DashboardPage() {
         <div className="grid gap-6 md:grid-cols-7">
           
           {/* Status Breakdown */}
-          <Card className="md:col-span-2 shadow-sm border-slate-200">
-            <CardHeader className="pb-4 border-b border-slate-100 bg-slate-50/50">
+          <Card className="md:col-span-2 shadow-sm border-border">
+            <CardHeader className="pb-4 border-b border-border bg-slate-50/50">
               <CardTitle className="text-lg text-slate-800">{t('dashboard.todaysStatus')}</CardTitle>
             </CardHeader>
             <CardContent className="pt-6">
@@ -220,8 +220,8 @@ export default function DashboardPage() {
           </Card>
 
           {/* Hourly Distribution Chart */}
-          <Card className="md:col-span-5 shadow-sm border-slate-200">
-            <CardHeader className="pb-4 border-b border-slate-100 bg-slate-50/50">
+          <Card className="md:col-span-5 shadow-sm border-border">
+            <CardHeader className="pb-4 border-b border-border bg-slate-50/50">
               <CardTitle className="text-lg text-slate-800">{t('dashboard.hourlyDistribution')}</CardTitle>
               <CardDescription>{t('dashboard.hourlyDesc')}</CardDescription>
             </CardHeader>

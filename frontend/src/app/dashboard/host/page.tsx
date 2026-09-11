@@ -456,7 +456,7 @@ export default function HostConsolePage() {
       case 'SEATED':
         return 'bg-emerald-100 text-emerald-800 border-emerald-200';
       default:
-        return 'bg-slate-100 text-slate-800 border-slate-200';
+        return 'bg-slate-100 text-slate-800 border-border';
     }
   };
 
@@ -535,21 +535,21 @@ export default function HostConsolePage() {
         </div>
 
         {/* Global Filter Bar */}
-        <div className="bg-white rounded-xl p-2 border border-slate-200 shadow-sm flex items-center gap-2 shrink-0">
+        <div className="bg-white rounded-xl p-2 border border-border shadow-sm flex items-center gap-2 shrink-0">
           <div className="relative flex-1 w-full">
             <MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
             <Input
               placeholder={t("host.searchPlaceholder")}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-9 h-12 text-sm font-bold bg-slate-50 border-slate-200 focus:bg-white focus:ring-4 focus:ring-blue-500/10 rounded-lg transition-all"
+              className="pl-9 h-12 text-sm font-bold bg-slate-50 border-border focus:bg-white focus:ring-4 focus:ring-blue-500/10 rounded-lg transition-all"
             />
           </div>
 
           <Button
             variant="outline"
             onClick={() => setIsHistoryDrawerOpen(true)}
-            className="h-12 px-3.5 shrink-0 rounded-lg border-slate-200 hover:bg-slate-50 flex items-center gap-1.5 font-bold text-[11px] text-slate-600 whitespace-nowrap"
+            className="h-12 px-3.5 shrink-0 rounded-lg border-border hover:bg-slate-50 flex items-center gap-1.5 font-bold text-[11px] text-slate-600 whitespace-nowrap"
           >
             <ArrowCounterClockwise className="w-4 h-4 text-blue-600 stroke-[2.5]" />
             <span className="hidden sm:inline">{t("host.activityLogBtn")}</span>
@@ -559,21 +559,21 @@ export default function HostConsolePage() {
             variant="outline"
             onClick={() => fetchData()}
             disabled={loading}
-            className="h-12 w-12 shrink-0 rounded-lg border-slate-200 hover:bg-slate-50"
+            className="h-12 w-12 shrink-0 rounded-lg border-border hover:bg-slate-50"
           >
             <ArrowClockwise className={cn("w-4 h-4 text-slate-600", loading && "animate-spin")} />
           </Button>
         </div>
 
         {/* Content Pane */}
-        <div className="flex-1 min-h-0 overflow-hidden bg-slate-50 border border-slate-200 rounded-xl shadow-inner p-2">
+        <div className="flex-1 min-h-0 overflow-hidden bg-slate-50 border border-border rounded-xl shadow-inner p-2">
 
           {/* 1. RESERVATIONS VIEW */}
           {activeTab === 'reservations' && (
             <div className="flex flex-col sm:flex-row gap-2 h-full">
 
               {/* Hour Slot Navigator Panel (Left Side on iPad) */}
-              <div className="w-full sm:w-28 lg:w-32 shrink-0 bg-white border border-slate-200 rounded-lg p-1.5 flex sm:flex-col gap-1.5 overflow-x-auto sm:overflow-y-auto hide-scrollbar">
+              <div className="w-full sm:w-28 lg:w-32 shrink-0 bg-white border border-border rounded-lg p-1.5 flex sm:flex-col gap-1.5 overflow-x-auto sm:overflow-y-auto hide-scrollbar">
                 <div className="hidden sm:block text-[9px] font-semibold text-slate-400 mb-0.5 px-1.5">{t("host.filterByTime")}</div>
                 {hourSlots.map((hour) => {
                   const isActive = selectedHour === hour.value;
@@ -591,7 +591,7 @@ export default function HostConsolePage() {
 "h-10 min-w-0 shrink-0 px-2 rounded-md font-semibold text-[11px] text-left transition-all flex items-center justify-between gap-1 border active:scale-[0.97]",
                         isActive
                           ? "bg-slate-900 border-slate-900 text-white shadow-md shadow-slate-900/10"
-                          : "bg-slate-50 border-slate-100 text-slate-600 hover:bg-slate-100"
+                          : "bg-slate-50 border-border text-slate-600 hover:bg-slate-100"
                       )}
                     >
                       <span className="min-w-0 flex-1 truncate">{hour.label}</span>
@@ -619,7 +619,7 @@ export default function HostConsolePage() {
                     <div className="text-slate-400 text-xs font-semibold">{t("host.updatingTimeline")}</div>
                   </div>
                 ) : filteredReservations.length === 0 ? (
-                  <div className="bg-white border border-slate-200 border-dashed rounded-xl p-16 text-center">
+                  <div className="bg-white border border-border border-dashed rounded-xl p-16 text-center">
                     <Calendar className="w-12 h-12 text-slate-300 mx-auto mb-4" />
                     <h3 className="font-semibold text-slate-800 tracking-tight text-sm mb-1">{t("host.noActiveBookings")}</h3>
                     <p className="text-slate-400 text-xs max-w-xs mx-auto">{t("host.noActiveBookingsDesc")}</p>
@@ -635,7 +635,7 @@ export default function HostConsolePage() {
                         key={res.id}
                         className={cn(
                           "bg-white border rounded-lg shadow-sm h-24 px-3 flex items-center gap-2 transition-all hover:shadow-md",
-                          res.isVIP ? "border-amber-300 bg-amber-50/20" : "border-slate-200"
+                          res.isVIP ? "border-amber-300 bg-amber-50/20" : "border-border"
                         )}
                       >
                         {/* Status (top) + Time (bottom) */}
@@ -740,7 +740,7 @@ export default function HostConsolePage() {
                   <div className="text-slate-400 text-xs font-semibold">{t("host.updatingWaitlist")}</div>
                 </div>
               ) : filteredWaitlist.length === 0 ? (
-                <div className="bg-white border border-slate-200 border-dashed rounded-xl p-16 text-center">
+                <div className="bg-white border border-border border-dashed rounded-xl p-16 text-center">
                   <Clock className="w-12 h-12 text-slate-300 mx-auto mb-4" />
                   <h3 className="font-semibold text-slate-800 tracking-tight text-sm mb-1">{t("host.waitlistEmpty")}</h3>
                   <p className="text-slate-400 text-xs max-w-xs mx-auto">{t("host.waitlistEmptyDesc")}</p>
@@ -755,7 +755,7 @@ export default function HostConsolePage() {
                       <div
                         key={entry.id}
                         className={cn(
-                          "bg-white border border-slate-200 rounded-lg shadow-sm h-24 px-3 flex items-center gap-2 transition-all hover:shadow-md",
+                          "bg-white border border-border rounded-lg shadow-sm h-24 px-3 flex items-center gap-2 transition-all hover:shadow-md",
                           entry.status === 'NOTIFIED' && "border-purple-300 bg-purple-50/20"
                         )}
                       >
@@ -875,7 +875,7 @@ export default function HostConsolePage() {
                   value={walkinForm.customerName}
                   onChange={(e) => setWalkinForm({...walkinForm, customerName: e.target.value})}
                   required
-                  className="h-12 font-bold text-slate-800 rounded-lg border-slate-200 bg-slate-50 focus:bg-white"
+                  className="h-12 font-bold text-slate-800 rounded-lg border-border bg-slate-50 focus:bg-white"
                 />
               </div>
 
@@ -888,7 +888,7 @@ export default function HostConsolePage() {
                   value={walkinForm.customerPhone}
                   onChange={(e) => setWalkinForm({...walkinForm, customerPhone: e.target.value})}
                   required
-                  className="h-12 font-bold text-slate-800 rounded-lg border-slate-200 bg-slate-50 focus:bg-white"
+                  className="h-12 font-bold text-slate-800 rounded-lg border-border bg-slate-50 focus:bg-white"
                 />
               </div>
 
@@ -905,7 +905,7 @@ export default function HostConsolePage() {
                         "h-12 rounded-lg font-black text-xs border transition-all",
                         walkinForm.partySize === size 
                           ? "bg-blue-600 border-blue-600 text-white shadow-md shadow-blue-600/10" 
-                          : "bg-slate-50 border-slate-100 text-slate-600 hover:bg-slate-100"
+                          : "bg-slate-50 border-border text-slate-600 hover:bg-slate-100"
                       )}
                     >
                       {size}
@@ -927,7 +927,7 @@ export default function HostConsolePage() {
                         "h-12 rounded-lg font-black text-xs border transition-all",
                         walkinForm.quotedWaitTime === time 
                           ? "bg-amber-600 border-amber-600 text-white shadow-md shadow-amber-600/10" 
-                          : "bg-slate-50 border-slate-100 text-slate-600 hover:bg-slate-100"
+                          : "bg-slate-50 border-border text-slate-600 hover:bg-slate-100"
                       )}
                     >
                       {time === '0' ? t("host.noWait") : `${time}${t("host.mSuffix")}`}
@@ -943,13 +943,13 @@ export default function HostConsolePage() {
                   placeholder={t("host.seatingNotesPlaceholder")}
                   value={walkinForm.notes}
                   onChange={(e) => setWalkinForm({...walkinForm, notes: e.target.value})}
-                  className="rounded-lg border-slate-200 bg-slate-50 focus:bg-white text-xs font-bold min-h-[80px]"
+                  className="rounded-lg border-border bg-slate-50 focus:bg-white text-xs font-bold min-h-[80px]"
                 />
               </div>
 
             </div>
 
-            <DialogFooter className="p-6 bg-slate-50 border-t border-slate-100 flex gap-2 justify-end">
+            <DialogFooter className="p-6 bg-slate-50 border-t border-border flex gap-2 justify-end">
               <Button 
                 type="button" 
                 variant="ghost" 
@@ -1003,7 +1003,7 @@ export default function HostConsolePage() {
                   value={resForm.customerName}
                   onChange={(e) => setResForm({...resForm, customerName: e.target.value})}
                   required
-                  className="h-12 font-bold text-slate-800 rounded-lg border-slate-200 bg-slate-50 focus:bg-white"
+                  className="h-12 font-bold text-slate-800 rounded-lg border-border bg-slate-50 focus:bg-white"
                 />
               </div>
 
@@ -1015,7 +1015,7 @@ export default function HostConsolePage() {
                   value={resForm.customerPhone}
                   onChange={(e) => setResForm({...resForm, customerPhone: e.target.value})}
                   required
-                  className="h-12 font-bold text-slate-800 rounded-lg border-slate-200 bg-slate-50 focus:bg-white"
+                  className="h-12 font-bold text-slate-800 rounded-lg border-border bg-slate-50 focus:bg-white"
                 />
               </div>
 
@@ -1032,7 +1032,7 @@ export default function HostConsolePage() {
                         "h-12 rounded-lg font-black text-xs border transition-all",
                         resForm.guestCount === size 
                           ? "bg-blue-600 border-blue-600 text-white shadow-md shadow-blue-600/10" 
-                          : "bg-slate-50 border-slate-100 text-slate-600 hover:bg-slate-100"
+                          : "bg-slate-50 border-border text-slate-600 hover:bg-slate-100"
                       )}
                     >
                       {size}
@@ -1048,7 +1048,7 @@ export default function HostConsolePage() {
                   <TimeSelect
                     value={resForm.selectedTime}
                     onChange={(v) => setResForm({...resForm, selectedTime: v})}
-                    className="w-full h-12 font-bold text-slate-800 rounded-lg border-slate-200 bg-slate-50 focus:bg-white"
+                    className="w-full h-12 font-bold text-slate-800 rounded-lg border-border bg-slate-50 focus:bg-white"
                   />
                 </div>
 
@@ -1058,7 +1058,7 @@ export default function HostConsolePage() {
                   <select 
                     value={resForm.tableId}
                     onChange={(e) => setResForm({...resForm, tableId: e.target.value})}
-                    className="h-12 w-full font-bold text-slate-800 rounded-lg border border-slate-200 bg-slate-50 focus:bg-white px-3 text-sm outline-none"
+                    className="h-12 w-full font-bold text-slate-800 rounded-lg border border-border bg-slate-50 hover:border-ring focus:bg-white px-3 text-sm outline-none transition-colors focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
                   >
                     <option value="none">{t("host.noneHoldAtDoor")}</option>
                     {tables.map((tableItem) => (
@@ -1071,7 +1071,7 @@ export default function HostConsolePage() {
               </div>
 
               {/* VIP Toggle Switch-like layout */}
-              <div className="flex items-center justify-between p-3 border border-slate-200 rounded-xl bg-slate-50">
+              <div className="flex items-center justify-between p-3 border border-border rounded-xl bg-slate-50">
                 <div className="space-y-0.5">
                   <Label className="text-xs font-semibold text-slate-800">{t("host.vipStatusLabel")}</Label>
                   <p className="text-[10px] text-slate-400">{t("host.vipStatusDesc")}</p>
@@ -1083,7 +1083,7 @@ export default function HostConsolePage() {
 "w-20 h-10 font-semibold text-[10px] rounded-lg transition-all border",
                     resForm.isVIP 
                       ? "bg-amber-500 border-amber-500 text-white shadow-md shadow-amber-500/10" 
-                      : "bg-white border-slate-200 text-slate-400"
+                      : "bg-white border-border text-slate-400"
                   )}
                 >
                   {resForm.isVIP ? t("host.vipOn") : t("host.vipOff")}
@@ -1097,7 +1097,7 @@ export default function HostConsolePage() {
                   placeholder={t("host.guestNotesPlaceholder")}
                   value={resForm.notes}
                   onChange={(e) => setResForm({...resForm, notes: e.target.value})}
-                  className="rounded-lg border-slate-200 bg-slate-50 focus:bg-white text-xs font-bold min-h-[60px]"
+                  className="rounded-lg border-border bg-slate-50 focus:bg-white text-xs font-bold min-h-[60px]"
                 />
               </div>
 
@@ -1108,13 +1108,13 @@ export default function HostConsolePage() {
                   placeholder={t("host.hostInternalNotePlaceholder")}
                   value={resForm.internalNote}
                   onChange={(e) => setResForm({...resForm, internalNote: e.target.value})}
-                  className="rounded-lg border-slate-200 bg-slate-50 focus:bg-white text-xs font-bold min-h-[60px]"
+                  className="rounded-lg border-border bg-slate-50 focus:bg-white text-xs font-bold min-h-[60px]"
                 />
               </div>
 
             </div>
 
-            <DialogFooter className="p-6 bg-slate-50 border-t border-slate-100">
+            <DialogFooter className="p-6 bg-slate-50 border-t border-border">
               <Button 
                 type="button" 
                 variant="ghost" 
@@ -1155,10 +1155,10 @@ export default function HostConsolePage() {
               <h3 className="text-xs font-semibold text-slate-400">{t("host.recentlySeatedCancelledBookings")}</h3>
               <div className="space-y-3">
                 {reservationsHistory.length === 0 ? (
-                  <div className="text-xs text-slate-400 italic py-4 bg-slate-50 text-center rounded-lg border border-slate-100">{t("host.noRecentResChanges")}</div>
+                  <div className="text-xs text-slate-400 italic py-4 bg-slate-50 text-center rounded-lg border border-border">{t("host.noRecentResChanges")}</div>
                 ) : (
                   reservationsHistory.map((res) => (
-                    <div key={res.id} className="p-3 border border-slate-200 rounded-xl bg-slate-50 flex items-center justify-between gap-3">
+                    <div key={res.id} className="p-3 border border-border rounded-xl bg-slate-50 flex items-center justify-between gap-3">
                       <div>
                         <div className="font-bold text-xs text-slate-800 flex items-center gap-1.5">
                           {res.customerName}
@@ -1188,14 +1188,14 @@ export default function HostConsolePage() {
             </div>
 
             {/* Waitlist Resolved History */}
-            <div className="space-y-3 pt-4 border-t border-slate-100">
+            <div className="space-y-3 pt-4 border-t border-border">
               <h3 className="text-xs font-semibold text-slate-400">{t("host.recentlySeatedCancelledWalkins")}</h3>
               <div className="space-y-3">
                 {filteredWaitlistHistory.length === 0 ? (
-                  <div className="text-xs text-slate-400 italic py-4 bg-slate-50 text-center rounded-lg border border-slate-100">{t("host.noRecentWaitlistChanges")}</div>
+                  <div className="text-xs text-slate-400 italic py-4 bg-slate-50 text-center rounded-lg border border-border">{t("host.noRecentWaitlistChanges")}</div>
                 ) : (
                   filteredWaitlistHistory.map((entry) => (
-                    <div key={entry.id} className="p-3 border border-slate-200 rounded-xl bg-slate-50 flex items-center justify-between gap-3">
+                    <div key={entry.id} className="p-3 border border-border rounded-xl bg-slate-50 flex items-center justify-between gap-3">
                       <div>
                         <div className="font-bold text-xs text-slate-800 flex items-center gap-1.5">
                           {entry.customerName}
@@ -1226,7 +1226,7 @@ export default function HostConsolePage() {
 
           </div>
 
-          <div className="p-6 bg-slate-50 border-t border-slate-100 shrink-0">
+          <div className="p-6 bg-slate-50 border-t border-border shrink-0">
             <Button 
               variant="outline" 
               onClick={() => setIsHistoryDrawerOpen(false)}
