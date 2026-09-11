@@ -243,7 +243,7 @@ export default function TenantManagementPage() {
       <div className="flex flex-col gap-4">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-xl font-bold text-slate-800">{t('systemAdmin.tenantEcosystem')}</h1>
+            <h1 className="text-2xl font-semibold tracking-tight text-slate-900 font-heading">{t('systemAdmin.tenantEcosystem')}</h1>
             <p className="text-[10px] text-slate-400 uppercase tracking-[0.2em] font-black">{t('systemAdmin.globalInfrastructure')}</p>
           </div>
           <Button size="sm" onClick={() => setIsDialogOpen(true)} className="bg-emerald-600 hover:bg-emerald-700 h-8 text-[10px] font-black uppercase">{t('systemAdmin.provisionNewRestaurant')}</Button>
