@@ -82,7 +82,7 @@ export default function DashboardPage() {
         {/* Page Header */}
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-bold tracking-tight text-slate-900">{t('dashboard.todaysOperations')}</h1>
+            <h1 className="text-3xl font-semibold tracking-tight text-slate-900 font-heading">{t('dashboard.todaysOperations')}</h1>
             <p className="text-slate-500 mt-1">{t('dashboard.realtimeCommand')}</p>
           </div>
           <div className="flex items-center gap-3">
@@ -123,7 +123,7 @@ export default function DashboardPage() {
                 </div>
               </div>
               <div className="flex items-baseline space-x-3 mt-1">
-                <h2 className="text-3xl font-black text-slate-900">{data.todayReservations}</h2>
+                <h2 className="text-3xl font-black tabular-nums text-slate-900">{data.todayReservations}</h2>
               </div>
             </CardContent>
           </Card>
@@ -138,7 +138,7 @@ export default function DashboardPage() {
                 </div>
               </div>
               <div className="flex items-baseline space-x-1 mt-1">
-                <h2 className="text-3xl font-black text-slate-900">{data.todayGuests}</h2>
+                <h2 className="text-3xl font-black tabular-nums text-slate-900">{data.todayGuests}</h2>
                 <span className="text-sm font-bold text-slate-400">{t('dashboard.confirmed')}</span>
               </div>
             </CardContent>
@@ -154,7 +154,7 @@ export default function DashboardPage() {
                 </div>
               </div>
               <div className="flex items-baseline space-x-2 mt-1">
-                <h2 className="text-3xl font-black text-slate-900">{data.avgDuration || '--'}</h2>
+                <h2 className="text-3xl font-black tabular-nums text-slate-900">{data.avgDuration || '--'}</h2>
                 <span className="text-sm font-bold text-slate-400 uppercase">{t('dashboard.minutes')}</span>
               </div>
             </CardContent>
@@ -170,7 +170,7 @@ export default function DashboardPage() {
                 </div>
               </div>
               <div className="flex items-baseline mt-1 space-x-2">
-                <h2 className={`text-3xl font-black ${data.pendingCount > 0 ? 'text-rose-600' : 'text-slate-900'}`}>{data.pendingCount}</h2>
+                <h2 className={`text-3xl font-black tabular-nums ${data.pendingCount > 0 ? 'text-rose-600' : 'text-slate-900'}`}>{data.pendingCount}</h2>
                 <span className="text-sm font-bold text-slate-400">{t('dashboard.pending')}</span>
               </div>
             </CardContent>
@@ -192,28 +192,28 @@ export default function DashboardPage() {
                     <div className="p-2 bg-emerald-100 rounded-lg"><CheckCircle2 className="w-4 h-4 text-emerald-600" /></div>
                     <span className="font-semibold text-slate-700">{t('dashboard.confirmed')}</span>
                   </div>
-                  <span className="text-lg font-black text-slate-900">{data.confirmedCount}</span>
+                  <span className="text-lg font-black tabular-nums text-slate-900">{data.confirmedCount}</span>
                 </div>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <div className="p-2 bg-amber-100 rounded-lg"><Clock3 className="w-4 h-4 text-amber-600" /></div>
                     <span className="font-semibold text-slate-700">{t('dashboard.pending')}</span>
                   </div>
-                  <span className="text-lg font-black text-slate-900">{data.pendingCount}</span>
+                  <span className="text-lg font-black tabular-nums text-slate-900">{data.pendingCount}</span>
                 </div>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <div className="p-2 bg-slate-100 rounded-lg"><XCircle className="w-4 h-4 text-slate-600" /></div>
                     <span className="font-semibold text-slate-700">{t('dashboard.canceled')}</span>
                   </div>
-                  <span className="text-lg font-black text-slate-900">{data.canceledCount}</span>
+                  <span className="text-lg font-black tabular-nums text-slate-900">{data.canceledCount}</span>
                 </div>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <div className="p-2 bg-rose-100 rounded-lg"><AlertCircle className="w-4 h-4 text-rose-600" /></div>
                     <span className="font-semibold text-slate-700">{t('dashboard.noShow')}</span>
                   </div>
-                  <span className="text-lg font-black text-slate-900">{data.noShowCount}</span>
+                  <span className="text-lg font-black tabular-nums text-slate-900">{data.noShowCount}</span>
                 </div>
               </div>
             </CardContent>

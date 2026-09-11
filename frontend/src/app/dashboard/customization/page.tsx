@@ -208,7 +208,7 @@ export default function CustomizationPage() {
             <div className="flex flex-col gap-6 max-w-5xl mx-auto pb-12">
                 <div className="flex items-center justify-between">
                     <div>
-                        <h1 className="text-3xl font-black text-slate-800 tracking-tight">{t("customization.pageTitle")}</h1>
+                        <h1 className="text-3xl font-semibold tracking-tight text-slate-900 font-heading">{t("customization.pageTitle")}</h1>
                         <p className="text-xs text-slate-500 font-black uppercase tracking-[0.2em] mt-2">{t("customization.pageSubtitle")}</p>
                     </div>
                     <Button onClick={handleSave} disabled={loading} className="bg-slate-900 hover:bg-black text-white font-black uppercase text-xs px-8 h-12 rounded-lg shadow-md transition-all active:scale-95">

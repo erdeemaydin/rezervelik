@@ -255,7 +255,7 @@ export default function SettingsPage() {
                             <ArrowLeft className="w-5 h-5" />
                         </Button>
                         <div>
-                            <h1 className="text-2xl font-black text-slate-800 tracking-tight">{t("settings.title")}</h1>
+                            <h1 className="text-2xl font-semibold tracking-tight text-slate-900 font-heading">{t("settings.title")}</h1>
                             <p className="text-[10px] text-slate-400 font-black uppercase tracking-[0.2em] mt-1">{t("settings.subtitle")}</p>
                         </div>
                     </div>
