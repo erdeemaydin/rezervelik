@@ -174,10 +174,10 @@ export default function SystemAdminLayout({ children }: SystemAdminLayoutProps) 
           <nav className="space-y-6">
             {navigation.map((group, idx) => (
               <div key={idx}>
-                <h3 className="px-6 text-[9px] font-black text-slate-500 uppercase tracking-[0.2em] mb-3">
+                <h3 className="px-6 text-[10px] font-black text-slate-400 uppercase tracking-[0.18em] mb-3">
                   {group.section}
                 </h3>
-                <ul className="space-y-0.5 px-2">
+                <ul className="space-y-1 px-2">
                   {group.items.map((item) => {
                     const isActive = pathname === item.href;
                     return (
@@ -186,10 +186,12 @@ export default function SystemAdminLayout({ children }: SystemAdminLayoutProps) 
                           href={item.href}
                           onClick={() => { if (window.innerWidth < 1024) setIsSidebarOpen(false); }}
                           className={cn(
-                            'flex items-center justify-between px-4 py-2 text-xs font-bold rounded-sm transition-all duration-150',
-                            isActive 
-                              ? 'bg-emerald-600 text-white shadow-md' 
-                              : 'text-slate-400 hover:bg-slate-800 hover:text-white'
+                            'flex items-center justify-between py-2.5 text-xs font-bold rounded-sm transition-all duration-150',
+                            // Same current-page treatment as the tenant dashboard sidebar:
+                            // filled accent + left edge + shadow, not just a color swap.
+                            isActive
+                              ? 'bg-emerald-600 text-white shadow-md shadow-emerald-600/20 border-l-2 border-white/30 pl-3.5 pr-4'
+                              : 'px-4 text-slate-400 hover:bg-slate-800 hover:text-white'
                           )}
                         >
                           <div className="flex items-center">

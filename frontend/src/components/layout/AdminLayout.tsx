@@ -429,7 +429,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
       >
         {/* Sidebar Header — logo + collapse/expand toggle (works on desktop too,
             since there's no top bar anymore). */}
-        <div className="h-16 flex items-center justify-between px-3 border-b border-slate-800 bg-[#1e293b]/20">
+        <div className="h-16 flex items-center justify-between px-4 border-b border-slate-800 bg-[#1e293b]/20">
           {isSidebarOpen ? (
             <>
               <div className="flex items-center gap-3 overflow-hidden">
@@ -473,11 +473,11 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
               return (
                 <div key={group.section}>
                   {isSidebarOpen && (
-                    <h3 className="px-3 text-[11px] font-black text-slate-400 uppercase tracking-[0.18em] mb-3">
+                    <h3 className="px-3 text-[10px] font-black text-slate-400 uppercase tracking-[0.18em] mb-3">
                       {group.section}
                     </h3>
                   )}
-                  <ul className="space-y-1">
+                  <ul className="space-y-1.5">
                     {visibleItems.map((item) => {
                       const isActive = pathname === item.href || (item.href !== '/dashboard' && pathname.startsWith(`${item.href}/`));
                       return (
@@ -494,10 +494,14 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
                               }
                             }}
                             className={cn(
-                              "flex items-center justify-between px-3 py-2.5 text-sm font-semibold rounded-md transition-all duration-150 group",
+                              "flex items-center justify-between py-2.5 text-sm font-semibold rounded-md transition-all duration-150 group",
+                              // Current-page indication is more than a color swap: a
+                              // left accent edge + weight bump layer on top of the
+                              // filled accent background, so it reads as deliberate
+                              // rather than just "this row happens to be blue."
                               isActive
-                                ? "bg-blue-600 text-white shadow-lg shadow-blue-600/20"
-                                : "hover:bg-slate-800/50 hover:text-white"
+                                ? "bg-blue-600 text-white font-bold shadow-lg shadow-blue-600/20 border-l-2 border-white/30 pl-2.5 pr-3"
+                                : "px-3 hover:bg-slate-800/50 hover:text-white"
                             )}
                           >
                             <div className="flex items-center gap-3">
