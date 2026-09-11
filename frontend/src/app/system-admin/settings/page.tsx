@@ -65,7 +65,7 @@ export default function SystemSettingsPage() {
     <>
       <div className="flex flex-col gap-6 max-w-4xl">
         <div>
-          <h1 className="text-2xl font-bold text-slate-800">Global Settings</h1>
+          <h1 className="text-2xl font-semibold tracking-tight text-slate-900 font-heading">Global Settings</h1>
           <p className="text-xs text-slate-500 font-medium">Configure platform-wide behaviors and defaults.</p>
         </div>
 

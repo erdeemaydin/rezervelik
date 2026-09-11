@@ -70,7 +70,7 @@ export default function SystemAuditPage() {
       <div className="flex flex-col gap-6">
         <div className="flex items-start justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-slate-800">Activity Audit</h1>
+            <h1 className="text-2xl font-semibold tracking-tight text-slate-900 font-heading">Activity Audit</h1>
             <p className="text-xs text-slate-500 font-medium">Platform-wide log of administrative and tenant activity.</p>
           </div>
           <button

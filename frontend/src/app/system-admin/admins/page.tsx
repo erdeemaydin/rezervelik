@@ -223,7 +223,7 @@ export default function SystemAdminsPage() {
       <div className="flex flex-col gap-6">
         <div className="flex justify-between items-center">
           <div>
-            <h1 className="text-2xl font-bold text-slate-800">{t('systemAdmin.superAdmins')}</h1>
+            <h1 className="text-2xl font-semibold tracking-tight text-slate-900 font-heading">{t('systemAdmin.superAdmins')}</h1>
             <p className="text-xs text-slate-500 font-medium">{t('systemAdmin.admins.pageSubtitle')}</p>
           </div>
           <Button onClick={() => setAddOpen(true)} className="bg-emerald-600 hover:bg-emerald-700 text-xs font-bold shadow-sm">
