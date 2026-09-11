@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { ArrowLeft, Save, Percent, RotateCcw, Calendar, Clock, X, History, Undo2, Pencil } from 'lucide-react';
+import { ArrowLeft, FloppyDisk, Percent, ArrowCounterClockwise, Calendar, Clock, X, ClockCounterClockwise, ArrowUUpLeft, Pencil } from '@phosphor-icons/react';
 import api from '@/lib/api';
 import { toast } from 'sonner';
 import { useTranslation } from '@/i18n/provider';
@@ -268,7 +268,7 @@ export default function BulkPricesPage() {
             <div className="flex flex-col gap-2 ml-auto">
               <Label className="text-[10px] font-semibold text-transparent select-none">.</Label>
               <Button variant="ghost" onClick={resetAll} className="h-10 text-xs font-semibold text-slate-500">
-                <RotateCcw className="w-3.5 h-3.5 mr-1.5" /> {t('menus.bulkEditor.reset')}
+                <ArrowCounterClockwise className="w-3.5 h-3.5 mr-1.5" /> {t('menus.bulkEditor.reset')}
               </Button>
             </div>
 
@@ -336,7 +336,7 @@ export default function BulkPricesPage() {
           <Card className="rounded-xl border-slate-200 shadow-sm">
             <CardHeader className="p-5 border-b border-slate-100">
               <CardTitle className="text-sm font-semibold tracking-tight flex items-center gap-2">
-                <History className="w-4 h-4 text-slate-500" /> {t('menus.bulkEditor.historyTitle')}
+                <ClockCounterClockwise className="w-4 h-4 text-slate-500" /> {t('menus.bulkEditor.historyTitle')}
               </CardTitle>
             </CardHeader>
             <CardContent className="p-0 divide-y divide-slate-50">
@@ -359,7 +359,7 @@ export default function BulkPricesPage() {
                       variant="outline" size="sm" onClick={() => undoChange(update.id)} disabled={undoingId === update.id}
                       className="h-8 text-[10px] font-semibold border-slate-200"
                     >
-                      <Undo2 className="w-3 h-3 mr-1" /> {t('menus.bulkEditor.undoButton')}
+                      <ArrowUUpLeft className="w-3 h-3 mr-1" /> {t('menus.bulkEditor.undoButton')}
                     </Button>
                   )}
                 </div>
@@ -435,7 +435,7 @@ export default function BulkPricesPage() {
         <Button onClick={save} disabled={saving || changed.length === 0} className="h-11 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs px-8">
           {saving
             ? t('menus.bulkEditor.saving')
-            : <><Save className="w-4 h-4 mr-2" /> {scheduleEnabled ? t('menus.bulkEditor.schedule') : t('menus.bulkEditor.save')}</>}
+            : <><FloppyDisk className="w-4 h-4 mr-2" /> {scheduleEnabled ? t('menus.bulkEditor.schedule') : t('menus.bulkEditor.save')}</>}
         </Button>
       </div>
     </>

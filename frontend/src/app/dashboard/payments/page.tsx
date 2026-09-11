@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { CreditCard, CheckCircle2, XCircle, Clock, Hourglass, Undo2 } from 'lucide-react';
+import { CreditCard, CheckCircle, XCircle, Clock, Hourglass, ArrowUUpLeft } from '@phosphor-icons/react';
 import api from '@/lib/api';
 import { toast } from 'sonner';
 import { useTranslation } from '@/i18n/provider';
@@ -98,7 +98,7 @@ export default function PaymentsPage() {
 
   const statusIcon = (status: string) => {
     switch (status) {
-      case 'PAID': return <CheckCircle2 className="w-4 h-4 text-emerald-500" />;
+      case 'PAID': return <CheckCircle className="w-4 h-4 text-emerald-500" />;
       case 'PENDING': return <Hourglass className="w-4 h-4 text-amber-500" />;
       case 'FAILED': return <XCircle className="w-4 h-4 text-red-500" />;
       case 'EXPIRED': return <Clock className="w-4 h-4 text-slate-400" />;
@@ -197,7 +197,7 @@ export default function PaymentsPage() {
                             disabled={refundingId === p.id}
                             onClick={() => handleRefund(p)}
                           >
-                            <Undo2 className="w-3 h-3 mr-1" />
+                            <ArrowUUpLeft className="w-3 h-3 mr-1" />
                             {refundingId === p.id ? t('payments.refunding') : t('payments.refund')}
                           </Button>
                         )}

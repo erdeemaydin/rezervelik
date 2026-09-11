@@ -10,7 +10,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import api from '@/lib/api';
 import { toast } from 'sonner';
-import { ArrowLeft, Plus, Trash2, Save, Users, Wallet, CheckCircle2, Armchair, Handshake, FileSignature, Mail, Copy, RefreshCw } from 'lucide-react';
+import { ArrowLeft, Plus, Trash, FloppyDisk, Users, Wallet, CheckCircle, Armchair, Handshake, Signature, Envelope, Copy, ArrowClockwise } from '@phosphor-icons/react';
 import { useTranslation } from '@/i18n/provider';
 
 const STAGES = ['LEAD', 'VISIT', 'QUOTE', 'CONTRACT', 'CONFIRMED', 'COMPLETED', 'CANCELED'];
@@ -284,7 +284,7 @@ export default function EventDetailPage() {
               <Field label={t('events.form.notes')}><Textarea value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} className="min-h-[60px] text-xs" /></Field>
             </div>
             <div className="sm:col-span-2 flex justify-end">
-              <Button onClick={saveEvent} className="bg-slate-900 hover:bg-slate-800"><Save className="w-4 h-4 mr-1.5" />{t('common.save')}</Button>
+              <Button onClick={saveEvent} className="bg-slate-900 hover:bg-slate-800"><FloppyDisk className="w-4 h-4 mr-1.5" />{t('common.save')}</Button>
             </div>
           </CardContent>
         </Card>
@@ -316,7 +316,7 @@ export default function EventDetailPage() {
                     <select value={g.rsvp} onChange={e => patchGuest(g.id, { rsvp: e.target.value })} className="h-7 text-[10px] font-bold border border-slate-200 rounded-sm bg-white">
                       {RSVP.map(r => <option key={r} value={r}>{t(`events.rsvp.${r}`)}</option>)}
                     </select>
-                    <button onClick={() => delGuest(g.id)} className="text-slate-300 hover:text-rose-500"><Trash2 className="w-3.5 h-3.5" /></button>
+                    <button onClick={() => delGuest(g.id)} className="text-slate-300 hover:text-rose-500"><Trash className="w-3.5 h-3.5" /></button>
                   </div>
                 ))}
               </div>
@@ -347,12 +347,12 @@ export default function EventDetailPage() {
                 {installments.map(inst => (
                   <div key={inst.id} className="flex items-center gap-2 border border-slate-100 rounded-sm px-2 py-1.5">
                     <button onClick={() => toggleInstallmentPaid(inst)} title={t('events.markPaid')}>
-                      <CheckCircle2 className={`w-4 h-4 ${inst.status === 'PAID' ? 'text-emerald-500' : 'text-slate-300'}`} />
+                      <CheckCircle className={`w-4 h-4 ${inst.status === 'PAID' ? 'text-emerald-500' : 'text-slate-300'}`} />
                     </button>
                     <span className="font-bold text-sm truncate flex-1">{inst.label || t('events.installment')}</span>
                     <span className="text-[10px] font-bold text-slate-400">{inst.dueDate}</span>
                     <span className="text-sm font-black font-mono">{money(inst.amount)}</span>
-                    <button onClick={() => delInstallment(inst.id)} className="text-slate-300 hover:text-rose-500"><Trash2 className="w-3.5 h-3.5" /></button>
+                    <button onClick={() => delInstallment(inst.id)} className="text-slate-300 hover:text-rose-500"><Trash className="w-3.5 h-3.5" /></button>
                   </div>
                 ))}
               </div>
@@ -427,7 +427,7 @@ export default function EventDetailPage() {
                   <select value={v.status} onChange={e => patchVendor(v.id, { status: e.target.value })} className="h-8 text-[10px] font-bold border border-slate-200 rounded-sm bg-white">
                     {VENDOR_LINK_STATUS.map(s => <option key={s} value={s}>{t(`events.vendorStatuses.${s}`)}</option>)}
                   </select>
-                  <button onClick={() => delVendor(v.id)} className="text-slate-300 hover:text-rose-500"><Trash2 className="w-3.5 h-3.5" /></button>
+                  <button onClick={() => delVendor(v.id)} className="text-slate-300 hover:text-rose-500"><Trash className="w-3.5 h-3.5" /></button>
                 </div>
               ))}
             </div>
@@ -437,14 +437,14 @@ export default function EventDetailPage() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Contract / proposal */}
           <Card>
-            <CardHeader><CardTitle className="text-sm font-semibold flex items-center gap-2"><FileSignature className="w-4 h-4" />{t('events.contractTitle')}</CardTitle></CardHeader>
+            <CardHeader><CardTitle className="text-sm font-semibold flex items-center gap-2"><Signature className="w-4 h-4" />{t('events.contractTitle')}</CardTitle></CardHeader>
             <CardContent className="space-y-3">
               <Field label={t('events.contractUrl')}>
                 <Input value={form.contractUrl} onChange={e => setForm({ ...form, contractUrl: e.target.value })} placeholder="https://…" className="h-9 text-sm font-bold" />
               </Field>
               <div className="flex items-center gap-2 flex-wrap">
                 <Button onClick={markSigned} size="sm" variant={event?.contractSignedAt ? 'default' : 'outline'} className="h-9">
-                  <CheckCircle2 className="w-4 h-4 mr-1.5" />
+                  <CheckCircle className="w-4 h-4 mr-1.5" />
                   {event?.contractSignedAt ? `${t('events.signed')} · ${new Date(event.contractSignedAt).toLocaleDateString()}` : t('events.markSigned')}
                 </Button>
                 <Button onClick={markProposalSent} size="sm" variant={event?.proposalSentAt ? 'default' : 'outline'} className="h-9">
@@ -456,21 +456,21 @@ export default function EventDetailPage() {
 
           {/* Invitation microsite */}
           <Card>
-            <CardHeader><CardTitle className="text-sm font-semibold flex items-center gap-2"><Mail className="w-4 h-4" />{t('events.invitationTitle')}</CardTitle></CardHeader>
+            <CardHeader><CardTitle className="text-sm font-semibold flex items-center gap-2"><Envelope className="w-4 h-4" />{t('events.invitationTitle')}</CardTitle></CardHeader>
             <CardContent className="space-y-3">
               <p className="text-[11px] text-slate-400 font-bold">{t('events.invitationHint')}</p>
               <Field label={t('events.form.venueName')}><Input value={form.venueName} onChange={e => setForm({ ...form, venueName: e.target.value })} className="h-9 text-sm font-bold" /></Field>
               <Field label={t('events.form.venueAddress')}><Input value={form.venueAddress} onChange={e => setForm({ ...form, venueAddress: e.target.value })} className="h-9 text-sm font-bold" /></Field>
               <Field label={t('events.form.invitationMessage')}><Textarea value={form.invitationMessage} onChange={e => setForm({ ...form, invitationMessage: e.target.value })} className="min-h-[52px] text-xs" /></Field>
               <div className="flex items-center gap-2 flex-wrap">
-                <Button onClick={saveEvent} size="sm" variant="outline" className="h-9"><Save className="w-4 h-4 mr-1.5" />{t('common.save')}</Button>
+                <Button onClick={saveEvent} size="sm" variant="outline" className="h-9"><FloppyDisk className="w-4 h-4 mr-1.5" />{t('common.save')}</Button>
                 {event?.publicToken ? (
                   <>
                     <Button onClick={copyInvitation} size="sm" className="h-9"><Copy className="w-4 h-4 mr-1.5" />{t('events.copyLink')}</Button>
-                    <Button onClick={() => generateInvitation(true)} size="sm" variant="ghost" className="h-9" title={t('events.regenerate')}><RefreshCw className="w-4 h-4" /></Button>
+                    <Button onClick={() => generateInvitation(true)} size="sm" variant="ghost" className="h-9" title={t('events.regenerate')}><ArrowClockwise className="w-4 h-4" /></Button>
                   </>
                 ) : (
-                  <Button onClick={() => generateInvitation(false)} size="sm" className="h-9"><Mail className="w-4 h-4 mr-1.5" />{t('events.generateLink')}</Button>
+                  <Button onClick={() => generateInvitation(false)} size="sm" className="h-9"><Envelope className="w-4 h-4 mr-1.5" />{t('events.generateLink')}</Button>
                 )}
               </div>
             </CardContent>

@@ -3,36 +3,7 @@
 import { ReactNode, useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { 
-  LayoutDashboard, 
-  Users, 
-  Grid, 
-  Settings, 
-  LogOut, 
-  Calendar,
-  UtensilsCrossed,
-  BarChart3,
-  MessageSquare,
-  CreditCard,
-  ChevronLeft,
-  ChevronRight,
-  Clock,
-  Tablet,
-  PartyPopper,
-  Handshake,
-  Scissors,
-  Sparkles,
-  Trophy,
-  ClipboardList,
-  Building2,
-  DoorOpen,
-  Stethoscope,
-  HeartPulse,
-  Package,
-  Armchair,
-  ScrollText,
-  ShoppingBag
-} from 'lucide-react';
+import { SquaresFour, Users, GridFour, Gear, SignOut, Calendar, ForkKnife, ChartBar, Chat, CreditCard, CaretLeft, CaretRight, Clock, DeviceTablet, Confetti, Handshake, Scissors, Sparkle, Trophy, ClipboardText, Buildings, DoorOpen, Stethoscope, Heartbeat, Package, Armchair, Scroll, ShoppingBag } from '@phosphor-icons/react';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useFormatStore } from '@/store/useFormatStore';
 import { useTenantStore } from '@/store/useTenantStore';
@@ -92,12 +63,12 @@ interface NavSection {
 // restaurant-only for salons/clinics/etc. `brand` is the sidebar mark; `catalog`
 // and `resource` re-skin the menu/tables nav icons to the vertical's concept.
 const VERTICAL_ICONS: Record<string, { brand: any; catalog: any; resource: any }> = {
-  RESTAURANT: { brand: UtensilsCrossed, catalog: UtensilsCrossed, resource: Grid },
-  SALON: { brand: Scissors, catalog: Sparkles, resource: Armchair },
-  SPORTS: { brand: Trophy, catalog: ClipboardList, resource: Grid },
-  COWORKING: { brand: Building2, catalog: ClipboardList, resource: DoorOpen },
-  CLINIC: { brand: Stethoscope, catalog: HeartPulse, resource: DoorOpen },
-  WEDDING: { brand: PartyPopper, catalog: Package, resource: Building2 },
+  RESTAURANT: { brand: ForkKnife, catalog: ForkKnife, resource: GridFour },
+  SALON: { brand: Scissors, catalog: Sparkle, resource: Armchair },
+  SPORTS: { brand: Trophy, catalog: ClipboardText, resource: GridFour },
+  COWORKING: { brand: Buildings, catalog: ClipboardText, resource: DoorOpen },
+  CLINIC: { brand: Stethoscope, catalog: Heartbeat, resource: DoorOpen },
+  WEDDING: { brand: Confetti, catalog: Package, resource: Buildings },
 };
 
 // Permission required to open each dashboard route. Enforced here so a page can't
@@ -248,14 +219,14 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
 
   const navigation: NavSection[] = [
     { section: t('systemAdmin.globalOverview') || 'Overview', items: [
-      { name: t('admin.dashboard'), href: '/dashboard', icon: LayoutDashboard, perm: 'view_analytics' },
-      { name: t('admin.analytics'), href: '/dashboard/analytics', icon: BarChart3, perm: 'view_analytics' },
+      { name: t('admin.dashboard'), href: '/dashboard', icon: SquaresFour, perm: 'view_analytics' },
+      { name: t('admin.analytics'), href: '/dashboard/analytics', icon: ChartBar, perm: 'view_analytics' },
     ]},
     { section: t('admin.sectionOperations'), items: [
       { name: isRestaurant ? t('admin.reservations') : term('bookingPlural'), href: '/dashboard/reservations', icon: Calendar, perm: 'manage_reservations' },
-      { name: t('events.navTitle'), href: '/dashboard/events', icon: PartyPopper, feature: 'hasEventPipeline' },
+      { name: t('events.navTitle'), href: '/dashboard/events', icon: Confetti, feature: 'hasEventPipeline' },
       { name: t('vendors.navTitle'), href: '/dashboard/vendors', icon: Handshake, feature: 'hasVendors' },
-      { name: t('admin.hostStand'), href: '/dashboard/host', icon: Tablet, perm: 'manage_reservations' },
+      { name: t('admin.hostStand'), href: '/dashboard/host', icon: DeviceTablet, perm: 'manage_reservations' },
       { name: t('admin.calendar'), href: '/dashboard/calendar', icon: Calendar, perm: 'manage_calendar' },
       { name: isRestaurant ? t('admin.tablesAndFloor') : term('resourcePlural'), href: '/dashboard/tables', icon: vIcon.resource, perm: 'manage_tables' },
       { name: isRestaurant ? t('admin.menuManagement') : term('catalog'), href: '/dashboard/menus', icon: vIcon.catalog, perm: 'manage_menu', feature: 'hasMenuFeature' },
@@ -272,12 +243,12 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
     ]},
     { section: t('admin.sectionBusiness'), items: [
       { name: t('admin.payments'), href: '/dashboard/payments', icon: CreditCard, feature: 'hasPaymentFeature', perm: 'view_payments' },
-      { name: t('admin.reviews'), href: '/dashboard/reviews', icon: MessageSquare, perm: 'view_reviews' },
-      { name: t('admin.customization'), href: '/dashboard/customization', icon: Settings, perm: 'manage_settings' },
-      { name: t('admin.settings'), href: '/dashboard/settings', icon: Settings, perm: 'manage_settings' },
+      { name: t('admin.reviews'), href: '/dashboard/reviews', icon: Chat, perm: 'view_reviews' },
+      { name: t('admin.customization'), href: '/dashboard/customization', icon: Gear, perm: 'manage_settings' },
+      { name: t('admin.settings'), href: '/dashboard/settings', icon: Gear, perm: 'manage_settings' },
     ]},
     { section: t('admin.sectionCompliance'), items: [
-      { name: t('admin.auditLog'), href: '/dashboard/audit', icon: ScrollText, perm: 'manage_settings', feature: 'showAuditLogToTenant', adminOnly: true },
+      { name: t('admin.auditLog'), href: '/dashboard/audit', icon: Scroll, perm: 'manage_settings', feature: 'showAuditLogToTenant', adminOnly: true },
     ]}
   ];
 
@@ -411,7 +382,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
           aria-label="Open navigation"
           className="lg:hidden fixed top-3 left-3 z-40 w-11 h-11 rounded-xl bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-600/30 flex items-center justify-center active:scale-95 transition-all"
         >
-          <ChevronRight className="w-6 h-6 stroke-[2.5]" />
+          <CaretRight className="w-6 h-6 stroke-[2.5]" />
         </button>
       )}
 
@@ -445,7 +416,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
                 aria-label="Collapse navigation"
                 className="text-stone-400 hover:text-stone-900 hover:bg-stone-100 rounded-md w-8 h-8 flex items-center justify-center shrink-0"
               >
-                <ChevronLeft className="w-5 h-5" />
+                <CaretLeft className="w-5 h-5" />
               </button>
             </>
           ) : (
@@ -458,7 +429,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
               <div className="w-8 h-8 rounded-lg bg-[#111111] flex items-center justify-center shrink-0 group-hover:hidden">
                 <vIcon.brand className="w-5 h-5 text-white" />
               </div>
-              <ChevronRight className="w-6 h-6 text-[var(--admin-accent)] hidden group-hover:block" />
+              <CaretRight className="w-6 h-6 text-[var(--admin-accent)] hidden group-hover:block" />
             </button>
           )}
         </div>
@@ -505,10 +476,13 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
                             )}
                           >
                             <div className="flex items-center gap-3">
-                              <item.icon className={cn(
-                                "w-[18px] h-[18px] shrink-0",
-                                isActive ? "text-[var(--admin-accent-strong)]" : "text-stone-400 group-hover:text-stone-700"
-                              )} />
+                              <item.icon
+                                weight={isActive ? "bold" : "regular"}
+                                className={cn(
+                                  "w-[18px] h-[18px] shrink-0",
+                                  isActive ? "text-[var(--admin-accent-strong)]" : "text-stone-400 group-hover:text-stone-700"
+                                )}
+                              />
                               {isSidebarOpen && <span>{item.name}</span>}
                             </div>
                           </Link>
@@ -542,7 +516,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
                   <span className="text-xs font-semibold text-stone-900 truncate capitalize">{user?.firstName} {user?.lastName}</span>
                   <span className="text-[9px] font-semibold text-[var(--admin-accent)] tracking-tighter">{user?.role}</span>
                 </div>
-                <Settings className="w-4 h-4 text-stone-400 group-hover:text-stone-700 transition-colors shrink-0" />
+                <Gear className="w-4 h-4 text-stone-400 group-hover:text-stone-700 transition-colors shrink-0" />
               </Link>
               <div className="flex items-center justify-between gap-2 pt-2 border-t border-stone-300">
                 <LanguageSwitcher />
@@ -552,7 +526,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
                   onClick={handleLogout}
                   className="text-stone-400 hover:text-red-600 hover:bg-red-50 font-semibold text-xs gap-2 px-2 h-9"
                 >
-                  <LogOut className="w-4 h-4" /> {t('admin.logout')}
+                  <SignOut className="w-4 h-4" /> {t('admin.logout')}
                 </Button>
               </div>
             </div>
@@ -570,7 +544,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
                 title={t('admin.logout')}
                 className="text-stone-400 hover:text-red-600 hover:bg-red-50 w-8 h-8 flex items-center justify-center rounded-md transition-colors"
               >
-                <LogOut className="w-4 h-4" />
+                <SignOut className="w-4 h-4" />
               </button>
             </div>
           )}

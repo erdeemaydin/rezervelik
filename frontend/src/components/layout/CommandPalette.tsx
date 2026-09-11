@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
-import { Search, CornerDownLeft } from 'lucide-react';
+import { MagnifyingGlass, ArrowElbowDownLeft } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { useTranslation } from '@/i18n/provider';
 
@@ -92,7 +92,7 @@ export function CommandPalette({ items }: CommandPaletteProps) {
       >
         <DialogTitle className="sr-only">{t('commandPalette.title')}</DialogTitle>
         <div className="flex items-center gap-3 px-4 border-b border-slate-100">
-          <Search className="w-4 h-4 text-slate-400 shrink-0" />
+          <MagnifyingGlass className="w-4 h-4 text-slate-400 shrink-0" />
           <input
             ref={inputRef}
             value={query}
@@ -121,7 +121,7 @@ export function CommandPalette({ items }: CommandPaletteProps) {
                 <item.icon className="w-4 h-4 shrink-0 text-slate-400" />
                 <span className="flex-1 text-sm font-bold truncate">{item.name}</span>
                 <span className="text-[10px] font-semibold text-slate-400 shrink-0">{item.section}</span>
-                {i === activeIndex && <CornerDownLeft className="w-3.5 h-3.5 text-blue-400 shrink-0" />}
+                {i === activeIndex && <ArrowElbowDownLeft className="w-3.5 h-3.5 text-blue-400 shrink-0" />}
               </button>
             ))
           )}

@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { BarChart3, TrendingUp, Users, CalendarDays, DollarSign, Loader2, TrendingDown, Star, Clock, Ban, UserX, UserPlus, Repeat, Crown } from 'lucide-react';
+import { ChartBar, TrendUp, Users, CalendarDots, CurrencyDollar, CircleNotch, TrendDown, Star, Clock, Prohibit, UserMinus, UserPlus, Repeat, Crown } from '@phosphor-icons/react';
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell, Legend, BarChart, Bar
@@ -87,10 +87,10 @@ export default function AnalyticsPage() {
 
   const renderTrend = (value: number) => {
     if (value > 0) {
-      return <div className="flex items-center text-xs text-emerald-600 font-bold gap-1 mt-2"><TrendingUp className="w-3 h-3" /> +{value}% {t("analytics.vsPrev")}</div>;
+      return <div className="flex items-center text-xs text-emerald-600 font-bold gap-1 mt-2"><TrendUp className="w-3 h-3" /> +{value}% {t("analytics.vsPrev")}</div>;
     }
     if (value < 0) {
-      return <div className="flex items-center text-xs text-rose-600 font-bold gap-1 mt-2"><TrendingDown className="w-3 h-3" /> {value}% {t("analytics.vsPrev")}</div>;
+      return <div className="flex items-center text-xs text-rose-600 font-bold gap-1 mt-2"><TrendDown className="w-3 h-3" /> {value}% {t("analytics.vsPrev")}</div>;
     }
     return <div className="flex items-center text-xs text-slate-400 font-bold gap-1 mt-2">{t("analytics.noChange")}</div>;
   };
@@ -107,7 +107,7 @@ export default function AnalyticsPage() {
       <>
         <div className="flex h-[70vh] items-center justify-center">
           <div className="flex flex-col items-center gap-4">
-            <Loader2 className="h-10 w-10 animate-spin text-blue-600" />
+            <CircleNotch className="h-10 w-10 animate-spin text-blue-600" />
             <p className="text-slate-500 font-medium">{t("analytics.loading")}</p>
           </div>
         </div>
@@ -175,7 +175,7 @@ export default function AnalyticsPage() {
               <CardDescription className="text-[10px] font-semibold text-slate-500">{t("analytics.totalReservations")}</CardDescription>
               <CardTitle className="text-2xl font-bold tabular-nums flex items-center justify-between">
                 {data.summary.totalReservations}
-                <CalendarDays className="w-5 h-5 text-blue-500" />
+                <CalendarDots className="w-5 h-5 text-blue-500" />
               </CardTitle>
             </CardHeader>
             <CardContent className="p-4 pt-0">
@@ -234,7 +234,7 @@ export default function AnalyticsPage() {
               <CardDescription className="text-[10px] font-semibold text-slate-500">{t("analytics.cancelRate")}</CardDescription>
               <CardTitle className="text-2xl font-bold tabular-nums flex items-center justify-between">
                 {data.summary.cancelRate}%
-                <Ban className="w-5 h-5 text-rose-500" />
+                <Prohibit className="w-5 h-5 text-rose-500" />
               </CardTitle>
             </CardHeader>
           </Card>
@@ -243,7 +243,7 @@ export default function AnalyticsPage() {
               <CardDescription className="text-[10px] font-semibold text-slate-500">{t("analytics.noShowRate")}</CardDescription>
               <CardTitle className="text-2xl font-bold tabular-nums flex items-center justify-between">
                 {data.summary.noShowRate}%
-                <UserX className="w-5 h-5 text-slate-500" />
+                <UserMinus className="w-5 h-5 text-slate-500" />
               </CardTitle>
             </CardHeader>
           </Card>

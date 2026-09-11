@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { ScrollText, RefreshCw, ShieldAlert, ChevronRight } from 'lucide-react';
+import { Scroll, ArrowClockwise, ShieldWarning, CaretRight } from '@phosphor-icons/react';
 import { useState, useEffect, useCallback } from 'react';
 import api from '@/lib/api';
 import { cn } from '@/lib/utils';
@@ -70,7 +70,7 @@ export default function TenantAuditPage() {
         <div className="flex items-center justify-center h-[60vh]">
           <div className="text-center max-w-md space-y-3">
             <div className="w-14 h-14 rounded-full bg-amber-50 border border-amber-100 flex items-center justify-center mx-auto text-amber-500">
-              <ShieldAlert className="w-7 h-7" />
+              <ShieldWarning className="w-7 h-7" />
             </div>
             <h2 className="text-lg font-bold text-slate-800">{t('audit.notEnabledTitle')}</h2>
             <p className="text-sm text-slate-500 leading-relaxed">{t('audit.notEnabledDesc')}</p>
@@ -92,7 +92,7 @@ export default function TenantAuditPage() {
             onClick={fetchLogs}
             className="flex items-center gap-2 h-8 px-3 text-xs font-bold text-slate-600 border border-slate-200 rounded-md hover:bg-slate-50"
           >
-            <RefreshCw className={cn('w-3.5 h-3.5', loading && 'animate-spin')} /> {t('audit.refresh')}
+            <ArrowClockwise className={cn('w-3.5 h-3.5', loading && 'animate-spin')} /> {t('audit.refresh')}
           </button>
         </div>
 
@@ -100,7 +100,7 @@ export default function TenantAuditPage() {
           <CardHeader className="border-b border-slate-100 bg-slate-50/50 p-4">
             <div className="flex items-center justify-between flex-wrap gap-3">
               <div className="flex items-center gap-2">
-                <ScrollText className="w-4 h-4 text-slate-600" />
+                <Scroll className="w-4 h-4 text-slate-600" />
                 <CardTitle className="text-sm font-bold text-slate-700">{t('audit.title')}</CardTitle>
               </div>
               <select
@@ -155,7 +155,7 @@ export default function TenantAuditPage() {
                       </TableCell>
                       <TableCell className="text-xs text-slate-600">{log.targetLabel || log.targetType || '—'}</TableCell>
                       <TableCell className="text-slate-300">
-                        <ChevronRight className="w-4 h-4" />
+                        <CaretRight className="w-4 h-4" />
                       </TableCell>
                     </TableRow>
                   ))}
@@ -174,7 +174,7 @@ export default function TenantAuditPage() {
             <>
               <DialogHeader>
                 <DialogTitle className="flex items-center gap-2">
-                  <ScrollText className="w-4 h-4 text-slate-500" />
+                  <Scroll className="w-4 h-4 text-slate-500" />
                   {selectedLog.action.replace(/_/g, ' ').toLowerCase()}
                 </DialogTitle>
                 <DialogDescription className="font-mono text-[11px]">

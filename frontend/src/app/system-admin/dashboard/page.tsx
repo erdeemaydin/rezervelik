@@ -1,7 +1,7 @@
 'use client';
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { BarChart3, Building2, Users, Database } from 'lucide-react';
+import { ChartBar, Buildings, Users, Database } from '@phosphor-icons/react';
 import { useState, useEffect } from 'react';
 import api from '@/lib/api';
 
@@ -33,7 +33,7 @@ export default function SystemAdminDashboard() {
               <CardDescription className="text-[10px] font-semibold text-slate-500">Active Tenants</CardDescription>
               <CardTitle className="text-2xl font-bold flex items-center justify-between">
                 {metrics.totalTenants}
-                <Building2 className="w-5 h-5 text-emerald-600" />
+                <Buildings className="w-5 h-5 text-emerald-600" />
               </CardTitle>
             </CardHeader>
             <CardContent className="p-4 pt-0">
@@ -59,7 +59,7 @@ export default function SystemAdminDashboard() {
               <CardDescription className="text-[10px] font-semibold text-slate-500">Total Reservations</CardDescription>
               <CardTitle className="text-2xl font-bold flex items-center justify-between">
                 {metrics.totalReservations}
-                <BarChart3 className="w-5 h-5 text-indigo-600" />
+                <ChartBar className="w-5 h-5 text-indigo-600" />
               </CardTitle>
             </CardHeader>
             <CardContent className="p-4 pt-0">
@@ -88,7 +88,7 @@ export default function SystemAdminDashboard() {
           <CardContent className="flex items-center justify-center p-8 h-80">
             <div className="text-center space-y-3">
               <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-2 text-slate-400">
-                <BarChart3 className="w-8 h-8" />
+                <ChartBar className="w-8 h-8" />
               </div>
               <h3 className="text-sm font-bold text-slate-800">Metrics visualization</h3>
               <p className="text-xs text-slate-500 max-w-sm mx-auto leading-relaxed">

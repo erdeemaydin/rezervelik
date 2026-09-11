@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import api from '@/lib/api';
 import { toast } from 'sonner';
-import { Save, Calendar, Clock, CreditCard, ArrowLeft, CalendarClock, AlertCircle, Check, Timer, Palette, Users } from 'lucide-react';
+import { FloppyDisk, Calendar, Clock, CreditCard, ArrowLeft, CalendarCheck, WarningCircle, Check, Timer, Palette, Users } from '@phosphor-icons/react';
 import { useRouter } from 'next/navigation';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { PasswordConfirmDialog } from '@/components/auth/PasswordConfirmDialog';
@@ -260,7 +260,7 @@ export default function SettingsPage() {
                         </div>
                     </div>
                     <Button onClick={handleSave} disabled={loading} className="bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs px-8 h-12 rounded-md shadow-md shadow-blue-600/20 transition-all active:scale-95">
-                        {loading ? t("settings.saving") : <><Save className="w-5 h-5 mr-3" /> {t("settings.saveChanges")}</>}
+                        {loading ? t("settings.saving") : <><FloppyDisk className="w-5 h-5 mr-3" /> {t("settings.saveChanges")}</>}
                     </Button>
                 </div>
 
@@ -388,7 +388,7 @@ export default function SettingsPage() {
 
                             <Card className="rounded-xl border-slate-200 shadow-sm overflow-hidden bg-white">
                                 <CardHeader className="p-6 bg-slate-50/50 border-b border-slate-100 flex flex-row items-center gap-4">
-                                    <div className="p-3 bg-indigo-100 rounded-lg text-indigo-600"><CalendarClock className="w-6 h-6" /></div>
+                                    <div className="p-3 bg-indigo-100 rounded-lg text-indigo-600"><CalendarCheck className="w-6 h-6" /></div>
                                     <div>
                                         <CardTitle className="text-lg font-semibold tracking-tight">{t("settings.calendarCustomization")}</CardTitle>
                                         <CardDescription className="text-sm">{t("settings.calendarCustomizationDesc")}</CardDescription>
@@ -404,7 +404,7 @@ export default function SettingsPage() {
                                             <SelectContent>
                                                 <SelectItem value="AUTO_CONFIRM" className="text-sm font-bold py-3"><div className="flex items-center text-emerald-700"><Check className="w-5 h-5 mr-3" /> {t("settings.autoConfirmBulk")}</div></SelectItem>
                                                 <SelectItem value="STANDARD" className="text-sm font-bold py-3"><div className="flex items-center text-amber-700"><Timer className="w-5 h-5 mr-3" /> {t("settings.standardBulk")}</div></SelectItem>
-                                                <SelectItem value="BLACKOUT" className="text-sm font-bold py-3"><div className="flex items-center text-red-700"><AlertCircle className="w-5 h-5 mr-3" /> {t("settings.blackoutBulk")}</div></SelectItem>
+                                                <SelectItem value="BLACKOUT" className="text-sm font-bold py-3"><div className="flex items-center text-red-700"><WarningCircle className="w-5 h-5 mr-3" /> {t("settings.blackoutBulk")}</div></SelectItem>
                                             </SelectContent>
                                         </Select>
                                         <p className="text-sm text-slate-500 leading-relaxed mt-2">{t("settings.bulkActionDesc")}</p>
@@ -600,7 +600,7 @@ export default function SettingsPage() {
                     <div className="bg-amber-500 p-6">
                         <DialogHeader>
                             <DialogTitle className="text-white text-xl font-semibold tracking-tight flex items-center gap-2">
-                                <AlertCircle className="w-6 h-6" /> {t("settings.futureOverrideWarning")}
+                                <WarningCircle className="w-6 h-6" /> {t("settings.futureOverrideWarning")}
                             </DialogTitle>
                         </DialogHeader>
                     </div>

@@ -10,10 +10,7 @@ import { TimeSelect } from '@/components/ui/time-select';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
-import {
-  Users, Clock, Search, Calendar, Plus, Star, Phone, Check, X, Bell,
-  RefreshCw, RotateCcw, Hash, Pencil, StickyNote
-} from 'lucide-react';
+import { Users, Clock, MagnifyingGlass, Calendar, Plus, Star, Phone, Check, X, Bell, ArrowClockwise, ArrowCounterClockwise, Hash, Pencil, NoteBlank } from '@phosphor-icons/react';
 import api from '@/lib/api';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
@@ -386,7 +383,7 @@ export default function HostConsolePage() {
       // Filter out canceled or fully checked-out entries from the main active screen
       if (res.status === 'CANCELLED' || res.status === 'COMPLETED') return false;
 
-      // Search match
+      // MagnifyingGlass match
       const nameMatch = res.customerName.toLowerCase().includes(searchQuery.toLowerCase());
       const phoneMatch = res.customerPhone.includes(searchQuery);
       const tableMatch = res.table?.identifier.toLowerCase().includes(searchQuery.toLowerCase()) || false;
@@ -540,7 +537,7 @@ export default function HostConsolePage() {
         {/* Global Filter Bar */}
         <div className="bg-white rounded-xl p-2 border border-slate-200 shadow-sm flex items-center gap-2 shrink-0">
           <div className="relative flex-1 w-full">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+            <MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
             <Input
               placeholder={t("host.searchPlaceholder")}
               value={searchQuery}
@@ -554,7 +551,7 @@ export default function HostConsolePage() {
             onClick={() => setIsHistoryDrawerOpen(true)}
             className="h-12 px-3.5 shrink-0 rounded-lg border-slate-200 hover:bg-slate-50 flex items-center gap-1.5 font-bold text-[11px] text-slate-600 whitespace-nowrap"
           >
-            <RotateCcw className="w-4 h-4 text-blue-600 stroke-[2.5]" />
+            <ArrowCounterClockwise className="w-4 h-4 text-blue-600 stroke-[2.5]" />
             <span className="hidden sm:inline">{t("host.activityLogBtn")}</span>
           </Button>
 
@@ -564,7 +561,7 @@ export default function HostConsolePage() {
             disabled={loading}
             className="h-12 w-12 shrink-0 rounded-lg border-slate-200 hover:bg-slate-50"
           >
-            <RefreshCw className={cn("w-4 h-4 text-slate-600", loading && "animate-spin")} />
+            <ArrowClockwise className={cn("w-4 h-4 text-slate-600", loading && "animate-spin")} />
           </Button>
         </div>
 
@@ -618,7 +615,7 @@ export default function HostConsolePage() {
               <div className="flex-1 min-h-0 overflow-y-auto pr-1 space-y-1.5">
                 {loading && !initialLoadDone ? (
                   <div className="h-64 flex flex-col items-center justify-center gap-3">
-                    <RefreshCw className="w-8 h-8 animate-spin text-blue-600" />
+                    <ArrowClockwise className="w-8 h-8 animate-spin text-blue-600" />
                     <div className="text-slate-400 text-xs font-semibold">{t("host.updatingTimeline")}</div>
                   </div>
                 ) : filteredReservations.length === 0 ? (
@@ -662,7 +659,7 @@ export default function HostConsolePage() {
                           )}
                           <div className="flex items-center gap-2 min-w-0">
                             <span className="font-semibold text-slate-900 text-base tracking-tight truncate">{res.customerName}</span>
-                            {res.isVIP && <Star className="w-3.5 h-3.5 text-amber-500 fill-amber-500 shrink-0" />}
+                            {res.isVIP && <Star weight="fill" className="w-3.5 h-3.5 text-amber-500 shrink-0" />}
                           </div>
                         </div>
 
@@ -691,7 +688,7 @@ export default function HostConsolePage() {
                               res.internalNote ? "bg-amber-50 text-amber-700" : "bg-slate-100 text-slate-500"
                             )}
                           >
-                            <StickyNote className="w-3.5 h-3.5" />
+                            <NoteBlank className="w-3.5 h-3.5" />
                           </span>
                         )}
 
@@ -739,7 +736,7 @@ export default function HostConsolePage() {
             <div className="h-full overflow-y-auto pr-1">
               {loading && !initialLoadDone ? (
                 <div className="h-64 flex flex-col items-center justify-center gap-3">
-                  <RefreshCw className="w-8 h-8 animate-spin text-blue-600" />
+                  <ArrowClockwise className="w-8 h-8 animate-spin text-blue-600" />
                   <div className="text-slate-400 text-xs font-semibold">{t("host.updatingWaitlist")}</div>
                 </div>
               ) : filteredWaitlist.length === 0 ? (
@@ -815,7 +812,7 @@ export default function HostConsolePage() {
 
                         {entry.notes && (
                           <span title={entry.notes} className="hidden sm:flex h-7 w-7 rounded-lg items-center justify-center shrink-0 bg-slate-100 text-slate-500">
-                            <StickyNote className="w-3.5 h-3.5" />
+                            <NoteBlank className="w-3.5 h-3.5" />
                           </span>
                         )}
 
@@ -1143,7 +1140,7 @@ export default function HostConsolePage() {
           <div className="bg-slate-900 p-6 text-white shrink-0">
             <DialogHeader>
               <DialogTitle className="text-base font-semibold flex items-center gap-2">
-                <RotateCcw className="w-5 h-5 text-blue-400 stroke-[3]" /> {t("host.activityRecoveryLogTitle")}
+                <ArrowCounterClockwise className="w-5 h-5 text-blue-400 stroke-[3]" /> {t("host.activityRecoveryLogTitle")}
               </DialogTitle>
               <DialogDescription className="text-slate-400 text-xs">
                 {t("host.activityRecoveryLogDesc")}

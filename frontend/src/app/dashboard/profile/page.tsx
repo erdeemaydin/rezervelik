@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { KeyRound, ShieldCheck, ShieldAlert, Loader2, Lock, User as UserIcon } from 'lucide-react';
+import { Key, ShieldCheck, ShieldWarning, CircleNotch, Lock, User as UserIcon } from '@phosphor-icons/react';
 import { QRCodeSVG } from 'qrcode.react';
 import api from '@/lib/api';
 import { toast } from 'sonner';
@@ -157,7 +157,7 @@ export default function ProfilePage() {
           </CardHeader>
           <CardContent className="p-6">
             {!me ? (
-              <div className="flex items-center gap-2 text-slate-400 text-xs font-bold"><Loader2 className="w-4 h-4 animate-spin" /> {t('profile.loading')}</div>
+              <div className="flex items-center gap-2 text-slate-400 text-xs font-bold"><CircleNotch className="w-4 h-4 animate-spin" /> {t('profile.loading')}</div>
             ) : me.otpEnrolled ? (
               <div className="flex items-center gap-3 text-emerald-700">
                 <ShieldCheck className="w-5 h-5" />
@@ -165,7 +165,7 @@ export default function ProfilePage() {
               </div>
             ) : !me.otpRequired ? (
               <div className="flex items-center gap-3 text-slate-500">
-                <ShieldAlert className="w-5 h-5 text-slate-400" />
+                <ShieldWarning className="w-5 h-5 text-slate-400" />
                 <p className="text-sm font-medium">{t('profile.twoFactorAdminControlled')}</p>
               </div>
             ) : setupUri ? (
@@ -193,11 +193,11 @@ export default function ProfilePage() {
             ) : (
               <div className="space-y-4">
                 <div className="flex items-center gap-3 text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-4 py-3">
-                  <ShieldAlert className="w-5 h-5" />
+                  <ShieldWarning className="w-5 h-5" />
                   <p className="text-sm font-bold">{t('profile.twoFactorRequiredNotice')}</p>
                 </div>
                 <Button onClick={startSetup} disabled={otpBusy} className="h-11 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold px-8 rounded-md">
-                  <KeyRound className="w-4 h-4 mr-2" /> {otpBusy ? t('profile.saving') : t('profile.twoFactorSetUp')}
+                  <Key className="w-4 h-4 mr-2" /> {otpBusy ? t('profile.saving') : t('profile.twoFactorSetUp')}
                 </Button>
               </div>
             )}

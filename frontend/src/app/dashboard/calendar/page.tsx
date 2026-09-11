@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Calendar as CalendarIcon, Save, Trash2, ChevronLeft, ChevronRight, Star, Settings2, Info, AlertCircle, Check, MousePointer2, Layers, ToggleLeft, ToggleRight, Timer } from 'lucide-react';
+import { Calendar as CalendarIcon, FloppyDisk, Trash, CaretLeft, CaretRight, Star, GearSix, Info, WarningCircle, Check, Cursor, Stack, ToggleLeft, ToggleRight, Timer } from '@phosphor-icons/react';
 import api from '@/lib/api';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
@@ -174,7 +174,7 @@ export default function CalendarSettingsPage() {
                 "w-7 h-7 flex items-center justify-center rounded-sm font-black text-xs transition-colors", 
                 isSelected ? "bg-slate-900 text-white" : isToday ? "bg-blue-600 text-white" : "text-slate-900"
             )}>{d}</span>
-            {isSelected && <div className="bg-slate-900 text-white p-1 rounded-sm shadow-md"><MousePointer2 className="w-3 h-3" /></div>}
+            {isSelected && <div className="bg-slate-900 text-white p-1 rounded-sm shadow-md"><Cursor className="w-3 h-3" /></div>}
             {!isSelected && setting?.eventTitle && <Badge className="bg-slate-900 text-white border-0 text-[8px] font-semibold px-1.5 py-0.5 rounded-sm shadow-sm">{t("calendar.badge.event")}</Badge>}
           </div>
           
@@ -182,7 +182,7 @@ export default function CalendarSettingsPage() {
             {setting?.eventTitle && <p className="text-[10px] font-semibold text-slate-800 truncate leading-none">{setting.eventTitle}</p>}
             {setting && !setting.isReservationEnabled ? (
                 <div className="flex items-center gap-1 text-red-700">
-                    <AlertCircle className="w-3 h-3" />
+                    <WarningCircle className="w-3 h-3" />
                     <span className="text-[9px] font-semibold tracking-tighter">{t("calendar.status.blackout")}</span>
                 </div>
             ) : setting?.autoConfirm ? (
@@ -227,19 +227,19 @@ export default function CalendarSettingsPage() {
                         onClick={() => { setIsBulkMode(true); setSelectedDays(new Set()); }}
  className={cn("h-8 text-[9px] font-semibold px-4 rounded-sm", isBulkMode ?"bg-blue-600 text-white shadow-sm":"text-slate-500")}
                     >
-                        <Layers className="w-3 h-3 mr-1.5" /> {t("calendar.buttons.bulkMode")}
+                        <Stack className="w-3 h-3 mr-1.5" /> {t("calendar.buttons.bulkMode")}
                     </Button>
                 </div>
 
                 <div className="flex items-center gap-4 bg-white p-1 rounded-md shadow-sm border border-slate-200">
                     <Button variant="ghost" size="icon" className="h-8 w-8 rounded-sm hover:bg-slate-100" onClick={() => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1))}>
-                        <ChevronLeft className="h-4 h-4" />
+                        <CaretLeft className="h-4 h-4" />
                     </Button>
                     <span className="font-semibold text-sm min-w-[150px] text-center text-slate-800">
                         {currentMonth.toLocaleDateString([], { month: 'long', year: 'numeric' })}
                     </span>
                     <Button variant="ghost" size="icon" className="h-8 w-8 rounded-sm hover:bg-slate-100" onClick={() => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1))}>
-                        <ChevronRight className="h-4 h-4" />
+                        <CaretRight className="h-4 h-4" />
                     </Button>
                 </div>
             </div>
@@ -262,7 +262,7 @@ export default function CalendarSettingsPage() {
                         <CardHeader className={cn("p-6 text-white", isBulkMode ? "bg-blue-900" : "bg-slate-900")}>
                             <div className="flex items-center justify-between mb-2">
                                 <CardTitle className="text-sm font-semibold flex items-center gap-2">
-                                    {isBulkMode ? <Layers className="h-4 w-4" /> : <Settings2 className="h-4 w-4" />}
+                                    {isBulkMode ? <Stack className="h-4 w-4" /> : <GearSix className="h-4 w-4" />}
                                     {isBulkMode ? t("calendar.panel.bulkUpdate") : t("calendar.panel.daySettings")}
                                 </CardTitle>
                                 <Badge className="bg-white/20 text-white border-0 font-black text-[10px]">{selectedDays.size} {selectedDays.size === 1 ? t("calendar.panel.day") : t("calendar.panel.days")}</Badge>
@@ -378,7 +378,7 @@ export default function CalendarSettingsPage() {
                 ) : (
                     <div className="h-96 flex flex-col items-center justify-center text-center p-8 bg-white rounded-md border-2 border-dashed border-slate-200 shadow-inner">
                         <div className="w-16 h-16 rounded-xl bg-slate-50 flex items-center justify-center mb-6">
-                            {isBulkMode ? <Layers className="h-8 w-8 text-slate-200" /> : <MousePointer2 className="h-8 w-8 text-slate-200" />}
+                            {isBulkMode ? <Stack className="h-8 w-8 text-slate-200" /> : <Cursor className="h-8 w-8 text-slate-200" />}
                         </div>
                         <p className="text-slate-400 font-semibold text-[10px] tracking-[0.2em] leading-relaxed px-4">
                             {isBulkMode ? t("calendar.panel.bulkEmpty") : t("calendar.panel.singleEmpty")}

@@ -9,7 +9,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import api from '@/lib/api';
 import { toast } from 'sonner';
-import { Plus, Trash2, Handshake, Phone, Mail, Pencil } from 'lucide-react';
+import { Plus, Trash, Handshake, Phone, Envelope, Pencil } from '@phosphor-icons/react';
 import { useTranslation } from '@/i18n/provider';
 
 const CATEGORIES = ['PHOTOGRAPHER', 'VIDEOGRAPHER', 'DJ', 'MUSIC', 'FLORIST', 'CATERING', 'DECOR', 'TRANSPORT', 'CAKE', 'OTHER'];
@@ -104,12 +104,12 @@ export default function VendorsPage() {
                     </div>
                     <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                       <button onClick={() => openEdit(v)} className="text-slate-300 hover:text-slate-700"><Pencil className="w-3.5 h-3.5" /></button>
-                      <button onClick={() => del(v.id)} className="text-slate-300 hover:text-rose-500"><Trash2 className="w-3.5 h-3.5" /></button>
+                      <button onClick={() => del(v.id)} className="text-slate-300 hover:text-rose-500"><Trash className="w-3.5 h-3.5" /></button>
                     </div>
                   </div>
                   {v.contactName && <p className="text-xs font-bold text-slate-600">{v.contactName}</p>}
                   {v.phone && <p className="text-[11px] text-slate-400 flex items-center gap-1"><Phone className="w-3 h-3" />{v.phone}</p>}
-                  {v.email && <p className="text-[11px] text-slate-400 flex items-center gap-1 truncate"><Mail className="w-3 h-3" />{v.email}</p>}
+                  {v.email && <p className="text-[11px] text-slate-400 flex items-center gap-1 truncate"><Envelope className="w-3 h-3" />{v.email}</p>}
                   {!!v._count?.eventVendors && <p className="text-[10px] font-bold text-slate-400 pt-1">{v._count.eventVendors} {t('vendors.eventsWord')}</p>}
                 </CardContent>
               </Card>

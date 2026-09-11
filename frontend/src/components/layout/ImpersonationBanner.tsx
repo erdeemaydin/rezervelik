@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { UserCog, Loader2 } from 'lucide-react';
+import { UserGear, CircleNotch } from '@phosphor-icons/react';
 import { toast } from 'sonner';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useTranslation } from '@/i18n/provider';
@@ -37,7 +37,7 @@ export function ImpersonationBanner() {
 
   return (
     <div className="sticky top-0 z-50 flex items-center justify-center gap-3 bg-amber-500 px-4 py-2 text-xs font-bold text-amber-950 shadow-md">
-      <UserCog className="h-4 w-4 shrink-0" />
+      <UserGear className="h-4 w-4 shrink-0" />
       <span className="truncate">
         {t('admin.impersonationBanner').replace('{{name}}', `${user?.firstName ?? ''} ${user?.lastName ?? ''}`.trim() || user?.email || '')}
       </span>
@@ -46,7 +46,7 @@ export function ImpersonationBanner() {
         disabled={returning}
         className="shrink-0 rounded-md border border-amber-950/30 bg-amber-950/10 px-2.5 py-1 hover:bg-amber-950/20 transition-colors disabled:opacity-60"
       >
-        {returning ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : t('admin.returnToAdmin')}
+        {returning ? <CircleNotch className="h-3.5 w-3.5 animate-spin" /> : t('admin.returnToAdmin')}
       </button>
     </div>
   );

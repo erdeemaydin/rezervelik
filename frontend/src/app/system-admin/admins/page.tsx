@@ -9,7 +9,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Checkbox } from '@/components/ui/checkbox';
-import { ShieldCheck, ShieldOff, KeyRound, Copy, Plus, Settings2, Lock } from 'lucide-react';
+import { ShieldCheck, ShieldSlash, Key, Copy, Plus, GearSix, Lock } from '@phosphor-icons/react';
 import { useState, useEffect } from 'react';
 import api from '@/lib/api';
 import { toast } from 'sonner';
@@ -278,10 +278,10 @@ export default function SystemAdminsPage() {
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-1">
                         <Button variant="ghost" size="sm" onClick={() => openEditDialog(admin)} className="h-7 text-[10px] font-bold text-slate-500 hover:text-blue-600 hover:bg-blue-50 px-2">
-                          <Settings2 className="w-3.5 h-3.5 mr-1.5" /> {t('systemAdmin.admins.accessButton')}
+                          <GearSix className="w-3.5 h-3.5 mr-1.5" /> {t('systemAdmin.admins.accessButton')}
                         </Button>
                         <Button variant="ghost" size="sm" disabled={resetLoadingId === admin.id} onClick={() => handleGenerateReset(admin)} className="h-7 text-[10px] font-bold text-slate-500 hover:text-amber-600 hover:bg-amber-50 px-2">
-                          <KeyRound className="w-3.5 h-3.5 mr-1.5" /> {resetLoadingId === admin.id ? t('systemAdmin.admins.generatingEllipsis') : t('systemAdmin.admins.resetLinkButton')}
+                          <Key className="w-3.5 h-3.5 mr-1.5" /> {resetLoadingId === admin.id ? t('systemAdmin.admins.generatingEllipsis') : t('systemAdmin.admins.resetLinkButton')}
                         </Button>
                         <Button
                           variant="ghost" size="sm"
@@ -290,7 +290,7 @@ export default function SystemAdminsPage() {
                           onClick={() => handleToggleActive(admin)}
                           className={`h-7 text-[10px] font-bold px-2 ${isActive ? 'text-slate-500 hover:text-red-600 hover:bg-red-50' : 'text-slate-500 hover:text-emerald-600 hover:bg-emerald-50'}`}
                         >
-                          {isActive ? <ShieldOff className="w-3.5 h-3.5 mr-1.5" /> : <ShieldCheck className="w-3.5 h-3.5 mr-1.5" />}
+                          {isActive ? <ShieldSlash className="w-3.5 h-3.5 mr-1.5" /> : <ShieldCheck className="w-3.5 h-3.5 mr-1.5" />}
                           {activeLoadingId === admin.id ? t('systemAdmin.admins.updatingEllipsis') : isActive ? t('systemAdmin.admins.deactivateButton') : t('systemAdmin.admins.reactivateButton')}
                         </Button>
                       </div>
@@ -358,7 +358,7 @@ export default function SystemAdminsPage() {
             <form onSubmit={handleSavePermissions}>
               <DialogHeader>
                 <DialogTitle className="flex items-center gap-2 text-base font-bold">
-                  <Settings2 className="w-4 h-4 text-blue-600" /> {t('systemAdmin.admins.colAccessLevel')}
+                  <GearSix className="w-4 h-4 text-blue-600" /> {t('systemAdmin.admins.colAccessLevel')}
                 </DialogTitle>
                 <DialogDescription className="text-xs">
                   {t('systemAdmin.admins.editDescriptionPrefix')} <span className="font-bold text-slate-700">{editTarget.email}</span> {t('systemAdmin.admins.editDescriptionSuffix')}
@@ -391,7 +391,7 @@ export default function SystemAdminsPage() {
         <DialogContent maxWidth="sm:max-w-md" className="p-6">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-base font-bold">
-              <KeyRound className="w-4 h-4 text-amber-500" /> {t('systemAdmin.admins.resetDialogTitle')}
+              <Key className="w-4 h-4 text-amber-500" /> {t('systemAdmin.admins.resetDialogTitle')}
             </DialogTitle>
             <DialogDescription className="text-xs">
               {t('systemAdmin.admins.resetDialogDescriptionPrefix')} <span className="font-bold text-slate-700">{resetTarget}</span>{t('systemAdmin.admins.resetDialogDescriptionSuffix')}

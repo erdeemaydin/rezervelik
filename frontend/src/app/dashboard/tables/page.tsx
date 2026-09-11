@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Plus, Trash2, Edit2, Search, LayoutGrid, List, Layers, Move, ShieldCheck, Square } from 'lucide-react';
+import { Plus, Trash, PencilSimple, MagnifyingGlass, GridFour, ListBullets, Stack, ArrowsOutCardinal, ShieldCheck, Square } from '@phosphor-icons/react';
 import { 
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter 
 } from '@/components/ui/dialog';
@@ -531,7 +531,7 @@ export default function TablesPage() {
                                             <div className="text-[10px] text-slate-400 font-medium">{zoneItem.description || t("tables.noDescription")}</div>
                                         </div>
                                         <Button type="button" variant="ghost" size="icon" onClick={() => handleDeleteZone(zoneItem.id)} className="h-7 w-7 text-slate-300 hover:text-red-600">
-                                            <Trash2 className="w-3.5 h-3.5" />
+                                            <Trash className="w-3.5 h-3.5" />
                                         </Button>
                                     </div>
                                 ))}
@@ -561,14 +561,14 @@ export default function TablesPage() {
         <Tabs defaultValue="floor-plan" className="flex-1 flex flex-col h-[calc(100dvh-150px)]">
             <div className="flex items-center justify-between mb-2">
                 <TabsList className="bg-slate-100/50">
-                    <TabsTrigger value="floor-plan" className="text-xs font-bold"><LayoutGrid className="w-4 h-4 mr-2" /> {t("tables.floorPlan")}</TabsTrigger>
-                    <TabsTrigger value="list-view" className="text-xs font-bold"><List className="w-4 h-4 mr-2" /> {t("tables.listView")}</TabsTrigger>
+                    <TabsTrigger value="floor-plan" className="text-xs font-bold"><GridFour className="w-4 h-4 mr-2" /> {t("tables.floorPlan")}</TabsTrigger>
+                    <TabsTrigger value="list-view" className="text-xs font-bold"><ListBullets className="w-4 h-4 mr-2" /> {t("tables.listView")}</TabsTrigger>
                 </TabsList>
                 
                 {isFloorPlanEditMode && (
                   <div className="flex items-center gap-4 text-[10px] font-semibold text-slate-400">
-                    <div className="flex items-center gap-1"><Move className="w-3 h-3" /> {t("tables.dragToMove")}</div>
-                    <div className="flex items-center gap-1"><Edit2 className="w-3 h-3" /> {t("tables.clickPencilToEdit")}</div>
+                    <div className="flex items-center gap-1"><ArrowsOutCardinal className="w-3 h-3" /> {t("tables.dragToMove")}</div>
+                    <div className="flex items-center gap-1"><PencilSimple className="w-3 h-3" /> {t("tables.clickPencilToEdit")}</div>
                   </div>
                 )}
             </div>
@@ -639,7 +639,7 @@ export default function TablesPage() {
                                         onClick={(e) => { e.stopPropagation(); handleOpenEditElement(el); }}
                                         onPointerDown={(e) => e.stopPropagation()}
                                         >
-                                            <Edit2 className="w-3.5 h-3.5" />
+                                            <PencilSimple className="w-3.5 h-3.5" />
                                         </div>
                                         <div
                                         className="absolute -bottom-1.5 -right-1.5 w-6 h-6 bg-slate-500/70 border-2 border-white cursor-nwse-resize z-50 rounded-full shadow-md touch-none"
@@ -651,7 +651,7 @@ export default function TablesPage() {
                         ))}
                         {zoneTables.length === 0 ? (
                             <div className="absolute inset-0 flex flex-col items-center justify-center text-slate-400 pointer-events-none">
-                                <Layers className="w-12 h-12 mb-4 text-slate-200" />
+                                <Stack className="w-12 h-12 mb-4 text-slate-200" />
                                 <p className="text-sm font-bold">{t("tables.zoneEmpty")}</p>
                                 {isFloorPlanEditMode && <p className="text-xs mt-1">{t("tables.clickAddTableToStart")}</p>}
                             </div>
@@ -698,7 +698,7 @@ export default function TablesPage() {
                                           onClick={(e) => { e.stopPropagation(); handleOpenEditTable(table); }}
                                           onPointerDown={(e) => e.stopPropagation()} // Prevent drag start
                                         >
-                                          <Edit2 className="w-3.5 h-3.5" />
+                                          <PencilSimple className="w-3.5 h-3.5" />
                                         </div>
                                         <div
                                           className="absolute -bottom-1.5 -right-1.5 w-6 h-6 bg-slate-500/80 border-2 border-white cursor-nwse-resize z-50 rounded-full shadow-md touch-none"
@@ -719,11 +719,11 @@ export default function TablesPage() {
                 <CardHeader className="p-3 bg-slate-50/50 border-b border-slate-200">
                     <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
-                            <Layers className="w-4 h-4 text-blue-500" />
+                            <Stack className="w-4 h-4 text-blue-500" />
                             <span className="text-xs font-bold text-slate-700">{t("tables.physicalInventory")}</span>
                         </div>
                         <div className="relative w-64">
-                            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
+                            <MagnifyingGlass className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
                             <Input placeholder={t("tables.searchIdentifier")} className="pl-8 h-8 text-xs bg-white border-slate-200 rounded-md" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
                         </div>
                     </div>
@@ -770,8 +770,8 @@ export default function TablesPage() {
                             {/* Edit/Delete are always available in the list view — only
                                 dragging tables on the floor plan is gated by edit mode (#4.2) */}
                             <div className="flex justify-end gap-1">
-                                <Button variant="ghost" size="icon" onClick={() => handleOpenEditTable(table)} className="h-7 w-7 text-slate-400 hover:text-blue-600 transition-colors"><Edit2 className="w-3.5 h-3.5" /></Button>
-                                <Button variant="ghost" size="icon" onClick={() => handleDeleteTable(table.id)} className="h-7 w-7 text-slate-400 hover:text-red-600 transition-colors"><Trash2 className="w-3.5 h-3.5" /></Button>
+                                <Button variant="ghost" size="icon" onClick={() => handleOpenEditTable(table)} className="h-7 w-7 text-slate-400 hover:text-blue-600 transition-colors"><PencilSimple className="w-3.5 h-3.5" /></Button>
+                                <Button variant="ghost" size="icon" onClick={() => handleDeleteTable(table.id)} className="h-7 w-7 text-slate-400 hover:text-red-600 transition-colors"><Trash className="w-3.5 h-3.5" /></Button>
                             </div>
                             </TableCell>
                         </TableRow>
@@ -857,7 +857,7 @@ export default function TablesPage() {
                                  setIsTableDialogOpen(false);
                                  handleDeleteTable(selectedId!);
                              }}>
-                                <Trash2 className="w-4 h-4 mr-2" /> {t("tables.deleteTableBtn")}
+                                <Trash className="w-4 h-4 mr-2" /> {t("tables.deleteTableBtn")}
                              </Button>
                         </div>
                     )}
@@ -922,7 +922,7 @@ export default function TablesPage() {
                                  setIsElementDialogOpen(false);
                                  handleDeleteElement(selectedId!);
                              }}>
-                                <Trash2 className="w-4 h-4 mr-2" /> {t("tables.deleteBoxBtn")}
+                                <Trash className="w-4 h-4 mr-2" /> {t("tables.deleteBoxBtn")}
                              </Button>
                         </div>
                     )}

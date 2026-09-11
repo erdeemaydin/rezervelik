@@ -5,12 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import {
-  Plus, Check, X, Clock, Search, Edit2, Trash2,
-  Star, MessageSquare, RotateCcw, Calendar as CalendarIcon,
-  Timer, CheckCircle2, ListFilter, CalendarDays, ChevronLeft, ChevronRight, Info,
-  AlertTriangle
-} from 'lucide-react';
+import { Plus, Check, X, Clock, MagnifyingGlass, PencilSimple, Trash, Star, Chat, ArrowCounterClockwise, Calendar as CalendarIcon, Timer, CheckCircle, FunnelSimple, CalendarDots, CaretLeft, CaretRight, Info, Warning } from '@phosphor-icons/react';
 import { 
   Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter 
 } from '@/components/ui/dialog';
@@ -465,17 +460,17 @@ export default function ReservationsPage() {
                     <Timer className="w-3.5 h-3.5 mr-2" /> {t("reservations.liveAndPending")}
                 </Button>
  <Button variant="ghost"size="sm"onClick={() => { setActiveTab('timeline'); setStatusFilter(null); }} className={cn("flex-1 h-9 text-[10px] font-semibold rounded-sm transition-all", activeTab ==='timeline'?"bg-white text-blue-600 shadow-sm border border-slate-100":"text-slate-400 hover:text-slate-600")}>
-                    <CalendarDays className="w-3.5 h-3.5 mr-2" /> {t("reservations.timeline")}
+                    <CalendarDots className="w-3.5 h-3.5 mr-2" /> {t("reservations.timeline")}
                 </Button>
  <Button variant="ghost"size="sm"onClick={() => { setActiveTab('history'); setStatusFilter(null); if (!['today','this-week','last-week','last-month','custom','interval'].includes(timeFilter)) setTimeFilter('today'); }} className={cn("flex-1 h-9 text-[10px] font-semibold rounded-sm transition-all", activeTab ==='history'?"bg-white text-blue-600 shadow-sm border border-slate-100":"text-slate-400 hover:text-slate-600")}>
-                    <CheckCircle2 className="w-3.5 h-3.5 mr-2" /> {t("reservations.reservationDatabase")}
+                    <CheckCircle className="w-3.5 h-3.5 mr-2" /> {t("reservations.reservationDatabase")}
                 </Button>
               </div>
 
               {activeTab === 'timeline' ? (
                 <div className="flex flex-wrap items-center justify-between p-3 gap-4">
                   <div className="flex items-center gap-1 bg-slate-100/50 p-1 rounded-md border border-slate-200/60">
-                    <Button variant="ghost" size="icon" onClick={() => shiftTimelineDate(-1)} className="h-8 w-8 text-slate-500"><ChevronLeft className="w-4 h-4" /></Button>
+                    <Button variant="ghost" size="icon" onClick={() => shiftTimelineDate(-1)} className="h-8 w-8 text-slate-500"><CaretLeft className="w-4 h-4" /></Button>
  <Button variant="ghost"size="sm"onClick={() => setTimelineDate(todayLocalDate())} className={cn("h-7 text-[9px] font-semibold px-3 rounded-sm", timelineDate === todayLocalDate() ?"bg-blue-600 text-white":"text-slate-500")}>{t("reservations.filterToday")}</Button>
                     <div className="relative">
                       <input type="date" ref={timelineDateRef} value={timelineDate} onChange={(e) => setTimelineDate(e.target.value)} className="sr-only" />
@@ -483,7 +478,7 @@ export default function ReservationsPage() {
                         <CalendarIcon className="w-3 h-3 mr-1.5" /> {new Date(`${timelineDate}T00:00:00`).toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' })}
                       </Button>
                     </div>
-                    <Button variant="ghost" size="icon" onClick={() => shiftTimelineDate(1)} className="h-8 w-8 text-slate-500"><ChevronRight className="w-4 h-4" /></Button>
+                    <Button variant="ghost" size="icon" onClick={() => shiftTimelineDate(1)} className="h-8 w-8 text-slate-500"><CaretRight className="w-4 h-4" /></Button>
                   </div>
                   <div className="flex items-center gap-2">
                     {timelineZones.length > 0 && (
@@ -573,7 +568,7 @@ export default function ReservationsPage() {
                     </div>
                   )}
                   <div className="relative flex-1 min-w-[180px] max-w-sm">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                    <MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                     <Input placeholder={t("reservations.searchPlaceholder")} className="pl-10 h-10 text-xs bg-slate-50 border-slate-200 focus:bg-white focus:ring-4 focus:ring-blue-500/5 rounded-md transition-all font-bold" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
                   </div>
                 </div>
@@ -640,7 +635,7 @@ export default function ReservationsPage() {
                       <div className="flex flex-col gap-1">
                         <div className="flex items-center gap-2">
                             <span className="font-semibold text-slate-800 text-sm tracking-tight">{res.customerName}</span>
-                            {res.isVIP && <Star className="w-3.5 h-3.5 text-amber-500 fill-amber-500 animate-pulse" />}
+                            {res.isVIP && <Star weight="fill" className="w-3.5 h-3.5 text-amber-500 animate-pulse" />}
                             <div className="h-4 w-[1px] bg-slate-200 mx-1" />
                             <span className="text-[10px] font-black text-slate-500">{res.guestCount} {t("reservations.pax")}</span>
                         </div>
@@ -650,7 +645,7 @@ export default function ReservationsPage() {
                         </div>
                         {res.phoneHistory && res.phoneHistory.noShowCount > 0 && (
                             <div title={t("reservations.noShowHistoryHint")} className="flex items-center gap-1 w-fit text-[9px] font-semibold text-red-700 bg-red-50 border border-red-200 px-1.5 py-0.5 rounded-sm">
-                                <AlertTriangle className="w-2.5 h-2.5" /> {res.phoneHistory.noShowCount}/{res.phoneHistory.totalVisits} {t("reservations.noShowHistoryLabel")}
+                                <Warning className="w-2.5 h-2.5" /> {res.phoneHistory.noShowCount}/{res.phoneHistory.totalVisits} {t("reservations.noShowHistoryLabel")}
                             </div>
                         )}
                       </div>
@@ -661,7 +656,7 @@ export default function ReservationsPage() {
                             <div className="font-black text-slate-900 text-lg leading-none">{res.table.identifier}</div>
                             {typeof res.table.capacity === 'number' && res.guestCount > res.table.capacity ? (
                                 <span title={t("reservations.overCapacityHint")} className="mt-1 inline-flex items-center gap-1 text-[8px] font-semibold text-red-700 bg-red-50 border border-red-200 px-1.5 py-0.5 rounded-sm tracking-tighter">
-                                    <AlertTriangle className="w-2.5 h-2.5" /> {res.guestCount}/{res.table.capacity} {t("reservations.overCapacity")}
+                                    <Warning className="w-2.5 h-2.5" /> {res.guestCount}/{res.table.capacity} {t("reservations.overCapacity")}
                                 </span>
                             ) : (
                                 <span className="text-[8px] font-semibold text-slate-400 mt-1">{t("reservations.assigned")}</span>
@@ -700,7 +695,7 @@ export default function ReservationsPage() {
                             )}
                             {(res.status === 'CANCELLED' || res.status === 'NO_SHOW' || res.status === 'COMPLETED') && (
                             <Button size="sm" variant="ghost" onClick={() => updateStatus(res.id, 'CONFIRMED')} className="h-8 text-blue-600 hover:bg-blue-50 text-[10px] font-semibold rounded">
-                                <RotateCcw className="w-3 h-3 mr-1.5 stroke-[3]" /> {t("reservations.restore")}
+                                <ArrowCounterClockwise className="w-3 h-3 mr-1.5 stroke-[3]" /> {t("reservations.restore")}
                             </Button>
                             )}
                         </div>
@@ -710,8 +705,8 @@ export default function ReservationsPage() {
                           </button>
                         )}
                         <div className="flex items-center space-x-1 bg-white/40 p-0.5 rounded border border-slate-100/50">
-                            <Button variant="ghost" size="icon" onClick={() => handleOpenEdit(res)} className="h-7 w-7 text-slate-300 hover:text-blue-600"><Edit2 className="w-3.5 h-3.5" /></Button>
-                            <Button variant="ghost" size="icon" onClick={() => handleDelete(res)} className="h-7 w-7 text-slate-300 hover:text-red-600"><Trash2 className="w-3.5 h-3.5" /></Button>
+                            <Button variant="ghost" size="icon" onClick={() => handleOpenEdit(res)} className="h-7 w-7 text-slate-300 hover:text-blue-600"><PencilSimple className="w-3.5 h-3.5" /></Button>
+                            <Button variant="ghost" size="icon" onClick={() => handleDelete(res)} className="h-7 w-7 text-slate-300 hover:text-red-600"><Trash className="w-3.5 h-3.5" /></Button>
                         </div>
                       </div>
                     </TableCell>
@@ -793,7 +788,7 @@ export default function ReservationsPage() {
                         if (selTable && party && party > selTable.capacity) {
                             return (
                                 <div className="flex items-center gap-1.5 text-[10px] font-semibold text-red-700 bg-red-50 border border-red-200 px-2 py-1.5 rounded-sm tracking-tight">
-                                    <AlertTriangle className="w-3 h-3" /> {t("reservations.overCapacityDialog")} ({party} &gt; {selTable.capacity})
+                                    <Warning className="w-3 h-3" /> {t("reservations.overCapacityDialog")} ({party} &gt; {selTable.capacity})
                                 </div>
                             );
                         }
@@ -810,7 +805,7 @@ export default function ReservationsPage() {
                     <div className="flex items-center gap-3 bg-slate-900 p-4 rounded-md shadow-lg shadow-slate-900/10">
                         <Checkbox checked={formData.isVIP} onCheckedChange={(c) => setFormData({...formData, isVIP: !!c})} className="border-white/20 data-[state=checked]:bg-blue-500" />
                         <Label className="text-[10px] font-semibold text-white tracking-[0.3em]">{t("reservations.elevateVIP")}</Label>
-                        <Star className={cn("w-4 h-4 ml-auto", formData.isVIP ? "text-amber-400 fill-amber-400" : "text-slate-600")} />
+                        <Star weight={formData.isVIP ? "fill" : "regular"} className={cn("w-4 h-4 ml-auto", formData.isVIP ? "text-amber-400" : "text-slate-600")} />
                     </div>
                 </div>
               </div>
@@ -829,7 +824,7 @@ export default function ReservationsPage() {
             <div className="bg-amber-500 p-6">
               <DialogHeader>
                 <DialogTitle className="text-white text-lg font-semibold tracking-tight flex items-center gap-2">
-                  <AlertTriangle className="w-6 h-6" /> {t("reservations.conflictWarningTitle")}
+                  <Warning className="w-6 h-6" /> {t("reservations.conflictWarningTitle")}
                 </DialogTitle>
               </DialogHeader>
             </div>
@@ -851,7 +846,7 @@ export default function ReservationsPage() {
             <div className="bg-violet-600 p-6">
               <DialogHeader>
                 <DialogTitle className="text-white text-lg font-semibold tracking-tight flex items-center gap-2">
-                  <MessageSquare className="w-5 h-5" /> {t("reservations.paymentRequestedTitle")}
+                  <Chat className="w-5 h-5" /> {t("reservations.paymentRequestedTitle")}
                 </DialogTitle>
               </DialogHeader>
             </div>
@@ -1119,9 +1114,9 @@ function ReservationTimeline({ tables, reservations, timelineDate, scrollRef, st
                             title={t("reservations.editBooking")}
                             className="absolute top-0.5 right-0.5 z-20 w-4 h-4 rounded bg-black/20 hover:bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
                           >
-                            <Edit2 className="w-2.5 h-2.5" />
+                            <PencilSimple className="w-2.5 h-2.5" />
                           </button>
-                          <div className="truncate flex items-center gap-1 pr-4">{overCap && <AlertTriangle className="w-2.5 h-2.5 shrink-0" />}{r.customerName}</div>
+                          <div className="truncate flex items-center gap-1 pr-4">{overCap && <Warning className="w-2.5 h-2.5 shrink-0" />}{r.customerName}</div>
                           <div className="truncate opacity-80 text-[9px] font-medium">{r.guestCount} {t("reservations.pax")}</div>
                         </div>
                         {/* Always-visible over-capacity badge — doesn't depend on hover
@@ -1132,7 +1127,7 @@ function ReservationTimeline({ tables, reservations, timelineDate, scrollRef, st
                             aria-hidden="true"
                             className="absolute -top-1.5 -left-1.5 z-30 w-4 h-4 rounded-full bg-red-600 border-2 border-white shadow-md flex items-center justify-center animate-pulse pointer-events-none"
                           >
-                            <AlertTriangle className="w-2.5 h-2.5 text-white stroke-[3]" />
+                            <Warning className="w-2.5 h-2.5 text-white stroke-[3]" />
                           </div>
                         )}
                       </div>

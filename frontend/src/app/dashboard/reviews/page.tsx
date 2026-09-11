@@ -1,7 +1,7 @@
 'use client';
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Star, Loader2, MapPin, ExternalLink, RefreshCw, AlertCircle, KeyRound } from 'lucide-react';
+import { Star, CircleNotch, MapPin, ArrowSquareOut, ArrowClockwise, WarningCircle, Key } from '@phosphor-icons/react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useState, useEffect, useCallback } from 'react';
@@ -36,7 +36,7 @@ interface ReviewsData {
 const Stars = ({ rating, className = 'w-3.5 h-3.5' }: { rating: number; className?: string }) => (
   <span className="flex items-center gap-0.5">
     {Array.from({ length: 5 }).map((_, i) => (
-      <Star key={i} className={`${className} ${i < Math.round(rating) ? 'text-amber-400 fill-amber-400' : 'text-slate-200'}`} />
+      <Star key={i} weight={i < Math.round(rating) ? 'fill' : 'regular'} className={`${className} ${i < Math.round(rating) ? 'text-amber-400' : 'text-slate-200'}`} />
     ))}
   </span>
 );
@@ -95,7 +95,7 @@ export default function ReviewsPage() {
         {data?.configured && !editing && (
           <>
             <Button variant="outline" size="sm" className="h-9 text-xs font-bold" onClick={fetchReviews}>
-              <RefreshCw className="w-3.5 h-3.5 mr-1.5" /> {t('reviews.refresh')}
+              <ArrowClockwise className="w-3.5 h-3.5 mr-1.5" /> {t('reviews.refresh')}
             </Button>
             <Button variant="outline" size="sm" className="h-9 text-xs font-bold" onClick={() => setEditing(true)}>
               <MapPin className="w-3.5 h-3.5 mr-1.5" /> {t('reviews.changeLink')}
@@ -126,7 +126,7 @@ export default function ReviewsPage() {
             className="flex-1 text-sm"
           />
           <Button onClick={saveLink} disabled={saving} className="bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold px-6 h-10 shrink-0">
-            {saving ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> {t('reviews.saving')}</> : t('reviews.save')}
+            {saving ? <><CircleNotch className="w-4 h-4 mr-2 animate-spin" /> {t('reviews.saving')}</> : t('reviews.save')}
           </Button>
         </div>
       </CardContent>
@@ -140,14 +140,14 @@ export default function ReviewsPage() {
 
         {loading ? (
           <div className="flex items-center justify-center h-[50vh]">
-            <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+            <CircleNotch className="w-8 h-8 animate-spin text-blue-600" />
           </div>
         ) : editing || !data?.configured ? (
           <LinkForm />
         ) : data.apiKeyMissing ? (
           <Card className="border-amber-200 bg-amber-50/40 shadow-sm">
             <CardContent className="p-6 flex items-start gap-4">
-              <div className="p-2.5 bg-amber-100 rounded-lg text-amber-700 shrink-0"><KeyRound className="w-5 h-5" /></div>
+              <div className="p-2.5 bg-amber-100 rounded-lg text-amber-700 shrink-0"><Key className="w-5 h-5" /></div>
               <div>
                 <h3 className="font-black text-slate-800 text-sm">{t('reviews.apiKeyMissingTitle')}</h3>
                 <p className="text-xs text-slate-600 mt-1 leading-relaxed">{t('reviews.apiKeyMissingDesc')}</p>
@@ -157,7 +157,7 @@ export default function ReviewsPage() {
         ) : data.error ? (
           <Card className="border-rose-200 bg-rose-50/40 shadow-sm">
             <CardContent className="p-6 flex items-start gap-4">
-              <div className="p-2.5 bg-rose-100 rounded-lg text-rose-700 shrink-0"><AlertCircle className="w-5 h-5" /></div>
+              <div className="p-2.5 bg-rose-100 rounded-lg text-rose-700 shrink-0"><WarningCircle className="w-5 h-5" /></div>
               <div>
                 <h3 className="font-black text-slate-800 text-sm">{t('reviews.googleErrorTitle')}</h3>
                 <p className="text-xs text-slate-600 mt-1 leading-relaxed">{data.errorDetail || data.error}</p>
@@ -178,7 +178,7 @@ export default function ReviewsPage() {
                 {data.googleUrl && (
                   <a href={data.googleUrl} target="_blank" rel="noopener noreferrer"
                      className="mt-4 inline-flex items-center gap-1.5 text-[11px] font-bold text-blue-400 hover:text-blue-300">
-                    <ExternalLink className="w-3.5 h-3.5" /> {t('reviews.openInGoogle')}
+                    <ArrowSquareOut className="w-3.5 h-3.5" /> {t('reviews.openInGoogle')}
                   </a>
                 )}
               </CardContent>

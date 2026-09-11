@@ -13,7 +13,7 @@ import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import api from '@/lib/api';
 import { toast } from 'sonner';
-import { Save, Hourglass, Users, ArrowLeft, Plus, CheckCircle2, MessageCircle, XCircle, Calendar as CalendarIcon, Settings2 } from 'lucide-react';
+import { FloppyDisk, Hourglass, Users, ArrowLeft, Plus, CheckCircle, ChatCircle, XCircle, Calendar as CalendarIcon, GearSix } from '@phosphor-icons/react';
 import { useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { useTranslation } from "@/i18n/provider";
@@ -189,7 +189,7 @@ export default function WaitlistPage() {
                             {config.isWaitlistOpen ? t("waitTime.config.statusOpen") : t("waitTime.config.statusClosed")}
                         </Badge>
                         <Button variant="outline" size="sm" onClick={() => setIsConfigModalOpen(true)} className="h-10 text-xs font-bold px-4 rounded-lg">
-                            <Settings2 className="w-4 h-4 mr-2" /> {t("waitTime.config.title")}
+                            <GearSix className="w-4 h-4 mr-2" /> {t("waitTime.config.title")}
                         </Button>
                     </div>
                 </div>
@@ -273,17 +273,17 @@ export default function WaitlistPage() {
                                                                     setOfferForm(prev => ({...prev, entryId: entry.id}));
                                                                     setIsOfferModalOpen(true);
                                                                 }} className="h-7 text-[10px] font-bold border-purple-200 text-purple-700 hover:bg-purple-50">
-                                                                    <MessageCircle className="w-3 h-3 mr-1" /> {t("waitTime.action.sendOffer")}
+                                                                    <ChatCircle className="w-3 h-3 mr-1" /> {t("waitTime.action.sendOffer")}
                                                                 </Button>
                                                             ) : (
                                                                 <Button variant="outline" size="sm" onClick={() => updateStatus(entry.id, 'NOTIFIED')} className="h-7 text-[10px] font-bold border-blue-200 text-blue-700 hover:bg-blue-50">
-                                                                    <MessageCircle className="w-3 h-3 mr-1" /> {t("waitTime.action.notify")}
+                                                                    <ChatCircle className="w-3 h-3 mr-1" /> {t("waitTime.action.notify")}
                                                                 </Button>
                                                             )
                                                         )}
                                                         {!isLegacyDateEntry && (
                                                             <Button variant="outline" size="sm" onClick={() => updateStatus(entry.id, 'SEATED')} className="h-7 text-[10px] font-bold border-emerald-200 text-emerald-700 hover:bg-emerald-50">
-                                                                <CheckCircle2 className="w-3 h-3 mr-1" /> {t("waitTime.action.seat")}
+                                                                <CheckCircle className="w-3 h-3 mr-1" /> {t("waitTime.action.seat")}
                                                             </Button>
                                                         )}
                                                         <Button variant="ghost" size="icon" onClick={() => updateStatus(entry.id, 'CANCELED')} className="h-7 w-7 text-slate-400 hover:text-red-600 hover:bg-red-50">

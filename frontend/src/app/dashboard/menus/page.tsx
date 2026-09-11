@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Plus, Trash2, Edit2, Search, LayoutGrid, List, ChevronDown, ChevronRight, Image as ImageIcon, Flame, Leaf, AlertTriangle, Layers, QrCode, ListChecks } from 'lucide-react';
+import { Plus, Trash, PencilSimple, MagnifyingGlass, GridFour, ListBullets, CaretDown, CaretRight, Image as ImageIcon, Flame, Leaf, Warning, Stack, QrCode, ListChecks } from '@phosphor-icons/react';
 import Link from 'next/link';
 import { useConfirm } from '@/components/ui/confirm-dialog';
 import { QRCodePDFGenerator } from '@/components/menus/QRCodePDFGenerator';
@@ -413,7 +413,7 @@ export default function MenuManagementPage() {
                             <Badge key={i} variant="outline" className="text-[8px] px-1 h-4 bg-green-50 text-green-700 border-green-200 shadow-none"><Leaf className="w-2.5 h-2.5 mr-0.5" /> {tag.trim()}</Badge>
                         ))}
                         {item.allergens && (
-                            <Badge variant="outline" className="text-[8px] px-1 h-4 bg-orange-50 text-orange-700 border-orange-200 shadow-none"><AlertTriangle className="w-2.5 h-2.5 mr-0.5" /> {item.allergens}</Badge>
+                            <Badge variant="outline" className="text-[8px] px-1 h-4 bg-orange-50 text-orange-700 border-orange-200 shadow-none"><Warning className="w-2.5 h-2.5 mr-0.5" /> {item.allergens}</Badge>
                         )}
                     </div>
                 </TableCell>
@@ -443,8 +443,8 @@ export default function MenuManagementPage() {
                 )}
                 <TableCell className="px-4 py-2 text-right">
                     <div className="flex justify-end gap-1">
-                        <Button variant="ghost" size="icon" className="h-7 w-7 text-slate-400 hover:text-blue-600 transition-colors" onClick={(e) => { e.stopPropagation(); handleOpenItem(categoryId, item); }}><Edit2 className="w-3.5 h-3.5" /></Button>
-                        <Button variant="ghost" size="icon" className="h-7 w-7 text-slate-400 hover:text-red-600 transition-colors" onClick={(e) => { e.stopPropagation(); handleDeleteItem(item.id); }}><Trash2 className="w-3.5 h-3.5" /></Button>
+                        <Button variant="ghost" size="icon" className="h-7 w-7 text-slate-400 hover:text-blue-600 transition-colors" onClick={(e) => { e.stopPropagation(); handleOpenItem(categoryId, item); }}><PencilSimple className="w-3.5 h-3.5" /></Button>
+                        <Button variant="ghost" size="icon" className="h-7 w-7 text-slate-400 hover:text-red-600 transition-colors" onClick={(e) => { e.stopPropagation(); handleDeleteItem(item.id); }}><Trash className="w-3.5 h-3.5" /></Button>
                     </div>
                 </TableCell>
               </TableRow>
@@ -469,12 +469,12 @@ export default function MenuManagementPage() {
               >
                   <div className="flex items-center gap-3">
                       <Button variant="ghost" size="icon" className="h-6 w-6 text-slate-400 p-0">
-                          {isExpanded ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+                          {isExpanded ? <CaretDown className="w-4 h-4" /> : <CaretRight className="w-4 h-4" />}
                       </Button>
                       {cat.imageUrl ? (
                           <img src={cat.imageUrl} alt={cat.name} className="w-8 h-8 rounded object-cover border border-slate-200" />
                       ) : (
-                          <div className="w-8 h-8 rounded bg-slate-100 flex items-center justify-center border border-slate-200"><Layers className="w-3.5 h-3.5 text-slate-300" /></div>
+                          <div className="w-8 h-8 rounded bg-slate-100 flex items-center justify-center border border-slate-200"><Stack className="w-3.5 h-3.5 text-slate-300" /></div>
                       )}
                       <div>
                           <div className="font-semibold text-slate-800 text-sm tracking-tight flex items-center gap-2">
@@ -491,8 +491,8 @@ export default function MenuManagementPage() {
                           </Button>
                       )}
                       <div className="w-px h-4 bg-slate-200 mx-2" />
-                      <Button variant="ghost" size="icon" className="h-7 w-7 text-slate-400 hover:text-blue-600 transition-colors" onClick={(e) => { e.stopPropagation(); handleOpenCategory(activeMenuId!, cat.parentId, cat); }}><Edit2 className="w-3.5 h-3.5" /></Button>
-                      <Button variant="ghost" size="icon" className="h-7 w-7 text-slate-400 hover:text-red-600 transition-colors" onClick={(e) => { e.stopPropagation(); handleDeleteCategory(cat.id); }}><Trash2 className="w-3.5 h-3.5" /></Button>
+                      <Button variant="ghost" size="icon" className="h-7 w-7 text-slate-400 hover:text-blue-600 transition-colors" onClick={(e) => { e.stopPropagation(); handleOpenCategory(activeMenuId!, cat.parentId, cat); }}><PencilSimple className="w-3.5 h-3.5" /></Button>
+                      <Button variant="ghost" size="icon" className="h-7 w-7 text-slate-400 hover:text-red-600 transition-colors" onClick={(e) => { e.stopPropagation(); handleDeleteCategory(cat.id); }}><Trash className="w-3.5 h-3.5" /></Button>
                   </div>
               </div>
               
@@ -587,10 +587,10 @@ export default function MenuManagementPage() {
                             <Button variant="ghost" size="sm" className="h-8 text-[10px] font-bold text-blue-600 hover:bg-blue-50" onClick={() => {
                                 setIsEditMode(true); setEditId(activeMenu.id); setMenuForm({name: activeMenu.name, isActive: activeMenu.isActive, footnotes: activeMenu.footnotes || ''}); setIsMenuDialogOpen(true);
                             }}>
-                                <Edit2 className="w-3 h-3 mr-1" /> {t('menus.buttons.editMeta')}
+                                <PencilSimple className="w-3 h-3 mr-1" /> {t('menus.buttons.editMeta')}
                             </Button>
                             <Button variant="ghost" size="sm" className="h-8 text-[10px] font-bold text-red-600 hover:bg-red-50" onClick={() => handleDeleteMenu(activeMenu.id)}>
-                                <Trash2 className="w-3 h-3 mr-1" /> {t('menus.buttons.deleteMenu')}
+                                <Trash className="w-3 h-3 mr-1" /> {t('menus.buttons.deleteMenu')}
                             </Button>
                         </div>
                     )}
@@ -609,13 +609,13 @@ export default function MenuManagementPage() {
                     </div>
                 ) : !activeMenu ? (
                     <div className="flex flex-col items-center justify-center h-64 text-center border-2 border-dashed border-slate-200 rounded-lg bg-white">
-                        <List className="w-12 h-12 text-slate-300 mb-4" />
+                        <ListBullets className="w-12 h-12 text-slate-300 mb-4" />
                         <h3 className="text-sm font-semibold text-slate-700">{t('menus.title.noMenuSelected')}</h3>
                         <p className="text-xs text-slate-400 font-medium mt-1">{t('menus.title.noMenuDesc')}</p>
                     </div>
                 ) : activeMenu.categories.length === 0 ? (
                     <div className="flex flex-col items-center justify-center h-64 text-center border-2 border-dashed border-slate-200 rounded-lg bg-white">
-                        <Layers className="w-12 h-12 text-slate-300 mb-4" />
+                        <Stack className="w-12 h-12 text-slate-300 mb-4" />
                         <h3 className="text-sm font-semibold text-slate-700">{t('menus.title.emptyMenuStructure')}</h3>
                         <p className="text-xs text-slate-400 font-medium mt-1 mb-4">{t('menus.title.emptyMenuDesc')}</p>
                         <Button size="sm" onClick={() => handleOpenCategory(activeMenu.id)} className="bg-blue-600 hover:bg-blue-700 text-white rounded-sm h-9 px-6 font-semibold text-[10px]">{t('menus.buttons.addRootCategory')}</Button>
@@ -742,7 +742,7 @@ export default function MenuManagementPage() {
                                 <Input value={itemForm.dietaryTags} onChange={e => setItemForm({...itemForm, dietaryTags: e.target.value})} placeholder={t('menus.form.dietaryTagsPlaceholder')} className="h-10 text-xs font-bold border-green-200 bg-green-50/30 rounded-sm focus:border-green-400" />
                             </div>
                             <div className="grid gap-1.5">
-                                <Label className="text-[10px] font-semibold text-orange-600 tracking-[0.2em] flex items-center gap-1"><AlertTriangle className="w-3 h-3" /> {t('menus.form.allergens')}</Label>
+                                <Label className="text-[10px] font-semibold text-orange-600 tracking-[0.2em] flex items-center gap-1"><Warning className="w-3 h-3" /> {t('menus.form.allergens')}</Label>
                                 <Input value={itemForm.allergens} onChange={e => setItemForm({...itemForm, allergens: e.target.value})} placeholder={t('menus.form.allergensPlaceholder')} className="h-10 text-xs font-bold border-orange-200 bg-orange-50/30 rounded-sm focus:border-orange-400" />
                             </div>
                             <div className="grid gap-1.5">

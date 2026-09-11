@@ -5,9 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { 
-  Plus, Edit2, Trash2, Search, ShieldCheck, ShieldAlert, Users, Settings2, Shield
-} from 'lucide-react';
+import { Plus, PencilSimple, Trash, MagnifyingGlass, ShieldCheck, ShieldWarning, Users, GearSix, Shield, Copy, LinkSimple } from '@phosphor-icons/react';
 import { 
   Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter 
 } from '@/components/ui/dialog';
@@ -17,7 +15,6 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { PhoneInput } from '@/components/ui/phone-input';
 import { useConfirm } from '@/components/ui/confirm-dialog';
-import { Copy, Link2 } from 'lucide-react';
 import api from '@/lib/api';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
@@ -210,7 +207,7 @@ export default function StaffManagementPage() {
                 <span className="text-xs font-bold text-slate-700">{t("staff.activePersonnel")}</span>
             </div>
             <div className="relative w-64">
-                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
+                <MagnifyingGlass className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
                 <Input placeholder={t("staff.searchPlaceholder")} className="pl-8 h-8 text-xs bg-white border-slate-200 rounded-sm" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
             </div>
           </CardHeader>
@@ -266,8 +263,8 @@ export default function StaffManagementPage() {
                     <TableCell className="px-6 text-right">
                         {member.id !== currentUser?.id && member.role !== 'SUPER_ADMIN' && member.role !== 'ADMIN' ? (
                             <div className="flex justify-end gap-1">
-                                <Button variant="ghost" size="icon" onClick={() => handleOpenEdit(member)} className="h-7 w-7 text-slate-300 hover:text-blue-600 transition-colors"><Edit2 className="w-3.5 h-3.5" /></Button>
-                                <Button variant="ghost" size="icon" onClick={() => handleDelete(member)} className="h-7 w-7 text-slate-300 hover:text-red-600 transition-colors"><Trash2 className="w-3.5 h-3.5" /></Button>
+                                <Button variant="ghost" size="icon" onClick={() => handleOpenEdit(member)} className="h-7 w-7 text-slate-300 hover:text-blue-600 transition-colors"><PencilSimple className="w-3.5 h-3.5" /></Button>
+                                <Button variant="ghost" size="icon" onClick={() => handleDelete(member)} className="h-7 w-7 text-slate-300 hover:text-red-600 transition-colors"><Trash className="w-3.5 h-3.5" /></Button>
                             </div>
                         ) : (
                             <span className="text-[9px] font-semibold text-slate-300 mr-2">{t("staff.table.protected")}</span>
@@ -312,7 +309,7 @@ export default function StaffManagementPage() {
                             {/* Passwords are set by the staff member via a reset link, never by the admin (#7.1) */}
                             {!isEditMode ? (
                                 <p className="text-[10px] font-bold text-slate-400 leading-relaxed bg-slate-50 border border-slate-100 rounded-sm p-2 flex items-start gap-1.5">
-                                    <Link2 className="w-3 h-3 mt-0.5 text-blue-500 shrink-0" /> {t("staff.dialog.resetLinkOnCreate")}
+                                    <LinkSimple className="w-3 h-3 mt-0.5 text-blue-500 shrink-0" /> {t("staff.dialog.resetLinkOnCreate")}
                                 </p>
                             ) : (
                                 <div className={cn("flex items-center justify-between p-3 border rounded-sm transition-all", formData.sendResetLink ? "border-blue-200 bg-blue-50/30" : "border-slate-100 bg-slate-50/50")}>
@@ -373,7 +370,7 @@ export default function StaffManagementPage() {
                     <DialogDescription>{t("staff.resetLink.desc", )}</DialogDescription>
                 </DialogHeader>
                 <div className="rounded-lg border bg-muted/40 p-3 flex items-center gap-2">
-                    <Link2 className="w-4 h-4 text-blue-500 shrink-0" />
+                    <LinkSimple className="w-4 h-4 text-blue-500 shrink-0" />
                     <span className="text-xs font-mono break-all flex-1">{resetLinkInfo?.link}</span>
                     <Button type="button" size="sm" variant="outline" onClick={() => { if (resetLinkInfo) { navigator.clipboard?.writeText(resetLinkInfo.link); toast.success(t("staff.resetLink.copied")); } }}>
                         <Copy className="w-3.5 h-3.5 mr-1" /> {t("staff.resetLink.copy")}

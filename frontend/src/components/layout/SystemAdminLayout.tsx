@@ -3,17 +3,7 @@
 import { ReactNode, useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import {
-  ShieldCheck,
-  Users,
-  Building2,
-  Settings,
-  LogOut,
-  BarChart3,
-  Server,
-  Menu,
-  X
-} from 'lucide-react';
+import { ShieldCheck, Users, Buildings, Gear, SignOut, ChartBar, HardDrives, List, X } from '@phosphor-icons/react';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useAdminThemeStore } from '@/store/useAdminThemeStore';
 import { Button } from '@/components/ui/button';
@@ -31,7 +21,7 @@ interface SystemAdminLayoutProps {
 // (no default→chosen flash) before the /system/settings/global request returns.
 const SYSTEM_THEME_CACHE = 'systemDashboardTheme';
 
-type NavItem = { name: string; href: string; icon: typeof BarChart3 };
+type NavItem = { name: string; href: string; icon: typeof ChartBar };
 const compactNavItems = (items: (NavItem | false)[]): NavItem[] => items.filter(Boolean) as NavItem[];
 
 export default function SystemAdminLayout({ children }: SystemAdminLayoutProps) {
@@ -55,7 +45,7 @@ export default function SystemAdminLayout({ children }: SystemAdminLayoutProps) 
     if (typeof window !== 'undefined' && window.innerWidth >= 1024) {
       setIsSidebarOpen(true);
     }
-    // Server-side route protection was removed (token is in localStorage, not a
+    // HardDrives-side route protection was removed (token is in localStorage, not a
     // cookie), so guard here: bounce unauthenticated users to login, and
     // non-superadmins to their tenant dashboard.
     if (!user) {
@@ -65,7 +55,7 @@ export default function SystemAdminLayout({ children }: SystemAdminLayoutProps) 
     }
   }, [user, router]);
 
-  // Load the system-admin surface theme (set by the root admin in Global Settings).
+  // Load the system-admin surface theme (set by the root admin in Global Gear).
   useEffect(() => {
     if (!user || user.role !== 'SUPER_ADMIN') return;
     // Seed from this surface's cache first (the shared store may still hold a
@@ -93,15 +83,15 @@ export default function SystemAdminLayout({ children }: SystemAdminLayoutProps) 
 
   const navigation = [
     { section: t('systemAdmin.globalOverview'), items: compactNavItems([
-      has('sys_view_metrics') && { name: t('systemAdmin.systemMetrics'), href: '/system-admin/dashboard', icon: BarChart3 },
-      has('sys_manage_tenants') && { name: t('systemAdmin.tenantManagement'), href: '/system-admin/tenants', icon: Building2 },
+      has('sys_view_metrics') && { name: t('systemAdmin.systemMetrics'), href: '/system-admin/dashboard', icon: ChartBar },
+      has('sys_manage_tenants') && { name: t('systemAdmin.tenantManagement'), href: '/system-admin/tenants', icon: Buildings },
     ]) },
     { section: t('systemAdmin.userControl'), items: compactNavItems([
       isRoot && { name: t('systemAdmin.superAdmins'), href: '/system-admin/admins', icon: ShieldCheck },
-      has('sys_view_audit_log') && { name: t('systemAdmin.activityAudit'), href: '/system-admin/audit', icon: Server },
+      has('sys_view_audit_log') && { name: t('systemAdmin.activityAudit'), href: '/system-admin/audit', icon: HardDrives },
     ]) },
     { section: t('systemAdmin.configuration'), items: compactNavItems([
-      has('sys_manage_global_settings') && { name: t('systemAdmin.globalSettings'), href: '/system-admin/settings', icon: Settings },
+      has('sys_manage_global_settings') && { name: t('systemAdmin.globalSettings'), href: '/system-admin/settings', icon: Gear },
     ]) },
   ].filter((group) => group.items.length > 0);
 
@@ -130,7 +120,7 @@ export default function SystemAdminLayout({ children }: SystemAdminLayoutProps) 
           aria-label="Open navigation"
           className="lg:hidden fixed top-3 left-3 z-40 w-11 h-11 rounded-md bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg shadow-emerald-600/30 flex items-center justify-center active:scale-95 transition-all"
         >
-          <Menu className="w-6 h-6" />
+          <List className="w-6 h-6" />
         </button>
       )}
 
@@ -195,7 +185,7 @@ export default function SystemAdminLayout({ children }: SystemAdminLayoutProps) 
                           )}
                         >
                           <div className="flex items-center">
-                            <item.icon className={cn('mr-3 h-4 w-4', isActive ? 'text-[var(--admin-accent-strong)]' : 'text-stone-400')} />
+                            <item.icon weight={isActive ? 'bold' : 'regular'} className={cn('mr-3 h-4 w-4', isActive ? 'text-[var(--admin-accent-strong)]' : 'text-stone-400')} />
                             {item.name}
                           </div>
                         </Link>
@@ -210,7 +200,7 @@ export default function SystemAdminLayout({ children }: SystemAdminLayoutProps) 
 
         <div className="p-4 border-t border-stone-300">
           <Button variant="ghost" className="w-full justify-start text-stone-500 hover:text-red-600 hover:bg-red-50" onClick={handleLogout}>
-            <LogOut className="mr-3 h-5 w-5" /> {t('systemAdmin.logoutSystem')}
+            <SignOut className="mr-3 h-5 w-5" /> {t('systemAdmin.logoutSystem')}
           </Button>
         </div>
       </aside>

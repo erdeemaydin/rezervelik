@@ -3,7 +3,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Server, RefreshCw } from 'lucide-react';
+import { HardDrives, ArrowClockwise } from '@phosphor-icons/react';
 import { useState, useEffect, useCallback } from 'react';
 import api from '@/lib/api';
 import { cn } from '@/lib/utils';
@@ -77,7 +77,7 @@ export default function SystemAuditPage() {
             onClick={fetchLogs}
             className="flex items-center gap-2 h-8 px-3 text-xs font-bold text-slate-600 border border-slate-200 rounded-md hover:bg-slate-50"
           >
-            <RefreshCw className={cn('w-3.5 h-3.5', loading && 'animate-spin')} /> Refresh
+            <ArrowClockwise className={cn('w-3.5 h-3.5', loading && 'animate-spin')} /> Refresh
           </button>
         </div>
 
@@ -85,7 +85,7 @@ export default function SystemAuditPage() {
           <CardHeader className="border-b border-slate-100 bg-slate-50/50 p-4">
             <div className="flex items-center justify-between flex-wrap gap-3">
               <div className="flex items-center gap-2">
-                <Server className="w-4 h-4 text-slate-600" />
+                <HardDrives className="w-4 h-4 text-slate-600" />
                 <CardTitle className="text-sm font-bold text-slate-700">Audit Trail</CardTitle>
               </div>
               <div className="flex items-center gap-2">

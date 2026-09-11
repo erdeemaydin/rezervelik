@@ -12,9 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle,
 } from '@/components/ui/dialog';
-import {
-  Search, Settings2, ShoppingBag, Users, MapPin, StickyNote, Clock, Phone, BadgeCheck,
-} from 'lucide-react';
+import { MagnifyingGlass, GearSix, ShoppingBag, Users, MapPin, NoteBlank, Clock, Phone, SealCheck } from '@phosphor-icons/react';
 import api from '@/lib/api';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
@@ -219,7 +217,7 @@ export default function OrdersPage() {
         </div>
         <Link href="/dashboard/orders/settings">
           <Button variant="outline" size="sm" className="h-9 px-4 text-[10px] font-semibold border-slate-200 text-slate-600 shadow-sm bg-white">
-            <Settings2 className="w-3.5 h-3.5 mr-1.5" /> {t('orders.settingsBtn')}
+            <GearSix className="w-3.5 h-3.5 mr-1.5" /> {t('orders.settingsBtn')}
           </Button>
         </Link>
       </div>
@@ -263,7 +261,7 @@ export default function OrdersPage() {
                     </SelectContent>
                   </Select>
                   <div className="relative flex-1 min-w-[200px] max-w-sm">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                    <MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                     <Input placeholder={t('orders.searchPlaceholder')} className="pl-10 h-9 text-xs bg-slate-50 border-slate-200 focus:bg-white rounded-md font-bold" value={orderSearch} onChange={(e) => setOrderSearch(e.target.value)} />
                   </div>
                 </div>
@@ -326,7 +324,7 @@ export default function OrdersPage() {
                 <span className="text-xs font-bold text-slate-700">{t('orders.tabs.customers')}</span>
               </div>
               <div className="relative w-64">
-                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
+                <MagnifyingGlass className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
                 <Input placeholder={t('orders.customers.searchPlaceholder')} className="pl-8 h-8 text-xs bg-white border-slate-200 rounded-sm" value={customerSearch} onChange={(e) => setCustomerSearch(e.target.value)} />
               </div>
             </CardHeader>
@@ -466,7 +464,7 @@ export default function OrdersPage() {
                 </div>
 
                 <div className="rounded-md bg-blue-50/40 border border-blue-100 p-3">
-                  <div className="text-[9px] font-semibold text-blue-500 flex items-center gap-1 mb-1"><StickyNote className="w-3 h-3" /> {t('orders.detail.customerNote')}</div>
+                  <div className="text-[9px] font-semibold text-blue-500 flex items-center gap-1 mb-1"><NoteBlank className="w-3 h-3" /> {t('orders.detail.customerNote')}</div>
                   <div className="text-xs text-slate-700 font-medium italic">{selectedOrder.customerNote || t('orders.detail.noNote')}</div>
                 </div>
               </div>
@@ -496,7 +494,7 @@ export default function OrdersPage() {
                   <Phone className="w-3.5 h-3.5 text-slate-400" />
                   <span className="font-mono font-bold text-slate-700">{selectedCustomer.phone}</span>
                   {selectedCustomer.phoneVerifiedAt ? (
-                    <Badge className="bg-emerald-100 text-emerald-700 border-0 text-[9px] font-black"><BadgeCheck className="w-3 h-3 mr-1" /> {t('orders.customerDetail.phoneVerified')}</Badge>
+                    <Badge className="bg-emerald-100 text-emerald-700 border-0 text-[9px] font-black"><SealCheck className="w-3 h-3 mr-1" /> {t('orders.customerDetail.phoneVerified')}</Badge>
                   ) : (
                     <Badge variant="outline" className="text-[9px] font-black border-slate-200 text-slate-500">{t('orders.customerDetail.phoneNotVerified')}</Badge>
                   )}

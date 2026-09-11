@@ -5,7 +5,7 @@ import { Dialog as DialogPrimitive } from "@base-ui/react/dialog"
 
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
-import { XIcon } from "lucide-react"
+import { X } from '@phosphor-icons/react';
 
 function Dialog({ ...props }: DialogPrimitive.Root.Props) {
   return <DialogPrimitive.Root data-slot="dialog" {...props} />
@@ -67,7 +67,7 @@ function DialogContent({
             data-slot="dialog-close"
             render={
               <button className="absolute top-2 right-2 inline-flex h-8 w-8 items-center justify-center rounded-md text-slate-500 hover:bg-slate-100 hover:text-slate-900 transition-colors">
-                <XIcon className="h-4 w-4" />
+                <X className="h-4 w-4" />
                 <span className="sr-only">Close</span>
               </button>
             }

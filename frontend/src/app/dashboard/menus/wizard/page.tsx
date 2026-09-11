@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
-import { ChevronRight, ArrowLeft, Image as ImageIcon, Utensils, Info, CheckCircle2 } from 'lucide-react';
+import { CaretRight, ArrowLeft, Image as ImageIcon, ForkKnife, Info, CheckCircle } from '@phosphor-icons/react';
 import api from '@/lib/api';
 import { toast } from 'sonner';
 import { useTranslation } from "@/i18n/provider";
@@ -151,7 +151,7 @@ export default function MenuWizardPage() {
               </div>
               <div className="flex justify-end pt-4">
                 <Button onClick={() => setStep(2)} disabled={!menuInfo.name.trim()} className="h-12 px-8 bg-blue-600 hover:bg-blue-700 text-white font-semibold">
-                  {t("menusWizard.nextAddCategories")} <ChevronRight className="w-4 h-4 ml-2" />
+                  {t("menusWizard.nextAddCategories")} <CaretRight className="w-4 h-4 ml-2" />
                 </Button>
               </div>
             </CardContent>
@@ -190,7 +190,7 @@ export default function MenuWizardPage() {
                     ))}
                   </div>
                   <div className="p-3 bg-slate-50 border-t border-slate-100 flex justify-center">
-                    <Button variant="outline" size="sm" onClick={() => addItem(cIdx)} className="text-xs font-bold text-blue-600 border-blue-200 bg-blue-50 hover:bg-blue-100"><Utensils className="w-3.5 h-3.5 mr-2"/> {t("menusWizard.addDish")}</Button>
+                    <Button variant="outline" size="sm" onClick={() => addItem(cIdx)} className="text-xs font-bold text-blue-600 border-blue-200 bg-blue-50 hover:bg-blue-100"><ForkKnife className="w-3.5 h-3.5 mr-2"/> {t("menusWizard.addDish")}</Button>
                   </div>
                 </CardContent>
               </Card>
@@ -205,7 +205,7 @@ export default function MenuWizardPage() {
             <div className="flex justify-between pt-8 border-t border-slate-200">
               <Button variant="ghost" onClick={() => setStep(1)} className="font-bold text-slate-500">{t("menusWizard.back")}</Button>
               <Button onClick={() => setStep(3)} className="h-12 px-8 bg-blue-600 hover:bg-blue-700 text-white font-semibold">
-                {t("menusWizard.reviewPublish")} <ChevronRight className="w-4 h-4 ml-2" />
+                {t("menusWizard.reviewPublish")} <CaretRight className="w-4 h-4 ml-2" />
               </Button>
             </div>
           </div>
@@ -216,7 +216,7 @@ export default function MenuWizardPage() {
           <Card className="border-slate-200 shadow-sm animate-in fade-in slide-in-from-right-4">
             <CardHeader className="text-center pb-8 pt-10">
               <div className="w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <CheckCircle2 className="w-8 h-8 text-emerald-600" />
+                <CheckCircle className="w-8 h-8 text-emerald-600" />
               </div>
               <CardTitle className="text-2xl font-black">{t("menusWizard.readyToPublish")}</CardTitle>
               <CardDescription>{t("menusWizard.reviewDesc")}</CardDescription>

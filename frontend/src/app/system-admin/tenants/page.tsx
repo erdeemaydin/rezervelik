@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Building2, Plus, Settings2, ShieldCheck, ShieldAlert, Globe, Mail, Search, KeyRound, Copy, CreditCard, SlidersHorizontal } from 'lucide-react';
+import { Buildings, Plus, GearSix, ShieldCheck, ShieldWarning, Globe, Envelope, MagnifyingGlass, Key, Copy, CreditCard, SlidersHorizontal } from '@phosphor-icons/react';
 import {
   Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter
 } from '@/components/ui/dialog';
@@ -257,7 +257,7 @@ export default function TenantManagementPage() {
                     <span className="text-xs font-bold text-slate-700">{t('systemAdmin.activeInstances')}</span>
                 </div>
                 <div className="relative w-64">
-                    <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
+                    <MagnifyingGlass className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
                     <Input placeholder={t('systemAdmin.searchPlaceholder')} className="pl-8 h-8 text-xs bg-white border-slate-200 rounded-md" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
                 </div>
              </div>
@@ -281,7 +281,7 @@ export default function TenantManagementPage() {
                     <TableCell className="px-4">
                       <div className="flex items-center gap-3">
                         <div className="w-8 h-8 rounded bg-emerald-50 flex items-center justify-center text-emerald-600 border border-emerald-100">
-                            <Building2 className="w-4 h-4" />
+                            <Buildings className="w-4 h-4" />
                         </div>
                         <div className="min-w-0">
                             <div className="font-bold text-slate-900 text-xs tracking-tight truncate">{tenant.name}</div>
@@ -297,7 +297,7 @@ export default function TenantManagementPage() {
                                   title={adminName ? `${adminName} · ${email}` : email}
                                   className="mt-0.5 flex items-center gap-1 text-[10px] text-slate-500 hover:text-emerald-600 truncate"
                                 >
-                                  <Mail className="w-3 h-3 shrink-0" />
+                                  <Envelope className="w-3 h-3 shrink-0" />
                                   <span className="truncate">{email}</span>
                                 </a>
                               );
@@ -339,7 +339,7 @@ export default function TenantManagementPage() {
                               {t('systemAdmin.loginAs')}
                           </Button>
                           <Button variant="ghost" size="icon" className="h-7 w-7 text-slate-300 hover:text-emerald-600" onClick={() => openSettings(tenant)}>
-                              <Settings2 className="w-3.5 h-3.5" />
+                              <GearSix className="w-3.5 h-3.5" />
                           </Button>
                         </div>
                     </TableCell>
@@ -432,9 +432,9 @@ export default function TenantManagementPage() {
                         <div className="px-6 pt-4 border-b border-slate-100 sticky top-0 bg-white z-10">
                           <TabsList className="bg-slate-100/60">
                             <TabsTrigger value="subscription" className="text-[10px] font-semibold gap-1.5"><CreditCard className="w-3.5 h-3.5" /> Subscription</TabsTrigger>
-                            <TabsTrigger value="configuration" className="text-[10px] font-semibold gap-1.5"><Settings2 className="w-3.5 h-3.5" /> Configuration</TabsTrigger>
+                            <TabsTrigger value="configuration" className="text-[10px] font-semibold gap-1.5"><GearSix className="w-3.5 h-3.5" /> Configuration</TabsTrigger>
                             <TabsTrigger value="features" className="text-[10px] font-semibold gap-1.5"><SlidersHorizontal className="w-3.5 h-3.5" /> Feature Flags</TabsTrigger>
-                            <TabsTrigger value="admin" className="text-[10px] font-semibold gap-1.5"><ShieldAlert className="w-3.5 h-3.5" /> Admin &amp; Security</TabsTrigger>
+                            <TabsTrigger value="admin" className="text-[10px] font-semibold gap-1.5"><ShieldWarning className="w-3.5 h-3.5" /> Admin &amp; Security</TabsTrigger>
                           </TabsList>
                         </div>
                         <div className="p-6">
@@ -779,7 +779,7 @@ export default function TenantManagementPage() {
                                     </div>
                                     <div className="p-4 border border-slate-200 rounded-md space-y-2">
                                         <div className="flex items-center gap-2">
-                                            <KeyRound className="w-4 h-4 text-amber-500" />
+                                            <Key className="w-4 h-4 text-amber-500" />
                                             <Label className="text-xs font-semibold text-slate-800 tracking-tight">Password Reset</Label>
                                         </div>
                                         <p className="text-[10px] text-slate-400 font-medium leading-relaxed">

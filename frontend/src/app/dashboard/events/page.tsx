@@ -9,7 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import api from '@/lib/api';
 import { toast } from 'sonner';
-import { Plus, Users, CalendarDays, Wallet } from 'lucide-react';
+import { Plus, Users, CalendarDots, Wallet } from '@phosphor-icons/react';
 import { useRouter } from 'next/navigation';
 import { useTranslation } from '@/i18n/provider';
 
@@ -103,7 +103,7 @@ export default function EventsPage() {
         ) : events.length === 0 ? (
           <div className="border border-dashed border-slate-200 rounded-md p-10 text-center flex flex-col items-center gap-3">
             <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center">
-              <CalendarDays className="w-5 h-5 text-slate-400" />
+              <CalendarDots className="w-5 h-5 text-slate-400" />
             </div>
             <p className="text-sm font-bold text-slate-500">{t('events.empty')}</p>
           </div>
@@ -129,7 +129,7 @@ export default function EventsPage() {
                           <Badge variant="outline" className="text-[8px] px-1 h-4 shrink-0">{t(`events.types.${ev.eventType}`)}</Badge>
                         </div>
                         <div className="mt-2 space-y-1 text-[11px] font-bold text-slate-500">
-                          <div className="flex items-center gap-1.5"><CalendarDays className="w-3 h-3" />{ev.eventDate}{ev.resource ? ` · ${ev.resource.identifier}` : ''}</div>
+                          <div className="flex items-center gap-1.5"><CalendarDots className="w-3 h-3" />{ev.eventDate}{ev.resource ? ` · ${ev.resource.identifier}` : ''}</div>
                           <div className="flex items-center gap-1.5"><Users className="w-3 h-3" />{ev.guestCount} · {ev._count?.guests ?? 0} {t('events.guestsShort')}</div>
                           <div className="flex items-center gap-1.5"><Wallet className="w-3 h-3" />{money(ev.quotedTotal)}</div>
                         </div>

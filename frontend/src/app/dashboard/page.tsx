@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Users, Calendar, Clock, Activity, Loader2, CheckCircle2, Clock3, XCircle, AlertCircle } from 'lucide-react';
+import { Users, Calendar, Clock, Pulse, CircleNotch, CheckCircle, XCircle, WarningCircle } from '@phosphor-icons/react';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, ReferenceLine
 } from 'recharts';
@@ -62,7 +62,7 @@ export default function DashboardPage() {
       <>
         <div className="flex h-[70vh] items-center justify-center">
           <div className="flex flex-col items-center gap-4">
-            <Loader2 className="h-10 w-10 animate-spin text-blue-600" />
+            <CircleNotch className="h-10 w-10 animate-spin text-blue-600" />
             <p className="text-slate-500 font-medium">{t('dashboard.loading')}</p>
           </div>
         </div>
@@ -166,7 +166,7 @@ export default function DashboardPage() {
               <div className="flex items-center justify-between space-y-0 pb-2">
                 <p className="text-sm font-semibold text-slate-500">{t('dashboard.actionRequired')}</p>
                 <div className="p-2 bg-rose-50 rounded-lg group-hover:bg-rose-100 transition-colors">
-                  <Activity className="h-5 w-5 text-rose-600" />
+                  <Pulse className="h-5 w-5 text-rose-600" />
                 </div>
               </div>
               <div className="flex items-baseline mt-1 space-x-2">
@@ -189,14 +189,14 @@ export default function DashboardPage() {
               <div className="space-y-6">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <div className="p-2 bg-emerald-100 rounded-lg"><CheckCircle2 className="w-4 h-4 text-emerald-600" /></div>
+                    <div className="p-2 bg-emerald-100 rounded-lg"><CheckCircle className="w-4 h-4 text-emerald-600" /></div>
                     <span className="font-semibold text-slate-700">{t('dashboard.confirmed')}</span>
                   </div>
                   <span className="text-lg font-black tabular-nums text-slate-900">{data.confirmedCount}</span>
                 </div>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <div className="p-2 bg-amber-100 rounded-lg"><Clock3 className="w-4 h-4 text-amber-600" /></div>
+                    <div className="p-2 bg-amber-100 rounded-lg"><Clock className="w-4 h-4 text-amber-600" /></div>
                     <span className="font-semibold text-slate-700">{t('dashboard.pending')}</span>
                   </div>
                   <span className="text-lg font-black tabular-nums text-slate-900">{data.pendingCount}</span>
@@ -210,7 +210,7 @@ export default function DashboardPage() {
                 </div>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <div className="p-2 bg-rose-100 rounded-lg"><AlertCircle className="w-4 h-4 text-rose-600" /></div>
+                    <div className="p-2 bg-rose-100 rounded-lg"><WarningCircle className="w-4 h-4 text-rose-600" /></div>
                     <span className="font-semibold text-slate-700">{t('dashboard.noShow')}</span>
                   </div>
                   <span className="text-lg font-black tabular-nums text-slate-900">{data.noShowCount}</span>

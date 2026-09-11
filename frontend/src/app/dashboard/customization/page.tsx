@@ -12,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import api from '@/lib/api';
 import { toast } from 'sonner';
-import { Save, Palette, Megaphone, FileText, Smartphone, Camera, Share2, Globe, RefreshCw, ExternalLink } from 'lucide-react';
+import { FloppyDisk, Palette, Megaphone, FileText, DeviceMobile, Camera, ShareNetwork, Globe, ArrowClockwise, ArrowSquareOut } from '@phosphor-icons/react';
 
 interface SocialLinks {
     instagram: string;
@@ -212,7 +212,7 @@ export default function CustomizationPage() {
                         <p className="text-xs text-slate-500 font-semibold tracking-[0.2em] mt-2">{t("customization.pageSubtitle")}</p>
                     </div>
                     <Button onClick={handleSave} disabled={loading} className="bg-slate-900 hover:bg-black text-white font-semibold text-xs px-8 h-12 rounded-lg shadow-md transition-all active:scale-95">
-                        {loading ? t("customization.saving") : <><Save className="w-5 h-5 mr-3" /> {t("customization.publishChanges")}</>}
+                        {loading ? t("customization.saving") : <><FloppyDisk className="w-5 h-5 mr-3" /> {t("customization.publishChanges")}</>}
                     </Button>
                 </div>
 
@@ -384,7 +384,7 @@ export default function CustomizationPage() {
                                             />
                                         </div>
                                         <div className="space-y-2">
-                                            <Label className="text-[10px] font-semibold text-slate-400 flex items-center gap-1.5"><Share2 className="w-3 h-3" /> Facebook</Label>
+                                            <Label className="text-[10px] font-semibold text-slate-400 flex items-center gap-1.5"><ShareNetwork className="w-3 h-3" /> Facebook</Label>
                                             <Input
                                                 type="url"
                                                 placeholder="https://facebook.com/your-restaurant"
@@ -447,7 +447,7 @@ export default function CustomizationPage() {
                         <Card className="rounded-sm border-slate-200 shadow-sm bg-slate-50 sticky top-6 overflow-hidden">
                             <CardHeader className="p-6 border-b border-slate-200 flex flex-row items-center justify-between gap-2 space-y-0">
                                 <CardTitle className="text-sm font-semibold tracking-tight flex items-center gap-2">
-                                    <Smartphone className="w-4 h-4" /> {t("customization.preview.title")}
+                                    <DeviceMobile className="w-4 h-4" /> {t("customization.preview.title")}
                                 </CardTitle>
                                 <div className="flex items-center gap-1 shrink-0">
                                     <button
@@ -456,7 +456,7 @@ export default function CustomizationPage() {
                                         title={t("customization.preview.refresh")}
                                         className="h-7 w-7 flex items-center justify-center rounded-md hover:bg-slate-200 text-slate-500 transition-colors"
                                     >
-                                        <RefreshCw className="w-3.5 h-3.5" />
+                                        <ArrowClockwise className="w-3.5 h-3.5" />
                                     </button>
                                     {slug && (
                                         <a
@@ -466,7 +466,7 @@ export default function CustomizationPage() {
                                             title={t("customization.preview.openNewTab")}
                                             className="h-7 w-7 flex items-center justify-center rounded-md hover:bg-slate-200 text-slate-500 transition-colors"
                                         >
-                                            <ExternalLink className="w-3.5 h-3.5" />
+                                            <ArrowSquareOut className="w-3.5 h-3.5" />
                                         </a>
                                     )}
                                 </div>

@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { useState, useEffect } from 'react';
 import api from '@/lib/api';
 import { toast } from 'sonner';
-import { Palette, Check } from 'lucide-react';
+import { Palette, Check } from '@phosphor-icons/react';
 import { ADMIN_THEMES } from '@/lib/themes';
 import { useAdminThemeStore } from '@/store/useAdminThemeStore';
 import { useTranslation } from '@/i18n/provider';
