@@ -48,13 +48,13 @@ export function PhoneInput({ value, onChange, countryHint, className, disabled }
   return (
     <div className={cn("flex flex-col gap-1", className)}>
       <div className="flex gap-2">
-        <div className="flex items-center rounded-md border border-slate-200 bg-slate-50 px-2 h-11 w-20 shrink-0">
-          <span className="text-slate-500 font-bold text-sm">+</span>
+        <div className="flex items-center rounded-md border border-border bg-muted px-2 h-11 w-20 shrink-0">
+          <span className="text-muted-foreground font-bold text-sm">+</span>
           <input
             value={code}
             disabled={disabled}
             onChange={(e) => { const c = digitsOnly(e.target.value).slice(0, 3); setCode(c); emit(c, number); }}
-            className="w-full bg-transparent outline-none text-sm font-bold text-slate-700"
+            className="w-full bg-transparent outline-none text-sm font-bold text-foreground"
             inputMode="numeric"
           />
         </div>
@@ -68,7 +68,7 @@ export function PhoneInput({ value, onChange, countryHint, className, disabled }
           className="h-11 flex-1 text-sm font-bold"
         />
       </div>
-      <span className="text-[10px] text-slate-400">{countryHint || "Enter the number without the leading zero."}</span>
+      <span className="text-[10px] text-muted-foreground">{countryHint || "Enter the number without the leading zero."}</span>
     </div>
   )
 }

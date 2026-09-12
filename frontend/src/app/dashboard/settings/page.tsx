@@ -255,8 +255,8 @@ export default function SettingsPage() {
                             <ArrowLeft className="w-5 h-5" />
                         </Button>
                         <div>
-                            <h1 className="text-2xl font-semibold tracking-tight text-slate-900 font-heading">{t("settings.title")}</h1>
-                            <p className="text-[10px] text-slate-400 font-semibold tracking-[0.2em] mt-1">{t("settings.subtitle")}</p>
+                            <h1 className="text-2xl font-semibold tracking-tight text-foreground font-heading">{t("settings.title")}</h1>
+                            <p className="text-[10px] text-muted-foreground font-semibold tracking-[0.2em] mt-1">{t("settings.subtitle")}</p>
                         </div>
                     </div>
                     <Button onClick={handleSave} disabled={loading} className="bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs px-8 h-12 rounded-md shadow-md shadow-blue-600/20 transition-all active:scale-95">
@@ -265,7 +265,7 @@ export default function SettingsPage() {
                 </div>
 
                 <Tabs defaultValue="reservations" className="w-full">
-                    <TabsList className="bg-slate-100/50">
+                    <TabsList className="bg-muted/50">
                         <TabsTrigger value="reservations" className="text-xs font-bold"><Clock className="w-4 h-4 mr-2" /> {t("settings.tabs.reservations")}</TabsTrigger>
                         <TabsTrigger value="scheduling" className="text-xs font-bold"><Calendar className="w-4 h-4 mr-2" /> {t("settings.tabs.scheduling")}</TabsTrigger>
                         <TabsTrigger value="payments" className="text-xs font-bold"><CreditCard className="w-4 h-4 mr-2" /> {t("settings.tabs.payments")}</TabsTrigger>
@@ -277,9 +277,9 @@ export default function SettingsPage() {
                         silently affects Reservations/Host/Tables elsewhere in the app. */}
                     <TabsContent value="reservations" className="mt-6">
                         <div className="grid grid-cols-1 gap-8">
-                            <Card className="rounded-xl border-border shadow-sm overflow-hidden bg-white">
-                                <CardHeader className="p-6 bg-slate-50/50 border-b border-border flex flex-row items-center gap-4">
-                                    <div className="p-3 bg-purple-100 rounded-lg text-purple-600"><Clock className="w-6 h-6" /></div>
+                            <Card className="rounded-xl border-border shadow-sm overflow-hidden bg-card">
+                                <CardHeader className="p-6 bg-muted/50 border-b border-border flex flex-row items-center gap-4">
+                                    <div className="p-3 bg-purple-100 dark:bg-purple-950/40 rounded-lg text-purple-600 dark:text-purple-400"><Clock className="w-6 h-6" /></div>
                                     <div>
                                         <CardTitle className="text-lg font-semibold tracking-tight">{t("settings.reservationLogic")}</CardTitle>
                                         <CardDescription className="text-sm">{t("settings.reservationLogicDesc")}</CardDescription>
@@ -287,15 +287,15 @@ export default function SettingsPage() {
                                 </CardHeader>
                                 <CardContent className="p-6 space-y-4">
                                     <div className="flex items-center justify-between">
-                                        <Label className="text-sm font-bold text-slate-700">{t("settings.acceptOnlineReservations")}</Label>
+                                        <Label className="text-sm font-bold text-foreground">{t("settings.acceptOnlineReservations")}</Label>
                                         <Switch checked={settings.isReservationEnabled} onCheckedChange={(v: boolean) => setSettings(prev => ({...prev, isReservationEnabled: v}))} className="scale-125" />
                                     </div>
                                     <div className="grid gap-3 pt-4">
-                                        <Label className="text-xs font-semibold text-slate-500">{t("settings.defaultDuration")}</Label>
+                                        <Label className="text-xs font-semibold text-muted-foreground">{t("settings.defaultDuration")}</Label>
                                         <Input type="number" value={settings.defaultDurationMinutes} onChange={(e) => setSettings({...settings, defaultDurationMinutes: parseInt(e.target.value)})} className="h-12 text-base font-bold rounded-lg px-4" />
                                     </div>
                                     <div className="grid gap-3 pt-2">
-                                        <Label className="text-xs font-semibold text-slate-500">{t("settings.assignmentLogic")}</Label>
+                                        <Label className="text-xs font-semibold text-muted-foreground">{t("settings.assignmentLogic")}</Label>
                                         <Select value={settings.logic || 'DYNAMIC_DURATION'} onValueChange={(v: string | null) => setSettings(prev => ({...prev, logic: v || 'DYNAMIC_DURATION'}))}>
                                             <SelectTrigger className="h-12 text-sm font-bold rounded-lg px-4">
                                                 <SelectValue placeholder={t("settings.selectLogic")} />
@@ -307,35 +307,35 @@ export default function SettingsPage() {
                                                 </SelectContent>
                                         </Select>
                                         {/* Explain how the chosen mode computes a booking's end time / conflict check. */}
-                                        <p className="text-[11px] text-slate-500 leading-relaxed bg-slate-50 border border-border rounded-md p-2.5">
+                                        <p className="text-[11px] text-muted-foreground leading-relaxed bg-muted border border-border rounded-md p-2.5">
                                             {t(`settings.logicExplain.${settings.logic === 'DYNAMIC_DURATION' || settings.logic === 'MANUAL_AVAILABILITY' ? settings.logic : 'FIXED_SLOTS'}`)}
                                         </p>
                                     </div>
                                     <div className="grid gap-3 pt-2">
-                                        <Label className="text-xs font-semibold text-slate-500">{t("settings.maxPartySize")}</Label>
+                                        <Label className="text-xs font-semibold text-muted-foreground">{t("settings.maxPartySize")}</Label>
                                         <Input type="number" min="1" max="30" value={settings.maxPartySize}
                                             onChange={(e) => setSettings(prev => ({...prev, maxPartySize: Math.max(1, parseInt(e.target.value) || 1)}))}
                                             className="h-12 text-base font-bold rounded-lg px-4" />
-                                        <p className="text-[10px] text-slate-400 leading-relaxed">{t("settings.maxPartySizeHint")}</p>
+                                        <p className="text-[10px] text-muted-foreground leading-relaxed">{t("settings.maxPartySizeHint")}</p>
                                     </div>
                                     {/* Opening / closing hours (#1.3) — bounds booking times and the analytics heatmap axis */}
                                     <div className="grid grid-cols-2 gap-4 pt-2">
                                         <div className="grid gap-3">
-                                            <Label className="text-xs font-semibold text-slate-500">{t("settings.openingHour")}</Label>
+                                            <Label className="text-xs font-semibold text-muted-foreground">{t("settings.openingHour")}</Label>
                                             <Input type="number" min="0" max="23" value={settings.openingHour}
                                                 onChange={(e) => setSettings(prev => ({...prev, openingHour: Math.min(23, Math.max(0, parseInt(e.target.value) || 0))}))}
                                                 className="h-12 text-base font-bold rounded-lg px-4" />
                                         </div>
                                         <div className="grid gap-3">
-                                            <Label className="text-xs font-semibold text-slate-500">{t("settings.closingHour")}</Label>
+                                            <Label className="text-xs font-semibold text-muted-foreground">{t("settings.closingHour")}</Label>
                                             <Input type="number" min="0" max="23" value={settings.closingHour}
                                                 onChange={(e) => setSettings(prev => ({...prev, closingHour: Math.min(23, Math.max(0, parseInt(e.target.value) || 0))}))}
                                                 className="h-12 text-base font-bold rounded-lg px-4" />
                                         </div>
-                                        <p className="text-[10px] text-slate-400 leading-relaxed col-span-2">{t("settings.openingHoursHint")}</p>
+                                        <p className="text-[10px] text-muted-foreground leading-relaxed col-span-2">{t("settings.openingHoursHint")}</p>
                                     </div>
                                     <div className="grid gap-3 pt-2">
-                                        <Label className="text-xs font-semibold text-slate-500">{t("settings.timezone")}</Label>
+                                        <Label className="text-xs font-semibold text-muted-foreground">{t("settings.timezone")}</Label>
                                         <Select value={settings.timezone || 'Europe/Istanbul'} onValueChange={(v: string | null) => setSettings(prev => ({...prev, timezone: v || 'Europe/Istanbul'}))}>
                                             <SelectTrigger className="h-12 text-sm font-bold rounded-lg px-4">
                                                 <SelectValue placeholder={t("settings.timezone")} />
@@ -346,14 +346,14 @@ export default function SettingsPage() {
                                                 ))}
                                             </SelectContent>
                                         </Select>
-                                        <p className="text-[10px] text-slate-400 leading-relaxed">{t("settings.timezoneHint")}</p>
+                                        <p className="text-[10px] text-muted-foreground leading-relaxed">{t("settings.timezoneHint")}</p>
                                     </div>
                                 </CardContent>
                             </Card>
 
-                            <Card className="rounded-xl border-border shadow-sm overflow-hidden bg-white">
-                                <CardHeader className="p-6 bg-slate-50/50 border-b border-border flex flex-row items-center gap-4">
-                                    <div className="p-3 bg-amber-100 rounded-lg text-amber-600"><Users className="w-6 h-6" /></div>
+                            <Card className="rounded-xl border-border shadow-sm overflow-hidden bg-card">
+                                <CardHeader className="p-6 bg-muted/50 border-b border-border flex flex-row items-center gap-4">
+                                    <div className="p-3 bg-amber-100 dark:bg-amber-950/40 rounded-lg text-amber-600 dark:text-amber-400"><Users className="w-6 h-6" /></div>
                                     <div>
                                         <CardTitle className="text-lg font-semibold tracking-tight">{t("settings.overbooking")}</CardTitle>
                                         <CardDescription className="text-sm">{t("settings.overbookingDesc")}</CardDescription>
@@ -361,34 +361,34 @@ export default function SettingsPage() {
                                 </CardHeader>
                                 <CardContent className="p-6 space-y-4">
                                     <div className="flex items-center justify-between">
-                                        <Label className="text-sm font-bold text-slate-700">{t("settings.allowOverbooking")}</Label>
+                                        <Label className="text-sm font-bold text-foreground">{t("settings.allowOverbooking")}</Label>
                                         <Switch checked={settings.allowOverbooking} onCheckedChange={(v: boolean) => setSettings(prev => ({...prev, allowOverbooking: v}))} className="scale-125" />
                                     </div>
-                                    <p className="text-[10px] text-slate-400 leading-relaxed">{t("settings.allowOverbookingHint")}</p>
+                                    <p className="text-[10px] text-muted-foreground leading-relaxed">{t("settings.allowOverbookingHint")}</p>
                                     <div className="grid grid-cols-2 gap-4 pt-2">
                                         <div className="grid gap-3">
-                                            <Label className="text-xs font-semibold text-slate-500">{t("settings.overbookingMaxExtraCovers")}</Label>
+                                            <Label className="text-xs font-semibold text-muted-foreground">{t("settings.overbookingMaxExtraCovers")}</Label>
                                             <Input type="number" min="1" disabled={!settings.allowOverbooking}
                                                 value={settings.overbookingMaxExtraCovers ?? ''}
                                                 onChange={(e) => setSettings(prev => ({...prev, overbookingMaxExtraCovers: e.target.value === '' ? null : parseInt(e.target.value)}))}
                                                 className="h-12 text-base font-bold rounded-lg px-4" />
-                                            <p className="text-[10px] text-slate-400 leading-relaxed">{t("settings.overbookingMaxExtraCoversHint")}</p>
+                                            <p className="text-[10px] text-muted-foreground leading-relaxed">{t("settings.overbookingMaxExtraCoversHint")}</p>
                                         </div>
                                         <div className="grid gap-3">
-                                            <Label className="text-xs font-semibold text-slate-500">{t("settings.overbookingMaxExtraReservations")}</Label>
+                                            <Label className="text-xs font-semibold text-muted-foreground">{t("settings.overbookingMaxExtraReservations")}</Label>
                                             <Input type="number" min="1" disabled={!settings.allowOverbooking}
                                                 value={settings.overbookingMaxExtraReservations ?? ''}
                                                 onChange={(e) => setSettings(prev => ({...prev, overbookingMaxExtraReservations: e.target.value === '' ? null : parseInt(e.target.value)}))}
                                                 className="h-12 text-base font-bold rounded-lg px-4" />
-                                            <p className="text-[10px] text-slate-400 leading-relaxed">{t("settings.overbookingMaxExtraReservationsHint")}</p>
+                                            <p className="text-[10px] text-muted-foreground leading-relaxed">{t("settings.overbookingMaxExtraReservationsHint")}</p>
                                         </div>
                                     </div>
                                 </CardContent>
                             </Card>
 
-                            <Card className="rounded-xl border-border shadow-sm overflow-hidden bg-white">
-                                <CardHeader className="p-6 bg-slate-50/50 border-b border-border flex flex-row items-center gap-4">
-                                    <div className="p-3 bg-indigo-100 rounded-lg text-indigo-600"><CalendarCheck className="w-6 h-6" /></div>
+                            <Card className="rounded-xl border-border shadow-sm overflow-hidden bg-card">
+                                <CardHeader className="p-6 bg-muted/50 border-b border-border flex flex-row items-center gap-4">
+                                    <div className="p-3 bg-indigo-100 dark:bg-indigo-950/40 rounded-lg text-indigo-600 dark:text-indigo-400"><CalendarCheck className="w-6 h-6" /></div>
                                     <div>
                                         <CardTitle className="text-lg font-semibold tracking-tight">{t("settings.calendarCustomization")}</CardTitle>
                                         <CardDescription className="text-sm">{t("settings.calendarCustomizationDesc")}</CardDescription>
@@ -396,18 +396,18 @@ export default function SettingsPage() {
                                 </CardHeader>
                                 <CardContent className="p-8 space-y-6">
                                     <div className="grid gap-4 max-w-2xl">
-                                        <Label className="text-sm font-semibold text-slate-500">{t("settings.setFutureMode")}</Label>
+                                        <Label className="text-sm font-semibold text-muted-foreground">{t("settings.setFutureMode")}</Label>
                                         <Select value={futureModeAction || ''} onValueChange={(v) => { setFutureModeAction(v); setIsFutureDialogOpen(true); }}>
                                             <SelectTrigger className="h-14 text-base font-bold rounded-lg border-border px-4">
                                                 <SelectValue placeholder={t("settings.selectBulkAction")} />
                                             </SelectTrigger>
                                             <SelectContent>
-                                                <SelectItem value="AUTO_CONFIRM" className="text-sm font-bold py-3"><div className="flex items-center text-emerald-700"><Check className="w-5 h-5 mr-3" /> {t("settings.autoConfirmBulk")}</div></SelectItem>
-                                                <SelectItem value="STANDARD" className="text-sm font-bold py-3"><div className="flex items-center text-amber-700"><Timer className="w-5 h-5 mr-3" /> {t("settings.standardBulk")}</div></SelectItem>
-                                                <SelectItem value="BLACKOUT" className="text-sm font-bold py-3"><div className="flex items-center text-red-700"><WarningCircle className="w-5 h-5 mr-3" /> {t("settings.blackoutBulk")}</div></SelectItem>
+                                                <SelectItem value="AUTO_CONFIRM" className="text-sm font-bold py-3"><div className="flex items-center text-emerald-700 dark:text-emerald-400"><Check className="w-5 h-5 mr-3" /> {t("settings.autoConfirmBulk")}</div></SelectItem>
+                                                <SelectItem value="STANDARD" className="text-sm font-bold py-3"><div className="flex items-center text-amber-700 dark:text-amber-400"><Timer className="w-5 h-5 mr-3" /> {t("settings.standardBulk")}</div></SelectItem>
+                                                <SelectItem value="BLACKOUT" className="text-sm font-bold py-3"><div className="flex items-center text-red-700 dark:text-red-400"><WarningCircle className="w-5 h-5 mr-3" /> {t("settings.blackoutBulk")}</div></SelectItem>
                                             </SelectContent>
                                         </Select>
-                                        <p className="text-sm text-slate-500 leading-relaxed mt-2">{t("settings.bulkActionDesc")}</p>
+                                        <p className="text-sm text-muted-foreground leading-relaxed mt-2">{t("settings.bulkActionDesc")}</p>
                                     </div>
                                 </CardContent>
                             </Card>
@@ -418,8 +418,8 @@ export default function SettingsPage() {
                         Scheduling page (shift assignment); this is the config that page reads. */}
                     <TabsContent value="scheduling" className="mt-6">
                         <div className="grid grid-cols-1 gap-8">
-                            <Card className="rounded-xl border-border shadow-sm overflow-hidden bg-white">
-                                <CardHeader className="p-6 bg-slate-50/50 border-b border-border flex flex-row items-center gap-4">
+                            <Card className="rounded-xl border-border shadow-sm overflow-hidden bg-card">
+                                <CardHeader className="p-6 bg-muted/50 border-b border-border flex flex-row items-center gap-4">
                                     <div className="p-3 bg-blue-100 rounded-lg text-blue-600"><Calendar className="w-6 h-6" /></div>
                                     <div>
                                         <CardTitle className="text-lg font-semibold tracking-tight">{t("settings.schedulingOperations")}</CardTitle>
@@ -429,29 +429,29 @@ export default function SettingsPage() {
                                 <CardContent className="p-6">
                                     <div className="grid gap-6">
                                         <div className="flex flex-col gap-3">
-                                            <Label className="text-xs font-semibold text-slate-500">{t("settings.rosterPreference")}</Label>
+                                            <Label className="text-xs font-semibold text-muted-foreground">{t("settings.rosterPreference")}</Label>
                                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                                 <div
                                                     onClick={() => setSettings({...settings, schedulingSystem: 'WEEKLY'})}
                                                     className={`p-4 border-2 rounded-md cursor-pointer transition-all ${settings.schedulingSystem === 'WEEKLY' ? 'border-blue-600 bg-blue-50/50' : 'border-border hover:border-ring'}`}
                                                 >
-                                                    <div className="font-black text-sm text-slate-800">{t("settings.weeklyView")}</div>
-                                                    <p className="text-[10px] text-slate-500 mt-1 leading-relaxed">{t("settings.weeklyDesc")}</p>
+                                                    <div className="font-black text-sm text-foreground">{t("settings.weeklyView")}</div>
+                                                    <p className="text-[10px] text-muted-foreground mt-1 leading-relaxed">{t("settings.weeklyDesc")}</p>
                                                 </div>
                                                 <div
                                                     onClick={() => setSettings({...settings, schedulingSystem: 'MONTHLY'})}
                                                     className={`p-4 border-2 rounded-md cursor-pointer transition-all ${settings.schedulingSystem === 'MONTHLY' ? 'border-blue-600 bg-blue-50/50' : 'border-border hover:border-ring'}`}
                                                 >
-                                                    <div className="font-black text-sm text-slate-800">{t("settings.monthlyView")}</div>
-                                                    <p className="text-[10px] text-slate-500 mt-1 leading-relaxed">{t("settings.monthlyDesc")}</p>
+                                                    <div className="font-black text-sm text-foreground">{t("settings.monthlyView")}</div>
+                                                    <p className="text-[10px] text-muted-foreground mt-1 leading-relaxed">{t("settings.monthlyDesc")}</p>
                                                 </div>
                                             </div>
                                         </div>
 
                                         <div className="pt-4 border-t border-border space-y-3">
                                             <div className="space-y-0.5">
-                                                <Label className="text-xs font-bold text-slate-700">{t("settings.staffPrivacy")}</Label>
-                                                <p className="text-[10px] text-slate-400">{t("settings.staffPrivacyDesc")}</p>
+                                                <Label className="text-xs font-bold text-foreground">{t("settings.staffPrivacy")}</Label>
+                                                <p className="text-[10px] text-muted-foreground">{t("settings.staffPrivacyDesc")}</p>
                                             </div>
                                             <Select
                                                 value={settings.staffScheduleView}
@@ -467,15 +467,15 @@ export default function SettingsPage() {
                                                 </SelectContent>
                                             </Select>
                                             {/* What the selected privacy mode actually exposes to staff. */}
-                                            <p className="text-[11px] text-slate-500 leading-relaxed bg-slate-50 border border-border rounded-md p-2.5">
+                                            <p className="text-[11px] text-muted-foreground leading-relaxed bg-muted border border-border rounded-md p-2.5">
                                                 {t(`settings.privacyExplain.${settings.staffScheduleView}`)}
                                             </p>
                                         </div>
 
                                         <div className="pt-4 border-t border-border space-y-3">
                                             <div className="space-y-0.5">
-                                                <Label className="text-xs font-bold text-slate-700">{t("settings.defaultBreak")}</Label>
-                                                <p className="text-[10px] text-slate-400">{t("settings.defaultBreakDesc")}</p>
+                                                <Label className="text-xs font-bold text-foreground">{t("settings.defaultBreak")}</Label>
+                                                <p className="text-[10px] text-muted-foreground">{t("settings.defaultBreakDesc")}</p>
                                             </div>
                                             <Select
                                                 value={String(settings.defaultBreakMinutes)}
@@ -502,9 +502,9 @@ export default function SettingsPage() {
                         which is the transaction ledger. */}
                     <TabsContent value="payments" className="mt-6">
                         <div className="grid grid-cols-1 gap-8">
-                            <Card className="rounded-xl border-border shadow-sm overflow-hidden bg-white">
-                                <CardHeader className="p-6 bg-slate-50/50 border-b border-border flex flex-row items-center gap-4">
-                                    <div className="p-3 bg-emerald-100 rounded-lg text-emerald-600"><CreditCard className="w-6 h-6" /></div>
+                            <Card className="rounded-xl border-border shadow-sm overflow-hidden bg-card">
+                                <CardHeader className="p-6 bg-muted/50 border-b border-border flex flex-row items-center gap-4">
+                                    <div className="p-3 bg-emerald-100 dark:bg-emerald-950/40 rounded-lg text-emerald-600 dark:text-emerald-400"><CreditCard className="w-6 h-6" /></div>
                                     <div>
                                         <CardTitle className="text-lg font-semibold tracking-tight">{t("settings.paymentsDeposits")}</CardTitle>
                                         <CardDescription className="text-sm">{t("settings.secureBookings")}</CardDescription>
@@ -512,28 +512,28 @@ export default function SettingsPage() {
                                 </CardHeader>
                                 <CardContent className="p-6 space-y-6">
                                     <div className="flex items-center justify-between">
-                                        <Label className="text-sm font-bold text-slate-700">{t("settings.enableDeposit")}</Label>
+                                        <Label className="text-sm font-bold text-foreground">{t("settings.enableDeposit")}</Label>
                                         <Switch checked={settings.isPaidReservationEnabled} onCheckedChange={(v: boolean) => setSettings(prev => ({...prev, isPaidReservationEnabled: v}))} className="scale-125" />
                                     </div>
                                     <div className="grid gap-3 pt-4">
-                                        <Label className="text-xs font-semibold text-slate-500">{t("settings.depositAmount")}</Label>
+                                        <Label className="text-xs font-semibold text-muted-foreground">{t("settings.depositAmount")}</Label>
                                         <div className="relative">
                                             <Input type="number" disabled={!settings.isPaidReservationEnabled} value={settings.depositAmount || 0} onChange={(e) => {
                                                 const val = parseFloat(e.target.value);
                                                 setSettings(prev => ({...prev, depositAmount: isNaN(val) ? 0 : val}));
                                             }} className="h-12 text-base font-bold rounded-lg px-4 pr-16" />
-                                            <div className="absolute right-4 top-3.5 text-sm font-black text-slate-400">{settings.currency}</div>
+                                            <div className="absolute right-4 top-3.5 text-sm font-black text-muted-foreground">{settings.currency}</div>
                                         </div>
                                     </div>
                                     <div className="grid gap-3 pt-2">
-                                        <Label className="text-xs font-semibold text-slate-500">{t("settings.currency")}</Label>
+                                        <Label className="text-xs font-semibold text-muted-foreground">{t("settings.currency")}</Label>
                                         {/* Currency is a platform-wide setting configured by the system
                                             administrator — shown read-only to the tenant admin. */}
-                                        <div className="h-12 flex items-center justify-between rounded-lg px-4 border border-border bg-slate-50">
-                                            <span className="text-base font-black text-slate-700">{settings.currency || 'TRY'}</span>
-                                            <span className="text-[10px] font-bold text-slate-400">{t("settings.currencyManagedBySystem")}</span>
+                                        <div className="h-12 flex items-center justify-between rounded-lg px-4 border border-border bg-muted">
+                                            <span className="text-base font-black text-foreground">{settings.currency || 'TRY'}</span>
+                                            <span className="text-[10px] font-bold text-muted-foreground">{t("settings.currencyManagedBySystem")}</span>
                                         </div>
-                                        <p className="text-[10px] text-slate-400 leading-relaxed">{t("settings.currencyHint")}</p>
+                                        <p className="text-[10px] text-muted-foreground leading-relaxed">{t("settings.currencyHint")}</p>
                                     </div>
                                 </CardContent>
                             </Card>
@@ -552,8 +552,8 @@ export default function SettingsPage() {
                         public-facing site's branding. */}
                     <TabsContent value="appearance" className="mt-6">
                         <div className="grid grid-cols-1 gap-8">
-                            <Card className="rounded-xl border-border shadow-sm overflow-hidden bg-white">
-                                <CardHeader className="p-6 bg-slate-50/50 border-b border-border flex flex-row items-center gap-4">
+                            <Card className="rounded-xl border-border shadow-sm overflow-hidden bg-card">
+                                <CardHeader className="p-6 bg-muted/50 border-b border-border flex flex-row items-center gap-4">
                                     <div className="p-3 bg-blue-100 rounded-lg text-blue-600"><Palette className="w-6 h-6" /></div>
                                     <div>
                                         <CardTitle className="text-lg font-semibold tracking-tight">{t("settings.appearance")}</CardTitle>
@@ -569,7 +569,7 @@ export default function SettingsPage() {
                                                     key={th.id}
                                                     type="button"
                                                     onClick={() => { setSettings(prev => ({ ...prev, dashboardTheme: th.id })); useAdminThemeStore.getState().setTheme(th.id); }}
-                                                    className={`relative flex flex-col items-stretch gap-2 rounded-lg border-2 p-2.5 text-left transition-all ${active ? 'border-slate-800 shadow-sm' : 'border-border hover:border-ring'}`}
+                                                    className={`relative flex flex-col items-stretch gap-2 rounded-lg border-2 p-2.5 text-left transition-all ${active ? 'border-foreground shadow-sm' : 'border-border hover:border-ring'}`}
                                                     aria-pressed={active}
                                                 >
                                                     {/* Palette preview: sidebar rail + surface + accent dot */}
@@ -580,14 +580,14 @@ export default function SettingsPage() {
                                                         </span>
                                                     </div>
                                                     <span className="flex items-center justify-between">
-                                                        <span className="text-[11px] font-semibold tracking-tight text-slate-700">{t(th.labelKey)}</span>
-                                                        {active && <Check className="h-3.5 w-3.5 text-slate-800" />}
+                                                        <span className="text-[11px] font-semibold tracking-tight text-foreground">{t(th.labelKey)}</span>
+                                                        {active && <Check className="h-3.5 w-3.5 text-foreground" />}
                                                     </span>
                                                 </button>
                                             );
                                         })}
                                     </div>
-                                    <p className="mt-3 text-[11px] text-slate-500 leading-relaxed">{t("settings.appearanceHint")}</p>
+                                    <p className="mt-3 text-[11px] text-muted-foreground leading-relaxed">{t("settings.appearanceHint")}</p>
                                 </CardContent>
                             </Card>
                         </div>
@@ -596,7 +596,7 @@ export default function SettingsPage() {
             </div>
 
             <Dialog open={isFutureDialogOpen} onOpenChange={(open) => { if (!open) setFutureModeAction(null); setIsFutureDialogOpen(open); }}>
-                <DialogContent className="sm:max-w-md bg-white border-0 shadow-2xl p-0 rounded-md overflow-hidden">
+                <DialogContent className="sm:max-w-md bg-card border-0 shadow-2xl p-0 rounded-md overflow-hidden">
                     <div className="bg-amber-500 p-6">
                         <DialogHeader>
                             <DialogTitle className="text-white text-xl font-semibold tracking-tight flex items-center gap-2">
@@ -605,13 +605,13 @@ export default function SettingsPage() {
                         </DialogHeader>
                     </div>
                     <div className="p-6 space-y-4">
-                        <DialogDescription className="text-slate-700 font-medium leading-relaxed">
+                        <DialogDescription className="text-foreground font-medium leading-relaxed">
                             {t("settings.changeDefaultMode1")} <span className="font-black">
                                 {futureModeAction === 'AUTO_CONFIRM' ? t("settings.autoConfirmText") : futureModeAction === 'BLACKOUT' ? t("settings.blackoutText") : t("settings.standardText")}
                             </span> {t("settings.changeDefaultMode2")}
                         </DialogDescription>
                     </div>
-                    <div className="p-4 bg-slate-50 flex flex-col gap-2 border-t border-border">
+                    <div className="p-4 bg-muted flex flex-col gap-2 border-t border-border">
                         <Button 
                             onClick={() => handleFutureApply(true)} 
                             className="w-full h-12 bg-red-600 hover:bg-red-700 text-white font-semibold"
@@ -628,7 +628,7 @@ export default function SettingsPage() {
                         <Button 
                             onClick={() => { setIsFutureDialogOpen(false); setFutureModeAction(null); }} 
                             variant="ghost"
-                            className="w-full h-10 text-slate-400 hover:text-slate-600 font-bold"
+                            className="w-full h-10 text-muted-foreground hover:text-muted-foreground font-bold"
                         >
                             {t("settings.cancelAction")}
                         </Button>

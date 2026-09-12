@@ -48,7 +48,7 @@ export default function EventDetailPage() {
   const [vendorPick, setVendorPick] = useState('');
 
   const money = (minor: number | null | undefined) => (minor == null ? '—' : `₺${(minor / 100).toLocaleString('tr-TR')}`);
-  const selectClass = 'h-10 px-2 text-sm font-bold border border-border rounded-sm bg-white transition-colors outline-none hover:border-ring focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50';
+  const selectClass = 'h-10 px-2 text-sm font-bold border border-border rounded-sm bg-card transition-colors outline-none hover:border-ring focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50';
 
   const load = useCallback(async () => {
     try {
@@ -203,7 +203,7 @@ export default function EventDetailPage() {
   };
 
   if (loading || !form) {
-    return <><div className="p-6 text-sm text-slate-400">{t('common.loading')}</div></>;
+    return <><div className="p-6 text-sm text-muted-foreground">{t('common.loading')}</div></>;
   }
 
   const installments: Installment[] = event?.paymentPlan?.installments || [];
@@ -220,19 +220,19 @@ export default function EventDetailPage() {
   return (
     <>
       <div className="p-4 sm:p-6 space-y-6 max-w-5xl">
-        <button onClick={() => router.push('/dashboard/events')} className="flex items-center gap-1.5 text-xs font-bold text-slate-400 hover:text-slate-700">
+        <button onClick={() => router.push('/dashboard/events')} className="flex items-center gap-1.5 text-xs font-bold text-muted-foreground hover:text-foreground">
           <ArrowLeft className="w-4 h-4" /> {t('events.backToBoard')}
         </button>
 
         <div className="flex items-center justify-between flex-wrap gap-3">
           <div>
-            <h1 className="text-2xl font-semibold tracking-tight text-slate-900 font-heading">{form.clientName}</h1>
-            <p className="text-xs text-slate-400 font-bold">{t(`events.types.${form.eventType}`)} · {form.eventDate}</p>
+            <h1 className="text-2xl font-semibold tracking-tight text-foreground font-heading">{form.clientName}</h1>
+            <p className="text-xs text-muted-foreground font-bold">{t(`events.types.${form.eventType}`)} · {form.eventDate}</p>
           </div>
           <div className="flex flex-wrap gap-1">
             {STAGES.map(s => (
               <button key={s} onClick={() => setStage(s)}
- className={`text-[10px] font-semibold px-2 py-1 rounded-sm border ${form.stage === s ?'bg-slate-900 text-white border-slate-900':'bg-white text-slate-500 border-border hover:border-ring'}`}>
+ className={`text-[10px] font-semibold px-2 py-1 rounded-sm border ${form.stage === s ?'bg-slate-900 text-white border-slate-900':'bg-card text-muted-foreground border-border hover:border-ring'}`}>
                 {t(`events.stages.${s}`)}
               </button>
             ))}
@@ -277,7 +277,7 @@ export default function EventDetailPage() {
             <Field label={t('events.form.quotedTotal')}>
               <Input type="number" min="0" step="0.01" value={form.quotedTotal} onChange={e => setForm({ ...form, quotedTotal: e.target.value })} className="h-10 text-sm font-bold font-mono" />
               {quotePreview != null && (
-                <span className="text-[10px] font-bold text-slate-400">{t('events.quotePreview')}: {money(quotePreview)} ({t('events.pricePerPerson')})</span>
+                <span className="text-[10px] font-bold text-muted-foreground">{t('events.quotePreview')}: {money(quotePreview)} ({t('events.pricePerPerson')})</span>
               )}
             </Field>
             <div className="sm:col-span-2">
@@ -305,18 +305,18 @@ export default function EventDetailPage() {
                 <Button type="submit" size="sm" className="h-9 shrink-0"><Plus className="w-4 h-4" /></Button>
               </form>
               <div className="space-y-1.5">
-                {guests.length === 0 && <p className="text-xs text-slate-400">{t('events.noGuests')}</p>}
+                {guests.length === 0 && <p className="text-xs text-muted-foreground">{t('events.noGuests')}</p>}
                 {guests.map(g => (
                   <div key={g.id} className="flex items-center gap-2 border border-border rounded-sm px-2 py-1.5">
                     <span className="font-bold text-sm truncate flex-1">
                       {g.name}
-                      {g.respondedAt && <span title={t('events.selfResponded')} className="ml-1 text-emerald-500">•</span>}
+                      {g.respondedAt && <span title={t('events.selfResponded')} className="ml-1 text-emerald-500 dark:text-emerald-400">•</span>}
                     </span>
-                    <span className="text-[10px] font-bold text-slate-400">×{g.partySize}</span>
-                    <select value={g.rsvp} onChange={e => patchGuest(g.id, { rsvp: e.target.value })} className="h-7 text-[10px] font-bold border border-border rounded-sm bg-white transition-colors outline-none hover:border-ring focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50">
+                    <span className="text-[10px] font-bold text-muted-foreground">×{g.partySize}</span>
+                    <select value={g.rsvp} onChange={e => patchGuest(g.id, { rsvp: e.target.value })} className="h-7 text-[10px] font-bold border border-border rounded-sm bg-card transition-colors outline-none hover:border-ring focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50">
                       {RSVP.map(r => <option key={r} value={r}>{t(`events.rsvp.${r}`)}</option>)}
                     </select>
-                    <button onClick={() => delGuest(g.id)} className="text-slate-300 hover:text-rose-500"><Trash className="w-3.5 h-3.5" /></button>
+                    <button onClick={() => delGuest(g.id)} className="text-slate-300 hover:text-rose-500 dark:text-rose-400"><Trash className="w-3.5 h-3.5" /></button>
                   </div>
                 ))}
               </div>
@@ -328,7 +328,7 @@ export default function EventDetailPage() {
             <CardHeader>
               <CardTitle className="text-sm font-semibold flex items-center gap-2">
                 <Wallet className="w-4 h-4" />{t('events.paymentTitle')}
-                <span className="ml-auto text-[11px] font-bold text-emerald-600">{money(paidSum)} / {money(event?.paymentPlan?.totalAmount)}</span>
+                <span className="ml-auto text-[11px] font-bold text-emerald-600 dark:text-emerald-400">{money(paidSum)} / {money(event?.paymentPlan?.totalAmount)}</span>
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
@@ -343,16 +343,16 @@ export default function EventDetailPage() {
                 <Button type="submit" size="sm" className="col-span-3 h-8"><Plus className="w-3.5 h-3.5 mr-1" />{t('events.addInstallment')}</Button>
               </form>
               <div className="space-y-1.5">
-                {installments.length === 0 && <p className="text-xs text-slate-400">{t('events.noInstallments')}</p>}
+                {installments.length === 0 && <p className="text-xs text-muted-foreground">{t('events.noInstallments')}</p>}
                 {installments.map(inst => (
                   <div key={inst.id} className="flex items-center gap-2 border border-border rounded-sm px-2 py-1.5">
                     <button onClick={() => toggleInstallmentPaid(inst)} title={t('events.markPaid')}>
-                      <CheckCircle className={`w-4 h-4 ${inst.status === 'PAID' ? 'text-emerald-500' : 'text-slate-300'}`} />
+                      <CheckCircle className={`w-4 h-4 ${inst.status === 'PAID' ? 'text-emerald-500 dark:text-emerald-400' : 'text-slate-300'}`} />
                     </button>
                     <span className="font-bold text-sm truncate flex-1">{inst.label || t('events.installment')}</span>
-                    <span className="text-[10px] font-bold text-slate-400">{inst.dueDate}</span>
+                    <span className="text-[10px] font-bold text-muted-foreground">{inst.dueDate}</span>
                     <span className="text-sm font-black font-mono">{money(inst.amount)}</span>
-                    <button onClick={() => delInstallment(inst.id)} className="text-slate-300 hover:text-rose-500"><Trash className="w-3.5 h-3.5" /></button>
+                    <button onClick={() => delInstallment(inst.id)} className="text-slate-300 hover:text-rose-500 dark:text-rose-400"><Trash className="w-3.5 h-3.5" /></button>
                   </div>
                 ))}
               </div>
@@ -369,7 +369,7 @@ export default function EventDetailPage() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            {guests.length === 0 && <p className="text-xs text-slate-400">{t('events.noGuests')}</p>}
+            {guests.length === 0 && <p className="text-xs text-muted-foreground">{t('events.noGuests')}</p>}
             {guests.length > 0 && (
               <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
                 {/* Unseated bucket */}
@@ -416,18 +416,18 @@ export default function EventDetailPage() {
               <Button onClick={addVendor} size="sm" className="h-10 shrink-0" disabled={!vendorPick}><Plus className="w-4 h-4 mr-1" />{t('events.addVendor')}</Button>
             </div>
             <div className="space-y-1.5">
-              {vendors.length === 0 && <p className="text-xs text-slate-400">{t('events.noVendors')}</p>}
+              {vendors.length === 0 && <p className="text-xs text-muted-foreground">{t('events.noVendors')}</p>}
               {vendors.map(v => (
                 <div key={v.id} className="flex items-center gap-2 border border-border rounded-sm px-2 py-1.5 flex-wrap">
                   <span className="font-bold text-sm truncate flex-1 min-w-[120px]">{v.vendor.name}
-                    <span className="ml-1.5 text-[10px] font-bold text-slate-400">{t(`vendors.categories.${v.vendor.category}`)}</span>
+                    <span className="ml-1.5 text-[10px] font-bold text-muted-foreground">{t(`vendors.categories.${v.vendor.category}`)}</span>
                   </span>
                   <Input defaultValue={v.role || ''} onBlur={e => e.target.value !== (v.role || '') && patchVendor(v.id, { role: e.target.value })} placeholder={t('events.vendorRole')} className="h-8 w-28 text-xs font-bold" />
                   <Input type="number" min="0" step="0.01" defaultValue={v.cost != null ? String(v.cost / 100) : ''} onBlur={e => patchVendor(v.id, { cost: e.target.value === '' ? null : Math.round(parseFloat(e.target.value) * 100) })} placeholder="₺" className="h-8 w-20 text-xs font-bold font-mono" />
-                  <select value={v.status} onChange={e => patchVendor(v.id, { status: e.target.value })} className="h-8 text-[10px] font-bold border border-border rounded-sm bg-white transition-colors outline-none hover:border-ring focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50">
+                  <select value={v.status} onChange={e => patchVendor(v.id, { status: e.target.value })} className="h-8 text-[10px] font-bold border border-border rounded-sm bg-card transition-colors outline-none hover:border-ring focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50">
                     {VENDOR_LINK_STATUS.map(s => <option key={s} value={s}>{t(`events.vendorStatuses.${s}`)}</option>)}
                   </select>
-                  <button onClick={() => delVendor(v.id)} className="text-slate-300 hover:text-rose-500"><Trash className="w-3.5 h-3.5" /></button>
+                  <button onClick={() => delVendor(v.id)} className="text-slate-300 hover:text-rose-500 dark:text-rose-400"><Trash className="w-3.5 h-3.5" /></button>
                 </div>
               ))}
             </div>
@@ -458,7 +458,7 @@ export default function EventDetailPage() {
           <Card>
             <CardHeader><CardTitle className="text-sm font-semibold flex items-center gap-2"><Envelope className="w-4 h-4" />{t('events.invitationTitle')}</CardTitle></CardHeader>
             <CardContent className="space-y-3">
-              <p className="text-[11px] text-slate-400 font-bold">{t('events.invitationHint')}</p>
+              <p className="text-[11px] text-muted-foreground font-bold">{t('events.invitationHint')}</p>
               <Field label={t('events.form.venueName')}><Input value={form.venueName} onChange={e => setForm({ ...form, venueName: e.target.value })} className="h-9 text-sm font-bold" /></Field>
               <Field label={t('events.form.venueAddress')}><Input value={form.venueAddress} onChange={e => setForm({ ...form, venueAddress: e.target.value })} className="h-9 text-sm font-bold" /></Field>
               <Field label={t('events.form.invitationMessage')}><Textarea value={form.invitationMessage} onChange={e => setForm({ ...form, invitationMessage: e.target.value })} className="min-h-[52px] text-xs" /></Field>
@@ -484,7 +484,7 @@ export default function EventDetailPage() {
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="grid gap-1.5">
-      <Label className="text-[10px] font-semibold text-slate-400">{label}</Label>
+      <Label className="text-[10px] font-semibold text-muted-foreground">{label}</Label>
       {children}
     </div>
   );
@@ -492,10 +492,10 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 
 function SeatingGroup({ title, count, capacity, over, children }: { title: string; count: number; capacity?: number; over?: boolean; children: React.ReactNode }) {
   return (
-    <div className="border border-border rounded-md p-2.5 space-y-1.5 bg-slate-50/50">
+    <div className="border border-border rounded-md p-2.5 space-y-1.5 bg-muted/50">
       <div className="flex items-center justify-between">
         <span className="text-[11px] font-semibold truncate">{title}</span>
-        <span className={`text-[10px] font-black font-mono ${over ? 'text-rose-500' : 'text-slate-400'}`}>{count}{capacity != null ? `/${capacity}` : ''}</span>
+        <span className={`text-[10px] font-black font-mono ${over ? 'text-rose-500 dark:text-rose-400' : 'text-muted-foreground'}`}>{count}{capacity != null ? `/${capacity}` : ''}</span>
       </div>
       {children}
     </div>
@@ -505,8 +505,8 @@ function SeatingGroup({ title, count, capacity, over, children }: { title: strin
 function SeatRow({ guest, resources, onAssign, label, noneLabel }: { guest: Guest; resources: Resource[]; onAssign: (rid: string) => void; label: string; noneLabel: string }) {
   return (
     <div className="flex items-center gap-1.5">
-      <span className="text-xs font-bold truncate flex-1">{guest.name} <span className="text-[10px] text-slate-400">×{guest.partySize}</span></span>
-      <select value={guest.resourceId || ''} onChange={e => onAssign(e.target.value)} title={label} className="h-7 max-w-[110px] text-[10px] font-bold border border-border rounded-sm bg-white transition-colors outline-none hover:border-ring focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50">
+      <span className="text-xs font-bold truncate flex-1">{guest.name} <span className="text-[10px] text-muted-foreground">×{guest.partySize}</span></span>
+      <select value={guest.resourceId || ''} onChange={e => onAssign(e.target.value)} title={label} className="h-7 max-w-[110px] text-[10px] font-bold border border-border rounded-sm bg-card transition-colors outline-none hover:border-ring focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50">
         <option value="">{noneLabel}</option>
         {resources.map(r => <option key={r.id} value={r.id}>{r.identifier}</option>)}
       </select>

@@ -153,9 +153,9 @@ export default function MySchedule({ viewMode = 'MONTHLY', staffScheduleView = '
 
       <div className="rounded-lg border overflow-hidden">
         {/* Weekday header */}
-        <div className="grid grid-cols-7 bg-slate-50 border-b">
+        <div className="grid grid-cols-7 bg-muted border-b">
           {weekdayLabels.map((label) => (
-            <div key={label} className="px-2 py-2 text-center text-xs md:text-sm font-bold text-slate-500">
+            <div key={label} className="px-2 py-2 text-center text-xs md:text-sm font-bold text-muted-foreground">
               {label}
             </div>
           ))}
@@ -172,14 +172,14 @@ export default function MySchedule({ viewMode = 'MONTHLY', staffScheduleView = '
                 key={`${cell.dateString}-${idx}`}
                 className={[
                   'min-h-[92px] md:min-h-[110px] border-b border-r p-1.5 md:p-2 flex flex-col',
-                  !cell.inMonth ? 'bg-slate-50/60' : '',
+                  !cell.inMonth ? 'bg-muted/60' : '',
                   isToday ? 'bg-blue-50/60 ring-1 ring-inset ring-blue-400' : '',
                 ].join(' ')}
               >
                 <div className="flex items-center justify-between mb-1">
                   <span className={[
                     'text-sm md:text-base font-bold',
-                    cell.inMonth ? 'text-slate-700' : 'text-slate-300',
+                    cell.inMonth ? 'text-foreground' : 'text-slate-300',
                     isToday ? 'text-blue-600' : '',
                   ].join(' ')}>
                     {cell.dateObj.getDate()}
@@ -196,17 +196,17 @@ export default function MySchedule({ viewMode = 'MONTHLY', staffScheduleView = '
                     return (
                       <div
                         key={assignment.id}
-                        className={`rounded-md border px-1.5 py-1 ${isOwnShift ? 'bg-blue-100/70 border-blue-200' : 'bg-slate-100 border-border'}`}
+                        className={`rounded-md border px-1.5 py-1 ${isOwnShift ? 'bg-blue-100/70 border-blue-200' : 'bg-muted border-border'}`}
                       >
-                        <div className="flex items-center gap-1 text-xs md:text-sm font-semibold text-slate-800">
-                          <Clock className={`w-3 h-3 shrink-0 ${isOwnShift ? 'text-blue-500' : 'text-slate-400'}`} />
+                        <div className="flex items-center gap-1 text-xs md:text-sm font-semibold text-foreground">
+                          <Clock className={`w-3 h-3 shrink-0 ${isOwnShift ? 'text-blue-500' : 'text-muted-foreground'}`} />
                           <span className="truncate">{assignment.shift?.name}</span>
                         </div>
-                        <div className="text-[11px] md:text-xs text-slate-500 mt-0.5 font-medium">
+                        <div className="text-[11px] md:text-xs text-muted-foreground mt-0.5 font-medium">
                           {assignment.shift ? formatTimeRange(assignment.shift.startTime, assignment.shift.endTime) : ''}
                         </div>
                         {(staffScheduleView === 'SHIFT_TEAM' || staffScheduleView === 'FULL_ROSTER') && (
-                          <div className={`text-[11px] md:text-xs mt-1 truncate ${isOwnShift ? 'text-blue-700 font-bold' : 'text-slate-600'}`}>
+                          <div className={`text-[11px] md:text-xs mt-1 truncate ${isOwnShift ? 'text-blue-700 font-bold' : 'text-muted-foreground'}`}>
                             {assignment.user?.firstName} {assignment.user?.lastName}
                             {isOwnShift ? ` (${t('scheduling.mySchedule.you')})` : ''}
                             {isTeammate ? ` · ${t('scheduling.mySchedule.teammate')}` : ''}

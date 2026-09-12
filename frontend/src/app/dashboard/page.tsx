@@ -63,7 +63,7 @@ export default function DashboardPage() {
         <div className="flex h-[70vh] items-center justify-center">
           <div className="flex flex-col items-center gap-4">
             <CircleNotch className="h-10 w-10 animate-spin text-blue-600" />
-            <p className="text-slate-500 font-medium">{t('dashboard.loading')}</p>
+            <p className="text-muted-foreground font-medium">{t('dashboard.loading')}</p>
           </div>
         </div>
       </>
@@ -82,8 +82,8 @@ export default function DashboardPage() {
         {/* Page Header */}
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-semibold tracking-tight text-slate-900 font-heading">{t('dashboard.todaysOperations')}</h1>
-            <p className="text-slate-500 mt-1">{t('dashboard.realtimeCommand')}</p>
+            <h1 className="text-3xl font-semibold tracking-tight text-foreground font-heading">{t('dashboard.todaysOperations')}</h1>
+            <p className="text-muted-foreground mt-1">{t('dashboard.realtimeCommand')}</p>
           </div>
           <div className="flex items-center gap-3">
             {/* Day selector (#2.1) */}
@@ -91,7 +91,7 @@ export default function DashboardPage() {
               type="date"
               value={selectedDate}
               onChange={(e) => setSelectedDate(e.target.value || localDateStr(new Date()))}
-              className="h-9 w-44 bg-white border-border shadow-sm text-sm font-semibold"
+              className="h-9 w-44 bg-card border-border shadow-sm text-sm font-semibold"
             />
             {!isViewingToday && (
               <Button variant="outline" className="h-9" onClick={() => setSelectedDate(localDateStr(new Date()))}>
@@ -99,12 +99,12 @@ export default function DashboardPage() {
               </Button>
             )}
             {isViewingToday ? (
-              <span className="text-xs font-bold text-emerald-600 bg-emerald-50 border border-emerald-100 px-3 py-1.5 rounded-full flex items-center shadow-sm">
+              <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-100 dark:border-emerald-800/50 px-3 py-1.5 rounded-full flex items-center shadow-sm">
                 <span className="w-2 h-2 bg-emerald-500 rounded-full mr-2 animate-pulse"></span>
                 {t('dashboard.liveData')}
               </span>
             ) : (
-              <span className="text-xs font-bold text-slate-500 bg-slate-100 border border-border px-3 py-1.5 rounded-full flex items-center shadow-sm">
+              <span className="text-xs font-bold text-muted-foreground bg-muted border border-border px-3 py-1.5 rounded-full flex items-center shadow-sm">
                 {new Date(`${selectedDate}T00:00:00`).toLocaleDateString([], { weekday: 'long', day: 'numeric', month: 'long' })}
               </span>
             )}
@@ -117,13 +117,13 @@ export default function DashboardPage() {
             <div className="h-1 w-full bg-blue-500"></div>
             <CardContent className="p-6">
               <div className="flex items-center justify-between space-y-0 pb-2">
-                <p className="text-sm font-semibold text-slate-500">{t('dashboard.reservationsToday')}</p>
+                <p className="text-sm font-semibold text-muted-foreground">{t('dashboard.reservationsToday')}</p>
                 <div className="p-2 bg-blue-50 rounded-lg group-hover:bg-blue-100 transition-colors">
                   <Calendar className="h-5 w-5 text-blue-600" />
                 </div>
               </div>
               <div className="flex items-baseline space-x-3 mt-1">
-                <h2 className="text-3xl font-black tabular-nums text-slate-900">{data.todayReservations}</h2>
+                <h2 className="text-3xl font-black tabular-nums text-foreground">{data.todayReservations}</h2>
               </div>
             </CardContent>
           </Card>
@@ -132,14 +132,14 @@ export default function DashboardPage() {
             <div className="h-1 w-full bg-indigo-500"></div>
             <CardContent className="p-6">
               <div className="flex items-center justify-between space-y-0 pb-2">
-                <p className="text-sm font-semibold text-slate-500">{t('dashboard.expectedGuests')}</p>
-                <div className="p-2 bg-indigo-50 rounded-lg group-hover:bg-indigo-100 transition-colors">
-                  <Users className="h-5 w-5 text-indigo-600" />
+                <p className="text-sm font-semibold text-muted-foreground">{t('dashboard.expectedGuests')}</p>
+                <div className="p-2 bg-indigo-50 dark:bg-indigo-950/40 rounded-lg group-hover:bg-indigo-100 transition-colors">
+                  <Users className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
                 </div>
               </div>
               <div className="flex items-baseline space-x-1 mt-1">
-                <h2 className="text-3xl font-black tabular-nums text-slate-900">{data.todayGuests}</h2>
-                <span className="text-sm font-bold text-slate-400">{t('dashboard.confirmed')}</span>
+                <h2 className="text-3xl font-black tabular-nums text-foreground">{data.todayGuests}</h2>
+                <span className="text-sm font-bold text-muted-foreground">{t('dashboard.confirmed')}</span>
               </div>
             </CardContent>
           </Card>
@@ -148,14 +148,14 @@ export default function DashboardPage() {
             <div className="h-1 w-full bg-amber-500"></div>
             <CardContent className="p-6">
               <div className="flex items-center justify-between space-y-0 pb-2">
-                <p className="text-sm font-semibold text-slate-500">{t('dashboard.avgDuration')}</p>
-                <div className="p-2 bg-amber-50 rounded-lg group-hover:bg-amber-100 transition-colors">
-                  <Clock className="h-5 w-5 text-amber-600" />
+                <p className="text-sm font-semibold text-muted-foreground">{t('dashboard.avgDuration')}</p>
+                <div className="p-2 bg-amber-50 dark:bg-amber-950/40 rounded-lg group-hover:bg-amber-100 transition-colors">
+                  <Clock className="h-5 w-5 text-amber-600 dark:text-amber-400" />
                 </div>
               </div>
               <div className="flex items-baseline space-x-2 mt-1">
-                <h2 className="text-3xl font-black tabular-nums text-slate-900">{data.avgDuration || '--'}</h2>
-                <span className="text-sm font-bold text-slate-400">{t('dashboard.minutes')}</span>
+                <h2 className="text-3xl font-black tabular-nums text-foreground">{data.avgDuration || '--'}</h2>
+                <span className="text-sm font-bold text-muted-foreground">{t('dashboard.minutes')}</span>
               </div>
             </CardContent>
           </Card>
@@ -164,14 +164,14 @@ export default function DashboardPage() {
             <div className="h-1 w-full bg-rose-500"></div>
             <CardContent className="p-6">
               <div className="flex items-center justify-between space-y-0 pb-2">
-                <p className="text-sm font-semibold text-slate-500">{t('dashboard.actionRequired')}</p>
-                <div className="p-2 bg-rose-50 rounded-lg group-hover:bg-rose-100 transition-colors">
-                  <Pulse className="h-5 w-5 text-rose-600" />
+                <p className="text-sm font-semibold text-muted-foreground">{t('dashboard.actionRequired')}</p>
+                <div className="p-2 bg-rose-50 dark:bg-rose-950/40 rounded-lg group-hover:bg-rose-100 transition-colors">
+                  <Pulse className="h-5 w-5 text-rose-600 dark:text-rose-400" />
                 </div>
               </div>
               <div className="flex items-baseline mt-1 space-x-2">
-                <h2 className={`text-3xl font-black tabular-nums ${data.pendingCount > 0 ? 'text-rose-600' : 'text-slate-900'}`}>{data.pendingCount}</h2>
-                <span className="text-sm font-bold text-slate-400">{t('dashboard.pending')}</span>
+                <h2 className={`text-3xl font-black tabular-nums ${data.pendingCount > 0 ? 'text-rose-600 dark:text-rose-400' : 'text-foreground'}`}>{data.pendingCount}</h2>
+                <span className="text-sm font-bold text-muted-foreground">{t('dashboard.pending')}</span>
               </div>
             </CardContent>
           </Card>
@@ -182,38 +182,38 @@ export default function DashboardPage() {
           
           {/* Status Breakdown */}
           <Card className="md:col-span-2 shadow-sm border-border">
-            <CardHeader className="pb-4 border-b border-border bg-slate-50/50">
-              <CardTitle className="text-lg text-slate-800">{t('dashboard.todaysStatus')}</CardTitle>
+            <CardHeader className="pb-4 border-b border-border bg-muted/50">
+              <CardTitle className="text-lg text-foreground">{t('dashboard.todaysStatus')}</CardTitle>
             </CardHeader>
             <CardContent className="pt-6">
               <div className="space-y-6">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <div className="p-2 bg-emerald-100 rounded-lg"><CheckCircle className="w-4 h-4 text-emerald-600" /></div>
-                    <span className="font-semibold text-slate-700">{t('dashboard.confirmed')}</span>
+                    <div className="p-2 bg-emerald-100 dark:bg-emerald-950/40 rounded-lg"><CheckCircle className="w-4 h-4 text-emerald-600 dark:text-emerald-400" /></div>
+                    <span className="font-semibold text-foreground">{t('dashboard.confirmed')}</span>
                   </div>
-                  <span className="text-lg font-black tabular-nums text-slate-900">{data.confirmedCount}</span>
+                  <span className="text-lg font-black tabular-nums text-foreground">{data.confirmedCount}</span>
                 </div>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <div className="p-2 bg-amber-100 rounded-lg"><Clock className="w-4 h-4 text-amber-600" /></div>
-                    <span className="font-semibold text-slate-700">{t('dashboard.pending')}</span>
+                    <div className="p-2 bg-amber-100 dark:bg-amber-950/40 rounded-lg"><Clock className="w-4 h-4 text-amber-600 dark:text-amber-400" /></div>
+                    <span className="font-semibold text-foreground">{t('dashboard.pending')}</span>
                   </div>
-                  <span className="text-lg font-black tabular-nums text-slate-900">{data.pendingCount}</span>
+                  <span className="text-lg font-black tabular-nums text-foreground">{data.pendingCount}</span>
                 </div>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <div className="p-2 bg-slate-100 rounded-lg"><XCircle className="w-4 h-4 text-slate-600" /></div>
-                    <span className="font-semibold text-slate-700">{t('dashboard.canceled')}</span>
+                    <div className="p-2 bg-muted rounded-lg"><XCircle className="w-4 h-4 text-muted-foreground" /></div>
+                    <span className="font-semibold text-foreground">{t('dashboard.canceled')}</span>
                   </div>
-                  <span className="text-lg font-black tabular-nums text-slate-900">{data.canceledCount}</span>
+                  <span className="text-lg font-black tabular-nums text-foreground">{data.canceledCount}</span>
                 </div>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <div className="p-2 bg-rose-100 rounded-lg"><WarningCircle className="w-4 h-4 text-rose-600" /></div>
-                    <span className="font-semibold text-slate-700">{t('dashboard.noShow')}</span>
+                    <div className="p-2 bg-rose-100 dark:bg-rose-950/40 rounded-lg"><WarningCircle className="w-4 h-4 text-rose-600 dark:text-rose-400" /></div>
+                    <span className="font-semibold text-foreground">{t('dashboard.noShow')}</span>
                   </div>
-                  <span className="text-lg font-black tabular-nums text-slate-900">{data.noShowCount}</span>
+                  <span className="text-lg font-black tabular-nums text-foreground">{data.noShowCount}</span>
                 </div>
               </div>
             </CardContent>
@@ -221,8 +221,8 @@ export default function DashboardPage() {
 
           {/* Hourly Distribution Chart */}
           <Card className="md:col-span-5 shadow-sm border-border">
-            <CardHeader className="pb-4 border-b border-border bg-slate-50/50">
-              <CardTitle className="text-lg text-slate-800">{t('dashboard.hourlyDistribution')}</CardTitle>
+            <CardHeader className="pb-4 border-b border-border bg-muted/50">
+              <CardTitle className="text-lg text-foreground">{t('dashboard.hourlyDistribution')}</CardTitle>
               <CardDescription>{t('dashboard.hourlyDesc')}</CardDescription>
             </CardHeader>
             <CardContent className="pt-6">

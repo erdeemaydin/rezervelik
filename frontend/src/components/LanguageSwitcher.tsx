@@ -15,19 +15,19 @@ export function LanguageSwitcher() {
 
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger className="flex items-center justify-center h-8 w-8 text-slate-500 hover:text-slate-900 rounded-md hover:bg-slate-100 transition-colors">
+      <DropdownMenuTrigger className="flex items-center justify-center h-8 w-8 text-muted-foreground hover:text-foreground rounded-md hover:bg-muted transition-colors">
         <Globe className="h-4 w-4" />
         <span className="sr-only">{t('systemAdmin.language') || 'Language'}</span>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-32 bg-white rounded-md shadow-lg border border-slate-100">
+      <DropdownMenuContent align="end" className="w-32 bg-card rounded-md shadow-lg border border-border">
         <DropdownMenuItem 
-          className={`text-xs cursor-pointer ${locale === 'tr' ? 'bg-slate-50 font-bold' : ''}`}
+          className={`text-xs cursor-pointer ${locale === 'tr' ? 'bg-muted font-bold' : ''}`}
           onClick={() => setLocale('tr', true)}
         >
           Türkçe
         </DropdownMenuItem>
         <DropdownMenuItem 
-          className={`text-xs cursor-pointer ${locale === 'en' ? 'bg-slate-50 font-bold' : ''}`}
+          className={`text-xs cursor-pointer ${locale === 'en' ? 'bg-muted font-bold' : ''}`}
           onClick={() => setLocale('en', true)}
         >
           English

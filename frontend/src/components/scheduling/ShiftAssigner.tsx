@@ -92,7 +92,7 @@ function DraggableStaff({
     <div
       ref={setNodeRef}
       className={cn(
-        "flex items-center justify-between p-1.5 bg-white border rounded-md shadow-sm hover:border-blue-400 hover:shadow transition-all relative group",
+        "flex items-center justify-between p-1.5 bg-card border rounded-md shadow-sm hover:border-blue-400 hover:shadow transition-all relative group",
         isDragging && 'opacity-50',
         isHighlighted ? 'border-blue-600 bg-blue-50/50 ring-2 ring-blue-500/20' : 'border-border'
       )}
@@ -100,17 +100,17 @@ function DraggableStaff({
       <div
         {...listeners}
         {...attributes}
-        className="cursor-grab active:cursor-grabbing p-0.5 hover:bg-slate-100 rounded mr-0.5 shrink-0"
+        className="cursor-grab active:cursor-grabbing p-0.5 hover:bg-muted rounded mr-0.5 shrink-0"
         title={t('scheduling.assigner.dragToAssign')}
       >
-        <GripVertical className="h-3.5 w-3.5 text-slate-400" />
+        <GripVertical className="h-3.5 w-3.5 text-muted-foreground" />
       </div>
 
       <span className="text-xs font-semibold flex-1 truncate">{staff.firstName} {staff.lastName}</span>
 
       {workedLabel && (
         <span
-          className="h-6 px-1 rounded flex items-center justify-center border border-emerald-200 bg-emerald-50 text-emerald-700 text-[9px] font-black tabular-nums shrink-0 ml-1"
+          className="h-6 px-1 rounded flex items-center justify-center border border-emerald-200 dark:border-emerald-800/50 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 text-[9px] font-black tabular-nums shrink-0 ml-1"
           title={t('scheduling.assigner.hoursCredited')}
         >
           {workedLabel}
@@ -129,7 +129,7 @@ function DraggableStaff({
             ? "bg-blue-600 text-white border-blue-600 shadow-sm"
             : shiftCount > 0
               ? "bg-blue-50 text-blue-600 border-blue-200 hover:border-blue-400"
-              : "bg-slate-50 text-slate-400 border-border hover:text-blue-600 hover:border-blue-300"
+              : "bg-muted text-muted-foreground border-border hover:text-blue-600 hover:border-blue-300"
         )}
         // Same behavior as before: toggles highlighting this staff's shifts.
         // The icon is replaced by the live count of shifts they have in this plan (#6).
@@ -171,11 +171,11 @@ function DroppableCell({
           : isHighlightedAssigned
             ? 'bg-blue-50/80 ring-2 ring-blue-500 ring-inset shadow-md shadow-blue-500/10'
             : availabilityStatus === 'available'
-              ? 'bg-emerald-50/40 border-emerald-300 border-2 border-dashed'
+              ? 'bg-emerald-50/40 dark:bg-emerald-950/40 border-emerald-300 dark:border-emerald-800/50 border-2 border-dashed'
               : availabilityStatus === 'unavailable'
-                ? 'bg-red-50/40 border-red-300 border-2 border-dashed'
+                ? 'bg-red-50/40 dark:bg-red-950/40 border-red-300 dark:border-red-800/50 border-2 border-dashed'
                 : isUnderstaffed && !disabled
-                  ? 'bg-red-50/30' 
+                  ? 'bg-red-50/30 dark:bg-red-950/40' 
                   : ''
       )}
     >
@@ -751,10 +751,10 @@ export default function ShiftAssigner({ viewMode = 'MONTHLY' }: { viewMode?: 'WE
           <Card size="sm" className="w-full">
             <CardContent className="p-2.5">
               <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-600">
+                <div className="flex items-center gap-1.5 text-xs font-semibold text-muted-foreground">
                   <Users className="h-4 w-4 text-blue-600" />
                   {t('scheduling.assigner.staffPool')}
-                  <span className="text-slate-400 font-bold normal-case">· {staff.length}</span>
+                  <span className="text-muted-foreground font-bold normal-case">· {staff.length}</span>
                 </div>
                 {highlightedStaffId && (
                   <Button
@@ -792,7 +792,7 @@ export default function ShiftAssigner({ viewMode = 'MONTHLY' }: { viewMode?: 'WE
               <CardDescription className="hidden md:block text-xs">{t('scheduling.assigner.scheduleBuilderDesc')}</CardDescription>
             </div>
             <div className="flex flex-wrap items-center gap-2">
-              <div className="flex items-center bg-white border rounded-md p-1 shadow-sm mr-2">
+              <div className="flex items-center bg-card border rounded-md p-1 shadow-sm mr-2">
                 <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handlePrevMonth}>
                   <ChevronLeft className="h-4 w-4" />
                 </Button>
@@ -816,7 +816,7 @@ export default function ShiftAssigner({ viewMode = 'MONTHLY' }: { viewMode?: 'WE
                       className={cn(
                         "h-9 px-3",
                         isCurrentRangePublished 
-                          ? "border-green-200 bg-green-50 text-green-700 hover:bg-green-100 hover:text-green-800" 
+                          ? "border-green-200 dark:border-green-800/50 bg-green-50 dark:bg-green-950/40 text-green-700 dark:text-green-400 hover:bg-green-100 hover:text-green-800" 
                           : "bg-blue-600 hover:bg-blue-700 text-white"
                       )} 
                       onClick={handlePublishSchedule}
@@ -832,7 +832,7 @@ export default function ShiftAssigner({ viewMode = 'MONTHLY' }: { viewMode?: 'WE
                       <Button 
                         variant="ghost" 
                         size="sm"
-                        className="h-9 px-2 text-red-600 hover:bg-red-50 hover:text-red-700 text-[9px] font-semibold"
+                        className="h-9 px-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:bg-red-950/40 hover:text-red-700 text-[9px] font-semibold"
                         onClick={handleUnpublishSchedule}
                       >
                         <Ban className="h-3.5 w-3.5 mr-1" /> {t('scheduling.assigner.unpublish')}
@@ -854,33 +854,33 @@ export default function ShiftAssigner({ viewMode = 'MONTHLY' }: { viewMode?: 'WE
           </CardHeader>
           <CardContent className="p-0 overflow-auto max-h-[calc(100vh-350px)]">
             {loading ? (
-              <div className="flex justify-center p-12"><p className="text-slate-500 animate-pulse">{t('scheduling.assigner.loadingRoster')}</p></div>
+              <div className="flex justify-center p-12"><p className="text-muted-foreground animate-pulse">{t('scheduling.assigner.loadingRoster')}</p></div>
             ) : shifts.length === 0 ? (
-              <div className="p-12 text-center bg-slate-50">
+              <div className="p-12 text-center bg-muted">
                 <p className="text-muted-foreground">{t('scheduling.assigner.noShiftsConfigured')}</p>
                 <Button variant="link" className="mt-2 text-blue-600">{t('scheduling.assigner.setupShifts')}</Button>
               </div>
             ) : (
-              <div id="roster-table-container" className="w-full bg-white p-4">
+              <div id="roster-table-container" className="w-full bg-card p-4">
                 <table className="w-full text-xs text-left border-collapse min-w-[900px]">
-                  <thead className="text-[10px] text-slate-700 bg-slate-50 sticky top-0 z-30">
+                  <thead className="text-[10px] text-foreground bg-muted sticky top-0 z-30">
                     <tr>
-                      <th scope="col" className="px-3 py-3 border-b border-border min-w-[100px] sticky left-0 bg-slate-50 z-40">
+                      <th scope="col" className="px-3 py-3 border-b border-border min-w-[100px] sticky left-0 bg-muted z-40">
                         {t('scheduling.assigner.dateWeekday')}
                       </th>
                       {shifts.map(shift => (
                         <th key={shift.id} scope="col" className="px-2 py-3 border-b border-border min-w-[140px]">
-                          <div className="font-bold text-center text-slate-900 leading-tight">{shift.name}</div>
-                          <div className="text-[9px] text-slate-500 font-normal text-center mt-1 bg-white/50 rounded-sm py-0.5 border border-border">
+                          <div className="font-bold text-center text-foreground leading-tight">{shift.name}</div>
+                          <div className="text-[9px] text-muted-foreground font-normal text-center mt-1 bg-card/50 rounded-sm py-0.5 border border-border">
                             {formatTimeRange(shift.startTime, shift.endTime, system)}
                           </div>
 
                         </th>
                       ))}
                       {isAdminOrManager && (
-                        <th scope="col" className="px-3 py-3 border-b border-border min-w-[70px] text-right bg-slate-50">
-                          <div className="font-bold text-slate-900">{t('scheduling.assigner.total')}</div>
-                          <div className="text-[9px] text-slate-400 font-normal mt-1">h:mm</div>
+                        <th scope="col" className="px-3 py-3 border-b border-border min-w-[70px] text-right bg-muted">
+                          <div className="font-bold text-foreground">{t('scheduling.assigner.total')}</div>
+                          <div className="text-[9px] text-muted-foreground font-normal mt-1">h:mm</div>
                         </th>
                       )}
                     </tr>
@@ -895,14 +895,14 @@ export default function ShiftAssigner({ viewMode = 'MONTHLY' }: { viewMode?: 'WE
                           key={day.dateString} 
                           className={cn(
                             "border-b transition-colors",
-                            isToday ? 'bg-blue-50/40' : isWeekend ? 'bg-slate-50/50' : 'bg-white',
-                            "hover:bg-slate-100/50"
+                            isToday ? 'bg-blue-50/40' : isWeekend ? 'bg-muted/50' : 'bg-card',
+                            "hover:bg-muted/50"
                           )}
                         >
                           {/* Date Column */}
                           <td className={cn(
                             "px-3 py-2 border-b border-border font-medium sticky left-0 z-20",
-                            isToday ? 'bg-blue-50 text-blue-700' : isWeekend ? 'bg-slate-50 text-red-500' : 'bg-white'
+                            isToday ? 'bg-blue-50 text-blue-700' : isWeekend ? 'bg-muted text-red-500 dark:text-red-400' : 'bg-card'
                           )}>
                             <div className="flex flex-col">
                               <span className="text-sm font-bold">{day.dateObj.getDate()} {day.dateObj.toLocaleDateString(dateLocale, { month: 'short' })}</span>
@@ -943,9 +943,9 @@ export default function ShiftAssigner({ viewMode = 'MONTHLY' }: { viewMode?: 'WE
                                 availabilityStatus={availabilityStatus}
                               >
                                 {isAdminOrManager && (
-                                  <div className="flex justify-between items-center text-[10px] text-slate-500 font-semibold mb-1 w-full">
+                                  <div className="flex justify-between items-center text-[10px] text-muted-foreground font-semibold mb-1 w-full">
                                     <span>{t('scheduling.assigner.assignedCount')}: {cellAssignments.length}</span>
-                                    <span className={cn(isUnderstaffed ? "text-red-500" : "text-emerald-500")}>
+                                    <span className={cn(isUnderstaffed ? "text-red-500 dark:text-red-400" : "text-emerald-500 dark:text-emerald-400")}>
                                       {t('scheduling.assigner.req')}: {requiredForDay}
                                     </span>
                                   </div>
@@ -974,10 +974,10 @@ export default function ShiftAssigner({ viewMode = 'MONTHLY' }: { viewMode?: 'WE
                                           : isHighlighted 
                                             ? "bg-blue-600 text-white border-blue-600 ring-2 ring-blue-300 shadow-md animate-pulse"
                                             : hasCritical 
-                                              ? "bg-red-50 text-red-700 border-red-200 hover:bg-red-100" 
+                                              ? "bg-red-50 dark:bg-red-950/40 text-red-700 dark:text-red-400 border-red-200 dark:border-red-800/50 hover:bg-red-100" 
                                               : hasUnspecified
-                                                ? "bg-amber-50 text-amber-800 border-amber-200 hover:bg-amber-100"
-                                                : "bg-slate-50 text-slate-700 border-border hover:bg-blue-50"
+                                                ? "bg-amber-50 dark:bg-amber-950/40 text-amber-800 dark:text-amber-400 border-amber-200 dark:border-amber-800/50 hover:bg-amber-100"
+                                                : "bg-muted text-foreground border-border hover:bg-blue-50"
                                       )}
                                     >
                                       <span className="truncate mr-1 flex-1 font-medium flex items-center gap-1">
@@ -988,8 +988,8 @@ export default function ShiftAssigner({ viewMode = 'MONTHLY' }: { viewMode?: 'WE
                                             className={cn(
                                               "shrink-0 w-3 h-3 flex items-center justify-center rounded-full text-[8px] font-black cursor-help",
                                               hasCritical 
-                                                ? (isHighlighted ? "bg-white text-red-600" : "bg-red-500 text-white") 
-                                                : (isHighlighted ? "bg-white text-amber-600" : "bg-amber-500 text-white")
+                                                ? (isHighlighted ? "bg-card text-red-600 dark:text-red-400" : "bg-red-500 text-white") 
+                                                : (isHighlighted ? "bg-card text-amber-600 dark:text-amber-400" : "bg-amber-500 text-white")
                                             )}
                                           >
                                             !
@@ -1002,12 +1002,12 @@ export default function ShiftAssigner({ viewMode = 'MONTHLY' }: { viewMode?: 'WE
                                           isHighlighted
                                             ? "text-white"
                                             : wTone === 'over'
-                                              ? "text-red-600"
+                                              ? "text-red-600 dark:text-red-400"
                                               : wTone === 'under'
-                                                ? "text-amber-600"
+                                                ? "text-amber-600 dark:text-amber-400"
                                                 : worked.source === 'ENTRY'
-                                                  ? "text-emerald-600"
-                                                  : "text-slate-400"
+                                                  ? "text-emerald-600 dark:text-emerald-400"
+                                                  : "text-muted-foreground"
                                         )}
                                         title={worked.source === 'ENTRY' ? t('scheduling.assigner.fromActual') : t('scheduling.assigner.fromScheduled')}
                                       >
@@ -1016,8 +1016,8 @@ export default function ShiftAssigner({ viewMode = 'MONTHLY' }: { viewMode?: 'WE
                                       {isAdminOrManager && (
                                           <button
                                             className={cn(
-                                              "hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100 shrink-0",
-                                              isHighlighted ? "text-blue-200 hover:text-white" : "text-slate-400"
+                                              "hover:text-red-500 dark:text-red-400 transition-colors opacity-0 group-hover:opacity-100 shrink-0",
+                                              isHighlighted ? "text-blue-200 hover:text-white" : "text-muted-foreground"
                                             )}
                                             onClick={() => handleRemoveAssignment(assignment.id)}
                                           >
@@ -1056,19 +1056,19 @@ export default function ShiftAssigner({ viewMode = 'MONTHLY' }: { viewMode?: 'WE
                                          className={cn(
 "text-[9px] font-semibold rounded px-1.5 py-0.5 mt-1 w-full text-center flex items-center justify-center gap-1 transition-all border cursor-pointer",
                                            availableCount > 0
-                                             ? "bg-emerald-50 border-emerald-100 text-emerald-700 hover:bg-emerald-100"
-                                             : "bg-slate-50 border-border text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+                                             ? "bg-emerald-50 dark:bg-emerald-950/40 border-emerald-100 dark:border-emerald-800/50 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-100"
+                                             : "bg-muted border-border text-muted-foreground hover:bg-muted hover:text-muted-foreground"
                                          )}
                                        >
                                          <Plus className="w-2.5 h-2.5" />
                                          <span>{availableCount > 0 ? `${availableCount} ${t('scheduling.assigner.avail')}` : t('scheduling.assigner.add')}</span>
                                        </PopoverTrigger>
-                                      <PopoverContent className="w-64 p-0 bg-white border border-border shadow-xl rounded-xl overflow-hidden z-50">
+                                      <PopoverContent className="w-64 p-0 bg-card border border-border shadow-xl rounded-xl overflow-hidden z-50">
                                         <div className="bg-slate-900 p-3 text-white">
                                           <div className="text-xs font-semibold">
                                             {t('scheduling.assigner.assignStaff')}
                                           </div>
-                                          <div className="text-[9px] text-slate-400 font-bold mt-0.5">
+                                          <div className="text-[9px] text-muted-foreground font-bold mt-0.5">
                                             {shift.name} • {day.dateString}
                                           </div>
                                         </div>
@@ -1076,11 +1076,11 @@ export default function ShiftAssigner({ viewMode = 'MONTHLY' }: { viewMode?: 'WE
                                         <div className="p-3 space-y-4 max-h-[300px] overflow-y-auto">
                                           {/* 1. AVAILABLE STAFF */}
                                           <div className="space-y-1">
-                                            <h4 className="text-[9px] font-semibold text-emerald-600">
+                                            <h4 className="text-[9px] font-semibold text-emerald-600 dark:text-emerald-400">
                                               🟢 {t('scheduling.assigner.available')} ({available.length})
                                             </h4>
                                             {available.length === 0 ? (
-                                              <p className="text-[9px] text-slate-400 italic pl-1 font-bold">{t('scheduling.assigner.noneAvailable')}</p>
+                                              <p className="text-[9px] text-muted-foreground italic pl-1 font-bold">{t('scheduling.assigner.noneAvailable')}</p>
                                             ) : (
                                               <div className="space-y-1">
                                                 {available.map(s => {
@@ -1088,17 +1088,17 @@ export default function ShiftAssigner({ viewMode = 'MONTHLY' }: { viewMode?: 'WE
                                                   const others = assignments.filter(a => a.date === day.dateString && a.shiftId !== shift.id && a.userId === s.id);
                                                   
                                                   return (
-                                                    <div key={s.id} className="flex items-center justify-between p-1.5 rounded-lg border border-border bg-slate-50/50 hover:bg-slate-50 gap-2">
+                                                    <div key={s.id} className="flex items-center justify-between p-1.5 rounded-lg border border-border bg-muted/50 hover:bg-muted gap-2">
                                                       <div className="flex flex-col min-w-0 flex-1">
-                                                        <span className="text-[10px] font-bold text-slate-800 truncate">{s.firstName} {s.lastName}</span>
+                                                        <span className="text-[10px] font-bold text-foreground truncate">{s.firstName} {s.lastName}</span>
                                                         {others.length > 0 && (
-                                                          <span className="text-[8px] text-amber-600 font-semibold tracking-tight truncate mt-0.5">
+                                                          <span className="text-[8px] text-amber-600 dark:text-amber-400 font-semibold tracking-tight truncate mt-0.5">
                                                             {t('scheduling.assigner.worksOtherShift')}
                                                           </span>
                                                         )}
                                                       </div>
                                                       {isAssigned ? (
-                                                        <span className="text-[8px] font-semibold text-slate-400 shrink-0">{t('scheduling.assigner.assignedTag')}</span>
+                                                        <span className="text-[8px] font-semibold text-muted-foreground shrink-0">{t('scheduling.assigner.assignedTag')}</span>
                                                       ) : (
                                                         <Button 
                                                           size="sm" 
@@ -1120,11 +1120,11 @@ export default function ShiftAssigner({ viewMode = 'MONTHLY' }: { viewMode?: 'WE
 
                                           {/* 2. OTHER STAFF (NO EXPLICIT AVAILABILITY) */}
                                           <div className="space-y-1 pt-2 border-t border-border">
-                                            <h4 className="text-[9px] font-semibold text-slate-600">
+                                            <h4 className="text-[9px] font-semibold text-muted-foreground">
                                               ⚪ {t('scheduling.assigner.otherStaff')} ({unspecified.length})
                                             </h4>
                                             {unspecified.length === 0 ? (
-                                              <p className="text-[9px] text-slate-400 italic pl-1 font-bold">{t('scheduling.assigner.allAccounted')}</p>
+                                              <p className="text-[9px] text-muted-foreground italic pl-1 font-bold">{t('scheduling.assigner.allAccounted')}</p>
                                             ) : (
                                               <div className="space-y-1">
                                                 {unspecified.map(s => {
@@ -1132,22 +1132,22 @@ export default function ShiftAssigner({ viewMode = 'MONTHLY' }: { viewMode?: 'WE
                                                   const others = assignments.filter(a => a.date === day.dateString && a.shiftId !== shift.id && a.userId === s.id);
                                                   
                                                   return (
-                                                    <div key={s.id} className="flex items-center justify-between p-1.5 rounded-lg border border-border bg-slate-50/50 hover:bg-slate-50 gap-2">
+                                                    <div key={s.id} className="flex items-center justify-between p-1.5 rounded-lg border border-border bg-muted/50 hover:bg-muted gap-2">
                                                       <div className="flex flex-col min-w-0 flex-1">
-                                                        <span className="text-[10px] font-bold text-slate-700 truncate">{s.firstName} {s.lastName}</span>
+                                                        <span className="text-[10px] font-bold text-foreground truncate">{s.firstName} {s.lastName}</span>
                                                         {others.length > 0 && (
-                                                          <span className="text-[8px] text-amber-600 font-semibold tracking-tight truncate mt-0.5">
+                                                          <span className="text-[8px] text-amber-600 dark:text-amber-400 font-semibold tracking-tight truncate mt-0.5">
                                                             {t('scheduling.assigner.worksOtherShift')}
                                                           </span>
                                                         )}
                                                       </div>
                                                       {isAssigned ? (
-                                                        <span className="text-[8px] font-semibold text-slate-400 shrink-0">{t('scheduling.assigner.assignedTag')}</span>
+                                                        <span className="text-[8px] font-semibold text-muted-foreground shrink-0">{t('scheduling.assigner.assignedTag')}</span>
                                                       ) : (
                                                         <Button 
                                                           size="sm" 
                                                           variant="outline"
-                                                          className="h-6 border-amber-200 bg-amber-50/30 text-amber-700 hover:bg-amber-100 font-semibold text-[8px] px-2 rounded shrink-0"
+                                                          className="h-6 border-amber-200 dark:border-amber-800/50 bg-amber-50/30 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400 hover:bg-amber-100 font-semibold text-[8px] px-2 rounded shrink-0"
                                                           onClick={() => {
                                                             handleAssign(shift.id, s.id, day.dateString);
                                                             setOpenPopoverCellId(null);
@@ -1165,11 +1165,11 @@ export default function ShiftAssigner({ viewMode = 'MONTHLY' }: { viewMode?: 'WE
 
                                           {/* 3. EXPLICITLY UNAVAILABLE */}
                                           <div className="space-y-1 pt-2 border-t border-border">
-                                            <h4 className="text-[9px] font-semibold text-red-600">
+                                            <h4 className="text-[9px] font-semibold text-red-600 dark:text-red-400">
                                               🔴 {t('scheduling.assigner.unavailable')} ({unavailable.length})
                                             </h4>
                                             {unavailable.length === 0 ? (
-                                              <p className="text-[9px] text-slate-400 italic pl-1 font-bold">{t('scheduling.assigner.noUnavailable')}</p>
+                                              <p className="text-[9px] text-muted-foreground italic pl-1 font-bold">{t('scheduling.assigner.noUnavailable')}</p>
                                             ) : (
                                               <div className="space-y-1">
                                                 {unavailable.map(s => {
@@ -1178,11 +1178,11 @@ export default function ShiftAssigner({ viewMode = 'MONTHLY' }: { viewMode?: 'WE
                                                   const availRecord = cellAvailabilities.find(a => a.userId === s.id);
                                                   
                                                   return (
-                                                    <div key={s.id} className="flex flex-col p-1.5 rounded-lg border border-red-100 bg-red-50/10 hover:bg-red-50/30 gap-1">
+                                                    <div key={s.id} className="flex flex-col p-1.5 rounded-lg border border-red-100 dark:border-red-800/50 bg-red-50/10 dark:bg-red-950/40 hover:bg-red-50/30 gap-1">
                                                       <div className="flex items-center justify-between gap-2 w-full">
                                                         <span className="text-[10px] font-bold text-red-955 truncate flex-1">{s.firstName} {s.lastName}</span>
                                                         {isAssigned ? (
-                                                          <span className="text-[8px] font-semibold text-slate-400 shrink-0">{t('scheduling.assigner.assignedTag')}</span>
+                                                          <span className="text-[8px] font-semibold text-muted-foreground shrink-0">{t('scheduling.assigner.assignedTag')}</span>
                                                         ) : (
                                                           <Button 
                                                             size="sm" 
@@ -1206,12 +1206,12 @@ export default function ShiftAssigner({ viewMode = 'MONTHLY' }: { viewMode?: 'WE
                                                         )}
                                                       </div>
                                                       {availRecord?.notes && (
-                                                        <span className="text-[8px] text-red-500 font-medium italic mt-0.5 block bg-red-50/50 p-1 rounded border border-red-100/50 truncate" title={availRecord.notes}>
+                                                        <span className="text-[8px] text-red-500 dark:text-red-400 font-medium italic mt-0.5 block bg-red-50/50 dark:bg-red-950/40 p-1 rounded border border-red-100/50 dark:border-red-800/50 truncate" title={availRecord.notes}>
                                                           "{availRecord.notes}"
                                                         </span>
                                                       )}
                                                       {others.length > 0 && (
-                                                        <span className="text-[8px] text-amber-600 font-semibold tracking-tight truncate">
+                                                        <span className="text-[8px] text-amber-600 dark:text-amber-400 font-semibold tracking-tight truncate">
                                                           ⚠️ {t('scheduling.assigner.worksOtherShift')}
                                                         </span>
                                                       )}
@@ -1234,9 +1234,9 @@ export default function ShiftAssigner({ viewMode = 'MONTHLY' }: { viewMode?: 'WE
                             return (
                               <td className={cn(
                                 "px-3 py-2 border-b border-border text-right align-top font-black tabular-nums",
-                                isToday ? 'bg-blue-50/40' : isWeekend ? 'bg-slate-50/50' : 'bg-white'
+                                isToday ? 'bg-blue-50/40' : isWeekend ? 'bg-muted/50' : 'bg-card'
                               )}>
-                                {total > 0 ? <span className="text-slate-900">{formatHM(total)}</span> : <span className="text-slate-300">—</span>}
+                                {total > 0 ? <span className="text-foreground">{formatHM(total)}</span> : <span className="text-slate-300">—</span>}
                               </td>
                             );
                           })()}

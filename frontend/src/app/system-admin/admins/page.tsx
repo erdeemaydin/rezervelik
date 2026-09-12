@@ -31,11 +31,11 @@ function PermissionPicker({ value, onChange }: { value: SystemPermissionKey[]; o
   return (
     <div className="grid gap-2.5 max-h-64 overflow-y-auto pr-1">
       {SYSTEM_PERMISSIONS.map((p) => (
-        <label key={p.key} className="flex items-start gap-2.5 rounded-md border border-border p-2.5 cursor-pointer hover:bg-slate-50">
+        <label key={p.key} className="flex items-start gap-2.5 rounded-md border border-border p-2.5 cursor-pointer hover:bg-muted">
           <Checkbox checked={value.includes(p.key)} onCheckedChange={(c) => toggle(p.key, c)} className="mt-0.5" />
           <span>
-            <span className="block text-xs font-bold text-slate-700">{p.label}</span>
-            <span className="block text-[10px] text-slate-400 leading-snug">{p.description}</span>
+            <span className="block text-xs font-bold text-foreground">{p.label}</span>
+            <span className="block text-[10px] text-muted-foreground leading-snug">{p.description}</span>
           </span>
         </label>
       ))}
@@ -65,11 +65,11 @@ function RootAccessSection({
     <>
       <div className="flex items-center justify-between rounded-md border border-border p-3">
         <div>
-          <p className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
-            {isRoot ? <ShieldCheck className="w-3.5 h-3.5 text-red-600" /> : <Lock className="w-3.5 h-3.5 text-blue-600" />}
+          <p className="text-xs font-bold text-foreground flex items-center gap-1.5">
+            {isRoot ? <ShieldCheck className="w-3.5 h-3.5 text-red-600 dark:text-red-400" /> : <Lock className="w-3.5 h-3.5 text-blue-600" />}
             {isRoot ? t('systemAdmin.admins.rootAdministrator') : t('systemAdmin.admins.restrictedAdministratorLabel')}
           </p>
-          <p className="text-[10px] text-slate-400">
+          <p className="text-[10px] text-muted-foreground">
             {isRoot ? t('systemAdmin.admins.rootAdminDescription') : t('systemAdmin.admins.restrictedAdminDescription')}
           </p>
         </div>
@@ -78,7 +78,7 @@ function RootAccessSection({
       {warning}
       {!isRoot && (
         <div className="grid gap-1.5">
-          <Label className="text-[10px] font-semibold text-slate-400">{t('systemAdmin.admins.permissionsLabel')}</Label>
+          <Label className="text-[10px] font-semibold text-muted-foreground">{t('systemAdmin.admins.permissionsLabel')}</Label>
           <PermissionPicker value={permissions} onChange={onPermissionsChange} />
         </div>
       )}
@@ -223,37 +223,37 @@ export default function SystemAdminsPage() {
       <div className="flex flex-col gap-6">
         <div className="flex justify-between items-center">
           <div>
-            <h1 className="text-2xl font-semibold tracking-tight text-slate-900 font-heading">{t('systemAdmin.superAdmins')}</h1>
-            <p className="text-xs text-slate-500 font-medium">{t('systemAdmin.admins.pageSubtitle')}</p>
+            <h1 className="text-2xl font-semibold tracking-tight text-foreground font-heading">{t('systemAdmin.superAdmins')}</h1>
+            <p className="text-xs text-muted-foreground font-medium">{t('systemAdmin.admins.pageSubtitle')}</p>
           </div>
           <Button onClick={() => setAddOpen(true)} className="bg-emerald-600 hover:bg-emerald-700 text-xs font-bold shadow-sm">
             <Plus className="w-3.5 h-3.5 mr-1.5" /> {t('systemAdmin.admins.addAdministrator')}
           </Button>
         </div>
 
-        <Card className="border-border shadow-sm bg-white overflow-hidden">
-          <CardHeader className="border-b border-border bg-slate-50/50 p-4">
+        <Card className="border-border shadow-sm bg-card overflow-hidden">
+          <CardHeader className="border-b border-border bg-muted/50 p-4">
             <div className="flex items-center gap-2">
-              <ShieldCheck className="w-4 h-4 text-emerald-600" />
-              <CardTitle className="text-sm font-bold text-slate-700">{t('systemAdmin.admins.accessRoster')}</CardTitle>
+              <ShieldCheck className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+              <CardTitle className="text-sm font-bold text-foreground">{t('systemAdmin.admins.accessRoster')}</CardTitle>
             </div>
           </CardHeader>
           <CardContent className="p-0">
             <Table>
               <TableHeader>
-                <TableRow className="bg-slate-50/50 hover:bg-slate-50/50">
-                  <TableHead className="text-xs font-bold text-slate-500">{t('systemAdmin.admins.colName')}</TableHead>
-                  <TableHead className="text-xs font-bold text-slate-500">{t('systemAdmin.admins.colEmail')}</TableHead>
-                  <TableHead className="text-xs font-bold text-slate-500">{t('systemAdmin.admins.colAccessLevel')}</TableHead>
-                  <TableHead className="text-xs font-bold text-slate-500">{t('systemAdmin.admins.colStatus')}</TableHead>
-                  <TableHead className="text-xs font-bold text-slate-500">{t('systemAdmin.admins.colCreatedAt')}</TableHead>
-                  <TableHead className="text-xs font-bold text-slate-500 text-right">{t('systemAdmin.admins.colActions')}</TableHead>
+                <TableRow className="bg-muted/50 hover:bg-muted/50">
+                  <TableHead className="text-xs font-bold text-muted-foreground">{t('systemAdmin.admins.colName')}</TableHead>
+                  <TableHead className="text-xs font-bold text-muted-foreground">{t('systemAdmin.admins.colEmail')}</TableHead>
+                  <TableHead className="text-xs font-bold text-muted-foreground">{t('systemAdmin.admins.colAccessLevel')}</TableHead>
+                  <TableHead className="text-xs font-bold text-muted-foreground">{t('systemAdmin.admins.colStatus')}</TableHead>
+                  <TableHead className="text-xs font-bold text-muted-foreground">{t('systemAdmin.admins.colCreatedAt')}</TableHead>
+                  <TableHead className="text-xs font-bold text-muted-foreground text-right">{t('systemAdmin.admins.colActions')}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {loading ? (
                   <TableRow>
-                    <TableCell colSpan={6} className="h-32 text-center text-xs font-bold text-slate-400">{t('systemAdmin.admins.loadingAdmins')}</TableCell>
+                    <TableCell colSpan={6} className="h-32 text-center text-xs font-bold text-muted-foreground">{t('systemAdmin.admins.loadingAdmins')}</TableCell>
                   </TableRow>
                 ) : admins.map((admin) => {
                   const isSelf = admin.id === currentUserId;
@@ -261,26 +261,26 @@ export default function SystemAdminsPage() {
                   const isRoot = admin.isRootAdmin !== false;
                   const grantedCount = splitPermissions(admin.permissions).length;
                   return (
-                  <TableRow key={admin.id} className="hover:bg-slate-50/80 transition-colors">
-                    <TableCell className="font-semibold text-sm text-slate-800">{admin.firstName} {admin.lastName}</TableCell>
-                    <TableCell className="text-xs text-slate-500">{admin.email}</TableCell>
+                  <TableRow key={admin.id} className="hover:bg-muted/80 transition-colors">
+                    <TableCell className="font-semibold text-sm text-foreground">{admin.firstName} {admin.lastName}</TableCell>
+                    <TableCell className="text-xs text-muted-foreground">{admin.email}</TableCell>
                     <TableCell>
-                      <Badge className={isRoot ? 'bg-red-50 text-red-700 border-red-200' : 'bg-blue-50 text-blue-700 border-blue-200'}>
+                      <Badge className={isRoot ? 'bg-red-50 dark:bg-red-950/40 text-red-700 dark:text-red-400 border-red-200 dark:border-red-800/50' : 'bg-blue-50 text-blue-700 border-blue-200'}>
                         {isRoot ? t('systemAdmin.admins.root') : `${t('systemAdmin.admins.restricted')} · ${grantedCount} ${grantedCount === 1 ? t('systemAdmin.admins.permission') : t('systemAdmin.admins.permissions')}`}
                       </Badge>
                     </TableCell>
                     <TableCell>
-                      <Badge className={isActive ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-slate-100 text-slate-500 border-border'}>
+                      <Badge className={isActive ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800/50' : 'bg-muted text-muted-foreground border-border'}>
                         {isActive ? t('systemAdmin.active') : t('systemAdmin.admins.deactivated')}
                       </Badge>
                     </TableCell>
-                    <TableCell className="text-xs text-slate-500">{new Date(admin.createdAt).toLocaleDateString()}</TableCell>
+                    <TableCell className="text-xs text-muted-foreground">{new Date(admin.createdAt).toLocaleDateString()}</TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-1">
-                        <Button variant="ghost" size="sm" onClick={() => openEditDialog(admin)} className="h-7 text-[10px] font-bold text-slate-500 hover:text-blue-600 hover:bg-blue-50 px-2">
+                        <Button variant="ghost" size="sm" onClick={() => openEditDialog(admin)} className="h-7 text-[10px] font-bold text-muted-foreground hover:text-blue-600 hover:bg-blue-50 px-2">
                           <GearSix className="w-3.5 h-3.5 mr-1.5" /> {t('systemAdmin.admins.accessButton')}
                         </Button>
-                        <Button variant="ghost" size="sm" disabled={resetLoadingId === admin.id} onClick={() => handleGenerateReset(admin)} className="h-7 text-[10px] font-bold text-slate-500 hover:text-amber-600 hover:bg-amber-50 px-2">
+                        <Button variant="ghost" size="sm" disabled={resetLoadingId === admin.id} onClick={() => handleGenerateReset(admin)} className="h-7 text-[10px] font-bold text-muted-foreground hover:text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:bg-amber-950/40 px-2">
                           <Key className="w-3.5 h-3.5 mr-1.5" /> {resetLoadingId === admin.id ? t('systemAdmin.admins.generatingEllipsis') : t('systemAdmin.admins.resetLinkButton')}
                         </Button>
                         <Button
@@ -288,7 +288,7 @@ export default function SystemAdminsPage() {
                           disabled={activeLoadingId === admin.id || isSelf}
                           title={isSelf ? t('systemAdmin.admins.cannotDeactivateSelf') : undefined}
                           onClick={() => handleToggleActive(admin)}
-                          className={`h-7 text-[10px] font-bold px-2 ${isActive ? 'text-slate-500 hover:text-red-600 hover:bg-red-50' : 'text-slate-500 hover:text-emerald-600 hover:bg-emerald-50'}`}
+                          className={`h-7 text-[10px] font-bold px-2 ${isActive ? 'text-muted-foreground hover:text-red-600 dark:text-red-400 hover:bg-red-50 dark:bg-red-950/40' : 'text-muted-foreground hover:text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:bg-emerald-950/40'}`}
                         >
                           {isActive ? <ShieldSlash className="w-3.5 h-3.5 mr-1.5" /> : <ShieldCheck className="w-3.5 h-3.5 mr-1.5" />}
                           {activeLoadingId === admin.id ? t('systemAdmin.admins.updatingEllipsis') : isActive ? t('systemAdmin.admins.deactivateButton') : t('systemAdmin.admins.reactivateButton')}
@@ -309,7 +309,7 @@ export default function SystemAdminsPage() {
           <form onSubmit={handleCreateAdmin}>
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2 text-base font-bold">
-                <ShieldCheck className="w-4 h-4 text-emerald-600" /> {t('systemAdmin.admins.addAdministrator')}
+                <ShieldCheck className="w-4 h-4 text-emerald-600 dark:text-emerald-400" /> {t('systemAdmin.admins.addAdministrator')}
               </DialogTitle>
               <DialogDescription className="text-xs">
                 {t('systemAdmin.admins.addDialogDescription')}
@@ -318,20 +318,20 @@ export default function SystemAdminsPage() {
             <div className="grid gap-4 mt-4">
               <div className="grid grid-cols-2 gap-3">
                 <div className="grid gap-1.5">
-                  <Label className="text-[10px] font-semibold text-slate-400">{t('systemAdmin.admins.firstName')}</Label>
+                  <Label className="text-[10px] font-semibold text-muted-foreground">{t('systemAdmin.admins.firstName')}</Label>
                   <Input required value={addForm.firstName} onChange={(e) => setAddForm({ ...addForm, firstName: e.target.value })} className="h-9 text-sm" />
                 </div>
                 <div className="grid gap-1.5">
-                  <Label className="text-[10px] font-semibold text-slate-400">{t('systemAdmin.admins.lastName')}</Label>
+                  <Label className="text-[10px] font-semibold text-muted-foreground">{t('systemAdmin.admins.lastName')}</Label>
                   <Input required value={addForm.lastName} onChange={(e) => setAddForm({ ...addForm, lastName: e.target.value })} className="h-9 text-sm" />
                 </div>
               </div>
               <div className="grid gap-1.5">
-                <Label className="text-[10px] font-semibold text-slate-400">{t('systemAdmin.admins.colEmail')}</Label>
+                <Label className="text-[10px] font-semibold text-muted-foreground">{t('systemAdmin.admins.colEmail')}</Label>
                 <Input required type="email" value={addForm.email} onChange={(e) => setAddForm({ ...addForm, email: e.target.value })} className="h-9 text-sm" />
               </div>
               <div className="grid gap-1.5">
-                <Label className="text-[10px] font-semibold text-slate-400">{t('systemAdmin.admins.password')}</Label>
+                <Label className="text-[10px] font-semibold text-muted-foreground">{t('systemAdmin.admins.password')}</Label>
                 <Input required type="password" minLength={8} value={addForm.password} onChange={(e) => setAddForm({ ...addForm, password: e.target.value })} placeholder={t('systemAdmin.admins.passwordPlaceholder')} className="h-9 text-sm" />
               </div>
 
@@ -343,7 +343,7 @@ export default function SystemAdminsPage() {
               />
             </div>
             <div className="mt-6 flex justify-end gap-2">
-              <Button type="button" variant="ghost" disabled={addSaving} onClick={() => setAddOpen(false)} className="h-9 text-xs font-bold text-slate-400">{t('systemAdmin.admins.cancel')}</Button>
+              <Button type="button" variant="ghost" disabled={addSaving} onClick={() => setAddOpen(false)} className="h-9 text-xs font-bold text-muted-foreground">{t('systemAdmin.admins.cancel')}</Button>
               <Button type="submit" disabled={addSaving} className="h-9 bg-emerald-600 hover:bg-emerald-700 text-xs font-bold px-6 disabled:opacity-60">
                 {addSaving ? t('systemAdmin.admins.addingEllipsis') : t('systemAdmin.admins.addAdministrator')}
               </Button>
@@ -361,7 +361,7 @@ export default function SystemAdminsPage() {
                   <GearSix className="w-4 h-4 text-blue-600" /> {t('systemAdmin.admins.colAccessLevel')}
                 </DialogTitle>
                 <DialogDescription className="text-xs">
-                  {t('systemAdmin.admins.editDescriptionPrefix')} <span className="font-bold text-slate-700">{editTarget.email}</span> {t('systemAdmin.admins.editDescriptionSuffix')}
+                  {t('systemAdmin.admins.editDescriptionPrefix')} <span className="font-bold text-foreground">{editTarget.email}</span> {t('systemAdmin.admins.editDescriptionSuffix')}
                 </DialogDescription>
               </DialogHeader>
               <div className="grid gap-4 mt-4">
@@ -372,12 +372,12 @@ export default function SystemAdminsPage() {
                   permissions={editPermissions}
                   onPermissionsChange={setEditPermissions}
                   warning={editTarget.id === currentUserId && editIsRoot ? (
-                    <p className="text-[10px] text-amber-600 font-bold -mt-2">{t('systemAdmin.admins.cannotRemoveOwnRoot')}</p>
+                    <p className="text-[10px] text-amber-600 dark:text-amber-400 font-bold -mt-2">{t('systemAdmin.admins.cannotRemoveOwnRoot')}</p>
                   ) : undefined}
                 />
               </div>
               <div className="mt-6 flex justify-end gap-2">
-                <Button type="button" variant="ghost" disabled={editSaving} onClick={() => setEditTarget(null)} className="h-9 text-xs font-bold text-slate-400">{t('systemAdmin.admins.cancel')}</Button>
+                <Button type="button" variant="ghost" disabled={editSaving} onClick={() => setEditTarget(null)} className="h-9 text-xs font-bold text-muted-foreground">{t('systemAdmin.admins.cancel')}</Button>
                 <Button type="submit" disabled={editSaving} className="h-9 bg-blue-600 hover:bg-blue-700 text-xs font-bold px-6 disabled:opacity-60">
                   {editSaving ? t('systemAdmin.admins.savingEllipsis') : t('systemAdmin.admins.saveAccessLevel')}
                 </Button>
@@ -391,19 +391,19 @@ export default function SystemAdminsPage() {
         <DialogContent maxWidth="sm:max-w-md" className="p-6">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-base font-bold">
-              <Key className="w-4 h-4 text-amber-500" /> {t('systemAdmin.admins.resetDialogTitle')}
+              <Key className="w-4 h-4 text-amber-500 dark:text-amber-400" /> {t('systemAdmin.admins.resetDialogTitle')}
             </DialogTitle>
             <DialogDescription className="text-xs">
-              {t('systemAdmin.admins.resetDialogDescriptionPrefix')} <span className="font-bold text-slate-700">{resetTarget}</span>{t('systemAdmin.admins.resetDialogDescriptionSuffix')}
+              {t('systemAdmin.admins.resetDialogDescriptionPrefix')} <span className="font-bold text-foreground">{resetTarget}</span>{t('systemAdmin.admins.resetDialogDescriptionSuffix')}
             </DialogDescription>
           </DialogHeader>
           <div className="flex items-center gap-2 mt-2">
-            <Input readOnly value={resetLink || ''} className="h-9 text-[10px] font-mono border-border bg-slate-50" onFocus={(e) => e.target.select()} />
+            <Input readOnly value={resetLink || ''} className="h-9 text-[10px] font-mono border-border bg-muted" onFocus={(e) => e.target.select()} />
             <Button type="button" size="sm" onClick={() => { if (resetLink) { navigator.clipboard.writeText(resetLink); toast.success(t('systemAdmin.admins.copiedToClipboard')); } }} className="h-9 shrink-0 bg-slate-900 hover:bg-slate-800 text-white">
               <Copy className="w-3.5 h-3.5" />
             </Button>
           </div>
-          <p className="text-[9px] text-amber-600 font-bold">
+          <p className="text-[9px] text-amber-600 dark:text-amber-400 font-bold">
             {resetExpiryMins ? `${t('systemAdmin.admins.expiresInPrefix')} ${resetExpiryMins} ${t('systemAdmin.admins.expiresInSuffix')} · ` : ''}{t('systemAdmin.admins.singleUse')}
           </p>
         </DialogContent>

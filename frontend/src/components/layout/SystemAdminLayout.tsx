@@ -39,6 +39,16 @@ export default function SystemAdminLayout({ children }: SystemAdminLayoutProps) 
   const setAdminTheme = useAdminThemeStore((s) => s.setTheme);
   const { t } = useTranslation();
 
+  // See the matching effect in AdminLayout.tsx for why this toggles <html>
+  // itself rather than relying on the `dark` class already on this
+  // component's own wrapper div: Select/DropdownMenu/Dialog/Popover all
+  // portal to document.body, escaping this subtree, so only a class on
+  // <html> reaches them too.
+  useEffect(() => {
+    document.documentElement.classList.add('dark');
+    return () => { document.documentElement.classList.remove('dark'); };
+  }, []);
+
   useEffect(() => {
     setMounted(true);
     // Desktop (lg+) shows the sidebar by default; smaller screens keep it closed.
@@ -104,7 +114,7 @@ export default function SystemAdminLayout({ children }: SystemAdminLayoutProps) 
   };
 
   return (
-    <div data-admin-theme={theme} className="admin-surface-system flex h-dvh bg-background font-sans">
+    <div data-admin-theme={theme} className="dark admin-surface-system flex h-dvh bg-background font-sans">
       {/* Mobile/tablet overlay — clicking off the sidebar closes it. */}
       {isSidebarOpen && (
         <div

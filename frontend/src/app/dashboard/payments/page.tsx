@@ -87,22 +87,22 @@ export default function PaymentsPage() {
 
   const statusBadge = (status: string) => {
     const map: Record<string, string> = {
-      PAID: 'bg-emerald-50 text-emerald-700 border-emerald-200',
-      PENDING: 'bg-amber-50 text-amber-700 border-amber-200',
-      FAILED: 'bg-red-50 text-red-700 border-red-200',
-      EXPIRED: 'bg-slate-100 text-slate-500 border-border',
-      REFUNDED: 'bg-violet-50 text-violet-700 border-violet-200',
+      PAID: 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800/50',
+      PENDING: 'bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-800/50',
+      FAILED: 'bg-red-50 dark:bg-red-950/40 text-red-700 dark:text-red-400 border-red-200 dark:border-red-800/50',
+      EXPIRED: 'bg-muted text-muted-foreground border-border',
+      REFUNDED: 'bg-violet-50 dark:bg-violet-950/40 text-violet-700 dark:text-violet-400 border-violet-200 dark:border-violet-800/50',
     };
  return <Badge className={`${map[status] ||''} hover:opacity-100 border font-semibold text-[10px]`}>{t(`payments.status.${status.toLowerCase()}`) || status}</Badge>;
   };
 
   const statusIcon = (status: string) => {
     switch (status) {
-      case 'PAID': return <CheckCircle className="w-4 h-4 text-emerald-500" />;
-      case 'PENDING': return <Hourglass className="w-4 h-4 text-amber-500" />;
-      case 'FAILED': return <XCircle className="w-4 h-4 text-red-500" />;
-      case 'EXPIRED': return <Clock className="w-4 h-4 text-slate-400" />;
-      default: return <CreditCard className="w-4 h-4 text-slate-400" />;
+      case 'PAID': return <CheckCircle className="w-4 h-4 text-emerald-500 dark:text-emerald-400" />;
+      case 'PENDING': return <Hourglass className="w-4 h-4 text-amber-500 dark:text-amber-400" />;
+      case 'FAILED': return <XCircle className="w-4 h-4 text-red-500 dark:text-red-400" />;
+      case 'EXPIRED': return <Clock className="w-4 h-4 text-muted-foreground" />;
+      default: return <CreditCard className="w-4 h-4 text-muted-foreground" />;
     }
   };
 
@@ -110,8 +110,8 @@ export default function PaymentsPage() {
     <>
       <div className="flex flex-col gap-6">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight text-slate-900 font-heading">{t('payments.title')}</h1>
-          <p className="text-xs text-slate-500 font-medium">{t('payments.depositsSubtitle')}</p>
+          <h1 className="text-2xl font-semibold tracking-tight text-foreground font-heading">{t('payments.title')}</h1>
+          <p className="text-xs text-muted-foreground font-medium">{t('payments.depositsSubtitle')}</p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -124,76 +124,76 @@ export default function PaymentsPage() {
           </Card>
           <Card className="border-border shadow-sm">
             <CardHeader className="p-4 pb-2">
-              <CardDescription className="text-[10px] font-semibold text-slate-400">{t('payments.awaiting')}</CardDescription>
-              <CardTitle className="text-2xl font-bold tabular-nums text-slate-800">{stats.pending}</CardTitle>
+              <CardDescription className="text-[10px] font-semibold text-muted-foreground">{t('payments.awaiting')}</CardDescription>
+              <CardTitle className="text-2xl font-bold tabular-nums text-foreground">{stats.pending}</CardTitle>
             </CardHeader>
-            <CardContent className="p-4 pt-0 text-[11px] font-bold text-slate-400">{t('payments.awaitingHint')}</CardContent>
+            <CardContent className="p-4 pt-0 text-[11px] font-bold text-muted-foreground">{t('payments.awaitingHint')}</CardContent>
           </Card>
-          <Card className="border-rose-100 shadow-sm">
+          <Card className="border-rose-100 dark:border-rose-800/50 shadow-sm">
             <CardHeader className="p-4 pb-2">
               <CardDescription className="text-[10px] font-semibold text-rose-400">{t('payments.forfeited')}</CardDescription>
-              <CardTitle className="text-2xl font-bold tabular-nums text-rose-600">{money(stats.forfeitedTotal, stats.currency)}</CardTitle>
+              <CardTitle className="text-2xl font-bold tabular-nums text-rose-600 dark:text-rose-400">{money(stats.forfeitedTotal, stats.currency)}</CardTitle>
             </CardHeader>
             <CardContent className="p-4 pt-0 text-[11px] font-bold text-rose-400">{stats.forfeitedCount} {t('payments.forfeitedHint')}</CardContent>
           </Card>
           <Card className="border-border shadow-sm">
             <CardHeader className="p-4 pb-2">
-              <CardDescription className="text-[10px] font-semibold text-slate-400">{t('payments.totalTransactions')}</CardDescription>
-              <CardTitle className="text-2xl font-bold tabular-nums text-slate-800">{stats.count}</CardTitle>
+              <CardDescription className="text-[10px] font-semibold text-muted-foreground">{t('payments.totalTransactions')}</CardDescription>
+              <CardTitle className="text-2xl font-bold tabular-nums text-foreground">{stats.count}</CardTitle>
             </CardHeader>
-            <CardContent className="p-4 pt-0 text-[11px] font-bold text-slate-400">{payments[0]?.provider || '—'}</CardContent>
+            <CardContent className="p-4 pt-0 text-[11px] font-bold text-muted-foreground">{payments[0]?.provider || '—'}</CardContent>
           </Card>
         </div>
 
-        <Card className="border-border shadow-sm bg-white overflow-hidden">
-          <CardHeader className="border-b border-border bg-slate-50/50 p-4">
+        <Card className="border-border shadow-sm bg-card overflow-hidden">
+          <CardHeader className="border-b border-border bg-muted/50 p-4">
             <div className="flex items-center gap-2">
-              <CreditCard className="w-4 h-4 text-slate-500" />
-              <CardTitle className="text-sm font-bold text-slate-700">{t('payments.transactions')}</CardTitle>
+              <CreditCard className="w-4 h-4 text-muted-foreground" />
+              <CardTitle className="text-sm font-bold text-foreground">{t('payments.transactions')}</CardTitle>
             </div>
           </CardHeader>
           <CardContent className="p-0">
             <Table>
               <TableHeader>
-                <TableRow className="bg-slate-50/50 hover:bg-slate-50/50">
-                  <TableHead className="text-xs font-bold text-slate-500">{t('payments.guest')}</TableHead>
-                  <TableHead className="text-xs font-bold text-slate-500">{t('payments.amount')}</TableHead>
-                  <TableHead className="text-xs font-bold text-slate-500">{t('payments.status.label')}</TableHead>
-                  <TableHead className="text-xs font-bold text-slate-500">{t('payments.reference')}</TableHead>
-                  <TableHead className="text-xs font-bold text-slate-500">{t('payments.date')}</TableHead>
-                  {canRefund && <TableHead className="text-xs font-bold text-slate-500 text-right">{t('payments.actions')}</TableHead>}
+                <TableRow className="bg-muted/50 hover:bg-muted/50">
+                  <TableHead className="text-xs font-bold text-muted-foreground">{t('payments.guest')}</TableHead>
+                  <TableHead className="text-xs font-bold text-muted-foreground">{t('payments.amount')}</TableHead>
+                  <TableHead className="text-xs font-bold text-muted-foreground">{t('payments.status.label')}</TableHead>
+                  <TableHead className="text-xs font-bold text-muted-foreground">{t('payments.reference')}</TableHead>
+                  <TableHead className="text-xs font-bold text-muted-foreground">{t('payments.date')}</TableHead>
+                  {canRefund && <TableHead className="text-xs font-bold text-muted-foreground text-right">{t('payments.actions')}</TableHead>}
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {loading ? (
-                  <TableRow><TableCell colSpan={canRefund ? 6 : 5} className="h-32 text-center text-xs font-bold text-slate-400">{t('payments.loading')}</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={canRefund ? 6 : 5} className="h-32 text-center text-xs font-bold text-muted-foreground">{t('payments.loading')}</TableCell></TableRow>
                 ) : payments.length === 0 ? (
-                  <TableRow><TableCell colSpan={canRefund ? 6 : 5} className="h-32 text-center text-xs font-bold text-slate-400">{t('payments.empty')}</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={canRefund ? 6 : 5} className="h-32 text-center text-xs font-bold text-muted-foreground">{t('payments.empty')}</TableCell></TableRow>
                 ) : payments.map((p) => (
-                  <TableRow key={p.id} className="hover:bg-slate-50/80 transition-colors">
+                  <TableRow key={p.id} className="hover:bg-muted/80 transition-colors">
                     <TableCell>
-                      <div className="font-semibold text-sm text-slate-800">{p.reservation?.customerName || '—'}</div>
-                      <div className="text-[11px] text-slate-400 font-mono">{p.reservation?.customerPhone}</div>
+                      <div className="font-semibold text-sm text-foreground">{p.reservation?.customerName || '—'}</div>
+                      <div className="text-[11px] text-muted-foreground font-mono">{p.reservation?.customerPhone}</div>
                     </TableCell>
-                    <TableCell className="font-black text-slate-900">{money(p.amount, p.currency)}</TableCell>
+                    <TableCell className="font-black text-foreground">{money(p.amount, p.currency)}</TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2 flex-wrap">
                         {statusIcon(p.status)} {statusBadge(p.status)}
                         {isForfeited(p) && (
-                          <Badge className="bg-rose-50 text-rose-700 border-rose-200 hover:opacity-100 border font-semibold text-[10px]">
+                          <Badge className="bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-400 border-rose-200 dark:border-rose-800/50 hover:opacity-100 border font-semibold text-[10px]">
                             {t('payments.forfeitedBadge')}
                           </Badge>
                         )}
                       </div>
                     </TableCell>
-                    <TableCell className="text-[11px] font-mono text-slate-400">{p.merchantOid}</TableCell>
-                    <TableCell className="text-xs text-slate-500">{new Date(p.paidAt || p.createdAt).toLocaleString('tr-TR')}</TableCell>
+                    <TableCell className="text-[11px] font-mono text-muted-foreground">{p.merchantOid}</TableCell>
+                    <TableCell className="text-xs text-muted-foreground">{new Date(p.paidAt || p.createdAt).toLocaleString('tr-TR')}</TableCell>
                     {canRefund && (
                       <TableCell className="text-right">
                         {p.status === 'PAID' && (
                           <Button
                             size="sm" variant="outline"
-                            className="h-7 px-2 text-[11px] font-bold text-rose-600 border-rose-200 hover:bg-rose-50"
+                            className="h-7 px-2 text-[11px] font-bold text-rose-600 dark:text-rose-400 border-rose-200 dark:border-rose-800/50 hover:bg-rose-50 dark:bg-rose-950/40"
                             disabled={refundingId === p.id}
                             onClick={() => handleRefund(p)}
                           >

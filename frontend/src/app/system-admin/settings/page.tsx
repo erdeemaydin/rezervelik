@@ -65,63 +65,63 @@ export default function SystemSettingsPage() {
     <>
       <div className="flex flex-col gap-6 max-w-4xl">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight text-slate-900 font-heading">Global Settings</h1>
-          <p className="text-xs text-slate-500 font-medium">Configure platform-wide behaviors and defaults.</p>
+          <h1 className="text-2xl font-semibold tracking-tight text-foreground font-heading">Global Settings</h1>
+          <p className="text-xs text-muted-foreground font-medium">Configure platform-wide behaviors and defaults.</p>
         </div>
 
-        <Card className="border-border shadow-sm bg-white">
-          <CardHeader className="border-b border-border bg-slate-50/50 p-4">
-            <CardTitle className="text-sm font-bold text-slate-700">Platform Control</CardTitle>
+        <Card className="border-border shadow-sm bg-card">
+          <CardHeader className="border-b border-border bg-muted/50 p-4">
+            <CardTitle className="text-sm font-bold text-foreground">Platform Control</CardTitle>
             <CardDescription className="text-xs">These settings affect all tenants on the platform immediately.</CardDescription>
           </CardHeader>
           <CardContent className="p-6 space-y-6">
             <div className="flex items-center justify-between p-4 border border-border rounded-lg">
               <div className="space-y-0.5">
-                <Label className="text-base font-bold text-slate-800">Maintenance Mode</Label>
-                <p className="text-xs text-slate-500 font-medium">Disable access to all tenant dashboards. API will return 503.</p>
+                <Label className="text-base font-bold text-foreground">Maintenance Mode</Label>
+                <p className="text-xs text-muted-foreground font-medium">Disable access to all tenant dashboards. API will return 503.</p>
               </div>
               <Switch checked={settings.maintenanceMode} onCheckedChange={(v) => setSettings({ ...settings, maintenanceMode: v })} />
             </div>
 
             <div className="flex items-center justify-between p-4 border border-border rounded-lg">
               <div className="space-y-0.5">
-                <Label className="text-base font-bold text-slate-800">Public Registration</Label>
-                <p className="text-xs text-slate-500 font-medium">Allow new restaurants to self-register via the main landing page.</p>
+                <Label className="text-base font-bold text-foreground">Public Registration</Label>
+                <p className="text-xs text-muted-foreground font-medium">Allow new restaurants to self-register via the main landing page.</p>
               </div>
               <Switch checked={settings.publicRegistrationEnabled} onCheckedChange={(v) => setSettings({ ...settings, publicRegistrationEnabled: v })} />
             </div>
 
             <div className="flex items-center justify-between p-4 border border-border rounded-lg">
               <div className="space-y-0.5">
-                <Label className="text-base font-bold text-slate-800">Enforce 2FA for System Admins</Label>
-                <p className="text-xs text-slate-500 font-medium">Require two-factor authentication for root access.</p>
+                <Label className="text-base font-bold text-foreground">Enforce 2FA for System Admins</Label>
+                <p className="text-xs text-muted-foreground font-medium">Require two-factor authentication for root access.</p>
               </div>
               <Switch checked={settings.enforce2FAForAdmins} onCheckedChange={(v) => setSettings({ ...settings, enforce2FAForAdmins: v })} />
             </div>
             
             <div className="flex items-center justify-between p-4 border border-border rounded-lg">
               <div className="space-y-0.5 pr-4">
-                <Label className="text-base font-bold text-slate-800">Date &amp; Time Format</Label>
-                <p className="text-xs text-slate-500 font-medium">
+                <Label className="text-base font-bold text-foreground">Date &amp; Time Format</Label>
+                <p className="text-xs text-muted-foreground font-medium">
                   Applies to every tenant dashboard. <strong>Metric</strong> uses the European / Turkish style
                   (DD/MM/YYYY and a 24-hour clock). <strong>USA</strong> uses MM/DD/YYYY and a 12-hour AM/PM clock.
                 </p>
-                <p className="text-[11px] text-slate-400 font-medium mt-1">
+                <p className="text-[11px] text-muted-foreground font-medium mt-1">
                   Preview: {settings.measurementSystem === 'US' ? '07/03/2026 · 2:30 PM' : '03/07/2026 · 14:30'}
                 </p>
               </div>
-              <div className="flex items-center bg-slate-100 rounded-lg p-1 shrink-0">
+              <div className="flex items-center bg-muted rounded-lg p-1 shrink-0">
                 <button
                   type="button"
                   onClick={() => setSettings({ ...settings, measurementSystem: 'METRIC' })}
-                  className={`px-4 h-8 rounded-md text-xs font-bold transition-colors ${settings.measurementSystem === 'METRIC' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                  className={`px-4 h-8 rounded-md text-xs font-bold transition-colors ${settings.measurementSystem === 'METRIC' ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
                 >
                   Metric (EU/TR)
                 </button>
                 <button
                   type="button"
                   onClick={() => setSettings({ ...settings, measurementSystem: 'US' })}
-                  className={`px-4 h-8 rounded-md text-xs font-bold transition-colors ${settings.measurementSystem === 'US' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                  className={`px-4 h-8 rounded-md text-xs font-bold transition-colors ${settings.measurementSystem === 'US' ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
                 >
                   USA
                 </button>
@@ -131,11 +131,11 @@ export default function SystemSettingsPage() {
           </CardContent>
         </Card>
 
-        <Card className="border-border shadow-sm bg-white">
-          <CardHeader className="border-b border-border bg-slate-50/50 p-4 flex flex-row items-center gap-3">
-            <div className="p-2 bg-emerald-50 rounded-md text-emerald-600"><Palette className="w-5 h-5" /></div>
+        <Card className="border-border shadow-sm bg-card">
+          <CardHeader className="border-b border-border bg-muted/50 p-4 flex flex-row items-center gap-3">
+            <div className="p-2 bg-emerald-50 dark:bg-emerald-950/40 rounded-md text-emerald-600 dark:text-emerald-400"><Palette className="w-5 h-5" /></div>
             <div>
-              <CardTitle className="text-sm font-bold text-slate-700">Console Appearance</CardTitle>
+              <CardTitle className="text-sm font-bold text-foreground">Console Appearance</CardTitle>
               <CardDescription className="text-xs">Color theme for this system-admin console. Tenant dashboards are themed separately by each restaurant.</CardDescription>
             </div>
           </CardHeader>
@@ -148,7 +148,7 @@ export default function SystemSettingsPage() {
                     key={th.id}
                     type="button"
                     onClick={() => { setSettings({ ...settings, dashboardTheme: th.id }); useAdminThemeStore.getState().setTheme(th.id); }}
-                    className={`relative flex flex-col items-stretch gap-2 rounded-lg border-2 p-2.5 text-left transition-all ${active ? 'border-slate-800 shadow-sm' : 'border-border hover:border-ring'}`}
+                    className={`relative flex flex-col items-stretch gap-2 rounded-lg border-2 p-2.5 text-left transition-all ${active ? 'border-foreground shadow-sm' : 'border-border hover:border-ring'}`}
                     aria-pressed={active}
                   >
                     <div className="flex h-12 overflow-hidden rounded-md border border-border">
@@ -158,8 +158,8 @@ export default function SystemSettingsPage() {
                       </span>
                     </div>
                     <span className="flex items-center justify-between">
-                      <span className="text-[11px] font-semibold tracking-tight text-slate-700">{t(th.labelKey)}</span>
-                      {active && <Check className="h-3.5 w-3.5 text-slate-800" />}
+                      <span className="text-[11px] font-semibold tracking-tight text-foreground">{t(th.labelKey)}</span>
+                      {active && <Check className="h-3.5 w-3.5 text-foreground" />}
                     </span>
                   </button>
                 );

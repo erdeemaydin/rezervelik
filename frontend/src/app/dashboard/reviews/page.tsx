@@ -88,8 +88,8 @@ export default function ReviewsPage() {
   const Header = () => (
     <div className="flex flex-wrap items-center justify-between gap-3">
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight text-slate-900 font-heading">{t('reviews.title')}</h1>
-        <p className="text-xs text-slate-500 font-medium">{t('reviews.subtitle')}</p>
+        <h1 className="text-2xl font-semibold tracking-tight text-foreground font-heading">{t('reviews.title')}</h1>
+        <p className="text-xs text-muted-foreground font-medium">{t('reviews.subtitle')}</p>
       </div>
       <div className="flex items-center gap-2">
         {data?.configured && !editing && (
@@ -109,15 +109,15 @@ export default function ReviewsPage() {
   // Shared link editor / connect form.
   const LinkForm = () => (
     <Card className="border-border shadow-sm">
-      <CardHeader className="p-5 border-b border-border bg-slate-50/50 flex flex-row items-center gap-3">
+      <CardHeader className="p-5 border-b border-border bg-muted/50 flex flex-row items-center gap-3">
         <div className="p-2.5 bg-blue-50 rounded-lg text-blue-600"><MapPin className="w-5 h-5" /></div>
         <div>
-          <CardTitle className="text-base font-black text-slate-800">{t('reviews.connectTitle')}</CardTitle>
+          <CardTitle className="text-base font-black text-foreground">{t('reviews.connectTitle')}</CardTitle>
           <CardDescription className="text-xs">{t('reviews.connectDesc')}</CardDescription>
         </div>
       </CardHeader>
       <CardContent className="p-5 space-y-3">
-        <label className="text-[11px] font-semibold text-slate-500">{t('reviews.mapsLinkLabel')}</label>
+        <label className="text-[11px] font-semibold text-muted-foreground">{t('reviews.mapsLinkLabel')}</label>
         <div className="flex flex-col sm:flex-row gap-2">
           <Input
             value={linkInput}
@@ -145,22 +145,22 @@ export default function ReviewsPage() {
         ) : editing || !data?.configured ? (
           <LinkForm />
         ) : data.apiKeyMissing ? (
-          <Card className="border-amber-200 bg-amber-50/40 shadow-sm">
+          <Card className="border-amber-200 dark:border-amber-800/50 bg-amber-50/40 dark:bg-amber-950/40 shadow-sm">
             <CardContent className="p-6 flex items-start gap-4">
-              <div className="p-2.5 bg-amber-100 rounded-lg text-amber-700 shrink-0"><Key className="w-5 h-5" /></div>
+              <div className="p-2.5 bg-amber-100 dark:bg-amber-950/40 rounded-lg text-amber-700 dark:text-amber-400 shrink-0"><Key className="w-5 h-5" /></div>
               <div>
-                <h3 className="font-black text-slate-800 text-sm">{t('reviews.apiKeyMissingTitle')}</h3>
-                <p className="text-xs text-slate-600 mt-1 leading-relaxed">{t('reviews.apiKeyMissingDesc')}</p>
+                <h3 className="font-black text-foreground text-sm">{t('reviews.apiKeyMissingTitle')}</h3>
+                <p className="text-xs text-muted-foreground mt-1 leading-relaxed">{t('reviews.apiKeyMissingDesc')}</p>
               </div>
             </CardContent>
           </Card>
         ) : data.error ? (
-          <Card className="border-rose-200 bg-rose-50/40 shadow-sm">
+          <Card className="border-rose-200 dark:border-rose-800/50 bg-rose-50/40 dark:bg-rose-950/40 shadow-sm">
             <CardContent className="p-6 flex items-start gap-4">
-              <div className="p-2.5 bg-rose-100 rounded-lg text-rose-700 shrink-0"><WarningCircle className="w-5 h-5" /></div>
+              <div className="p-2.5 bg-rose-100 dark:bg-rose-950/40 rounded-lg text-rose-700 dark:text-rose-400 shrink-0"><WarningCircle className="w-5 h-5" /></div>
               <div>
-                <h3 className="font-black text-slate-800 text-sm">{t('reviews.googleErrorTitle')}</h3>
-                <p className="text-xs text-slate-600 mt-1 leading-relaxed">{data.errorDetail || data.error}</p>
+                <h3 className="font-black text-foreground text-sm">{t('reviews.googleErrorTitle')}</h3>
+                <p className="text-xs text-muted-foreground mt-1 leading-relaxed">{data.errorDetail || data.error}</p>
               </div>
             </CardContent>
           </Card>
@@ -169,12 +169,12 @@ export default function ReviewsPage() {
             {/* Summary */}
             <Card className="border-border shadow-sm bg-slate-900 text-white md:col-span-1 h-fit">
               <CardHeader className="p-4 pb-2">
-                <CardDescription className="text-[10px] font-semibold text-slate-400">{t('reviews.averageRating')}</CardDescription>
+                <CardDescription className="text-[10px] font-semibold text-muted-foreground">{t('reviews.averageRating')}</CardDescription>
                 <CardTitle className="text-4xl font-black mt-2">{data.rating?.toFixed(1) ?? '—'}</CardTitle>
               </CardHeader>
               <CardContent className="p-4 pt-0">
                 <div className="mb-3"><Stars rating={data.rating || 0} className="w-4 h-4" /></div>
-                <p className="text-xs text-slate-400 font-medium">{t('reviews.basedOnCount').replace('{{count}}', String(data.total || 0))}</p>
+                <p className="text-xs text-muted-foreground font-medium">{t('reviews.basedOnCount').replace('{{count}}', String(data.total || 0))}</p>
                 {data.googleUrl && (
                   <a href={data.googleUrl} target="_blank" rel="noopener noreferrer"
                      className="mt-4 inline-flex items-center gap-1.5 text-[11px] font-bold text-blue-400 hover:text-blue-300">
@@ -186,9 +186,9 @@ export default function ReviewsPage() {
 
             {/* Review list */}
             <div className="md:col-span-3 space-y-4">
-              <p className="text-[11px] font-bold text-slate-400">{t('reviews.fromGoogle')}</p>
+              <p className="text-[11px] font-bold text-muted-foreground">{t('reviews.fromGoogle')}</p>
               {(!data.reviews || data.reviews.length === 0) ? (
-                <Card className="border-border shadow-sm"><CardContent className="p-8 text-center text-sm text-slate-500">{t('reviews.noReviews')}</CardContent></Card>
+                <Card className="border-border shadow-sm"><CardContent className="p-8 text-center text-sm text-muted-foreground">{t('reviews.noReviews')}</CardContent></Card>
               ) : (
                 data.reviews.map((review, idx) => (
                   <Card key={idx} className="border-border shadow-sm overflow-hidden">
@@ -198,24 +198,24 @@ export default function ReviewsPage() {
                           // eslint-disable-next-line @next/next/no-img-element
                           <img src={review.photo} alt={review.author} className="w-9 h-9 rounded-full shrink-0" />
                         ) : (
-                          <div className="w-9 h-9 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 font-black text-xs shrink-0">
+                          <div className="w-9 h-9 rounded-full bg-muted flex items-center justify-center text-muted-foreground font-black text-xs shrink-0">
                             {review.author?.[0]?.toUpperCase() || '?'}
                           </div>
                         )}
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center justify-between gap-2">
-                            <h3 className="font-bold text-sm text-slate-800 truncate">{review.author}</h3>
-                            <span className="text-[10px] font-bold text-slate-400 shrink-0">{review.relativeTime}</span>
+                            <h3 className="font-bold text-sm text-foreground truncate">{review.author}</h3>
+                            <span className="text-[10px] font-bold text-muted-foreground shrink-0">{review.relativeTime}</span>
                           </div>
                           <div className="mt-1"><Stars rating={review.rating} /></div>
-                          {review.text && <p className="text-sm text-slate-700 leading-relaxed mt-2">{review.text}</p>}
+                          {review.text && <p className="text-sm text-foreground leading-relaxed mt-2">{review.text}</p>}
                         </div>
                       </div>
                     </CardContent>
                   </Card>
                 ))
               )}
-              <p className="text-[11px] text-slate-400 font-medium pt-1">{t('reviews.replyComingSoon')}</p>
+              <p className="text-[11px] text-muted-foreground font-medium pt-1">{t('reviews.replyComingSoon')}</p>
             </div>
           </div>
         )}

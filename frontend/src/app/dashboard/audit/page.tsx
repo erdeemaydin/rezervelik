@@ -30,11 +30,11 @@ const CATEGORIES = ['ALL', 'AUTH', 'SETTINGS', 'RESERVATION', 'PERMISSIONS', 'SU
 const categoryColor = (c: string) => {
   switch (c) {
     case 'AUTH': return 'bg-blue-50 text-blue-700 border-blue-200';
-    case 'SETTINGS': return 'bg-amber-50 text-amber-700 border-amber-200';
-    case 'RESERVATION': return 'bg-teal-50 text-teal-700 border-teal-200';
-    case 'PERMISSIONS': return 'bg-indigo-50 text-indigo-700 border-indigo-200';
-    case 'SUBSCRIPTION': return 'bg-purple-50 text-purple-700 border-purple-200';
-    default: return 'bg-slate-100 text-slate-600 border-border';
+    case 'SETTINGS': return 'bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-800/50';
+    case 'RESERVATION': return 'bg-teal-50 dark:bg-teal-950/40 text-teal-700 dark:text-teal-400 border-teal-200 dark:border-teal-800/50';
+    case 'PERMISSIONS': return 'bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-400 border-indigo-200 dark:border-indigo-800/50';
+    case 'SUBSCRIPTION': return 'bg-purple-50 dark:bg-purple-950/40 text-purple-700 dark:text-purple-400 border-purple-200 dark:border-purple-800/50';
+    default: return 'bg-muted text-muted-foreground border-border';
   }
 };
 
@@ -69,11 +69,11 @@ export default function TenantAuditPage() {
       <>
         <div className="flex items-center justify-center h-[60vh]">
           <div className="text-center max-w-md space-y-3">
-            <div className="w-14 h-14 rounded-full bg-amber-50 border border-amber-100 flex items-center justify-center mx-auto text-amber-500">
+            <div className="w-14 h-14 rounded-full bg-amber-50 dark:bg-amber-950/40 border border-amber-100 dark:border-amber-800/50 flex items-center justify-center mx-auto text-amber-500 dark:text-amber-400">
               <ShieldWarning className="w-7 h-7" />
             </div>
-            <h2 className="text-lg font-bold text-slate-800">{t('audit.notEnabledTitle')}</h2>
-            <p className="text-sm text-slate-500 leading-relaxed">{t('audit.notEnabledDesc')}</p>
+            <h2 className="text-lg font-bold text-foreground">{t('audit.notEnabledTitle')}</h2>
+            <p className="text-sm text-muted-foreground leading-relaxed">{t('audit.notEnabledDesc')}</p>
           </div>
         </div>
       </>
@@ -85,28 +85,28 @@ export default function TenantAuditPage() {
       <div className="flex flex-col gap-6">
         <div className="flex items-start justify-between">
           <div>
-            <h1 className="text-2xl font-semibold tracking-tight text-slate-900 font-heading">{t('audit.title')}</h1>
-            <p className="text-xs text-slate-500 font-medium">{t('audit.subtitle')}</p>
+            <h1 className="text-2xl font-semibold tracking-tight text-foreground font-heading">{t('audit.title')}</h1>
+            <p className="text-xs text-muted-foreground font-medium">{t('audit.subtitle')}</p>
           </div>
           <button
             onClick={fetchLogs}
-            className="flex items-center gap-2 h-8 px-3 text-xs font-bold text-slate-600 border border-border rounded-md hover:bg-slate-50"
+            className="flex items-center gap-2 h-8 px-3 text-xs font-bold text-muted-foreground border border-border rounded-md hover:bg-muted"
           >
             <ArrowClockwise className={cn('w-3.5 h-3.5', loading && 'animate-spin')} /> {t('audit.refresh')}
           </button>
         </div>
 
-        <Card className="border-border shadow-sm bg-white overflow-hidden">
-          <CardHeader className="border-b border-border bg-slate-50/50 p-4">
+        <Card className="border-border shadow-sm bg-card overflow-hidden">
+          <CardHeader className="border-b border-border bg-muted/50 p-4">
             <div className="flex items-center justify-between flex-wrap gap-3">
               <div className="flex items-center gap-2">
-                <Scroll className="w-4 h-4 text-slate-600" />
-                <CardTitle className="text-sm font-bold text-slate-700">{t('audit.title')}</CardTitle>
+                <Scroll className="w-4 h-4 text-muted-foreground" />
+                <CardTitle className="text-sm font-bold text-foreground">{t('audit.title')}</CardTitle>
               </div>
               <select
                 value={category}
                 onChange={(e) => setCategory(e.target.value)}
-                className="h-8 px-2 text-xs font-bold border border-border rounded-md bg-white transition-colors outline-none hover:border-ring focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+                className="h-8 px-2 text-xs font-bold border border-border rounded-md bg-card transition-colors outline-none hover:border-ring focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
               >
                 {CATEGORIES.map((c) => (
                   <option key={c} value={c}>{c === 'ALL' ? t('audit.allCategories') : c}</option>
@@ -118,19 +118,19 @@ export default function TenantAuditPage() {
             <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
-                  <TableRow className="bg-slate-50/50 hover:bg-slate-50/50">
-                    <TableHead className="text-xs font-bold text-slate-500 whitespace-nowrap">{t('audit.colTime')}</TableHead>
-                    <TableHead className="text-xs font-bold text-slate-500">{t('audit.colActor')}</TableHead>
-                    <TableHead className="text-xs font-bold text-slate-500">{t('audit.colAction')}</TableHead>
-                    <TableHead className="text-xs font-bold text-slate-500">{t('audit.colTarget')}</TableHead>
+                  <TableRow className="bg-muted/50 hover:bg-muted/50">
+                    <TableHead className="text-xs font-bold text-muted-foreground whitespace-nowrap">{t('audit.colTime')}</TableHead>
+                    <TableHead className="text-xs font-bold text-muted-foreground">{t('audit.colActor')}</TableHead>
+                    <TableHead className="text-xs font-bold text-muted-foreground">{t('audit.colAction')}</TableHead>
+                    <TableHead className="text-xs font-bold text-muted-foreground">{t('audit.colTarget')}</TableHead>
                     <TableHead className="w-8" />
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {loading ? (
-                    <TableRow><TableCell colSpan={5} className="h-32 text-center text-xs font-bold text-slate-400">{t('audit.loading')}</TableCell></TableRow>
+                    <TableRow><TableCell colSpan={5} className="h-32 text-center text-xs font-bold text-muted-foreground">{t('audit.loading')}</TableCell></TableRow>
                   ) : logs.length === 0 ? (
-                    <TableRow><TableCell colSpan={5} className="h-32 text-center text-xs font-bold text-slate-400">{t('audit.empty')}</TableCell></TableRow>
+                    <TableRow><TableCell colSpan={5} className="h-32 text-center text-xs font-bold text-muted-foreground">{t('audit.empty')}</TableCell></TableRow>
                   ) : logs.map((log) => (
                     <TableRow
                       key={log.id}
@@ -138,22 +138,22 @@ export default function TenantAuditPage() {
                       role="button"
                       tabIndex={0}
                       onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setSelectedLog(log); } }}
-                      className="hover:bg-slate-50/80 transition-colors cursor-pointer"
+                      className="hover:bg-muted/80 transition-colors cursor-pointer"
                     >
-                      <TableCell className="font-mono text-[11px] text-slate-500 whitespace-nowrap">{new Date(log.createdAt).toLocaleString()}</TableCell>
+                      <TableCell className="font-mono text-[11px] text-muted-foreground whitespace-nowrap">{new Date(log.createdAt).toLocaleString()}</TableCell>
                       <TableCell>
-                        <div className="font-semibold text-xs text-slate-800">{log.actorName || log.actorEmail || 'System'}</div>
-                        {log.actorRole && <div className="text-[10px] text-slate-400 font-bold">{log.actorRole}</div>}
+                        <div className="font-semibold text-xs text-foreground">{log.actorName || log.actorEmail || 'System'}</div>
+                        {log.actorRole && <div className="text-[10px] text-muted-foreground font-bold">{log.actorRole}</div>}
                       </TableCell>
                       <TableCell>
                         <div className="flex flex-col gap-1">
  <Badge variant="outline"className={cn('text-[9px] font-semibold w-fit px-1.5', categoryColor(log.category))}>
                             {log.category}
                           </Badge>
-                          <span className="text-[11px] font-semibold text-slate-600">{log.action.replace(/_/g, ' ').toLowerCase()}</span>
+                          <span className="text-[11px] font-semibold text-muted-foreground">{log.action.replace(/_/g, ' ').toLowerCase()}</span>
                         </div>
                       </TableCell>
-                      <TableCell className="text-xs text-slate-600">{log.targetLabel || log.targetType || '—'}</TableCell>
+                      <TableCell className="text-xs text-muted-foreground">{log.targetLabel || log.targetType || '—'}</TableCell>
                       <TableCell className="text-slate-300">
                         <CaretRight className="w-4 h-4" />
                       </TableCell>
@@ -174,7 +174,7 @@ export default function TenantAuditPage() {
             <>
               <DialogHeader>
                 <DialogTitle className="flex items-center gap-2">
-                  <Scroll className="w-4 h-4 text-slate-500" />
+                  <Scroll className="w-4 h-4 text-muted-foreground" />
                   {selectedLog.action.replace(/_/g, ' ').toLowerCase()}
                 </DialogTitle>
                 <DialogDescription className="font-mono text-[11px]">
@@ -185,37 +185,37 @@ export default function TenantAuditPage() {
               <div className="space-y-4 text-sm">
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <div className="text-[10px] font-semibold text-slate-400">{t('audit.colActor')}</div>
-                    <div className="font-semibold text-slate-800">{selectedLog.actorName || selectedLog.actorEmail || 'System'}</div>
-                    {selectedLog.actorRole && <div className="text-[10px] text-slate-400 font-bold">{selectedLog.actorRole}</div>}
+                    <div className="text-[10px] font-semibold text-muted-foreground">{t('audit.colActor')}</div>
+                    <div className="font-semibold text-foreground">{selectedLog.actorName || selectedLog.actorEmail || 'System'}</div>
+                    {selectedLog.actorRole && <div className="text-[10px] text-muted-foreground font-bold">{selectedLog.actorRole}</div>}
                   </div>
                   <div>
-                    <div className="text-[10px] font-semibold text-slate-400">{t('audit.detailCategory')}</div>
+                    <div className="text-[10px] font-semibold text-muted-foreground">{t('audit.detailCategory')}</div>
  <Badge variant="outline"className={cn('text-[9px] font-semibold w-fit px-1.5 mt-0.5', categoryColor(selectedLog.category))}>
                       {selectedLog.category}
                     </Badge>
                   </div>
                   <div>
-                    <div className="text-[10px] font-semibold text-slate-400">{t('audit.colTarget')}</div>
-                    <div className="text-slate-700">{selectedLog.targetLabel || selectedLog.targetType || '—'}</div>
-                    {selectedLog.targetId && <div className="text-[10px] text-slate-400 font-mono truncate">{selectedLog.targetId}</div>}
+                    <div className="text-[10px] font-semibold text-muted-foreground">{t('audit.colTarget')}</div>
+                    <div className="text-foreground">{selectedLog.targetLabel || selectedLog.targetType || '—'}</div>
+                    {selectedLog.targetId && <div className="text-[10px] text-muted-foreground font-mono truncate">{selectedLog.targetId}</div>}
                   </div>
                   {selectedLog.ip && (
                     <div>
-                      <div className="text-[10px] font-semibold text-slate-400">{t('audit.detailIp')}</div>
-                      <div className="text-slate-700 font-mono text-xs">{selectedLog.ip}</div>
+                      <div className="text-[10px] font-semibold text-muted-foreground">{t('audit.detailIp')}</div>
+                      <div className="text-foreground font-mono text-xs">{selectedLog.ip}</div>
                     </div>
                   )}
                 </div>
 
                 <div>
-                  <div className="text-[10px] font-semibold text-slate-400 mb-1.5">{t('audit.detailChanges')}</div>
+                  <div className="text-[10px] font-semibold text-muted-foreground mb-1.5">{t('audit.detailChanges')}</div>
                   {selectedLog.metadata && Object.keys(selectedLog.metadata).length > 0 ? (
-                    <pre className="bg-slate-50 border border-border rounded-lg p-3 text-[11px] font-mono text-slate-700 overflow-x-auto whitespace-pre-wrap break-words">
+                    <pre className="bg-muted border border-border rounded-lg p-3 text-[11px] font-mono text-foreground overflow-x-auto whitespace-pre-wrap break-words">
                       {JSON.stringify(selectedLog.metadata, null, 2)}
                     </pre>
                   ) : (
-                    <div className="text-xs text-slate-400 italic bg-slate-50 border border-border rounded-lg p-3">
+                    <div className="text-xs text-muted-foreground italic bg-muted border border-border rounded-lg p-3">
                       {t('audit.detailNoChanges')}
                     </div>
                   )}

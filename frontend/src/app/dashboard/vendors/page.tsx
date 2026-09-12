@@ -73,24 +73,24 @@ export default function VendorsPage() {
         <div className="flex items-center justify-between flex-wrap gap-3">
           <div>
             <h1 className="text-2xl font-semibold tracking-tight flex items-center gap-2 font-heading"><Handshake className="w-6 h-6" />{t('vendors.title')}</h1>
-            <p className="text-xs text-slate-400 font-bold">{t('vendors.subtitle')}</p>
+            <p className="text-xs text-muted-foreground font-bold">{t('vendors.subtitle')}</p>
           </div>
           <Button onClick={openCreate} className="bg-slate-900 hover:bg-slate-800"><Plus className="w-4 h-4 mr-1.5" />{t('vendors.add')}</Button>
         </div>
 
         <div className="flex gap-1.5 flex-wrap">
- <button onClick={() => setFilter('')} className={`text-[10px] font-semibold px-2 py-1 rounded-sm border transition-colors ${filter ===''?'bg-slate-900 text-white border-slate-900':'bg-white text-slate-500 border-border hover:bg-slate-50 hover:border-ring'}`}>{t('vendors.all')}</button>
+ <button onClick={() => setFilter('')} className={`text-[10px] font-semibold px-2 py-1 rounded-sm border transition-colors ${filter ===''?'bg-slate-900 text-white border-slate-900':'bg-card text-muted-foreground border-border hover:bg-muted hover:border-ring'}`}>{t('vendors.all')}</button>
           {CATEGORIES.map(c => (
- <button key={c} onClick={() => setFilter(c)} className={`text-[10px] font-semibold px-2 py-1 rounded-sm border transition-colors ${filter === c ?'bg-slate-900 text-white border-slate-900':'bg-white text-slate-500 border-border hover:bg-slate-50 hover:border-ring'}`}>{t(`vendors.categories.${c}`)}</button>
+ <button key={c} onClick={() => setFilter(c)} className={`text-[10px] font-semibold px-2 py-1 rounded-sm border transition-colors ${filter === c ?'bg-slate-900 text-white border-slate-900':'bg-card text-muted-foreground border-border hover:bg-muted hover:border-ring'}`}>{t(`vendors.categories.${c}`)}</button>
           ))}
         </div>
 
-        {loading ? <p className="text-sm text-slate-400">{t('common.loading')}</p> : shown.length === 0 ? (
+        {loading ? <p className="text-sm text-muted-foreground">{t('common.loading')}</p> : shown.length === 0 ? (
           <Card><CardContent className="py-10 text-center flex flex-col items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center">
-              <Handshake className="w-5 h-5 text-slate-400" />
+            <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center">
+              <Handshake className="w-5 h-5 text-muted-foreground" />
             </div>
-            <p className="text-sm text-slate-400">{t('vendors.empty')}</p>
+            <p className="text-sm text-muted-foreground">{t('vendors.empty')}</p>
           </CardContent></Card>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
@@ -103,14 +103,14 @@ export default function VendorsPage() {
                       <span className="text-[10px] font-semibold text-blue-500">{t(`vendors.categories.${v.category}`)}</span>
                     </div>
                     <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <button onClick={() => openEdit(v)} className="text-slate-300 hover:text-slate-700"><Pencil className="w-3.5 h-3.5" /></button>
-                      <button onClick={() => del(v.id)} className="text-slate-300 hover:text-rose-500"><Trash className="w-3.5 h-3.5" /></button>
+                      <button onClick={() => openEdit(v)} className="text-slate-300 hover:text-foreground"><Pencil className="w-3.5 h-3.5" /></button>
+                      <button onClick={() => del(v.id)} className="text-slate-300 hover:text-rose-500 dark:text-rose-400"><Trash className="w-3.5 h-3.5" /></button>
                     </div>
                   </div>
-                  {v.contactName && <p className="text-xs font-bold text-slate-600">{v.contactName}</p>}
-                  {v.phone && <p className="text-[11px] text-slate-400 flex items-center gap-1"><Phone className="w-3 h-3" />{v.phone}</p>}
-                  {v.email && <p className="text-[11px] text-slate-400 flex items-center gap-1 truncate"><Envelope className="w-3 h-3" />{v.email}</p>}
-                  {!!v._count?.eventVendors && <p className="text-[10px] font-bold text-slate-400 pt-1">{v._count.eventVendors} {t('vendors.eventsWord')}</p>}
+                  {v.contactName && <p className="text-xs font-bold text-muted-foreground">{v.contactName}</p>}
+                  {v.phone && <p className="text-[11px] text-muted-foreground flex items-center gap-1"><Phone className="w-3 h-3" />{v.phone}</p>}
+                  {v.email && <p className="text-[11px] text-muted-foreground flex items-center gap-1 truncate"><Envelope className="w-3 h-3" />{v.email}</p>}
+                  {!!v._count?.eventVendors && <p className="text-[10px] font-bold text-muted-foreground pt-1">{v._count.eventVendors} {t('vendors.eventsWord')}</p>}
                 </CardContent>
               </Card>
             ))}
@@ -123,31 +123,31 @@ export default function VendorsPage() {
           <DialogHeader><DialogTitle>{editId ? t('vendors.editTitle') : t('vendors.add')}</DialogTitle></DialogHeader>
           <form onSubmit={submit} className="space-y-3">
             <div className="grid gap-1.5">
-              <Label className="text-[10px] font-semibold text-slate-400">{t('vendors.name')}</Label>
+              <Label className="text-[10px] font-semibold text-muted-foreground">{t('vendors.name')}</Label>
               <Input value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} className="h-10 text-sm font-bold" required />
             </div>
             <div className="grid gap-1.5">
-              <Label className="text-[10px] font-semibold text-slate-400">{t('vendors.category')}</Label>
-              <select value={form.category} onChange={e => setForm({ ...form, category: e.target.value })} className="h-10 px-2 text-sm font-bold border border-border rounded-sm bg-white transition-colors outline-none hover:border-ring focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50">
+              <Label className="text-[10px] font-semibold text-muted-foreground">{t('vendors.category')}</Label>
+              <select value={form.category} onChange={e => setForm({ ...form, category: e.target.value })} className="h-10 px-2 text-sm font-bold border border-border rounded-sm bg-card transition-colors outline-none hover:border-ring focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50">
                 {CATEGORIES.map(c => <option key={c} value={c}>{t(`vendors.categories.${c}`)}</option>)}
               </select>
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="grid gap-1.5">
-                <Label className="text-[10px] font-semibold text-slate-400">{t('vendors.contactName')}</Label>
+                <Label className="text-[10px] font-semibold text-muted-foreground">{t('vendors.contactName')}</Label>
                 <Input value={form.contactName} onChange={e => setForm({ ...form, contactName: e.target.value })} className="h-10 text-sm font-bold" />
               </div>
               <div className="grid gap-1.5">
-                <Label className="text-[10px] font-semibold text-slate-400">{t('vendors.phone')}</Label>
+                <Label className="text-[10px] font-semibold text-muted-foreground">{t('vendors.phone')}</Label>
                 <Input value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })} className="h-10 text-sm font-bold" />
               </div>
             </div>
             <div className="grid gap-1.5">
-              <Label className="text-[10px] font-semibold text-slate-400">{t('vendors.email')}</Label>
+              <Label className="text-[10px] font-semibold text-muted-foreground">{t('vendors.email')}</Label>
               <Input type="email" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} className="h-10 text-sm font-bold" />
             </div>
             <div className="grid gap-1.5">
-              <Label className="text-[10px] font-semibold text-slate-400">{t('vendors.notes')}</Label>
+              <Label className="text-[10px] font-semibold text-muted-foreground">{t('vendors.notes')}</Label>
               <Textarea value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} className="min-h-[52px] text-xs" />
             </div>
             <div className="flex justify-end gap-2 pt-1">

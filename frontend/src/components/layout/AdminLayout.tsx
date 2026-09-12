@@ -148,6 +148,20 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
   const theme = useAdminThemeStore((s) => s.theme);
   const setAdminTheme = useAdminThemeStore((s) => s.setTheme);
 
+  // Dark mode is scoped to the admin surfaces only, not the whole app (the
+  // public tenant-facing site is out of scope for this redesign) — but
+  // Select/DropdownMenu/Dialog/Popover all portal their content straight to
+  // document.body, escaping this component's own DOM subtree. A `dark`
+  // class on this wrapper div alone would leave every dropdown/dialog light
+  // while the rest of the page is dark. Toggling the class on <html> itself
+  // while this layout is mounted covers portaled content too (portals still
+  // land under <html>), and the cleanup un-darkens it when navigating away
+  // to a public route.
+  useEffect(() => {
+    document.documentElement.classList.add('dark');
+    return () => { document.documentElement.classList.remove('dark'); };
+  }, []);
+
   useEffect(() => {
     setIsMounted(true);
     // Only desktop (lg+) auto-opens; tablets keep the sidebar as a closed overlay.
@@ -343,7 +357,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
   // live /settings request resolves (success → dashboard; maintenance → redirect).
   if (!verifiedLive) {
     return (
-      <div data-admin-theme={theme} className="flex min-h-dvh items-center justify-center bg-background">
+      <div data-admin-theme={theme} className="dark flex min-h-dvh items-center justify-center bg-background">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-slate-400" />
       </div>
     );
@@ -363,7 +377,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
   );
 
   return (
-    <div data-admin-theme={theme} className="flex min-h-dvh bg-background">
+    <div data-admin-theme={theme} className="dark flex min-h-dvh bg-background">
       <CommandPalette items={paletteItems} />
 
       {/* Mobile/tablet overlay — clicking anywhere off the sidebar closes it. */}

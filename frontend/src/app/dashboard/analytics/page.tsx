@@ -87,16 +87,16 @@ export default function AnalyticsPage() {
 
   const renderTrend = (value: number) => {
     if (value > 0) {
-      return <div className="flex items-center text-xs text-emerald-600 font-bold gap-1 mt-2"><TrendUp className="w-3 h-3" /> +{value}% {t("analytics.vsPrev")}</div>;
+      return <div className="flex items-center text-xs text-emerald-600 dark:text-emerald-400 font-bold gap-1 mt-2"><TrendUp className="w-3 h-3" /> +{value}% {t("analytics.vsPrev")}</div>;
     }
     if (value < 0) {
-      return <div className="flex items-center text-xs text-rose-600 font-bold gap-1 mt-2"><TrendDown className="w-3 h-3" /> {value}% {t("analytics.vsPrev")}</div>;
+      return <div className="flex items-center text-xs text-rose-600 dark:text-rose-400 font-bold gap-1 mt-2"><TrendDown className="w-3 h-3" /> {value}% {t("analytics.vsPrev")}</div>;
     }
-    return <div className="flex items-center text-xs text-slate-400 font-bold gap-1 mt-2">{t("analytics.noChange")}</div>;
+    return <div className="flex items-center text-xs text-muted-foreground font-bold gap-1 mt-2">{t("analytics.noChange")}</div>;
   };
 
   const getHeatmapColor = (count: number, maxCount: number) => {
-    if (count === 0) return 'bg-slate-50';
+    if (count === 0) return 'bg-muted';
     const intensity = Math.max(0.1, count / maxCount);
     // Return a solid blue with varying opacity
     return `rgba(59, 130, 246, ${intensity})`;
@@ -108,7 +108,7 @@ export default function AnalyticsPage() {
         <div className="flex h-[70vh] items-center justify-center">
           <div className="flex flex-col items-center gap-4">
             <CircleNotch className="h-10 w-10 animate-spin text-blue-600" />
-            <p className="text-slate-500 font-medium">{t("analytics.loading")}</p>
+            <p className="text-muted-foreground font-medium">{t("analytics.loading")}</p>
           </div>
         </div>
       </>
@@ -136,13 +136,13 @@ export default function AnalyticsPage() {
         {/* Header & Period Selector */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
-            <h1 className="text-2xl font-semibold tracking-tight text-slate-900 font-heading">{t("analytics.title")}</h1>
-            <p className="text-sm text-slate-500 font-medium">{t("analytics.subtitle")}</p>
+            <h1 className="text-2xl font-semibold tracking-tight text-foreground font-heading">{t("analytics.title")}</h1>
+            <p className="text-sm text-muted-foreground font-medium">{t("analytics.subtitle")}</p>
           </div>
           <div className="flex flex-wrap items-end gap-3">
             <div className="w-40">
               <Select value={usingCustom ? '' : period} onValueChange={(v) => { if (v) { setPeriod(v); setCustomFrom(''); setCustomTo(''); } }}>
-                <SelectTrigger className="bg-white border-border shadow-sm font-semibold text-slate-700">
+                <SelectTrigger className="bg-card border-border shadow-sm font-semibold text-foreground">
                   <SelectValue placeholder={usingCustom ? t("analytics.customRange") : t("analytics.selectPeriod")} />
                 </SelectTrigger>
                 <SelectContent>
@@ -155,12 +155,12 @@ export default function AnalyticsPage() {
             </div>
             {/* Custom date range (#1.4) */}
             <div className="flex flex-col">
-              <label className="text-[10px] font-bold text-slate-400 mb-1">{t("analytics.from")}</label>
-              <Input type="date" value={customFrom} max={customTo || undefined} onChange={(e) => setCustomFrom(e.target.value)} className="h-9 bg-white border-border shadow-sm text-sm w-40" />
+              <label className="text-[10px] font-bold text-muted-foreground mb-1">{t("analytics.from")}</label>
+              <Input type="date" value={customFrom} max={customTo || undefined} onChange={(e) => setCustomFrom(e.target.value)} className="h-9 bg-card border-border shadow-sm text-sm w-40" />
             </div>
             <div className="flex flex-col">
-              <label className="text-[10px] font-bold text-slate-400 mb-1">{t("analytics.to")}</label>
-              <Input type="date" value={customTo} min={customFrom || undefined} onChange={(e) => setCustomTo(e.target.value)} className="h-9 bg-white border-border shadow-sm text-sm w-40" />
+              <label className="text-[10px] font-bold text-muted-foreground mb-1">{t("analytics.to")}</label>
+              <Input type="date" value={customTo} min={customFrom || undefined} onChange={(e) => setCustomTo(e.target.value)} className="h-9 bg-card border-border shadow-sm text-sm w-40" />
             </div>
             {usingCustom && (
               <Button variant="outline" className="h-9" onClick={() => { setCustomFrom(''); setCustomTo(''); }}>{t("analytics.clear")}</Button>
@@ -172,7 +172,7 @@ export default function AnalyticsPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <Card className="border-border shadow-sm hover:shadow-md transition-shadow">
             <CardHeader className="p-4 pb-2">
-              <CardDescription className="text-[10px] font-semibold text-slate-500">{t("analytics.totalReservations")}</CardDescription>
+              <CardDescription className="text-[10px] font-semibold text-muted-foreground">{t("analytics.totalReservations")}</CardDescription>
               <CardTitle className="text-2xl font-bold tabular-nums flex items-center justify-between">
                 {data.summary.totalReservations}
                 <CalendarDots className="w-5 h-5 text-blue-500" />
@@ -185,10 +185,10 @@ export default function AnalyticsPage() {
 
           <Card className="border-border shadow-sm hover:shadow-md transition-shadow">
             <CardHeader className="p-4 pb-2">
-              <CardDescription className="text-[10px] font-semibold text-slate-500">{t("analytics.guestsSeated")}</CardDescription>
+              <CardDescription className="text-[10px] font-semibold text-muted-foreground">{t("analytics.guestsSeated")}</CardDescription>
               <CardTitle className="text-2xl font-bold tabular-nums flex items-center justify-between">
                 {data.summary.totalGuests}
-                <Users className="w-5 h-5 text-indigo-500" />
+                <Users className="w-5 h-5 text-indigo-500 dark:text-indigo-400" />
               </CardTitle>
             </CardHeader>
             <CardContent className="p-4 pt-0">
@@ -198,14 +198,14 @@ export default function AnalyticsPage() {
 
           <Card className="border-border shadow-sm hover:shadow-md transition-shadow">
             <CardHeader className="p-4 pb-2">
-              <CardDescription className="text-[10px] font-semibold text-slate-500">{t("analytics.avgPartySize")}</CardDescription>
+              <CardDescription className="text-[10px] font-semibold text-muted-foreground">{t("analytics.avgPartySize")}</CardDescription>
               <CardTitle className="text-2xl font-bold tabular-nums flex items-center justify-between">
                 {data.summary.avgPartySize}
-                <Users className="w-5 h-5 text-amber-500" />
+                <Users className="w-5 h-5 text-amber-500 dark:text-amber-400" />
               </CardTitle>
             </CardHeader>
             <CardContent className="p-4 pt-0">
-              <div className="flex items-center text-xs text-slate-500 font-bold gap-1 mt-2">
+              <div className="flex items-center text-xs text-muted-foreground font-bold gap-1 mt-2">
                 {t("analytics.overallAverage")}
               </div>
             </CardContent>
@@ -213,14 +213,14 @@ export default function AnalyticsPage() {
 
           <Card className="border-border shadow-sm hover:shadow-md transition-shadow">
             <CardHeader className="p-4 pb-2">
-              <CardDescription className="text-[10px] font-semibold text-slate-500">{t("analytics.vipVisits")}</CardDescription>
+              <CardDescription className="text-[10px] font-semibold text-muted-foreground">{t("analytics.vipVisits")}</CardDescription>
               <CardTitle className="text-2xl font-bold tabular-nums flex items-center justify-between">
                 {data.summary.vipCount}
-                <Star className="w-5 h-5 text-emerald-500" />
+                <Star className="w-5 h-5 text-emerald-500 dark:text-emerald-400" />
               </CardTitle>
             </CardHeader>
             <CardContent className="p-4 pt-0">
-              <div className="flex items-center text-xs text-slate-500 font-bold gap-1 mt-2">
+              <div className="flex items-center text-xs text-muted-foreground font-bold gap-1 mt-2">
                 {t("analytics.inSelectedPeriod")}
               </div>
             </CardContent>
@@ -231,50 +231,50 @@ export default function AnalyticsPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <Card className="border-border shadow-sm">
             <CardHeader className="p-4 pb-2">
-              <CardDescription className="text-[10px] font-semibold text-slate-500">{t("analytics.cancelRate")}</CardDescription>
+              <CardDescription className="text-[10px] font-semibold text-muted-foreground">{t("analytics.cancelRate")}</CardDescription>
               <CardTitle className="text-2xl font-bold tabular-nums flex items-center justify-between">
                 {data.summary.cancelRate}%
-                <Prohibit className="w-5 h-5 text-rose-500" />
+                <Prohibit className="w-5 h-5 text-rose-500 dark:text-rose-400" />
               </CardTitle>
             </CardHeader>
           </Card>
           <Card className="border-border shadow-sm">
             <CardHeader className="p-4 pb-2">
-              <CardDescription className="text-[10px] font-semibold text-slate-500">{t("analytics.noShowRate")}</CardDescription>
+              <CardDescription className="text-[10px] font-semibold text-muted-foreground">{t("analytics.noShowRate")}</CardDescription>
               <CardTitle className="text-2xl font-bold tabular-nums flex items-center justify-between">
                 {data.summary.noShowRate}%
-                <UserMinus className="w-5 h-5 text-slate-500" />
+                <UserMinus className="w-5 h-5 text-muted-foreground" />
               </CardTitle>
             </CardHeader>
           </Card>
           <Card className="border-border shadow-sm">
             <CardHeader className="p-4 pb-2">
-              <CardDescription className="text-[10px] font-semibold text-slate-500">{t("analytics.avgLeadTime")}</CardDescription>
+              <CardDescription className="text-[10px] font-semibold text-muted-foreground">{t("analytics.avgLeadTime")}</CardDescription>
               <CardTitle className="text-2xl font-bold tabular-nums flex items-center justify-between">
                 {data.leadTime.avgDays >= 1 ? `${data.leadTime.avgDays} ${t("analytics.days")}` : `${data.leadTime.avgHours} ${t("analytics.hours")}`}
                 <Clock className="w-5 h-5 text-blue-500" />
               </CardTitle>
             </CardHeader>
             <CardContent className="p-4 pt-0">
-              <div className="text-xs text-slate-500 font-bold mt-2">{t("analytics.leadTimeHint")}</div>
+              <div className="text-xs text-muted-foreground font-bold mt-2">{t("analytics.leadTimeHint")}</div>
             </CardContent>
           </Card>
           <Card className="border-border shadow-sm">
             <CardHeader className="p-4 pb-2">
-              <CardDescription className="text-[10px] font-semibold text-slate-500">{t("analytics.customerMix")}</CardDescription>
+              <CardDescription className="text-[10px] font-semibold text-muted-foreground">{t("analytics.customerMix")}</CardDescription>
             </CardHeader>
             <CardContent className="p-4 pt-0 space-y-1.5">
-              <div className="flex justify-between items-center text-xs font-semibold text-slate-600">
-                <span className="flex items-center gap-1.5"><UserPlus className="w-3.5 h-3.5 text-emerald-500" /> {t("analytics.newCustomers")}</span>
-                <span className="font-black tabular-nums text-slate-900">{data.customerSegments.new}</span>
+              <div className="flex justify-between items-center text-xs font-semibold text-muted-foreground">
+                <span className="flex items-center gap-1.5"><UserPlus className="w-3.5 h-3.5 text-emerald-500 dark:text-emerald-400" /> {t("analytics.newCustomers")}</span>
+                <span className="font-black tabular-nums text-foreground">{data.customerSegments.new}</span>
               </div>
-              <div className="flex justify-between items-center text-xs font-semibold text-slate-600">
+              <div className="flex justify-between items-center text-xs font-semibold text-muted-foreground">
                 <span className="flex items-center gap-1.5"><Repeat className="w-3.5 h-3.5 text-blue-500" /> {t("analytics.returningCustomers")}</span>
-                <span className="font-black tabular-nums text-slate-900">{data.customerSegments.returning}</span>
+                <span className="font-black tabular-nums text-foreground">{data.customerSegments.returning}</span>
               </div>
-              <div className="flex justify-between items-center text-xs font-semibold text-slate-600">
-                <span className="flex items-center gap-1.5"><Crown className="w-3.5 h-3.5 text-amber-500" /> {t("analytics.regularCustomers")}</span>
-                <span className="font-black tabular-nums text-slate-900">{data.customerSegments.regular}</span>
+              <div className="flex justify-between items-center text-xs font-semibold text-muted-foreground">
+                <span className="flex items-center gap-1.5"><Crown className="w-3.5 h-3.5 text-amber-500 dark:text-amber-400" /> {t("analytics.regularCustomers")}</span>
+                <span className="font-black tabular-nums text-foreground">{data.customerSegments.regular}</span>
               </div>
             </CardContent>
           </Card>
@@ -282,9 +282,9 @@ export default function AnalyticsPage() {
 
         {/* Charts Row 1: Trend & Status */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <Card className="border-border shadow-sm bg-white lg:col-span-2">
-            <CardHeader className="border-b border-border bg-slate-50/50">
-              <CardTitle className="text-sm font-bold text-slate-700">{t("analytics.reservationTrend")}</CardTitle>
+          <Card className="border-border shadow-sm bg-card lg:col-span-2">
+            <CardHeader className="border-b border-border bg-muted/50">
+              <CardTitle className="text-sm font-bold text-foreground">{t("analytics.reservationTrend")}</CardTitle>
             </CardHeader>
             <CardContent className="p-6">
               <div className="h-[300px] w-full">
@@ -313,9 +313,9 @@ export default function AnalyticsPage() {
             </CardContent>
           </Card>
 
-          <Card className="border-border shadow-sm bg-white">
-            <CardHeader className="border-b border-border bg-slate-50/50">
-              <CardTitle className="text-sm font-bold text-slate-700">{t("analytics.statusBreakdown")}</CardTitle>
+          <Card className="border-border shadow-sm bg-card">
+            <CardHeader className="border-b border-border bg-muted/50">
+              <CardTitle className="text-sm font-bold text-foreground">{t("analytics.statusBreakdown")}</CardTitle>
             </CardHeader>
             <CardContent className="p-6">
               <div className="h-[200px] w-full">
@@ -342,12 +342,12 @@ export default function AnalyticsPage() {
               </div>
               <div className="mt-4 space-y-2">
                 {data.statusBreakdown.sort((a,b) => b.count - a.count).map(item => (
-                  <div key={item.status} className="flex justify-between items-center text-xs font-semibold text-slate-600">
+                  <div key={item.status} className="flex justify-between items-center text-xs font-semibold text-muted-foreground">
                     <div className="flex items-center gap-2">
                       <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: statusHex(item.status) || '#ccc' }}></div>
                       {t(statusStyle(item.status).labelKey)}
                     </div>
-                    <span className="text-slate-900 font-bold">{item.count}</span>
+                    <span className="text-foreground font-bold">{item.count}</span>
                   </div>
                 ))}
               </div>
@@ -359,9 +359,9 @@ export default function AnalyticsPage() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           
           {/* Peak Hours Heatmap */}
-          <Card className="border-border shadow-sm bg-white">
-            <CardHeader className="border-b border-border bg-slate-50/50">
-              <CardTitle className="text-sm font-bold text-slate-700">{t("analytics.peakHoursHeatmap")}</CardTitle>
+          <Card className="border-border shadow-sm bg-card">
+            <CardHeader className="border-b border-border bg-muted/50">
+              <CardTitle className="text-sm font-bold text-foreground">{t("analytics.peakHoursHeatmap")}</CardTitle>
             </CardHeader>
             <CardContent className="p-6 overflow-x-auto">
               <div style={{ minWidth: Math.max(500, heatHours.length * 34) }}>
@@ -369,13 +369,13 @@ export default function AnalyticsPage() {
                 <div className="grid gap-1" style={{ gridTemplateColumns: `auto repeat(${heatHours.length}, minmax(0, 1fr))` }}>
                   <div />
                   {heatHours.map((hour) => (
-                    <div key={`h-${hour}`} className="text-[10px] font-bold text-slate-400 text-center pb-2">
+                    <div key={`h-${hour}`} className="text-[10px] font-bold text-muted-foreground text-center pb-2">
                       {hour === openH || hour === closeH || hour === midHour ? `${String(hour).padStart(2, '0')}:00` : ''}
                     </div>
                   ))}
                   {dayLabels.map((day, dIdx) => (
                     <React.Fragment key={day + dIdx}>
-                      <div className="text-xs font-semibold text-slate-500 flex items-center justify-end pr-3">{day}</div>
+                      <div className="text-xs font-semibold text-muted-foreground flex items-center justify-end pr-3">{day}</div>
                       {heatHours.map((hour) => {
                         const cellData = data.peakHours.find(p => p.dayOfWeek === dIdx && p.hour === hour);
                         const count = cellData ? cellData.count : 0;
@@ -400,9 +400,9 @@ export default function AnalyticsPage() {
 
           <div className="flex flex-col gap-6">
             {/* Zone Utilization */}
-            <Card className="border-border shadow-sm bg-white flex-1">
-              <CardHeader className="border-b border-border bg-slate-50/50 pb-4">
-                <CardTitle className="text-sm font-bold text-slate-700">{t("analytics.zoneUtilization")}</CardTitle>
+            <Card className="border-border shadow-sm bg-card flex-1">
+              <CardHeader className="border-b border-border bg-muted/50 pb-4">
+                <CardTitle className="text-sm font-bold text-foreground">{t("analytics.zoneUtilization")}</CardTitle>
               </CardHeader>
               <CardContent className="p-6 pt-4">
                 <div className="space-y-4">
@@ -412,17 +412,17 @@ export default function AnalyticsPage() {
                     return (
                       <div key={zone.zone}>
                         <div className="flex justify-between text-xs font-semibold mb-1">
-                          <span className="text-slate-700">{zone.zone}</span>
-                          <span className="text-slate-900">{zone.reservations} <span className="text-slate-400 font-normal">{t("analytics.res")}</span></span>
+                          <span className="text-foreground">{zone.zone}</span>
+                          <span className="text-foreground">{zone.reservations} <span className="text-muted-foreground font-normal">{t("analytics.res")}</span></span>
                         </div>
-                        <div className="w-full bg-slate-100 rounded-full h-2">
+                        <div className="w-full bg-muted rounded-full h-2">
                           <div className="bg-indigo-500 h-2 rounded-full" style={{ width: `${percent}%` }}></div>
                         </div>
                       </div>
                     );
                   })}
                   {data.zoneUtilization.length === 0 && (
-                    <div className="text-center text-sm text-slate-400 py-4">{t("analytics.noZoneData")}</div>
+                    <div className="text-center text-sm text-muted-foreground py-4">{t("analytics.noZoneData")}</div>
                   )}
                 </div>
               </CardContent>
@@ -436,16 +436,16 @@ export default function AnalyticsPage() {
               <CardContent>
                 <div className="grid grid-cols-3 gap-4 text-center">
                   <div>
-                    <p className="text-[10px] text-slate-400 font-bold mb-1">{t("analytics.avgWait")}</p>
-                    <p className="text-2xl font-black tabular-nums">{data.waitlistMetrics.avgWaitMinutes}<span className="text-sm font-normal text-slate-400 ml-1">m</span></p>
+                    <p className="text-[10px] text-muted-foreground font-bold mb-1">{t("analytics.avgWait")}</p>
+                    <p className="text-2xl font-black tabular-nums">{data.waitlistMetrics.avgWaitMinutes}<span className="text-sm font-normal text-muted-foreground ml-1">m</span></p>
                   </div>
                   <div>
-                    <p className="text-[10px] text-slate-400 font-bold mb-1">{t("analytics.conversion")}</p>
+                    <p className="text-[10px] text-muted-foreground font-bold mb-1">{t("analytics.conversion")}</p>
                     <p className="text-2xl font-black tabular-nums text-emerald-400">{data.waitlistMetrics.conversionRate}%</p>
                   </div>
                   <div>
-                    <p className="text-[10px] text-slate-400 font-bold mb-1">{t("analytics.seated")}</p>
-                    <p className="text-2xl font-black tabular-nums">{data.waitlistMetrics.seated}<span className="text-sm font-normal text-slate-400 ml-1">/{data.waitlistMetrics.totalJoined}</span></p>
+                    <p className="text-[10px] text-muted-foreground font-bold mb-1">{t("analytics.seated")}</p>
+                    <p className="text-2xl font-black tabular-nums">{data.waitlistMetrics.seated}<span className="text-sm font-normal text-muted-foreground ml-1">/{data.waitlistMetrics.totalJoined}</span></p>
                   </div>
                 </div>
               </CardContent>
