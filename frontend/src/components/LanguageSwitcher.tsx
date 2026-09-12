@@ -8,14 +8,17 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Button } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
 
-export function LanguageSwitcher() {
+// `triggerClassName` lets a host surface restyle the trigger — e.g. the admin
+// top navbar, where the default muted-gray icon would be illegible on the
+// skin color.
+export function LanguageSwitcher({ triggerClassName }: { triggerClassName?: string } = {}) {
   const { locale, setLocale, t } = useTranslation();
 
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger className="flex items-center justify-center h-8 w-8 text-muted-foreground hover:text-foreground rounded-md hover:bg-muted transition-colors">
+      <DropdownMenuTrigger className={cn("flex items-center justify-center h-8 w-8 text-muted-foreground hover:text-foreground rounded-md hover:bg-muted transition-colors", triggerClassName)}>
         <Globe className="h-4 w-4" />
         <span className="sr-only">{t('systemAdmin.language') || 'Language'}</span>
       </DropdownMenuTrigger>

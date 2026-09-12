@@ -3,13 +3,12 @@
 import { ReactNode, useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { ShieldCheck, Users, Buildings, Gear, SignOut, ChartBar, HardDrives, List, X } from '@phosphor-icons/react';
+import { ShieldCheck, Buildings, Gear, SignOut, ChartBar, HardDrives, List, X, House, CaretRight } from '@phosphor-icons/react';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useAdminThemeStore } from '@/store/useAdminThemeStore';
-import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import { Badge } from '@/components/ui/badge';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
+import { BrandLogo } from '@/components/BrandLogo';
 import { normalizeTheme } from '@/lib/themes';
 import { useTranslation } from '@/i18n/provider';
 
@@ -37,17 +36,7 @@ export default function SystemAdminLayout({ children }: SystemAdminLayoutProps) 
   // via React, with no imperative DOM writes that could desync back to blue.
   const theme = useAdminThemeStore((s) => s.theme);
   const setAdminTheme = useAdminThemeStore((s) => s.setTheme);
-  const { t } = useTranslation();
-
-  // See the matching effect in AdminLayout.tsx for why this toggles <html>
-  // itself rather than relying on the `dark` class already on this
-  // component's own wrapper div: Select/DropdownMenu/Dialog/Popover all
-  // portal to document.body, escaping this subtree, so only a class on
-  // <html> reaches them too.
-  useEffect(() => {
-    document.documentElement.classList.add('dark');
-    return () => { document.documentElement.classList.remove('dark'); };
-  }, []);
+  const { t, locale } = useTranslation();
 
   useEffect(() => {
     setMounted(true);
@@ -105,6 +94,8 @@ export default function SystemAdminLayout({ children }: SystemAdminLayoutProps) 
     ]) },
   ].filter((group) => group.items.length > 0);
 
+  const activeItem = navigation.flatMap((g) => g.items).find((i) => pathname === i.href);
+
   const handleLogout = async () => {
     // Await so the local "authenticated" cache is actually cleared before we
     // navigate — otherwise the login page's own redirect-when-authenticated
@@ -114,116 +105,121 @@ export default function SystemAdminLayout({ children }: SystemAdminLayoutProps) 
   };
 
   return (
-    <div data-admin-theme={theme} className="dark admin-surface-system flex h-dvh bg-background font-sans">
+    <div data-admin-theme={theme} lang={locale} className="admin-surface-system flex h-dvh bg-background font-sans">
       {/* Mobile/tablet overlay — clicking off the sidebar closes it. */}
       {isSidebarOpen && (
         <div
-          className="fixed inset-0 bg-slate-900/50 z-40 lg:hidden backdrop-blur-sm"
+          className="fixed inset-0 bg-slate-900/50 z-40 lg:hidden"
           onClick={() => setIsSidebarOpen(false)}
         />
-      )}
-
-      {/* Floating open button — only on mobile/tablet when the sidebar is hidden. */}
-      {!isSidebarOpen && (
-        <button
-          onClick={() => setIsSidebarOpen(true)}
-          aria-label="Open navigation"
-          className="lg:hidden fixed top-3 left-3 z-40 w-11 h-11 rounded-md bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg shadow-emerald-600/30 flex items-center justify-center active:scale-95 transition-all"
-        >
-          <List className="w-6 h-6" />
-        </button>
       )}
 
       <aside
         className={cn(
           // h-dvh, not h-screen: 100vh reaches behind iOS Safari's bottom toolbar,
-          // hiding the logout button under Safari's chrome. dvh = visible height.
-          "w-64 bg-sidebar text-sidebar-foreground border-r border-sidebar-border flex flex-col z-50 transition-transform duration-300 ease-in-out fixed lg:static top-0 h-dvh",
+          // hiding the footer under Safari's chrome. dvh = visible height.
+          "w-64 bg-[var(--admin-sidebar)] text-[var(--admin-sidebar-fg)] flex flex-col z-50 transition-transform duration-300 ease-in-out fixed lg:static top-0 h-dvh shrink-0 shadow-[2px_0_8px_rgba(0,0,0,0.25)]",
           isSidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
         )}
       >
-        <div className="h-16 flex items-center justify-between px-6 border-b border-sidebar-border">
-          <div className="flex items-center">
-            <div className="w-7 h-7 bg-sidebar-primary rounded-sm flex items-center justify-center mr-3">
-              <span className="text-sidebar-primary-foreground font-bold text-lg leading-none">S</span>
-            </div>
-            <span className="font-bold text-lg text-sidebar-foreground tracking-tight">System<span className="text-[var(--admin-accent)]">Adm</span></span>
-          </div>
+        {/* Brand/logo bar */}
+        <div className="h-14 shrink-0 flex items-center justify-between gap-2 bg-[var(--admin-brand)] text-[var(--admin-brand-fg)] px-4">
+          <Link href="/system-admin/dashboard" className="flex items-center gap-2 min-w-0">
+            <BrandLogo size={30} tile="var(--admin-brand-fg)" glyph="var(--admin-brand)" textClassName="text-[19px]" />
+            <span className="rounded-sm bg-black/20 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider">SYS</span>
+          </Link>
           <button
             onClick={() => setIsSidebarOpen(false)}
             aria-label="Close navigation"
-            className="lg:hidden text-muted-foreground hover:text-sidebar-accent-foreground w-8 h-8 flex items-center justify-center rounded-md hover:bg-sidebar-accent"
+            className="lg:hidden w-8 h-8 flex items-center justify-center rounded-[var(--radius)] hover:bg-black/15"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
-        <div className="flex-1 overflow-y-auto py-6">
-          <div className="px-6 mb-8 flex items-center space-x-3">
-            <div className="h-9 w-9 rounded-md bg-sidebar-accent border border-sidebar-border flex items-center justify-center text-[var(--admin-accent)] font-semibold text-xs">SA</div>
-            <div className="overflow-hidden">
-              <p className="text-xs font-semibold text-sidebar-foreground truncate">
-                {mounted ? `${user?.firstName || 'System'} ${user?.lastName || 'Admin'}` : 'System Admin'}
-              </p>
-              <p className="text-[9px] text-[var(--admin-accent)] font-semibold tracking-tighter">
-                {isRoot ? t('systemAdmin.rootAuthority') : t('systemAdmin.restrictedAdministrator')}
-              </p>
-            </div>
+        {/* User panel */}
+        <div className="flex items-center gap-3 px-4 py-3.5">
+          <div className="h-10 w-10 shrink-0 rounded-full bg-[var(--admin-accent)] ring-2 ring-white/20 flex items-center justify-center text-white font-bold text-xs">SA</div>
+          <div className="min-w-0">
+            <p className="text-sm font-semibold text-white truncate">
+              {mounted ? `${user?.firstName || 'System'} ${user?.lastName || 'Admin'}` : 'System Admin'}
+            </p>
+            <p className="mt-0.5 flex items-center gap-1.5 text-[11px] font-medium">
+              <span className="h-2 w-2 rounded-full bg-[#22c55e] shrink-0" />
+              {isRoot ? t('systemAdmin.rootAuthority') : t('systemAdmin.restrictedAdministrator')}
+            </p>
           </div>
-
-          <nav className="space-y-6">
-            {navigation.map((group, idx) => (
-              <div key={idx}>
-                <h3 className="px-6 text-[10px] font-semibold text-muted-foreground tracking-[0.18em] mb-3">
-                  {group.section}
-                </h3>
-                <ul className="space-y-1 px-2">
-                  {group.items.map((item) => {
-                    const isActive = pathname === item.href;
-                    return (
-                      <li key={item.name}>
-                        <Link
-                          href={item.href}
-                          onClick={() => { if (window.innerWidth < 1024) setIsSidebarOpen(false); }}
-                          className={cn(
-                            'flex items-center justify-between py-2.5 text-xs font-bold rounded-sm transition-all duration-150',
-                            // Same current-page treatment as the tenant dashboard sidebar:
-                            // muted pastel fill + left edge, not a color swap.
-                            isActive
-                              ? 'bg-[var(--admin-accent-tint)] text-[var(--admin-accent-strong)] border-l-2 border-[var(--admin-accent)] pl-3.5 pr-4'
-                              : 'px-4 text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground'
-                          )}
-                        >
-                          <div className="flex items-center">
-                            <item.icon weight={isActive ? 'bold' : 'regular'} className={cn('mr-3 h-4 w-4', isActive ? 'text-[var(--admin-accent-strong)]' : 'text-muted-foreground')} />
-                            {item.name}
-                          </div>
-                        </Link>
-                      </li>
-                    );
-                  })}
-                </ul>
-              </div>
-            ))}
-          </nav>
         </div>
 
-        <div className="p-4 border-t border-sidebar-border">
-          <Button variant="ghost" className="w-full justify-start text-muted-foreground hover:text-red-600 hover:bg-destructive/10" onClick={handleLogout}>
-            <SignOut className="mr-3 h-5 w-5" /> {t('systemAdmin.logoutSystem')}
-          </Button>
-        </div>
+        <nav className="flex-1 overflow-y-auto pb-4">
+          {navigation.map((group, idx) => (
+            <div key={idx}>
+              <h3 className="bg-[var(--admin-sidebar-deep)] px-4 py-2 text-[11px] font-semibold uppercase tracking-wider text-[var(--admin-sidebar-muted)]">
+                {group.section}
+              </h3>
+              <ul>
+                {group.items.map((item) => {
+                  const isActive = pathname === item.href;
+                  return (
+                    <li key={item.name}>
+                      <Link
+                        href={item.href}
+                        onClick={() => { if (window.innerWidth < 1024) setIsSidebarOpen(false); }}
+                        aria-current={isActive ? 'page' : undefined}
+                        className={cn(
+                          'flex items-center gap-3 border-l-[3px] py-2.5 pl-[13px] pr-4 text-sm transition-colors',
+                          isActive
+                            ? 'border-[var(--admin-sidebar-edge)] bg-[var(--admin-sidebar-hover)] text-white font-semibold'
+                            : 'border-transparent hover:bg-[var(--admin-sidebar-hover)] hover:text-white'
+                        )}
+                      >
+                        <item.icon weight={isActive ? 'fill' : 'regular'} className={cn('h-[18px] w-[18px] shrink-0', isActive && 'text-[var(--admin-sidebar-edge)]')} />
+                        <span className="truncate">{item.name}</span>
+                      </Link>
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+          ))}
+        </nav>
+
+        <button
+          onClick={handleLogout}
+          className="shrink-0 flex items-center gap-3 bg-[var(--admin-sidebar-deep)] border-l-[3px] border-transparent py-3 pl-[13px] pr-4 text-sm font-medium hover:bg-[var(--admin-sidebar-hover)] hover:text-white transition-colors"
+        >
+          <SignOut className="h-[18px] w-[18px]" /> {t('systemAdmin.logoutSystem')}
+        </button>
       </aside>
 
       <div className="flex-1 flex flex-col overflow-hidden min-w-0">
-        <header className="h-16 bg-card border-b border-sidebar-border flex items-center justify-between pl-16 pr-4 lg:px-8 shrink-0">
-          <h2 className="text-base sm:text-xl font-semibold text-sidebar-foreground truncate font-heading">{t('systemAdmin.systemManagement')}</h2>
-          <div className="flex items-center gap-2 sm:gap-4 shrink-0">
-            <LanguageSwitcher />
-            <Badge variant="outline" className="hidden sm:inline-flex text-[var(--admin-accent-strong)] border-[var(--admin-accent-tint-3)] bg-[var(--admin-accent-tint)]">{t('systemAdmin.globalClusterActive')}</Badge>
+        <header className="h-14 shrink-0 flex items-center gap-1 bg-[var(--admin-header)] text-[var(--admin-header-fg)] px-2 sm:px-3 shadow-[0_1px_4px_rgba(0,0,0,0.2)] relative z-10">
+          <button
+            onClick={() => setIsSidebarOpen(true)}
+            aria-label="Open navigation"
+            className="lg:hidden h-10 w-10 flex items-center justify-center rounded-[var(--radius)] hover:bg-black/15 shrink-0"
+          >
+            <List weight="bold" className="h-5 w-5" />
+          </button>
+          <nav aria-label="Breadcrumb" className="min-w-0 flex items-center gap-2 px-2 text-sm">
+            <House weight="fill" className="h-4 w-4 shrink-0 opacity-85" />
+            <span className="hidden sm:inline opacity-85 whitespace-nowrap">{t('systemAdmin.systemManagement')}</span>
+            {activeItem && (
+              <>
+                <CaretRight weight="bold" className="hidden sm:inline h-3 w-3 shrink-0 opacity-70" />
+                <span className="font-semibold truncate">{activeItem.name}</span>
+              </>
+            )}
+          </nav>
+          <div className="ml-auto flex items-center gap-2 shrink-0">
+            <span className="hidden md:inline-flex items-center gap-1.5 rounded-sm bg-black/15 px-2 py-1 text-xs font-semibold">
+              <span className="h-2 w-2 rounded-full bg-[#22c55e]" />
+              {t('systemAdmin.globalClusterActive')}
+            </span>
+            <LanguageSwitcher triggerClassName="h-10 w-10 text-inherit hover:text-inherit hover:bg-black/15" />
           </div>
         </header>
-        <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
+        <main className="flex-1 overflow-y-auto p-4 sm:p-6">
           {children}
         </main>
       </div>
