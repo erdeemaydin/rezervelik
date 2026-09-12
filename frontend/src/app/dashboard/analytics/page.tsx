@@ -5,7 +5,8 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { ChartBar, TrendUp, Users, CalendarDots, CurrencyDollar, CircleNotch, TrendDown, Star, Clock, Prohibit, UserMinus, UserPlus, Repeat, Crown } from '@phosphor-icons/react';
+import { ChartBar, TrendUp, Users, UsersThree, CalendarDots, CurrencyDollar, CircleNotch, TrendDown, Star, Clock, Prohibit, UserMinus, UserPlus, Repeat, Crown } from '@phosphor-icons/react';
+import { SmallBox, InfoBox } from '@/components/dashboard/StatBoxes';
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell, Legend, BarChart, Bar
@@ -95,6 +96,14 @@ export default function AnalyticsPage() {
     return <div className="flex items-center text-xs text-muted-foreground font-bold gap-1 mt-2">{t("analytics.noChange")}</div>;
   };
 
+  // Same trend, as plain text + arrow that inherits the small-box footer color
+  // (green/red trend text would be illegible on a saturated box).
+  const trendFooter = (value: number) => {
+    if (value === 0) return t("analytics.noChange");
+    const Arrow = value > 0 ? TrendUp : TrendDown;
+    return <span className="inline-flex items-center gap-1"><Arrow weight="bold" className="w-3.5 h-3.5" /> {value > 0 ? '+' : ''}{value}% {t("analytics.vsPrev")}</span>;
+  };
+
   const getHeatmapColor = (count: number, maxCount: number) => {
     if (count === 0) return 'bg-muted';
     const intensity = Math.max(0.1, count / maxCount);
@@ -169,101 +178,54 @@ export default function AnalyticsPage() {
         </div>
 
         {/* Top Summary Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <Card className="border-border shadow-sm hover:shadow-md transition-shadow">
-            <CardHeader className="p-4 pb-2">
-              <CardDescription className="text-[10px] font-semibold text-muted-foreground">{t("analytics.totalReservations")}</CardDescription>
-              <CardTitle className="text-2xl font-bold tabular-nums flex items-center justify-between">
-                {data.summary.totalReservations}
-                <CalendarDots className="w-5 h-5 text-blue-500" />
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="p-4 pt-0">
-              {renderTrend(data.comparison.totalReservations.changePercent)}
-            </CardContent>
-          </Card>
-
-          <Card className="border-border shadow-sm hover:shadow-md transition-shadow">
-            <CardHeader className="p-4 pb-2">
-              <CardDescription className="text-[10px] font-semibold text-muted-foreground">{t("analytics.guestsSeated")}</CardDescription>
-              <CardTitle className="text-2xl font-bold tabular-nums flex items-center justify-between">
-                {data.summary.totalGuests}
-                <Users className="w-5 h-5 text-indigo-500 dark:text-indigo-400" />
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="p-4 pt-0">
-              {renderTrend(data.comparison.totalGuests.changePercent)}
-            </CardContent>
-          </Card>
-
-          <Card className="border-border shadow-sm hover:shadow-md transition-shadow">
-            <CardHeader className="p-4 pb-2">
-              <CardDescription className="text-[10px] font-semibold text-muted-foreground">{t("analytics.avgPartySize")}</CardDescription>
-              <CardTitle className="text-2xl font-bold tabular-nums flex items-center justify-between">
-                {data.summary.avgPartySize}
-                <Users className="w-5 h-5 text-amber-500 dark:text-amber-400" />
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="p-4 pt-0">
-              <div className="flex items-center text-xs text-muted-foreground font-bold gap-1 mt-2">
-                {t("analytics.overallAverage")}
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="border-border shadow-sm hover:shadow-md transition-shadow">
-            <CardHeader className="p-4 pb-2">
-              <CardDescription className="text-[10px] font-semibold text-muted-foreground">{t("analytics.vipVisits")}</CardDescription>
-              <CardTitle className="text-2xl font-bold tabular-nums flex items-center justify-between">
-                {data.summary.vipCount}
-                <Star className="w-5 h-5 text-emerald-500 dark:text-emerald-400" />
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="p-4 pt-0">
-              <div className="flex items-center text-xs text-muted-foreground font-bold gap-1 mt-2">
-                {t("analytics.inSelectedPeriod")}
-              </div>
-            </CardContent>
-          </Card>
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+          <SmallBox
+            tone="aqua"
+            value={data.summary.totalReservations}
+            label={t("analytics.totalReservations")}
+            icon={CalendarDots}
+            footer={trendFooter(data.comparison.totalReservations.changePercent)}
+          />
+          <SmallBox
+            tone="green"
+            value={data.summary.totalGuests}
+            label={t("analytics.guestsSeated")}
+            icon={Users}
+            footer={trendFooter(data.comparison.totalGuests.changePercent)}
+          />
+          <SmallBox
+            tone="yellow"
+            value={data.summary.avgPartySize}
+            label={t("analytics.avgPartySize")}
+            icon={UsersThree}
+            footer={t("analytics.overallAverage")}
+          />
+          <SmallBox
+            tone="purple"
+            value={data.summary.vipCount}
+            label={t("analytics.vipVisits")}
+            icon={Star}
+            footer={t("analytics.inSelectedPeriod")}
+          />
         </div>
 
         {/* Secondary metrics: cancellation / no-show rate, lead time, customer mix */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <Card className="border-border shadow-sm">
-            <CardHeader className="p-4 pb-2">
-              <CardDescription className="text-[10px] font-semibold text-muted-foreground">{t("analytics.cancelRate")}</CardDescription>
-              <CardTitle className="text-2xl font-bold tabular-nums flex items-center justify-between">
-                {data.summary.cancelRate}%
-                <Prohibit className="w-5 h-5 text-rose-500 dark:text-rose-400" />
-              </CardTitle>
+          <InfoBox tone="red" label={t("analytics.cancelRate")} value={`${data.summary.cancelRate}%`} icon={Prohibit} />
+          <InfoBox tone="yellow" label={t("analytics.noShowRate")} value={`${data.summary.noShowRate}%`} icon={UserMinus} />
+          <InfoBox
+            tone="aqua"
+            label={t("analytics.avgLeadTime")}
+            value={data.leadTime.avgDays >= 1 ? `${data.leadTime.avgDays} ${t("analytics.days")}` : `${data.leadTime.avgHours} ${t("analytics.hours")}`}
+            hint={t("analytics.leadTimeHint")}
+            icon={Clock}
+          />
+          {/* Compact so the neighboring info boxes don't stretch to its height. */}
+          <Card tone="success" className="border-border shadow-sm gap-1.5 py-2.5">
+            <CardHeader className="px-4">
+              <CardDescription className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{t("analytics.customerMix")}</CardDescription>
             </CardHeader>
-          </Card>
-          <Card className="border-border shadow-sm">
-            <CardHeader className="p-4 pb-2">
-              <CardDescription className="text-[10px] font-semibold text-muted-foreground">{t("analytics.noShowRate")}</CardDescription>
-              <CardTitle className="text-2xl font-bold tabular-nums flex items-center justify-between">
-                {data.summary.noShowRate}%
-                <UserMinus className="w-5 h-5 text-muted-foreground" />
-              </CardTitle>
-            </CardHeader>
-          </Card>
-          <Card className="border-border shadow-sm">
-            <CardHeader className="p-4 pb-2">
-              <CardDescription className="text-[10px] font-semibold text-muted-foreground">{t("analytics.avgLeadTime")}</CardDescription>
-              <CardTitle className="text-2xl font-bold tabular-nums flex items-center justify-between">
-                {data.leadTime.avgDays >= 1 ? `${data.leadTime.avgDays} ${t("analytics.days")}` : `${data.leadTime.avgHours} ${t("analytics.hours")}`}
-                <Clock className="w-5 h-5 text-blue-500" />
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="p-4 pt-0">
-              <div className="text-xs text-muted-foreground font-bold mt-2">{t("analytics.leadTimeHint")}</div>
-            </CardContent>
-          </Card>
-          <Card className="border-border shadow-sm">
-            <CardHeader className="p-4 pb-2">
-              <CardDescription className="text-[10px] font-semibold text-muted-foreground">{t("analytics.customerMix")}</CardDescription>
-            </CardHeader>
-            <CardContent className="p-4 pt-0 space-y-1.5">
+            <CardContent className="px-4 space-y-1">
               <div className="flex justify-between items-center text-xs font-semibold text-muted-foreground">
                 <span className="flex items-center gap-1.5"><UserPlus className="w-3.5 h-3.5 text-emerald-500 dark:text-emerald-400" /> {t("analytics.newCustomers")}</span>
                 <span className="font-black tabular-nums text-foreground">{data.customerSegments.new}</span>

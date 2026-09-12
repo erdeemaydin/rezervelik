@@ -10,6 +10,7 @@ import api from '@/lib/api';
 import { toast } from 'sonner';
 import { useTranslation } from '@/i18n/provider';
 import { useConfirm } from '@/components/ui/confirm-dialog';
+import { SmallBox } from '@/components/dashboard/StatBoxes';
 import { useAuthStore } from '@/store/useAuthStore';
 
 interface PaymentRow {
@@ -114,35 +115,35 @@ export default function PaymentsPage() {
           <p className="text-xs text-muted-foreground font-medium">{t('payments.depositsSubtitle')}</p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <Card className="border-border shadow-sm bg-gradient-to-br from-emerald-600 to-teal-700 text-white">
-            <CardHeader className="p-4 pb-2">
-              <CardDescription className="text-[10px] font-semibold text-emerald-100">{t('payments.totalCollected')}</CardDescription>
-              <CardTitle className="text-2xl font-bold tabular-nums">{money(stats.collected, stats.currency)}</CardTitle>
-            </CardHeader>
-            <CardContent className="p-4 pt-0 text-[11px] font-bold text-emerald-100">{stats.paidCount} {t('payments.paidDeposits')}</CardContent>
-          </Card>
-          <Card className="border-border shadow-sm">
-            <CardHeader className="p-4 pb-2">
-              <CardDescription className="text-[10px] font-semibold text-muted-foreground">{t('payments.awaiting')}</CardDescription>
-              <CardTitle className="text-2xl font-bold tabular-nums text-foreground">{stats.pending}</CardTitle>
-            </CardHeader>
-            <CardContent className="p-4 pt-0 text-[11px] font-bold text-muted-foreground">{t('payments.awaitingHint')}</CardContent>
-          </Card>
-          <Card className="border-rose-100 dark:border-rose-800/50 shadow-sm">
-            <CardHeader className="p-4 pb-2">
-              <CardDescription className="text-[10px] font-semibold text-rose-400">{t('payments.forfeited')}</CardDescription>
-              <CardTitle className="text-2xl font-bold tabular-nums text-rose-600 dark:text-rose-400">{money(stats.forfeitedTotal, stats.currency)}</CardTitle>
-            </CardHeader>
-            <CardContent className="p-4 pt-0 text-[11px] font-bold text-rose-400">{stats.forfeitedCount} {t('payments.forfeitedHint')}</CardContent>
-          </Card>
-          <Card className="border-border shadow-sm">
-            <CardHeader className="p-4 pb-2">
-              <CardDescription className="text-[10px] font-semibold text-muted-foreground">{t('payments.totalTransactions')}</CardDescription>
-              <CardTitle className="text-2xl font-bold tabular-nums text-foreground">{stats.count}</CardTitle>
-            </CardHeader>
-            <CardContent className="p-4 pt-0 text-[11px] font-bold text-muted-foreground">{payments[0]?.provider || '—'}</CardContent>
-          </Card>
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+          <SmallBox
+            tone="green"
+            value={money(stats.collected, stats.currency)}
+            label={t('payments.totalCollected')}
+            icon={CheckCircle}
+            footer={`${stats.paidCount} ${t('payments.paidDeposits')}`}
+          />
+          <SmallBox
+            tone="yellow"
+            value={stats.pending}
+            label={t('payments.awaiting')}
+            icon={Hourglass}
+            footer={t('payments.awaitingHint')}
+          />
+          <SmallBox
+            tone="red"
+            value={money(stats.forfeitedTotal, stats.currency)}
+            label={t('payments.forfeited')}
+            icon={XCircle}
+            footer={`${stats.forfeitedCount} ${t('payments.forfeitedHint')}`}
+          />
+          <SmallBox
+            tone="aqua"
+            value={stats.count}
+            label={t('payments.totalTransactions')}
+            icon={CreditCard}
+            footer={payments[0]?.provider || '—'}
+          />
         </div>
 
         <Card className="border-border shadow-sm bg-card overflow-hidden">

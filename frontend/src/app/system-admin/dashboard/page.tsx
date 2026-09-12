@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { ChartBar, Buildings, Users, Database } from '@phosphor-icons/react';
 import { useState, useEffect } from 'react';
 import api from '@/lib/api';
+import { SmallBox } from '@/components/dashboard/StatBoxes';
 
 export default function SystemAdminDashboard() {
   const [metrics, setMetrics] = useState({ totalTenants: 0, totalUsers: 0, totalReservations: 0 });
@@ -27,61 +28,14 @@ export default function SystemAdminDashboard() {
           <p className="text-xs text-muted-foreground font-medium">Global platform statistics across all tenants.</p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <Card className="border-border shadow-sm">
-            <CardHeader className="p-4 pb-2">
-              <CardDescription className="text-[10px] font-semibold text-muted-foreground">Active Tenants</CardDescription>
-              <CardTitle className="text-2xl font-bold flex items-center justify-between">
-                {metrics.totalTenants}
-                <Buildings className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="p-4 pt-0">
-              <p className="text-xs text-emerald-600 dark:text-emerald-400 font-bold mt-2">+3 this month</p>
-            </CardContent>
-          </Card>
-
-          <Card className="border-border shadow-sm">
-            <CardHeader className="p-4 pb-2">
-              <CardDescription className="text-[10px] font-semibold text-muted-foreground">Total Users</CardDescription>
-              <CardTitle className="text-2xl font-bold flex items-center justify-between">
-                {metrics.totalUsers}
-                <Users className="w-5 h-5 text-blue-600" />
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="p-4 pt-0">
-              <p className="text-xs text-blue-600 font-bold mt-2">+12 this month</p>
-            </CardContent>
-          </Card>
-
-          <Card className="border-border shadow-sm">
-            <CardHeader className="p-4 pb-2">
-              <CardDescription className="text-[10px] font-semibold text-muted-foreground">Total Reservations</CardDescription>
-              <CardTitle className="text-2xl font-bold flex items-center justify-between">
-                {metrics.totalReservations}
-                <ChartBar className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="p-4 pt-0">
-              <p className="text-xs text-indigo-600 dark:text-indigo-400 font-bold mt-2">Stable</p>
-            </CardContent>
-          </Card>
-
-          <Card className="border-border shadow-sm">
-            <CardHeader className="p-4 pb-2">
-              <CardDescription className="text-[10px] font-semibold text-muted-foreground">DB Size</CardDescription>
-              <CardTitle className="text-2xl font-bold flex items-center justify-between">
-                1.4 GB
-                <Database className="w-5 h-5 text-amber-600 dark:text-amber-400" />
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="p-4 pt-0">
-              <p className="text-xs text-amber-600 dark:text-amber-400 font-bold mt-2">8% used</p>
-            </CardContent>
-          </Card>
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+          <SmallBox tone="green" value={metrics.totalTenants} label="Active Tenants" icon={Buildings} footer="+3 this month" href="/system-admin/tenants" />
+          <SmallBox tone="aqua" value={metrics.totalUsers} label="Total Users" icon={Users} footer="+12 this month" />
+          <SmallBox tone="yellow" value={metrics.totalReservations} label="Total Reservations" icon={ChartBar} footer="Stable" />
+          <SmallBox tone="purple" value="1.4 GB" label="DB Size" icon={Database} footer="8% used" />
         </div>
 
-        <Card className="border-border shadow-sm bg-card min-h-[400px]">
+        <Card tone="primary" className="border-border shadow-sm bg-card min-h-[400px]">
           <CardHeader className="border-b border-border bg-muted/50">
             <CardTitle className="text-sm font-bold text-foreground">Platform Traffic</CardTitle>
           </CardHeader>

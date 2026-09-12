@@ -1625,7 +1625,8 @@
     "deleteConfirm": "This action cannot be undone.",
     "loading": "Loading…",
     "save": "Save",
-    "saved": "Saved"
+    "saved": "Saved",
+    "moreInfo": "More info"
   },
   "events": {
     "navTitle": "Events",

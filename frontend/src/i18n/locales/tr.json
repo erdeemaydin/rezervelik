@@ -1625,7 +1625,8 @@
     "deleteConfirm": "Bu işlem geri alınamaz.",
     "loading": "Yükleniyor…",
     "save": "Kaydet",
-    "saved": "Kaydedildi"
+    "saved": "Kaydedildi",
+    "moreInfo": "Detaylar"
   },
   "events": {
     "navTitle": "Organizasyonlar",
