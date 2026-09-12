@@ -9,6 +9,7 @@ import api from '@/lib/api';
 import { toast } from 'sonner';
 import { Palette, Check } from '@phosphor-icons/react';
 import { ADMIN_THEMES } from '@/lib/themes';
+import { ThemePreview } from '@/components/layout/ThemePreview';
 import { useAdminThemeStore } from '@/store/useAdminThemeStore';
 import { useTranslation } from '@/i18n/provider';
 
@@ -148,18 +149,13 @@ export default function SystemSettingsPage() {
                     key={th.id}
                     type="button"
                     onClick={() => { setSettings({ ...settings, dashboardTheme: th.id }); useAdminThemeStore.getState().setTheme(th.id); }}
-                    className={`relative flex flex-col items-stretch gap-2 rounded-lg border-2 p-2.5 text-left transition-all ${active ? 'border-foreground shadow-sm' : 'border-border hover:border-ring'}`}
+                    className={`relative flex flex-col items-stretch gap-2 rounded-[var(--radius)] border-2 bg-card p-2 text-left transition-all ${active ? 'border-[var(--admin-accent)] shadow-md' : 'border-border hover:border-ring'}`}
                     aria-pressed={active}
                   >
-                    <div className="flex h-12 overflow-hidden rounded-md border border-border">
-                      <span className="w-1/4" style={{ backgroundColor: th.swatch.sidebar }} />
-                      <span className="flex flex-1 items-center justify-center" style={{ backgroundColor: th.swatch.bg }}>
-                        <span className="h-4 w-4 rounded-full" style={{ backgroundColor: th.swatch.accent }} />
-                      </span>
-                    </div>
-                    <span className="flex items-center justify-between">
-                      <span className="text-[11px] font-semibold tracking-tight text-foreground">{t(th.labelKey)}</span>
-                      {active && <Check className="h-3.5 w-3.5 text-foreground" />}
+                    <ThemePreview swatch={th.swatch} />
+                    <span className="flex items-center justify-between px-0.5">
+                      <span className="text-xs font-semibold tracking-tight text-foreground">{t(th.labelKey)}</span>
+                      {active && <Check weight="bold" className="h-4 w-4 text-[var(--admin-accent)]" />}
                     </span>
                   </button>
                 );
