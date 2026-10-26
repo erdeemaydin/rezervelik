@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
-import { Search, CornerDownLeft } from 'lucide-react';
+import { MagnifyingGlass, ArrowElbowDownLeft } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { useTranslation } from '@/i18n/provider';
 
@@ -91,21 +91,21 @@ export function CommandPalette({ items }: CommandPaletteProps) {
         className="p-0 border-0 shadow-2xl overflow-hidden top-[20%] translate-y-0"
       >
         <DialogTitle className="sr-only">{t('commandPalette.title')}</DialogTitle>
-        <div className="flex items-center gap-3 px-4 border-b border-slate-100">
-          <Search className="w-4 h-4 text-slate-400 shrink-0" />
+        <div className="flex items-center gap-3 px-4 border-b border-border">
+          <MagnifyingGlass className="w-4 h-4 text-muted-foreground shrink-0" />
           <input
             ref={inputRef}
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder={t('commandPalette.placeholder')}
-            className="w-full h-14 text-sm font-medium text-slate-800 placeholder:text-slate-400 outline-none bg-transparent"
+            className="w-full h-14 text-sm font-medium text-foreground placeholder:text-muted-foreground outline-none bg-transparent"
           />
-          <kbd className="hidden sm:inline-block text-[10px] font-bold text-slate-400 border border-slate-200 rounded px-1.5 py-0.5 shrink-0">ESC</kbd>
+          <kbd className="hidden sm:inline-block text-[10px] font-bold text-muted-foreground border border-border rounded px-1.5 py-0.5 shrink-0">ESC</kbd>
         </div>
         <div className="max-h-[60vh] overflow-y-auto py-2">
           {results.length === 0 ? (
-            <p className="px-4 py-8 text-center text-sm text-slate-400 font-medium">{t('commandPalette.noResults')}</p>
+            <p className="px-4 py-8 text-center text-sm text-muted-foreground font-medium">{t('commandPalette.noResults')}</p>
           ) : (
             results.map((item, i) => (
               <button
@@ -115,13 +115,13 @@ export function CommandPalette({ items }: CommandPaletteProps) {
                 onMouseEnter={() => setActiveIndex(i)}
                 className={cn(
                   'w-full flex items-center gap-3 px-4 py-2.5 text-left transition-colors',
-                  i === activeIndex ? 'bg-blue-50 text-blue-700' : 'text-slate-700 hover:bg-slate-50'
+                  i === activeIndex ? 'bg-blue-50 text-blue-700' : 'text-foreground hover:bg-muted'
                 )}
               >
-                <item.icon className="w-4 h-4 shrink-0 text-slate-400" />
+                <item.icon className="w-4 h-4 shrink-0 text-muted-foreground" />
                 <span className="flex-1 text-sm font-bold truncate">{item.name}</span>
-                <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 shrink-0">{item.section}</span>
-                {i === activeIndex && <CornerDownLeft className="w-3.5 h-3.5 text-blue-400 shrink-0" />}
+                <span className="text-[10px] font-semibold text-muted-foreground shrink-0">{item.section}</span>
+                {i === activeIndex && <ArrowElbowDownLeft className="w-3.5 h-3.5 text-blue-400 shrink-0" />}
               </button>
             ))
           )}

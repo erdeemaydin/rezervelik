@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { ArrowLeft, Save, Percent, RotateCcw, Calendar, Clock, X, History, Undo2, Pencil } from 'lucide-react';
+import { ArrowLeft, FloppyDisk, Percent, ArrowCounterClockwise, Calendar, Clock, X, ClockCounterClockwise, ArrowUUpLeft, Pencil } from '@phosphor-icons/react';
 import api from '@/lib/api';
 import { toast } from 'sonner';
 import { useTranslation } from '@/i18n/provider';
@@ -234,60 +234,60 @@ export default function BulkPricesPage() {
             <Button variant="ghost" size="icon" className="rounded-full"><ArrowLeft className="w-5 h-5" /></Button>
           </Link>
           <div>
-            <h1 className="text-2xl font-black text-slate-800 tracking-tight">{t('menus.bulkEditor.title')}</h1>
-            <p className="text-[11px] text-slate-400 font-bold uppercase tracking-[0.15em] mt-1">
+            <h1 className="text-2xl font-semibold tracking-tight text-foreground font-heading">{t('menus.bulkEditor.title')}</h1>
+            <p className="text-[11px] text-muted-foreground font-bold tracking-[0.15em] mt-1">
               {t('menus.bulkEditor.subtitle')} · {t('menus.bulkEditor.currency')}: {currency}
             </p>
           </div>
         </div>
 
         {/* Bulk tools */}
-        <Card className="rounded-xl border-slate-200 shadow-sm">
-          <CardHeader className="p-5 border-b border-slate-100">
-            <CardTitle className="text-sm font-black uppercase tracking-tight">{t('menus.bulkEditor.toolsTitle')}</CardTitle>
+        <Card className="rounded-xl border-border shadow-sm">
+          <CardHeader className="p-5 border-b border-border">
+            <CardTitle className="text-sm font-semibold tracking-tight">{t('menus.bulkEditor.toolsTitle')}</CardTitle>
           </CardHeader>
           <CardContent className="p-5 flex flex-wrap items-end gap-4">
             <div className="flex flex-col gap-2">
-              <Label className="text-[10px] font-black uppercase text-slate-500">{t('menus.bulkEditor.percentLabel')}</Label>
+              <Label className="text-[10px] font-semibold text-muted-foreground">{t('menus.bulkEditor.percentLabel')}</Label>
               <div className="flex items-center gap-2">
                 <div className="relative">
-                  <Percent className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
+                  <Percent className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
                   <Input type="number" value={percent} onChange={(e) => setPercent(e.target.value)} placeholder="10" className="h-10 w-28 pl-8 font-bold" />
                 </div>
-                <Button onClick={applyPercent} className="h-10 bg-blue-600 hover:bg-blue-700 text-white text-xs font-black uppercase">{t('menus.bulkEditor.applyPercent')}</Button>
+                <Button onClick={applyPercent} className="h-10 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold">{t('menus.bulkEditor.applyPercent')}</Button>
               </div>
             </div>
             <div className="flex flex-col gap-2">
-              <Label className="text-[10px] font-black uppercase text-slate-500">{t('menus.bulkEditor.roundUpLabel')}</Label>
+              <Label className="text-[10px] font-semibold text-muted-foreground">{t('menus.bulkEditor.roundUpLabel')}</Label>
               <div className="flex items-center gap-2">
                 {[10, 50, 100].map(step => (
-                  <Button key={step} variant="outline" onClick={() => roundUpAll(step)} className="h-10 text-xs font-black border-slate-200">{step}</Button>
+                  <Button key={step} variant="outline" onClick={() => roundUpAll(step)} className="h-10 text-xs font-black border-border">{step}</Button>
                 ))}
               </div>
             </div>
             <div className="flex flex-col gap-2 ml-auto">
-              <Label className="text-[10px] font-black uppercase text-transparent select-none">.</Label>
-              <Button variant="ghost" onClick={resetAll} className="h-10 text-xs font-black uppercase text-slate-500">
-                <RotateCcw className="w-3.5 h-3.5 mr-1.5" /> {t('menus.bulkEditor.reset')}
+              <Label className="text-[10px] font-semibold text-transparent select-none">.</Label>
+              <Button variant="ghost" onClick={resetAll} className="h-10 text-xs font-semibold text-muted-foreground">
+                <ArrowCounterClockwise className="w-3.5 h-3.5 mr-1.5" /> {t('menus.bulkEditor.reset')}
               </Button>
             </div>
 
             {/* Schedule for later: store the target prices to apply at a future time. */}
-            <div className="w-full flex flex-wrap items-center gap-3 pt-4 border-t border-slate-100">
+            <div className="w-full flex flex-wrap items-center gap-3 pt-4 border-t border-border">
               <label className="flex items-center gap-2 cursor-pointer">
                 <input type="checkbox" checked={scheduleEnabled} onChange={(e) => setScheduleEnabled(e.target.checked)} className="h-4 w-4 accent-blue-600" />
-                <span className="text-xs font-black uppercase text-slate-600">{t('menus.bulkEditor.scheduleForLater')}</span>
+                <span className="text-xs font-semibold text-muted-foreground">{t('menus.bulkEditor.scheduleForLater')}</span>
               </label>
               {scheduleEnabled && (
                 <div className="flex items-center gap-2">
-                  <Calendar className="w-4 h-4 text-slate-400" />
+                  <Calendar className="w-4 h-4 text-muted-foreground" />
                   <Input type="datetime-local" value={scheduledFor} onChange={(e) => setScheduledFor(e.target.value)} className="h-10 text-xs font-medium w-56" />
                 </div>
               )}
               {editingScheduledId && (
-                <div className="w-full flex items-center justify-between gap-2 rounded-lg bg-amber-50 border border-amber-200 px-3 py-2">
-                  <span className="text-[11px] font-bold text-amber-700">{t('menus.bulkEditor.editingScheduled')}</span>
-                  <Button type="button" variant="ghost" size="sm" onClick={resetAll} className="h-7 text-[10px] font-black uppercase text-amber-700">
+                <div className="w-full flex items-center justify-between gap-2 rounded-lg bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/50 px-3 py-2">
+                  <span className="text-[11px] font-bold text-amber-700 dark:text-amber-400">{t('menus.bulkEditor.editingScheduled')}</span>
+                  <Button type="button" variant="ghost" size="sm" onClick={resetAll} className="h-7 text-[10px] font-semibold text-amber-700 dark:text-amber-400">
                     <X className="w-3 h-3 mr-1" /> {t('menus.bulkEditor.cancelEdit')}
                   </Button>
                 </div>
@@ -298,30 +298,30 @@ export default function BulkPricesPage() {
 
         {/* Pending scheduled changes: view, cancel, or edit before the worker applies them. */}
         {scheduled.length > 0 && (
-          <Card className="rounded-xl border-slate-200 shadow-sm">
-            <CardHeader className="p-5 border-b border-slate-100">
-              <CardTitle className="text-sm font-black uppercase tracking-tight flex items-center gap-2">
-                <Clock className="w-4 h-4 text-amber-600" /> {t('menus.bulkEditor.scheduledTitle')}
+          <Card className="rounded-xl border-border shadow-sm">
+            <CardHeader className="p-5 border-b border-border">
+              <CardTitle className="text-sm font-semibold tracking-tight flex items-center gap-2">
+                <Clock className="w-4 h-4 text-amber-600 dark:text-amber-400" /> {t('menus.bulkEditor.scheduledTitle')}
               </CardTitle>
             </CardHeader>
-            <CardContent className="p-0 divide-y divide-slate-50">
+            <CardContent className="p-0 divide-y divide-border">
               {scheduled.map(update => (
                 <div key={update.id} className="flex items-center gap-4 px-5 py-3">
                   <div className="flex-1 min-w-0">
-                    <p className="text-xs font-bold text-slate-700">
+                    <p className="text-xs font-bold text-foreground">
                       {new Date(update.scheduledFor).toLocaleString(locale === 'tr' ? 'tr-TR' : 'en-US')}
                     </p>
-                    <p className="text-[11px] text-slate-400 font-medium truncate">
+                    <p className="text-[11px] text-muted-foreground font-medium truncate">
                       {update.items.length} {t('menus.bulkEditor.itemsSuffix')}
                       {update.items.length > 0 && ` · ${update.items.slice(0, 3).map(i => i.name || '?').join(', ')}${update.items.length > 3 ? '…' : ''}`}
                     </p>
                   </div>
-                  <Button variant="outline" size="sm" onClick={() => editScheduled(update)} className="h-8 text-[10px] font-black uppercase border-slate-200">
+                  <Button variant="outline" size="sm" onClick={() => editScheduled(update)} className="h-8 text-[10px] font-semibold border-border">
                     <Pencil className="w-3 h-3 mr-1" /> {t('menus.bulkEditor.editButton')}
                   </Button>
                   <Button
                     variant="outline" size="sm" onClick={() => cancelScheduled(update.id)} disabled={cancellingId === update.id}
-                    className="h-8 text-[10px] font-black uppercase border-red-200 text-red-600 hover:bg-red-50"
+                    className="h-8 text-[10px] font-semibold border-red-200 dark:border-red-800/50 text-red-600 dark:text-red-400 hover:bg-red-50 dark:bg-red-950/40"
                   >
                     <X className="w-3 h-3 mr-1" /> {t('menus.bulkEditor.cancelButton')}
                   </Button>
@@ -333,23 +333,23 @@ export default function BulkPricesPage() {
 
         {/* Recent changes: history of applied price changes, with undo. */}
         {history.length > 0 && (
-          <Card className="rounded-xl border-slate-200 shadow-sm">
-            <CardHeader className="p-5 border-b border-slate-100">
-              <CardTitle className="text-sm font-black uppercase tracking-tight flex items-center gap-2">
-                <History className="w-4 h-4 text-slate-500" /> {t('menus.bulkEditor.historyTitle')}
+          <Card className="rounded-xl border-border shadow-sm">
+            <CardHeader className="p-5 border-b border-border">
+              <CardTitle className="text-sm font-semibold tracking-tight flex items-center gap-2">
+                <ClockCounterClockwise className="w-4 h-4 text-muted-foreground" /> {t('menus.bulkEditor.historyTitle')}
               </CardTitle>
             </CardHeader>
-            <CardContent className="p-0 divide-y divide-slate-50">
+            <CardContent className="p-0 divide-y divide-border">
               {history.map(update => (
                 <div key={update.id} className="flex items-center gap-4 px-5 py-3">
                   <div className="flex-1 min-w-0">
-                    <p className="text-xs font-bold text-slate-700 flex items-center gap-2">
+                    <p className="text-xs font-bold text-foreground flex items-center gap-2">
                       {update.appliedAt ? new Date(update.appliedAt).toLocaleString(locale === 'tr' ? 'tr-TR' : 'en-US') : '—'}
                       {update.status === 'UNDONE' && (
-                        <span className="text-[9px] font-black uppercase text-slate-400 bg-slate-100 rounded px-1.5 py-0.5">{t('menus.bulkEditor.undoneBadge')}</span>
+                        <span className="text-[9px] font-semibold text-muted-foreground bg-muted rounded px-1.5 py-0.5">{t('menus.bulkEditor.undoneBadge')}</span>
                       )}
                     </p>
-                    <p className="text-[11px] text-slate-400 font-medium truncate">
+                    <p className="text-[11px] text-muted-foreground font-medium truncate">
                       {update.items.length} {t('menus.bulkEditor.itemsSuffix')}
                       {update.items.length > 0 && ` · ${update.items.slice(0, 3).map(i => i.name || '?').join(', ')}${update.items.length > 3 ? '…' : ''}`}
                     </p>
@@ -357,9 +357,9 @@ export default function BulkPricesPage() {
                   {update.status === 'APPLIED' && (
                     <Button
                       variant="outline" size="sm" onClick={() => undoChange(update.id)} disabled={undoingId === update.id}
-                      className="h-8 text-[10px] font-black uppercase border-slate-200"
+                      className="h-8 text-[10px] font-semibold border-border"
                     >
-                      <Undo2 className="w-3 h-3 mr-1" /> {t('menus.bulkEditor.undoButton')}
+                      <ArrowUUpLeft className="w-3 h-3 mr-1" /> {t('menus.bulkEditor.undoButton')}
                     </Button>
                   )}
                 </div>
@@ -373,29 +373,29 @@ export default function BulkPricesPage() {
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600" />
           </div>
         ) : groups.length === 0 ? (
-          <p className="text-center text-sm text-slate-400 py-16 font-bold">{t('menus.bulkEditor.empty')}</p>
+          <p className="text-center text-sm text-muted-foreground py-16 font-bold">{t('menus.bulkEditor.empty')}</p>
         ) : (
           <div className="space-y-6">
             {groups.map(group => (
-              <Card key={group.key} className="rounded-xl border-slate-200 shadow-sm overflow-hidden">
-                <CardHeader className="p-4 bg-slate-50/60 border-b border-slate-100">
-                  <CardTitle className="text-xs font-black uppercase tracking-widest text-slate-600">{group.label}</CardTitle>
+              <Card key={group.key} className="rounded-xl border-border shadow-sm overflow-hidden">
+                <CardHeader className="p-4 bg-muted/60 border-b border-border">
+                  <CardTitle className="text-xs font-semibold text-muted-foreground">{group.label}</CardTitle>
                 </CardHeader>
-                <CardContent className="p-0 divide-y divide-slate-50">
+                <CardContent className="p-0 divide-y divide-border">
                   {group.items.map(item => {
                     const raw = newPrices[item.id];
                     const hasNew = raw !== undefined && raw.trim() !== '' && !isNaN(parseFloat(raw)) && round2(parseFloat(raw)) !== round2(item.price);
                     return (
                       <div key={item.id} className="flex items-center gap-4 px-4 py-3">
                         <div className="flex-1 min-w-0">
-                          <p className="text-sm font-bold text-slate-800 truncate">{item.name}</p>
+                          <p className="text-sm font-bold text-foreground truncate">{item.name}</p>
                         </div>
                         <div className="text-right w-28 shrink-0">
-                          <p className="text-[9px] font-black uppercase text-slate-400 tracking-wider">{t('menus.bulkEditor.oldPrice')}</p>
-                          <p className={`text-sm font-bold ${hasNew ? 'text-slate-400 line-through' : 'text-slate-700'}`}>{fmtCurrency(item.price)}</p>
+                          <p className="text-[9px] font-semibold text-muted-foreground">{t('menus.bulkEditor.oldPrice')}</p>
+                          <p className={`text-sm font-bold ${hasNew ? 'text-muted-foreground line-through' : 'text-foreground'}`}>{fmtCurrency(item.price)}</p>
                         </div>
                         <div className="w-36 shrink-0">
-                          <Label className="text-[9px] font-black uppercase text-slate-400 tracking-wider">{t('menus.bulkEditor.newPrice')}</Label>
+                          <Label className="text-[9px] font-semibold text-muted-foreground">{t('menus.bulkEditor.newPrice')}</Label>
                           <Input
                             type="number"
                             min="0"
@@ -403,15 +403,15 @@ export default function BulkPricesPage() {
                             value={raw ?? ''}
                             placeholder={String(item.price)}
                             onChange={(e) => setNewPrices(prev => ({ ...prev, [item.id]: e.target.value }))}
-                            className={`h-10 font-bold ${hasNew ? 'border-emerald-400 bg-emerald-50/40 text-emerald-700' : ''}`}
+                            className={`h-10 font-bold ${hasNew ? 'border-emerald-400 bg-emerald-50/40 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400' : ''}`}
                           />
                         </div>
                         {/* Per-item round up to next 10/50/100. */}
                         <div className="hidden sm:flex flex-col gap-1 shrink-0">
-                          <Label className="text-[9px] font-black uppercase text-slate-400 tracking-wider">{t('menus.bulkEditor.roundUpShort')}</Label>
+                          <Label className="text-[9px] font-semibold text-muted-foreground">{t('menus.bulkEditor.roundUpShort')}</Label>
                           <div className="flex items-center gap-1">
                             {[10, 50, 100].map(step => (
-                              <Button key={step} type="button" variant="outline" size="sm" onClick={() => roundUpItem(item, step)} className="h-8 px-2 text-[10px] font-black border-slate-200">{step}</Button>
+                              <Button key={step} type="button" variant="outline" size="sm" onClick={() => roundUpItem(item, step)} className="h-8 px-2 text-[10px] font-black border-border">{step}</Button>
                             ))}
                           </div>
                         </div>
@@ -426,16 +426,16 @@ export default function BulkPricesPage() {
       </div>
 
       {/* Sticky save bar */}
-      <div className="fixed bottom-0 left-0 right-0 md:left-16 z-40 bg-white/95 backdrop-blur border-t border-slate-200 px-6 py-3 flex items-center justify-between">
-        <p className="text-xs font-bold text-slate-500">
+      <div className="fixed bottom-0 left-0 right-0 md:left-16 z-40 bg-card/95 backdrop-blur border-t border-border px-6 py-3 flex items-center justify-between">
+        <p className="text-xs font-bold text-muted-foreground">
           {changed.length > 0
-            ? <span className="text-emerald-600">{changed.length} {t('menus.bulkEditor.pendingChanges')}</span>
+            ? <span className="text-emerald-600 dark:text-emerald-400">{changed.length} {t('menus.bulkEditor.pendingChanges')}</span>
             : t('menus.bulkEditor.noPending')}
         </p>
-        <Button onClick={save} disabled={saving || changed.length === 0} className="h-11 bg-emerald-600 hover:bg-emerald-700 text-white font-black uppercase text-xs px-8">
+        <Button onClick={save} disabled={saving || changed.length === 0} className="h-11 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs px-8">
           {saving
             ? t('menus.bulkEditor.saving')
-            : <><Save className="w-4 h-4 mr-2" /> {scheduleEnabled ? t('menus.bulkEditor.schedule') : t('menus.bulkEditor.save')}</>}
+            : <><FloppyDisk className="w-4 h-4 mr-2" /> {scheduleEnabled ? t('menus.bulkEditor.schedule') : t('menus.bulkEditor.save')}</>}
         </Button>
       </div>
     </>

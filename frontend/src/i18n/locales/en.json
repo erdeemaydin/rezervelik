@@ -10,7 +10,7 @@
     "featureFlags": "Feature Flags",
     "provisioned": "Provisioned",
     "command": "Command",
-    "loginAs": "LOGIN AS",
+    "loginAs": "Login as",
     "daysLeft": "days left",
     "language": "Language",
     "globalOverview": "Global Overview",
@@ -27,7 +27,68 @@
     "logoutSystem": "Logout System",
     "systemManagement": "System Management",
     "globalClusterActive": "Global Cluster: Active",
-    "fetchTenantsError": "Failed to load tenants"
+    "fetchTenantsError": "Failed to load tenants",
+    "admins": {
+      "pageSubtitle": "Manage platform administrators and their access levels.",
+      "addAdministrator": "Add Administrator",
+      "addingEllipsis": "Adding…",
+      "accessRoster": "Access Roster",
+      "colName": "Name",
+      "colEmail": "Email",
+      "colAccessLevel": "Access Level",
+      "colStatus": "Status",
+      "colCreatedAt": "Created At",
+      "colActions": "Actions",
+      "loadingAdmins": "Loading administrators...",
+      "root": "Root",
+      "restricted": "Restricted",
+      "permission": "permission",
+      "permissions": "permissions",
+      "deactivated": "Deactivated",
+      "accessButton": "Access",
+      "resetLinkButton": "Reset Link",
+      "generatingEllipsis": "Generating…",
+      "cannotDeactivateSelf": "You can't deactivate your own account",
+      "deactivateButton": "Deactivate",
+      "reactivateButton": "Reactivate",
+      "updatingEllipsis": "Updating…",
+      "deactivateConfirmTitle": "Deactivate this administrator?",
+      "deactivateConfirmDescription": "They will be signed out immediately and unable to log in again until reactivated.",
+      "adminLabel": "Admin",
+      "cancel": "Cancel",
+      "toastAdminDeactivated": "Administrator deactivated",
+      "toastAdminReactivated": "Administrator reactivated",
+      "toastUpdateFailed": "Failed to update administrator",
+      "toastPasswordTooShort": "Password must be at least 8 characters",
+      "toastAdminAdded": "Administrator added",
+      "toastAddFailed": "Failed to add administrator",
+      "toastAccessUpdated": "Access level updated",
+      "toastAccessUpdateFailed": "Failed to update access level",
+      "toastResetLinkFailed": "Failed to generate reset link",
+      "toastLoadFailed": "Failed to load admins",
+      "copiedToClipboard": "Copied to clipboard!",
+      "addDialogDescription": "Create a new platform-level administrator, with either full root access or a restricted set of capabilities.",
+      "firstName": "First Name",
+      "lastName": "Last Name",
+      "password": "Password",
+      "passwordPlaceholder": "At least 8 characters",
+      "rootAdministrator": "Root administrator",
+      "restrictedAdministratorLabel": "Restricted administrator",
+      "rootAdminDescription": "Unrestricted access to every platform action.",
+      "restrictedAdminDescription": "Only the capabilities checked below.",
+      "cannotRemoveOwnRoot": "You can't remove root access from your own account.",
+      "permissionsLabel": "Permissions",
+      "editDescriptionPrefix": "Change what",
+      "editDescriptionSuffix": "can do.",
+      "saveAccessLevel": "Save Access Level",
+      "savingEllipsis": "Saving…",
+      "resetDialogTitle": "Password Reset Link",
+      "resetDialogDescriptionPrefix": "Single-use link for",
+      "resetDialogDescriptionSuffix": ". Share it securely — anyone with the link can set a new password.",
+      "expiresInPrefix": "Expires in",
+      "expiresInSuffix": "minutes",
+      "singleUse": "Single use"
+    }
   },
   "admin": {
     "dashboard": "Dashboard",
@@ -41,6 +102,7 @@
     "menuWizard": "Menu Wizard",
     "reviews": "Reviews",
     "staffSchedule": "Staff Schedule",
+    "orders": "Orders",
     "timesheet": "Timesheet",
     "staffMembers": "Staff Members",
     "payments": "Payments",
@@ -123,6 +185,7 @@
     "reservations": "Reservations",
     "aCulinaryJourney": "A Culinary Journey",
     "bookATable": "Book a Table",
+    "orderOnline": "Order Online",
     "joinWaitlist": "Join Waitlist",
     "selectDate": "Select Date",
     "selectTime": "Select Time",
@@ -166,7 +229,7 @@
     "loading": "Loading command center...",
     "todaysOperations": "Today's Operations",
     "realtimeCommand": "Real-time command center for today's service.",
-    "liveData": "LIVE DATA ACTIVE",
+    "liveData": "Live data active",
     "reservationsToday": "Reservations Today",
     "expectedGuests": "Expected Guests",
     "confirmed": "confirmed",
@@ -264,7 +327,7 @@
     "of3": "of 3",
     "basicInfo": "Basic Information",
     "basicInfoDesc": "Give your menu a name and set up footnotes.",
-    "logo": "LOGO",
+    "logo": "Logo",
     "menuName": "Menu Name",
     "menuNamePlaceholder": "e.g. Signature Dinner Menu",
     "footnotes": "Footnotes / Legal",
@@ -628,6 +691,7 @@
       "baseRoleTemplate": "Base Role Template",
       "roleManager": "Manager (All Ops)",
       "roleHost": "Host (Tables & Res.)",
+      "roleKitchen": "Kitchen (Order Station)",
       "roleStaff": "Standard Staff (View Only)",
       "granularEntitlements": "Granular Entitlements",
       "entitlementsDesc": "Toggle specific access rights beyond the base role template.",
@@ -674,6 +738,10 @@
       "view_reviews": {
         "label": "View Reviews",
         "desc": "See the reviews dashboard"
+      },
+      "manage_orders": {
+        "label": "Manage Orders",
+        "desc": "Access the online order station"
       }
     }
   },
@@ -812,7 +880,7 @@
     "preview": {
       "title": "Live Preview",
       "desc": "Your unsaved edits appear below as you make them. Nothing is public until you click Publish Changes.",
-      "palette": "PALETTE",
+      "palette": "Palette",
       "refresh": "Reload preview",
       "openNewTab": "Open public page in a new tab",
       "unavailable": "Preview unavailable — could not determine your public page address."
@@ -835,7 +903,7 @@
     "deleteFailed": "Delete failed",
     "dashboardTitle": "Reservations Dashboard",
     "serviceControlUnit": "Service Control Unit",
-    "newReservation": "NEW RESERVATION",
+    "newReservation": "New reservation",
     "liveAndPending": "Live & Pending",
     "serviceHistory": "Service History",
     "timeline": "Timeline",
@@ -855,9 +923,9 @@
     "command": "Command",
     "refreshing": "Refreshing Floor Sync...",
     "noRecords": "Zero Matching Records",
-    "pax": "PAX",
+    "pax": "Pax",
     "manual": "Manual",
-    "assigned": "ASSIGNED",
+    "assigned": "Assigned",
     "noShowHistoryLabel": "no-shows",
     "noShowHistoryHint": "This phone number has a history of no-shows at this restaurant",
     "needsAssign": "Needs Assign",
@@ -881,8 +949,8 @@
     "serviceIntelligence": "Service Intelligence (Staff Only)",
     "notesPlaceholder": "e.g. Allergy warning, Seating preference, VIP detail...",
     "elevateVIP": "Elevate to VIP Priority Status",
-    "abort": "ABORT",
-    "commitEntry": "COMMIT ENTRY",
+    "abort": "Abort",
+    "commitEntry": "Commit entry",
     "rescheduled": "Reservation rescheduled",
     "conflictBlocked": "That table is already booked for this time — move blocked.",
     "overCapacity": "Over cap.",
@@ -984,8 +1052,14 @@
       "dishInfo": "Dish Information",
       "tagsSpecs": "Tags / Specs",
       "price": "Price",
+      "onlineOrdering": "Online Ordering",
       "actions": "Actions",
       "noItems": "No items in this category."
+    },
+    "onlineOrdering": {
+      "prepTimePlaceholder": "Prep (min)",
+      "updated": "Online-ordering setting saved",
+      "updateFailed": "Couldn't save the online-ordering setting"
     },
     "buttons": {
       "addDish": "Add Dish to Category",
@@ -1166,7 +1240,7 @@
     "waitlistEmptyDesc": "There are currently no active walk-ins waiting for a table.",
     "bookWait": "Book Wait",
     "waiting": "Waiting",
-    "date": "DATE",
+    "date": "Date",
     "dateWaitlist": "Date Waitlist",
     "quotePrefix": "Quote:",
     "minSuffix": "min",
@@ -1334,6 +1408,7 @@
       "ADMIN": "Admin",
       "MANAGER": "Manager",
       "HOST": "Host",
+      "KITCHEN": "Kitchen",
       "STAFF": "Staff"
     },
     "appearance": "Dashboard Theme",
@@ -1400,9 +1475,9 @@
       "quoted": "Quoted"
     },
     "status": {
-      "waiting": "WAITING",
-      "notified": "NOTIFIED",
-      "offerSent": "OFFER SENT"
+      "waiting": "Waiting",
+      "notified": "Notified",
+      "offerSent": "Offer sent"
     },
     "action": {
       "notify": "Notify",
@@ -1458,7 +1533,7 @@
     "createZoneBtn": "Create Zone",
     "existingZones": "Existing Zones",
     "noDescription": "No description",
-    "closeBtn": "CLOSE",
+    "closeBtn": "Close",
     "addTable": "Add Table",
     "addBox": "Add Box",
     "floorPlan": "Floor Plan",
@@ -1478,7 +1553,7 @@
     "refreshing": "Refreshing Floor...",
     "noTablesFound": "No tables found",
     "standard": "Standard",
-    "pax": "PAX",
+    "pax": "Pax",
     "available": "Available",
     "occupied": "Occupied",
     "viewOnly": "View Only",
@@ -1498,15 +1573,15 @@
     "heightPx": "Height (px)",
     "deleteTableBtn": "Delete Table",
     "deleteBtn": "Delete",
-    "cancelBtn": "CANCEL",
-    "savePhysicalTableBtn": "SAVE PHYSICAL TABLE",
+    "cancelBtn": "Cancel",
+    "savePhysicalTableBtn": "Save physical table",
     "editVisualBox": "Edit Visual Box",
     "addVisualBox": "Add Visual Box",
     "labelOptional": "Label (Optional)",
     "labelPlaceholder": "e.g. Terrace Left Door",
     "backgroundColor": "Background Color",
     "deleteBoxBtn": "Delete Box",
-    "saveBoxBtn": "SAVE BOX"
+    "saveBoxBtn": "Save box"
   },
   "profile": {
     "title": "My Account",
@@ -1550,7 +1625,8 @@
     "deleteConfirm": "This action cannot be undone.",
     "loading": "Loading…",
     "save": "Save",
-    "saved": "Saved"
+    "saved": "Saved",
+    "moreInfo": "More info"
   },
   "events": {
     "navTitle": "Events",
@@ -1766,5 +1842,393 @@
     "retry": "Try again",
     "adminSignIn": "Administrator sign-in",
     "adminSignInHint": "Platform administrators can still sign in during maintenance."
+  },
+  "orderStation": {
+    "logout": "Log out",
+    "title": "Order Station",
+    "connectionLive": "Live",
+    "connectionReconnecting": "Reconnecting…",
+    "refreshBtn": "Refresh",
+    "soundOnTitle": "Sound on — tap to mute",
+    "soundOffTitle": "Sound muted — tap to unmute",
+    "loadFailed": "Couldn't load orders. Retrying…",
+    "statusUpdateFailed": "Couldn't update the order. Please try again.",
+    "statusUpdated": "Order #{number} marked {status}",
+    "emptyColumn": "No orders",
+    "columns": {
+      "NEW": "New",
+      "ACCEPTED": "Accepted",
+      "PREPARING": "Preparing",
+      "READY": "Ready",
+      "OUT_FOR_DELIVERY": "Out for delivery"
+    },
+    "card": {
+      "unknownCustomer": "Guest",
+      "itemsSuffix": "items",
+      "advanceTo": "Mark {status}",
+      "rejectBtn": "Reject",
+      "cancelBtn": "Cancel",
+      "minutesAgo": "{minutes}m ago",
+      "justNow": "Just now"
+    },
+    "print": {
+      "kitchenTicket": "Kitchen ticket",
+      "courierSlip": "Courier slip",
+      "receipt": "Receipt"
+    },
+    "cancelDialog": {
+      "rejectTitle": "Reject order #{number}",
+      "cancelTitle": "Cancel order #{number}",
+      "description": "This can't be undone. The reason is recorded in the order's audit trail.",
+      "reasonLabel": "Reason (optional)",
+      "reasonPlaceholder": "e.g. Out of stock, customer requested",
+      "confirmBtn": "Confirm",
+      "closeBtn": "Never mind"
+    },
+    "ticket": {
+      "orderLabel": "Order",
+      "noteLabel": "Note",
+      "noItems": "No items",
+      "kitchenHeading": "Kitchen Ticket",
+      "courierHeading": "Courier Slip",
+      "receiptHeading": "Receipt",
+      "customerLabel": "Customer",
+      "phoneLabel": "Phone",
+      "addressLabel": "Delivery address",
+      "codLabel": "Collect on delivery",
+      "mapCaption": "Scan for directions",
+      "subtotalLabel": "Subtotal",
+      "deliveryFeeLabel": "Delivery fee",
+      "totalLabel": "Total",
+      "paymentMethodLabel": "Payment method",
+      "paidLabel": "Paid",
+      "unpaidLabel": "Unpaid",
+      "thankYou": "Thank you for your order!"
+    }
+  },
+  "orders": {
+    "title": "Orders",
+    "subtitle": "Online order history and customer directory",
+    "settingsBtn": "Order Settings",
+    "tabs": {
+      "history": "Order History",
+      "customers": "Customers"
+    },
+    "filters": {
+      "today": "Today",
+      "thisWeek": "This Week",
+      "thisMonth": "This Month",
+      "allTime": "All Time",
+      "custom": "Custom",
+      "picker": "Pick a date",
+      "statusAll": "All Statuses"
+    },
+    "searchPlaceholder": "Search by order #, customer name or phone",
+    "table": {
+      "orderNumber": "Order",
+      "customer": "Customer",
+      "fulfillment": "Fulfillment",
+      "status": "Status",
+      "total": "Total",
+      "placedAt": "Placed",
+      "actions": "Actions",
+      "loading": "Loading orders…",
+      "noOrders": "No orders match the current filters",
+      "view": "View"
+    },
+    "status": {
+      "NEW": "New",
+      "ACCEPTED": "Accepted",
+      "PREPARING": "Preparing",
+      "READY": "Ready",
+      "OUT_FOR_DELIVERY": "Out for Delivery",
+      "COMPLETED": "Completed",
+      "CANCELLED": "Cancelled",
+      "REJECTED": "Rejected"
+    },
+    "fulfillment": {
+      "DELIVERY": "Delivery",
+      "PICKUP": "Pickup"
+    },
+    "paymentMethod": {
+      "CASH_ON_DELIVERY": "Cash on Delivery",
+      "ONLINE_CARD": "Online Card"
+    },
+    "paymentStatus": {
+      "UNPAID": "Unpaid",
+      "PAID": "Paid",
+      "REFUNDED": "Refunded"
+    },
+    "detail": {
+      "title": "Order",
+      "items": "Items",
+      "quantity": "Qty",
+      "unitPrice": "Unit Price",
+      "modifiers": "Modifiers",
+      "subtotal": "Subtotal",
+      "deliveryFee": "Delivery Fee",
+      "total": "Total",
+      "address": "Delivery Address",
+      "noAddress": "No address on file (pickup order)",
+      "customerNote": "Customer Note",
+      "noNote": "No note left by the customer",
+      "prepTime": "Prep Time",
+      "minutesSuffix": "min",
+      "readyBy": "Ready By",
+      "paymentMethod": "Payment Method",
+      "paymentStatus": "Payment Status",
+      "placedAt": "Placed At",
+      "customer": "Customer",
+      "close": "Close"
+    },
+    "customers": {
+      "searchPlaceholder": "Search by name or phone",
+      "table": {
+        "name": "Name",
+        "phone": "Phone",
+        "orderCount": "Orders",
+        "joined": "Customer Since",
+        "actions": "Actions",
+        "loading": "Loading customers…",
+        "noCustomers": "No customers yet",
+        "view": "View"
+      }
+    },
+    "customerDetail": {
+      "title": "Customer",
+      "phoneVerified": "Phone verified",
+      "phoneNotVerified": "Phone not verified",
+      "addresses": "Saved Addresses",
+      "noAddresses": "No saved addresses",
+      "orderHistory": "Order History",
+      "noOrders": "No orders yet",
+      "close": "Close"
+    },
+    "errors": {
+      "loadFailed": "Couldn't load orders",
+      "loadCustomersFailed": "Couldn't load customers",
+      "loadCustomerDetailFailed": "Couldn't load this customer's details"
+    },
+    "settings": {
+      "title": "Order Settings",
+      "subtitle": "Configure delivery, pickup, payment methods and capacity",
+      "tabs": {
+        "general": "General",
+        "zones": "Delivery Zones"
+      },
+      "saveBtn": "Save Changes",
+      "saved": "Order settings saved",
+      "saveFailed": "Couldn't save order settings",
+      "loadFailed": "Couldn't load order settings",
+      "killSwitch": {
+        "title": "Online Ordering",
+        "statusOpen": "OPEN — accepting orders",
+        "statusClosed": "CLOSED — not accepting orders",
+        "descOpen": "Customers can place orders right now. Flip this off to stop taking new orders immediately (e.g. at closing time or during a rush).",
+        "descClosed": "Ordering is closed. Customers cannot place new orders until you turn this back on."
+      },
+      "fulfillment": {
+        "title": "Fulfillment Methods",
+        "delivery": "Delivery",
+        "deliveryDesc": "Allow customers to order for delivery",
+        "pickup": "Pickup",
+        "pickupDesc": "Allow customers to order for pickup (gel-al)"
+      },
+      "payment": {
+        "title": "Payment Methods",
+        "cod": "Cash on Delivery",
+        "codDesc": "Collect payment in person when the order arrives",
+        "card": "Online Card Payment",
+        "cardDesc": "Pay by card at checkout",
+        "comingSoon": "Coming soon",
+        "cardHint": "Online card payment requires a payment-gateway integration (Phase 2) that hasn't been built yet. This stays off so customers can't choose a payment method that would silently fail at checkout."
+      },
+      "capacity": {
+        "title": "Capacity & Timing",
+        "maxConcurrent": "Max Concurrent Orders",
+        "maxConcurrentHint": "Leave empty for unlimited",
+        "prepTime": "Default Prep Time (minutes)",
+        "prepTimeHint": "Used when a menu item doesn't set its own prep time"
+      },
+      "hours": {
+        "title": "Order Hours",
+        "desc": "Leave a day closed to stop accepting orders on that day entirely",
+        "closed": "Closed",
+        "open": "Open",
+        "close": "Close",
+        "days": {
+          "mon": "Monday",
+          "tue": "Tuesday",
+          "wed": "Wednesday",
+          "thu": "Thursday",
+          "fri": "Friday",
+          "sat": "Saturday",
+          "sun": "Sunday"
+        }
+      },
+      "zones": {
+        "title": "Delivery Zones",
+        "addBtn": "Add Zone",
+        "table": {
+          "name": "Zone",
+          "matchType": "Type",
+          "fee": "Delivery Fee",
+          "minOrder": "Min. Order",
+          "active": "Active",
+          "actions": "Actions",
+          "loading": "Loading zones…",
+          "noZones": "No delivery zones configured yet"
+        },
+        "matchType": {
+          "RADIUS": "Radius",
+          "AREA": "Area / Neighborhood"
+        },
+        "dialog": {
+          "createTitle": "New Delivery Zone",
+          "editTitle": "Edit Delivery Zone",
+          "name": "Zone Name",
+          "namePlaceholder": "e.g. City Center",
+          "matchType": "Match Type",
+          "radiusMeters": "Radius (meters)",
+          "deliveryFee": "Delivery Fee",
+          "minOrderAmount": "Minimum Order Amount",
+          "active": "Zone is active",
+          "save": "Save Zone"
+        },
+        "confirm": {
+          "deleteTitle": "Delete this delivery zone?"
+        },
+        "toast": {
+          "created": "Delivery zone created",
+          "updated": "Delivery zone updated",
+          "deleted": "Delivery zone deleted",
+          "saveFailed": "Couldn't save the delivery zone",
+          "deleteFailed": "Couldn't delete the delivery zone",
+          "loadFailed": "Couldn't load delivery zones"
+        }
+      }
+    }
+  },
+  "publicOrder": {
+    "restaurantNotFound": "Restaurant not found.",
+    "notAvailable": "Online ordering isn't available for this restaurant.",
+    "loadFailed": "Couldn't load the menu. Please try again.",
+    "closed": {
+      "title": "Not taking orders right now",
+      "description": "We're not accepting online orders at the moment. Please check back soon."
+    },
+    "nav": {
+      "back": "Back",
+      "continue": "Continue",
+      "myOrders": "My orders",
+      "step": {
+        "menu": "Menu",
+        "checkout": "Cart & delivery",
+        "identify": "Verify your phone",
+        "payment": "Payment",
+        "placed": "Order placed"
+      }
+    },
+    "menu": {
+      "empty": "Nothing available for online ordering right now.",
+      "itemsSuffix": "items",
+      "viewCart": "View cart",
+      "addedToast": "Added to cart"
+    },
+    "item": {
+      "required": "Required",
+      "optional": "Optional",
+      "quantity": "Quantity",
+      "decrease": "Decrease quantity",
+      "increase": "Increase quantity",
+      "addToCart": "Add to cart"
+    },
+    "cart": {
+      "title": "Your order",
+      "remove": "Remove"
+    },
+    "fulfillment": {
+      "title": "Delivery or pickup?",
+      "delivery": "Delivery",
+      "pickup": "Pickup",
+      "onlyOneAvailable": "Only one order type is available right now."
+    },
+    "address": {
+      "zoneLabel": "Delivery area",
+      "noZones": "No delivery areas are set up yet.",
+      "deliveryFeeLabel": "Fee:",
+      "minOrderLabel": "Min. order:",
+      "fullAddressLabel": "Delivery address",
+      "fullAddressPlaceholder": "Street, building, floor, apartment number…",
+      "neighborhoodLabel": "Neighborhood",
+      "neighborhoodPlaceholder": "e.g. Kadıköy",
+      "noteLabel": "Note for the courier",
+      "notePlaceholder": "e.g. Ring the bell twice"
+    },
+    "quote": {
+      "calculating": "Calculating your total…",
+      "subtotal": "Subtotal",
+      "deliveryFee": "Delivery fee",
+      "total": "Total",
+      "belowMinimum": "Minimum order for this area is",
+      "waiting": "Add items to see your total.",
+      "failed": "Couldn't calculate your total. Please try again."
+    },
+    "identify": {
+      "title": "Verify your phone number",
+      "phoneLabel": "Mobile number",
+      "phonePlaceholder": "+90 5XX XXX XX XX",
+      "sendCodeButton": "Send code",
+      "codeSentTo": "We sent a 6-digit code to",
+      "codeLabel": "Verification code",
+      "codePlaceholder": "······",
+      "trustDeviceLabel": "Remember this device so I skip the code next time",
+      "verifyButton": "Verify & continue",
+      "changePhoneButton": "Change phone number",
+      "resendButton": "Resend code",
+      "resendPrefix": "Resend in",
+      "nameSubtitle": "First time ordering here — what's your name?",
+      "nameLabel": "Your name",
+      "namePlaceholder": "John Doe",
+      "requestFailed": "Couldn't send the code. Please try again.",
+      "verifyFailed": "That code didn't work. Please try again."
+    },
+    "payment": {
+      "title": "Payment method",
+      "cashOnDelivery": "Cash on delivery",
+      "onlineCard": "Pay by card online",
+      "noneAvailable": "No payment methods are available right now.",
+      "noteLabel": "Note for the kitchen (optional)",
+      "notePlaceholder": "e.g. No onions, please"
+    },
+    "confirm": {
+      "summaryTitle": "Order summary",
+      "prepTimePrefix": "Ready in about",
+      "minutesSuffix": "min",
+      "placeOrderButton": "Place order",
+      "placeFailed": "Couldn't place your order. Please try again."
+    },
+    "placed": {
+      "title": "Order placed!",
+      "orderNumberPrefix": "Order",
+      "statusLabel": "Status",
+      "readyByPrefix": "Ready by",
+      "viewHistoryButton": "My orders",
+      "orderAgainButton": "Order again"
+    },
+    "history": {
+      "title": "My orders",
+      "empty": "No past orders yet."
+    },
+    "status": {
+      "NEW": "Received",
+      "ACCEPTED": "Accepted",
+      "PREPARING": "Preparing",
+      "READY": "Ready",
+      "OUT_FOR_DELIVERY": "Out for delivery",
+      "COMPLETED": "Completed",
+      "CANCELLED": "Cancelled",
+      "REJECTED": "Rejected"
+    }
   }
 }

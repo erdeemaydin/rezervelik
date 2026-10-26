@@ -4,10 +4,17 @@
 //
 // The default must match tests/setup/prepare-test-db.mjs (the throwaway local
 // Postgres on :5433). CI/custom setups override via TEST_DATABASE_URL.
+import { assertTestDatabaseUrl } from './assertTestDatabaseUrl.mjs';
+
 process.env.NODE_ENV = 'test';
 process.env.DATABASE_URL =
   process.env.TEST_DATABASE_URL ||
   process.env.DATABASE_URL ||
   'postgresql://postgres:postgres@127.0.0.1:5433/dining_test?schema=public';
+// Every test in this suite eventually calls resetDb() (tests/helpers/seed.ts),
+// which deletes every User and Restaurant row. Refuse to even start if
+// DATABASE_URL doesn't unmistakably point at a disposable test database — an
+// operator/agent mistake here must fail loudly, not wipe real data.
+assertTestDatabaseUrl(process.env.DATABASE_URL);
 process.env.JWT_SECRET = process.env.JWT_SECRET || 'test-jwt-secret';
 process.env.SETUP_SECRET_TOKEN = process.env.SETUP_SECRET_TOKEN || 'test-setup-secret';

@@ -9,7 +9,7 @@ import { useAuthStore } from '@/store/useAuthStore';
 import api from '@/lib/api';
 import { getApiErrorMessage } from '@/lib/apiError';
 import { QRCodeSVG } from 'qrcode.react';
-import { ShieldCheck, UtensilsCrossed, Loader2 } from 'lucide-react';
+import { ShieldCheck, Loader2 } from 'lucide-react';
 import { useTranslation } from '@/i18n/provider';
 
 import { Button } from '@/components/ui/button';
@@ -24,6 +24,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { PasswordInput } from '@/components/auth/PasswordInput';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
+import { BrandLogo, BrandMark } from '@/components/BrandLogo';
 
 // Login only requires a non-empty password — the account may predate the current
 // password policy (legacy/weak passwords are still valid and must sign in). The
@@ -43,11 +44,20 @@ interface OtpChallenge {
 // HOST staff work the host stand, not the back-office dashboard — land them
 // there directly instead of /dashboard (which they don't have view_analytics
 // for anyway, so AdminLayout's route guard would just bounce them elsewhere).
+// KITCHEN staff go even further outside the dashboard entirely: the order
+// station is a separate full-screen route that doesn't use AdminLayout chrome
+// at all (unlike /dashboard/host, which stays inside it).
 const defaultRouteForRole = (role: string): string => {
   if (role === 'SUPER_ADMIN') return '/system-admin/tenants';
   if (role === 'HOST') return '/dashboard/host';
+  if (role === 'KITCHEN') return '/order-station';
   return '/dashboard';
 };
+
+// Brand colors for the pre-auth surfaces. There's no tenant yet, so these are
+// the default (classic blue) skin's values from globals.css, not variables.
+const NAVY = '#222d32';
+const BLUE = '#1f6fb2';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -124,217 +134,209 @@ export default function LoginPage() {
     }
   }
 
+  const primaryButton = 'h-11 w-full rounded-[4px] bg-[#1f6fb2] text-sm font-bold text-white hover:bg-[#195a91]';
+
   return (
-    <div className="min-h-screen w-full lg:grid lg:grid-cols-[1.05fr_1fr] bg-stone-50">
+    <div className="min-h-screen w-full lg:grid lg:grid-cols-[1.05fr_1fr] bg-[#ecf0f5]">
       {/* Post-login transition veil — keeps a clear "signing you in…" state on
           screen until the dashboard route paints, so the wait never looks frozen. */}
       {redirecting && (
-        <div className="fixed inset-0 z-50 flex flex-col items-center justify-center gap-4 bg-stone-50/90 backdrop-blur-sm">
-          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-amber-600 to-rose-800 text-white shadow-lg">
-            <Loader2 className="h-6 w-6 animate-spin" />
-          </div>
-          <p className="text-sm font-bold text-stone-600">{t('auth.signingIn')}</p>
+        <div className="fixed inset-0 z-50 flex flex-col items-center justify-center gap-4 bg-[#ecf0f5]/95">
+          <BrandMark size={56} tile={BLUE} />
+          <p className="flex items-center gap-2 text-sm font-bold text-[#1f2d3d]">
+            <Loader2 className="h-4 w-4 animate-spin" />
+            {t('auth.signingIn')}
+          </p>
         </div>
       )}
-      {/* Brand panel — warm hospitality gradient. Hidden on small screens. */}
-      <aside className="relative hidden lg:flex flex-col justify-between overflow-hidden bg-gradient-to-br from-amber-700 via-orange-800 to-rose-900 p-12 text-amber-50">
-        <div
-          aria-hidden
-          className="pointer-events-none absolute -right-24 -top-24 h-96 w-96 rounded-full bg-amber-400/20 blur-3xl"
-        />
-        <div
-          aria-hidden
-          className="pointer-events-none absolute -left-20 bottom-0 h-80 w-80 rounded-full bg-rose-500/20 blur-3xl"
-        />
-        <div className="relative flex items-center gap-3">
-          <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-amber-50/15 ring-1 ring-amber-50/25 backdrop-blur">
-            <UtensilsCrossed className="h-6 w-6" />
-          </div>
-          <span className="text-xl font-black tracking-tight">
-            Reserve<span className="text-amber-300">Pro</span>
-          </span>
-        </div>
+
+      {/* Brand panel — AdminLTE navy with the skin-blue top rule. Hidden on small screens. */}
+      <aside
+        className="relative hidden lg:flex flex-col justify-between overflow-hidden border-t-4 p-12 text-white"
+        style={{ backgroundColor: NAVY, borderTopColor: BLUE }}
+      >
+        {/* Oversized watermark of the mark — structure, not a gradient blob. */}
+        <BrandMark size={460} tile="rgba(255,255,255,0.035)" glyph="rgba(255,255,255,0.05)" className="pointer-events-none absolute -bottom-24 -right-24" />
+        <BrandLogo size={44} tile={BLUE} textClassName="text-[26px] text-white" className="relative" />
         <div className="relative max-w-md">
-          <h1 className="text-4xl font-black leading-tight tracking-tight">
+          <h1 className="text-4xl font-bold leading-tight tracking-tight">
             {t('auth.signInTitle')}
           </h1>
-          <p className="mt-4 text-base leading-relaxed text-amber-100/85">
+          <p className="mt-4 text-base leading-relaxed text-[#b8c7ce]">
             {t('auth.brandTagline')}
           </p>
         </div>
-        <div className="relative text-xs font-medium text-amber-100/60">
-          © {new Date().getFullYear()} ReservePro
+        <div className="relative text-xs font-medium text-[#8aa4af]">
+          © {new Date().getFullYear()} Rezervelik
         </div>
       </aside>
 
       {/* Form panel */}
-      <main className="flex min-h-screen flex-col items-center justify-center px-5 py-10 sm:px-8">
+      <main className="relative flex min-h-screen flex-col items-center justify-center px-5 py-10 sm:px-8">
         <div className="absolute right-4 top-4">
           <LanguageSwitcher />
         </div>
 
         <div className="w-full max-w-sm">
-          {/* Compact brand mark for mobile (brand panel is hidden there). */}
-          <div className="mb-8 flex items-center gap-2.5 lg:hidden">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-amber-600 to-rose-800 text-white">
-              <UtensilsCrossed className="h-5 w-5" />
-            </div>
-            <span className="text-lg font-black tracking-tight text-stone-800">
-              Reserve<span className="text-amber-700">Pro</span>
-            </span>
+          {/* Brand mark for mobile (brand panel is hidden there). */}
+          <div className="mb-6 flex justify-center lg:hidden">
+            <BrandLogo size={40} tile={BLUE} textClassName="text-2xl text-[#1f2d3d]" />
           </div>
 
-          {!challenge ? (
-            <>
-              <div className="mb-6 space-y-1">
-                <h2 className="text-2xl font-black tracking-tight text-stone-900">{t('auth.signInTitle')}</h2>
-                <p className="text-sm text-stone-500">{t('auth.signInSubtitle')}</p>
-              </div>
+          {/* AdminLTE login box: white panel, visible border, primary top rule. */}
+          <div className="rounded-[4px] border border-[#9ca8b7] border-t-[3px] border-t-[#1f6fb2] bg-white p-6 shadow-[0_1px_3px_rgba(0,0,0,0.1)] sm:p-7">
+            {!challenge ? (
+              <>
+                <div className="mb-6 space-y-1">
+                  <h2 className="text-2xl font-bold tracking-tight text-[#1f2d3d]">{t('auth.signInTitle')}</h2>
+                  <p className="text-sm text-[#5b6b7b]">{t('auth.signInSubtitle')}</p>
+                </div>
 
-              <Form {...form}>
-                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4" noValidate>
-                  <FormField
-                    control={form.control}
-                    name="email"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className="text-stone-700">{t('auth.emailLabel')}</FormLabel>
-                        <FormControl>
-                          <Input
-                            {...field}
-                            type="email"
-                            inputMode="email"
-                            autoComplete="email"
-                            autoCapitalize="none"
-                            autoCorrect="off"
-                            spellCheck={false}
-                            autoFocus
-                            placeholder={t('auth.emailPlaceholder')}
-                            className="h-11"
-                          />
-                        </FormControl>
-                        {form.formState.errors.email?.message && (
-                          <p className="text-sm font-medium text-destructive">
-                            {t(form.formState.errors.email.message)}
-                          </p>
-                        )}
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="password"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className="text-stone-700">{t('auth.passwordLabel')}</FormLabel>
-                        <FormControl>
-                          <PasswordInput
-                            {...field}
-                            autoComplete="current-password"
-                            placeholder="••••••••"
-                            className="h-11"
-                            showLabel={t('auth.showPassword')}
-                            hideLabel={t('auth.hidePassword')}
-                          />
-                        </FormControl>
-                        {form.formState.errors.password?.message && (
-                          <p className="text-sm font-medium text-destructive">
-                            {t(form.formState.errors.password.message)}
-                          </p>
-                        )}
-                      </FormItem>
-                    )}
-                  />
+                <Form {...form}>
+                  <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4" noValidate>
+                    <FormField
+                      control={form.control}
+                      name="email"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="font-semibold text-[#1f2d3d]">{t('auth.emailLabel')}</FormLabel>
+                          <FormControl>
+                            <Input
+                              {...field}
+                              type="email"
+                              inputMode="email"
+                              autoComplete="email"
+                              autoCapitalize="none"
+                              autoCorrect="off"
+                              spellCheck={false}
+                              autoFocus
+                              placeholder={t('auth.emailPlaceholder')}
+                              className="h-11"
+                            />
+                          </FormControl>
+                          {form.formState.errors.email?.message && (
+                            <p className="text-sm font-medium text-destructive">
+                              {t(form.formState.errors.email.message)}
+                            </p>
+                          )}
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="password"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="font-semibold text-[#1f2d3d]">{t('auth.passwordLabel')}</FormLabel>
+                          <FormControl>
+                            <PasswordInput
+                              {...field}
+                              autoComplete="current-password"
+                              placeholder="••••••••"
+                              className="h-11"
+                              showLabel={t('auth.showPassword')}
+                              hideLabel={t('auth.hidePassword')}
+                            />
+                          </FormControl>
+                          {form.formState.errors.password?.message && (
+                            <p className="text-sm font-medium text-destructive">
+                              {t(form.formState.errors.password.message)}
+                            </p>
+                          )}
+                        </FormItem>
+                      )}
+                    />
 
+                    {error && (
+                      <div className="rounded-[4px] border border-red-300 border-l-4 border-l-red-600 bg-red-50 px-3 py-2.5 text-sm font-medium text-red-800">
+                        {error}
+                      </div>
+                    )}
+
+                    <Button
+                      type="submit"
+                      disabled={form.formState.isSubmitting || redirecting}
+                      className={primaryButton}
+                    >
+                      {(form.formState.isSubmitting || redirecting) && (
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      )}
+                      {form.formState.isSubmitting || redirecting ? t('auth.signingIn') : t('auth.signInButton')}
+                    </Button>
+                  </form>
+                </Form>
+              </>
+            ) : (
+              <>
+                <div className="mb-6 text-center">
+                  <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-[#00875a] text-white">
+                    <ShieldCheck className="h-6 w-6" />
+                  </div>
+                  <h2 className="text-2xl font-bold tracking-tight text-[#1f2d3d]">{t('auth.twoFactorTitle')}</h2>
+                  <p className="mt-1 text-sm text-[#5b6b7b]">
+                    {challenge.setupRequired ? t('auth.twoFactorSetupDesc') : t('auth.twoFactorDesc')}
+                  </p>
+                </div>
+
+                <form onSubmit={submitOtp} className="space-y-4">
+                  {challenge.setupRequired && challenge.otpauthUrl && (
+                    <div className="flex flex-col items-center gap-3">
+                      <div className="rounded-[4px] border border-[#9ca8b7] bg-white p-3">
+                        <QRCodeSVG value={challenge.otpauthUrl} size={160} />
+                      </div>
+                      {challenge.otpSecret && (
+                        <div className="w-full text-center">
+                          <Label className="text-[10px] font-black uppercase tracking-wider text-[#5b6b7b]">
+                            {t('auth.manualKey')}
+                          </Label>
+                          <code className="mt-1 block break-all rounded-[4px] border border-[#9ca8b7] bg-[#f4f6f9] px-3 py-2 font-mono text-xs">
+                            {challenge.otpSecret}
+                          </code>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                  <div className="space-y-2">
+                    <Label className="text-xs font-bold uppercase text-[#1f2d3d]">{t('auth.verificationCode')}</Label>
+                    <Input
+                      value={otpCode}
+                      onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                      inputMode="numeric"
+                      autoComplete="one-time-code"
+                      autoFocus
+                      placeholder="123456"
+                      className="h-12 text-center text-xl font-black tracking-[0.4em]"
+                    />
+                  </div>
                   {error && (
-                    <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2.5 text-sm font-medium text-red-700">
+                    <div className="rounded-[4px] border border-red-300 border-l-4 border-l-red-600 bg-red-50 px-3 py-2.5 text-sm font-medium text-red-800">
                       {error}
                     </div>
                   )}
-
                   <Button
                     type="submit"
-                    disabled={form.formState.isSubmitting || redirecting}
-                    className="h-11 w-full bg-stone-900 text-sm font-bold tracking-wide hover:bg-stone-800"
+                    disabled={otpBusy || redirecting || otpCode.length !== 6}
+                    className={primaryButton}
                   >
-                    {(form.formState.isSubmitting || redirecting) && (
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    )}
-                    {form.formState.isSubmitting || redirecting ? t('auth.signingIn') : t('auth.signInButton')}
+                    {(otpBusy || redirecting) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    {otpBusy || redirecting ? t('auth.verifying') : t('auth.verifyAndSignIn')}
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    onClick={() => {
+                      setChallenge(null);
+                      setOtpCode('');
+                      setError('');
+                    }}
+                    className="w-full text-xs text-[#5b6b7b]"
+                  >
+                    {t('auth.backToSignIn')}
                   </Button>
                 </form>
-              </Form>
-            </>
-          ) : (
-            <>
-              <div className="mb-6 text-center">
-                <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-emerald-100 text-emerald-600">
-                  <ShieldCheck className="h-6 w-6" />
-                </div>
-                <h2 className="text-2xl font-black tracking-tight text-stone-900">{t('auth.twoFactorTitle')}</h2>
-                <p className="mt-1 text-sm text-stone-500">
-                  {challenge.setupRequired ? t('auth.twoFactorSetupDesc') : t('auth.twoFactorDesc')}
-                </p>
-              </div>
-
-              <form onSubmit={submitOtp} className="space-y-4">
-                {challenge.setupRequired && challenge.otpauthUrl && (
-                  <div className="flex flex-col items-center gap-3">
-                    <div className="rounded-lg border border-stone-200 bg-white p-3 shadow-sm">
-                      <QRCodeSVG value={challenge.otpauthUrl} size={160} />
-                    </div>
-                    {challenge.otpSecret && (
-                      <div className="w-full text-center">
-                        <Label className="text-[10px] font-black uppercase tracking-wider text-stone-400">
-                          {t('auth.manualKey')}
-                        </Label>
-                        <code className="mt-1 block break-all rounded border border-stone-200 bg-stone-50 px-3 py-2 font-mono text-xs">
-                          {challenge.otpSecret}
-                        </code>
-                      </div>
-                    )}
-                  </div>
-                )}
-                <div className="space-y-2">
-                  <Label className="text-xs font-bold uppercase text-stone-700">{t('auth.verificationCode')}</Label>
-                  <Input
-                    value={otpCode}
-                    onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                    inputMode="numeric"
-                    autoComplete="one-time-code"
-                    autoFocus
-                    placeholder="123456"
-                    className="h-12 text-center text-xl font-black tracking-[0.4em]"
-                  />
-                </div>
-                {error && (
-                  <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2.5 text-sm font-medium text-red-700">
-                    {error}
-                  </div>
-                )}
-                <Button
-                  type="submit"
-                  disabled={otpBusy || redirecting || otpCode.length !== 6}
-                  className="h-11 w-full bg-stone-900 font-bold hover:bg-stone-800"
-                >
-                  {(otpBusy || redirecting) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  {otpBusy || redirecting ? t('auth.verifying') : t('auth.verifyAndSignIn')}
-                </Button>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  onClick={() => {
-                    setChallenge(null);
-                    setOtpCode('');
-                    setError('');
-                  }}
-                  className="w-full text-xs text-stone-500"
-                >
-                  {t('auth.backToSignIn')}
-                </Button>
-              </form>
-            </>
-          )}
+              </>
+            )}
+          </div>
         </div>
       </main>
     </div>

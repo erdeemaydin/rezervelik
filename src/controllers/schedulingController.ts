@@ -508,9 +508,21 @@ export const assignShift = async (req: Request, res: Response) => {
 
     // Check-then-write inside a transaction so two concurrent assignments for the
     // same person can't both pass the violation check and both land.
+    //
+    // The transaction alone isn't sufficient: findAssignShiftViolations's reads
+    // (existing ShiftAssignment rows for this user) take no row lock under
+    // Postgres' default READ COMMITTED isolation, so two concurrent "Assign shift"
+    // requests for the *same staff member* on the same day but *different* shifts
+    // can both read "no conflicting assignment yet", both pass the DOUBLE_SHIFT/
+    // CONSECUTIVE_REST check, and both commit — the @@unique([shiftId, userId, date])
+    // constraint doesn't help here since it's keyed on shiftId, which differs
+    // between the two racing requests. A Postgres advisory lock scoped to this
+    // user serializes concurrent assignment attempts for them, same pattern as the
+    // reservation-accept lock in reservationController.updateReservationStatus.
     let assignment;
     try {
       assignment = await prisma.$transaction(async (tx) => {
+        await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${`shift-assign:${userId}`}))`;
         const violations = await findAssignShiftViolations({ restaurantId, shiftId, userId, date, tx });
         if (violations.length > 0 && !force) {
           throw Object.assign(new Error('SCHEDULE_VIOLATION'), { code: 'SCHEDULE_VIOLATION', violations });

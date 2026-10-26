@@ -25,9 +25,9 @@ const resetLinkFor = (rawToken: string) =>
 //   SUPER_ADMIN, e.g. impersonating) — promoting a peer to ADMIN is a
 //   supported tenant-owner action (see staff-audit-and-email-race.test.ts),
 //   but a MANAGER who merely holds manage_staff must not be able to do it.
-// - MANAGER/HOST/STAFF are grantable by anyone who reached this router at
-//   all (they already hold manage_staff or are ADMIN/SUPER_ADMIN).
-const OPEN_ROLES = ['MANAGER', 'HOST', 'STAFF'];
+// - MANAGER/HOST/STAFF/KITCHEN are grantable by anyone who reached this
+//   router at all (they already hold manage_staff or are ADMIN/SUPER_ADMIN).
+const OPEN_ROLES = ['MANAGER', 'HOST', 'STAFF', 'KITCHEN'];
 const isRoleGrantAllowed = (newRole: string, callerRole: string): boolean => {
   if (newRole === 'SUPER_ADMIN') return false;
   if (newRole === 'ADMIN') return callerRole === 'ADMIN' || callerRole === 'SUPER_ADMIN';
@@ -37,6 +37,7 @@ const KNOWN_PERMISSIONS = [
   'manage_reservations', 'manage_tables', 'edit_floor_plan', 'manage_menu',
   'manage_calendar', 'manage_staff', 'manage_settings', 'manage_events',
   'manage_payments', 'view_analytics', 'view_payments', 'view_reviews',
+  'manage_orders',
 ];
 
 // `undefined` in means "field not sent, don't touch it" (matches the old

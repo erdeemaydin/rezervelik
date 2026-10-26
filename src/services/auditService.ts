@@ -28,6 +28,7 @@ export type AuditCategory =
   | 'PERMISSIONS'
   | 'RESERVATION'
   | 'PAYMENT'
+  | 'ORDER'
   | 'SYSTEM';
 
 interface AuditInput {

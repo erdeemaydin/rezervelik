@@ -187,6 +187,36 @@ export const updateEvent = async (req: Request, res: Response) => {
       quotedTotal = derivedTotal(undefined, pkg?.price, count);
     }
 
+    // contractSignedAt/proposalSentAt reached `new Date(...)` with no validation
+    // that the client-supplied value actually parses — an Invalid Date silently
+    // built from a malformed string crashes on Prisma's DateTime column and falls
+    // through to the generic 500 handler instead of a clean 400, same class of gap
+    // already guarded for guestCount/quotedTotal/amount above via parseCount/parseAmount.
+    let contractSignedAt: Date | null | undefined;
+    if (b.contractSignedAt !== undefined) {
+      if (!b.contractSignedAt) {
+        contractSignedAt = null;
+      } else {
+        const parsed = new Date(b.contractSignedAt);
+        if (isNaN(parsed.getTime())) {
+          return errorResponse(res, 'errors.validation_error', 400, { message: 'contractSignedAt must be a valid date' });
+        }
+        contractSignedAt = parsed;
+      }
+    }
+    let proposalSentAt: Date | null | undefined;
+    if (b.proposalSentAt !== undefined) {
+      if (!b.proposalSentAt) {
+        proposalSentAt = null;
+      } else {
+        const parsed = new Date(b.proposalSentAt);
+        if (isNaN(parsed.getTime())) {
+          return errorResponse(res, 'errors.validation_error', 400, { message: 'proposalSentAt must be a valid date' });
+        }
+        proposalSentAt = parsed;
+      }
+    }
+
     const event = await prisma.event.update({
       where: { id },
       data: {
@@ -204,8 +234,8 @@ export const updateEvent = async (req: Request, res: Response) => {
         venueName: b.venueName,
         venueAddress: b.venueAddress,
         invitationMessage: b.invitationMessage,
-        ...(b.contractSignedAt !== undefined ? { contractSignedAt: b.contractSignedAt ? new Date(b.contractSignedAt) : null } : {}),
-        ...(b.proposalSentAt !== undefined ? { proposalSentAt: b.proposalSentAt ? new Date(b.proposalSentAt) : null } : {}),
+        ...(contractSignedAt !== undefined ? { contractSignedAt } : {}),
+        ...(proposalSentAt !== undefined ? { proposalSentAt } : {}),
         ...(quotedTotal !== undefined ? { quotedTotal } : {}),
         ...(b.resourceId !== undefined ? { resourceId: await ownedResourceId(restaurantId, b.resourceId) } : {}),
         ...(b.packageId !== undefined ? { packageId: (await ownedPackage(restaurantId, b.packageId))?.id ?? null } : {}),

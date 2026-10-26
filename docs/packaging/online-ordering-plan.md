@@ -1,17 +1,21 @@
 # Online Ordering ("Sipariş") — Phased Implementation Plan
 
-Status: **PLAN ONLY — not started.** Companion to `online-ordering-spec.md` (the decided-details
-brief). This grounds the spec in the actual codebase and sequences the work. Confirm the Open
-Questions (§ bottom) before writing any code.
+Status: **APPROVED — open questions resolved 2026-08-28, ready to start Phase 0.** Companion to
+`online-ordering-spec.md` (the decided-details brief). This grounds the spec in the actual
+codebase and sequences the work. See the resolved Open Questions (§ bottom) for the decisions
+locked before implementation starts.
 
 ---
 
 ## Phase 0 — Foundations (½ day, shared by all phases)
 
-**Feature gate.** Add `hasOnlineOrdering` to the tenant feature flags (same place the other
-`docs/packaging/` add-ons live — Restaurant/RestaurantSettings or the flags block toggled in
-`systemController`). SysAdmin-only toggle in `/system-admin/tenants/:id`. Everything below is
-hidden/404 when off.
+**Feature gate.** Add `hasOnlineOrdering` to **`Restaurant`** (not `RestaurantSettings`) —
+confirmed 2026-08-28 by checking the existing packaging add-ons: `hasHostedFrontend` and
+`hasReservationWidget` (docs/packaging/README.md) both live on `Restaurant` since they're
+SysAdmin-toggled *commercial* add-ons, distinct from the `RestaurantSettings.has*Feature`/
+`has*` flags that drive *vertical* defaults (`businessProfiles.ts`). Online ordering is a
+commercial add-on like those two, not a vertical default. SysAdmin-only toggle in
+`/system-admin/tenants/:id`. Everything below is hidden/404 when off.
 
 **Tenant order settings.** New `OrderSettings` (1:1 with `Restaurant`): `onlineOrderingOpen`
 (manual kill-switch), `deliveryEnabled`, `pickupEnabled`, `cashOnDeliveryEnabled`,
@@ -68,8 +72,15 @@ Then `npm run prisma:migrate` + `npm run prisma:generate`.
   resolves zone from address, computes subtotal from live menu + modifiers, applies zone fee +
   min-order, returns authoritative total. Client values display-only.
 - **Realtime**: SSE endpoint (`GET /api/orders/stream`, staff-auth) broadcasting new/updated
-  orders per `restaurantId`. SSE over WebSocket for simplicity on Express; in-process
-  `EventEmitter` per tenant for v1 (single node — see Open Q on multi-node).
+  orders per `restaurantId`. SSE over WebSocket for simplicity on Express. **Decided 2026-08-28:
+  build on Postgres `LISTEN/NOTIFY` from day one**, not an in-process `EventEmitter` — the backend
+  is expected to run multi-instance eventually (PRODUCTION_ROADMAP.md §8 Phase 3 already plans to
+  split/scale it), and an in-process emitter would silently miss orders placed against a different
+  instance than the one a given order-station SSE connection landed on. Each backend instance
+  `LISTEN`s on a per-restaurant (or single shared, filtered app-side) channel and the order-creation
+  transaction does `NOTIFY` with the order id; the SSE handler re-fetches and forwards to its
+  connected clients. Redis pub/sub is the fallback if Postgres LISTEN/NOTIFY throughput becomes a
+  bottleneck later — not needed to start.
 
 ### 1c. Backend — routes (mounted in `src/app.ts`)
 
@@ -97,18 +108,93 @@ order, one-tap status advance, auto-print. Plus in the normal dashboard: `dashbo
 (history/customers) and `dashboard/orders/settings` (zones, payment methods, capacity, menu
 online toggles).
 
+**Kitchen role (added 2026-08-28).** A tenant needs to be able to hand a kitchen tablet an
+account that can *only* reach the order station — never the rest of the dashboard. The codebase
+already has exactly this pattern for front-desk tablets: `role: 'HOST'` is a plain string value
+(no enum) that `staffController.OPEN_ROLES` allows any staff-manager to grant, whose permission
+set is fixed to `['manage_reservations', 'manage_tables']`
+(`frontend/src/app/dashboard/staff/page.tsx`), and which `AdminLayout`/`auth/login/page.tsx`
+special-case to redirect straight to `/dashboard/host` instead of the normal nav. Mirror this
+exactly for kitchen accounts:
+- New role value `KITCHEN`, added to `staffController.ts`'s `OPEN_ROLES` and the staff dialog's
+  role dropdown, fixed permission set `['manage_orders']` (new tenant permission key, gates the
+  new `/api/orders*` routes the same way `manage_reservations` etc. already gate theirs via
+  `requirePermission`).
+- Login redirect (`auth/login/page.tsx`): `role === 'KITCHEN'` → `/order-station` (not
+  `/dashboard/*` at all, since the station is explicitly outside dashboard chrome — unlike HOST,
+  which stays inside `AdminLayout` on a specific page).
+- A `KITCHEN` user hitting any `/dashboard/*` URL directly (bookmark, typed URL) should bounce to
+  `/order-station`, same defensive intent as the existing HOST→`/dashboard/host` bounce in
+  `AdminLayout`'s route-guard `useEffect`.
+- Backend: no special-case needed beyond the new `manage_orders` permission key — `requirePermission`
+  already treats any role uniformly via the `permissions` string once ADMIN/SUPER_ADMIN bypasses
+  are out of the way, exactly like it does for HOST today.
+
 ### 1f. Printing
 
-Order-station triggers silent thermal printing. **Recommended: QZ Tray** (local agent, ESC-POS,
-silent, cross-platform) — station talks to `localhost`, no server changes. Two templates: kitchen
-ticket (items + modifiers + note, no prices) and delivery/customer invoice (itemized + fees +
-total + address). Fallback: browser `window.print()` if QZ absent. Needs on-site hardware —
-confirm printer model early.
+Order-station triggers silent thermal printing, **three separate templates per order** (expanded
+2026-08-28 from the original two-template sketch, based on who actually receives each slip):
+
+1. **Kitchen ticket** — items + modifiers + note, **no prices**, fulfillment type + order number,
+   timestamp. Printed for every accepted order.
+2. **Courier/delivery slip** — printed only when `fulfillmentType === DELIVERY`. Customer name +
+   phone, delivery address, order number, COD amount due prominently (so the courier knows what
+   to collect) — **not** itemized (the kitchen ticket already carries that). Includes a **QR code
+   linking to Google Maps for the delivery address** (`https://www.google.com/maps/search/?api=1&query=<lat,lng
+   or URL-encoded address>` — a universal Maps link, no API key needed), generated with
+   `qrcode.react`, already a frontend dependency (used today by `QRCodePDFGenerator.tsx` for menu
+   QR codes) — reuse it, don't add a new QR library. Store `CustomerAddress.lat`/`lng` when a
+   geocode is available so the QR can point at coordinates rather than a text search.
+3. **Customer receipt** — itemized items + modifiers + prices, subtotal, delivery fee, total,
+   payment method, order number — the delivery-confirmation/receipt copy the customer keeps.
+
+**Recommended: QZ Tray** (local agent, ESC-POS, silent, cross-platform) — station talks to
+`localhost`, no server changes. Fallback: browser `window.print()` (one call per template, or a
+combined print job) if QZ absent. Needs on-site hardware — confirm printer model early; per the
+resolved open question below this isn't a prerequisite to start building.
 
 ### 1g. i18n & polish
 
 All strings into `en.json` + `tr.json` together (TR-first copy: "Sipariş Ver", "Paket Servis",
 "Gel-Al", "Kapıda Ödeme"…). Warm palette, no raw UUIDs in selects.
+
+### 1h. Standalone hosted pages for all three customer-facing features (added 2026-08-28)
+
+Decision: a tenant should be able to hand out a **single-purpose link/QR code** for reservation,
+waitlist, or ordering individually (Instagram bio link, a QR code at the door) without sending
+guests through the full multi-section `r/[slug]` page. Two precedents already exist and diverge in
+style:
+- `r/[slug]/menu` — reuses the tenant's actual chosen layout component (one of 8, `layoutStyle`)
+  with a `menuOnly` prop that hides hero/booking sections but keeps full branding.
+- `r/[slug]/waitlist` — a separate, generic, non-branded Card form that ignores `layoutStyle`
+  entirely.
+
+**Decided 2026-08-28: the new `r/[slug]/book` (reservation-only) page follows the `menu` pattern,
+not the `waitlist` one** — reuse each of the 8 layout components' existing booking section via a
+new `bookingOnly` prop (hides hero/menu the same way `menuOnly` hides booking/menu), so a
+reservation link stays on-brand. This touches all 8 layout components in
+`frontend/src/components/public/`, dispatched from `r/[slug]/book/page.tsx` the same way
+`r/[slug]/menu/page.tsx` dispatches on `layoutStyle` today.
+
+**Correction (2026-08-28, same day):** `r/[slug]/order` (§1d above) should NOT follow the
+8-layout-component pattern — on reflection that's the wrong fit for a multi-step, stateful
+cart/checkout flow. `menu`/`book` are each a single self-contained section reused inside 8
+existing layout files; a checkout flow (menu → cart → address → OTP → payment → confirm) is
+meaningfully more complex, and duplicating that state machine 8 times is a maintenance trap, not
+a branding win. Precedent from real commercial sites: checkout is normally **one consistent,
+trustworthy UI with the tenant's brand tokens applied** (colors, logo, typography pulled from
+`restaurant.customization`), not a structurally different checkout per visual theme — same
+principle Shopify/most e-commerce checkouts follow. Build `r/[slug]/order` as a single themed
+flow, not a ninth layout component.
+
+**Explicitly out of scope for this round:** embedding these features into a tenant's *own*
+existing website (`docs/packaging/`'s Track B — JS/iframe widget, hardened public API,
+`publicApiKey`-scoped SDKs). Only the schema foundation for that (`Restaurant.publicApiKey`,
+`hasReservationWidget`) exists today; the widget bundle, iframe routes, and `ARCHITECTURE.md`
+itself are still unwritten. Standalone `r/[slug]/*` pages (this section) fully cover the
+QR-code/Instagram-link use case without that larger, security-sensitive effort (third-party CORS
+origins, `frame-ancestors` CSP changes). Revisit the widget as its own initiative once ordering is
+stable, not folded into this plan.
 
 ---
 
@@ -145,17 +231,27 @@ existing analytics surface, coupons/promos.
 
 ---
 
-## Open questions to resolve before building
+## Open questions — resolved 2026-08-28
 
-1. **Gateway (Phase 2):** iyzico Pazaryeri vs PayTR marketplace? Is the existing PayTR account
-   marketplace-capable, or use iyzico for the split model? (Affects KYC + provider work.)
-2. **Realtime scaling:** single Node process, or multi-instance (pm2 cluster) in prod? In-process
-   SSE emitter works single-node; multi-node needs Postgres `LISTEN/NOTIFY` or Redis pub/sub.
-   (Prod is pm2 on your-server-ip — how many instances?)
-3. **Printer:** confirmed thermal model + connection (USB vs network IP)? Determines QZ Tray vs
-   direct ESC-POS-over-IP.
-4. **Feature-flag location:** where does `hasOnlineOrdering` / the packaging add-on gating live
-   today (Restaurant vs RestaurantSettings vs a flags JSON)? Match the existing add-on toggle.
-5. **Customer identity uniqueness:** phone unique **per tenant** (same person at 2 restaurants =
-   2 Customer rows) — confirm (assumed; simpler, correct for multi-tenant).
-6. **Order numbering:** per-tenant human sequence (e.g. `#1042`) — daily reset or continuous?
+1. **Gateway (Phase 2): deferred.** Build Phase 1 (cash-on-delivery) first — it needs zero payment
+   gateway work. Decide iyzico Pazaryeri vs. PayTR marketplace (and confirm whether the existing
+   PayTR account is marketplace-capable) when Phase 2 actually starts, not before.
+2. **Realtime scaling: plan for multi-instance now.** Postgres `LISTEN/NOTIFY` from day one — see
+   Phase 1 §1b above. Not blocked on knowing the exact current pm2 instance count.
+3. **Printer: left open, not a build blocker.** Ship against **QZ Tray** (local agent, ESC-POS,
+   cross-platform — works with most thermal printers) with a browser `window.print()` fallback.
+   Confirming the actual on-site printer model/connection (USB vs. network IP) is a pre-launch
+   checklist item for this feature (see roadmap conversation, 2026-08-28), not a prerequisite to
+   start Phase 1 development.
+4. **Feature-flag location: `Restaurant.hasOnlineOrdering`.** See Phase 0 above — matches the
+   `hasHostedFrontend`/`hasReservationWidget` packaging-add-on pattern.
+5. **Customer identity uniqueness:** confirmed — phone unique **per tenant**
+   (`@@unique([restaurantId, phone])` as originally drafted).
+6. **Order numbering:** per-tenant, continuous human sequence (not daily-reset) unless a tenant
+   specifically asks otherwise later — simpler to implement and audit correctly under concurrent
+   inserts (a `Restaurant`-scoped sequence/counter row, not `COUNT(*)`, to stay race-safe).
+7. **v1 fulfillment scope: confirmed delivery + pickup only, no dine-in/table ordering** — kept as
+   originally decided in `online-ordering-spec.md` §1. Table-side (QR-scan-at-your-seat) ordering
+   is a materially different flow (no address/zone/OTP-identity step; ties into the existing
+   `Table`/reservation model instead of `DeliveryZone`) and belongs in a later phase, not folded
+   into v1.

@@ -14,6 +14,7 @@ import Sentry from './config/sentry';
 import app from './app';
 import { startPriceUpdater } from './workers/priceUpdater';
 import { startRetentionAnonymizer } from './workers/retentionAnonymizer';
+import { startOrderEventListener } from './services/orderEvents';
 
 const PORT = process.env.PORT || 3000;
 
@@ -38,6 +39,7 @@ process.on('uncaughtException', (err) => {
 // Initialize background workers
 startPriceUpdater();
 startRetentionAnonymizer();
+startOrderEventListener();
 
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
