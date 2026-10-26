@@ -62,12 +62,14 @@ Icon?
 .vercel
 *.tsbuildinfo
 
-# Bot-only SSH deploy key (this worktree's checkout only — never commit)
+# Local deploy/dev-instance artifacts (never commit)
 .ssh_bot/
-
-# Isolated dev-instance config (this worktree's checkout only — never commit)
 ecosystem.dev.config.js
 nginx-dining-dev.conf
+
+# Local AI-agent state (worktrees, settings)
+.claude/worktrees/
+.claude/settings.local.json
 
 # User-uploaded content (runtime-generated, not source; directory is
 # recreated at runtime by src/controllers/uploadController.ts)
