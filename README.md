@@ -15,6 +15,7 @@
 
 | | |
 |---|---|
+| **Live demo** | [ayd-dine.duckdns.org](https://ayd-dine.duckdns.org) |
 | **Built** | April – September 2026 · ~330 commits · 18 integration merges |
 | **Status** | Deployed to a production VPS (Nginx · pm2 · PostgreSQL · daily backups) |
 | **Scope** | 27 controllers · 40+ Prisma models · 14 migrations · 60+ API integration test suites |
