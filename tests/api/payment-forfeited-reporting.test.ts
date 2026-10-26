@@ -2,7 +2,7 @@ import { beforeAll, describe, it, expect } from 'vitest';
 import { api, auth } from '../helpers/app';
 import { resetDb, seedTenant, prisma, SeededTenant } from '../helpers/seed';
 
-// PAYMENTS.md documents "the deposit can be forfeited on NO_SHOW; reporting
+// docs/architecture/PAYMENTS.md documents "the deposit can be forfeited on NO_SHOW; reporting
 // hook" — nothing auto-refunds a no-show, but staff had no visibility into how
 // much money that actually was. GET /api/payments now includes the linked
 // reservation's status so the dashboard can total forfeited deposits.

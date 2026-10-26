@@ -1,6 +1,6 @@
 # Monitoring — Uptime & Error Tracking
 
-`PRODUCTION_ROADMAP.md` (Phase 2) flags **uptime monitoring** (UptimeRobot/BetterStack)
+`docs/planning/PRODUCTION_ROADMAP.md` (Phase 2) flags **uptime monitoring** (UptimeRobot/BetterStack)
 and **error tracking** (Sentry) as open items. This doc covers both: what the app
 *already does* to be ready for them, and the **manual, account-based steps a human
 still has to do** — none of this can be done from a sandboxed coding environment
@@ -82,7 +82,7 @@ app.get('/health', (req, res) => {
 ```
 
 - Fast — no DB query, no auth, no tenant middleware.
-- Matches what `scripts/smoke-test.mjs` and `docs/TESTING_AND_CICD.md` §6 already
+- Matches what `scripts/smoke-test.mjs` and `docs/engineering/TESTING_AND_CICD.md` §6 already
   expect (`{ status: "ok" }`), so it doubles as the post-deploy smoke check's first
   assertion.
 - Deliberately **not** DB-backed: a transient DB blip would otherwise flap an
@@ -106,7 +106,7 @@ real credentials — outside what a sandboxed coding agent can or should do.
    [betteruptime.com](https://betteruptime.com) (BetterStack).
 2. Add a new HTTP(S) monitor:
    - URL: `https://YOUR_DOMAIN/health` (the live production domain from
-     `docs/SERVER_SETUP.md`).
+     `docs/operations/SERVER_SETUP.md`).
    - Method: `GET`.
    - Expected: HTTP 200, optionally assert the response body contains
      `"status":"ok"`.
@@ -127,7 +127,7 @@ Nothing in the app needs to change for this — `/health` is already suitable
 2. Create **two** Sentry projects (or one project used for both, if you'd rather
    keep it simple) — one for the Node.js backend, one for the Next.js frontend.
    Each gives you a DSN (`https://<key>@o<org>.ingest.<region>.sentry.io/<project>`).
-3. On the production server (see `docs/SERVER_SETUP.md` §6.3/§6.4 for where these
+3. On the production server (see `docs/operations/SERVER_SETUP.md` §6.3/§6.4 for where these
    `.env` files live — repo root `.env` for the backend, `frontend/.env` for the
    frontend, both under `~/dining-reservation` on the deploy box), set:
    ```

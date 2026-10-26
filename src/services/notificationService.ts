@@ -2,7 +2,7 @@
 // (Netgsm), which stays in placeholder/log mode until credentials are configured.
 // E-mail is still a log stub. Every call site passes the fully-rendered message.
 //
-// See PAYMENTS.md §"Notifications & anti-phishing".
+// See docs/architecture/PAYMENTS.md §"Notifications & anti-phishing".
 import { sendSms } from './messaging';
 
 interface PaymentRequestPayload {

@@ -19,7 +19,7 @@ const isPositiveInt = (n: unknown): n is number => Number.isInteger(n) && (n as 
 
 /**
  * Validates + resolves the overbooking-override trio shared by the single and
- * bulk day-setting endpoints (see PROJECT_LOGIC.md / getEffectiveOverbookingConfig).
+ * bulk day-setting endpoints (see docs/architecture/PROJECT_LOGIC.md / getEffectiveOverbookingConfig).
  * Enabling the override for a day requires both of its own caps — the toggle
  * doesn't partially inherit from the restaurant default. Disabling it (or
  * leaving it unset, i.e. inherit) needs no caps.

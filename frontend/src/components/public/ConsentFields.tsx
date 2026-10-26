@@ -7,7 +7,7 @@ import { useTranslation } from '@/i18n/provider';
 // KVKK consent block shared by every public layout's reservation form
 // (ClassicLayout, PremiumLayout, OldenLayout, GardenLayout, NoirLoungeLayout,
 // NordicMinimalLayout, TrattoriaRusticLayout, BoldEditorialLayout). See
-// PRODUCTION_ROADMAP.md §7.3: the booking-data-processing consent is
+// docs/planning/PRODUCTION_ROADMAP.md §7.3: the booking-data-processing consent is
 // REQUIRED (an "açık rıza" checkbox, blocked client-side and re-checked
 // server-side in reservationController.createReservation), while the
 // WhatsApp/marketing consent is a SEPARATE, optional opt-in — the two must

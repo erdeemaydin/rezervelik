@@ -18,7 +18,7 @@ model Restaurant {
 
   // Vertical / business type. Drives per-tenant terminology labels and default
   // feature profile. Set by the SysAdmin (like layoutStyle), never by the tenant.
-  // RESTAURANT, SALON, SPORTS, COWORKING, CLINIC, WEDDING. See MULTI_BUSINESS_ROADMAP.md.
+  // RESTAURANT, SALON, SPORTS, COWORKING, CLINIC, WEDDING. See docs/planning/MULTI_BUSINESS_ROADMAP.md.
   businessType String @default("RESTAURANT")
 
   // Subscription & Billing
@@ -190,7 +190,7 @@ model RestaurantSettings {
   hasPaymentFeature  Boolean @default(true)
 
   // Wedding/organization vertical capabilities (default off; SysAdmin enables via
-  // the WEDDING business profile). See MULTI_BUSINESS_ROADMAP.md Phase 4.
+  // the WEDDING business profile). See docs/planning/MULTI_BUSINESS_ROADMAP.md Phase 4.
   hasEventPipeline    Boolean @default(false) // Event sales pipeline (lead → confirmed)
   hasInstallmentPlans Boolean @default(false) // kapora + taksit payment schedules
   hasGuestList        Boolean @default(false) // guest list, RSVP, seating assignment
@@ -544,7 +544,7 @@ model Reservation {
   createdAt        DateTime  @default(now())
   updatedAt        DateTime  @updatedAt
 
-  // --- KVKK consent (PRODUCTION_ROADMAP.md §7.3) ---
+  // --- KVKK consent (docs/planning/PRODUCTION_ROADMAP.md §7.3) ---
   // consentAccepted: required "açık rıza" for the booking itself (data processing
   // needed to fulfill the reservation) — checked at submission time on the public
   // booking form and enforced server-side in reservationController.createReservation
@@ -842,7 +842,7 @@ model GlobalSettings {
 // Wedding / organization vertical (Phase 4). New domain isolated in these models.
 // An Event is a high-value single-date booking with a sales pipeline, an optional
 // per-person package, an installment payment plan (kapora + taksit), and a guest
-// list with RSVP + seating. See MULTI_BUSINESS_ROADMAP.md §6.
+// list with RSVP + seating. See docs/planning/MULTI_BUSINESS_ROADMAP.md §6.
 // ---------------------------------------------------------------------------
 
 model Event {
@@ -955,7 +955,7 @@ model Guest {
 // External vendors an organizer coordinates for events (photographer, DJ,
 // florist, catering…). Owned per-tenant; linked to specific events via
 // EventVendor. Gated by the `hasVendors` feature flag (WEDDING profile default).
-// See MULTI_BUSINESS_ROADMAP.md Phase 5.
+// See docs/planning/MULTI_BUSINESS_ROADMAP.md Phase 5.
 model Vendor {
   id           String  @id @default(uuid())
   restaurantId String

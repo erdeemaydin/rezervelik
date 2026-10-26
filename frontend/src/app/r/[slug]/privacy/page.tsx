@@ -10,7 +10,7 @@ import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 // KVKK "aydınlatma metni" (privacy/disclosure notice) — linked from the
 // consent checkbox on every layout's public booking form (see ConsentFields).
 // Generic, structurally-correct bilingual content by default (what data is
-// collected, why, how long it's kept, who it's shared with) — PRODUCTION_ROADMAP.md
+// collected, why, how long it's kept, who it's shared with) — docs/planning/PRODUCTION_ROADMAP.md
 // §7 is explicit this is "direction, not legal advice", so nothing here invents
 // Turkish legal specifics. A tenant can override it with their own text via
 // dashboard/customization (FrontendCustomization.privacyNoticeText), same

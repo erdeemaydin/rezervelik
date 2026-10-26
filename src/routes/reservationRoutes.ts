@@ -24,7 +24,7 @@ router.patch('/:id/schedule', reservationController.updateReservationSchedule);
 router.put('/:id/status', reservationController.updateReservationStatus);
 router.delete('/:id', reservationController.deleteReservation);
 
-// KVKK data-subject deletion request (PROJECT_LOGIC.md §14): anonymizes every
+// KVKK data-subject deletion request (docs/architecture/PROJECT_LOGIC.md §14): anonymizes every
 // Reservation/WaitlistEntry row for this phone number within the tenant. `:phone`
 // is the raw phone string as stored (client must URL-encode characters like "+").
 router.delete('/customer/:phone', reservationController.deleteCustomerData);

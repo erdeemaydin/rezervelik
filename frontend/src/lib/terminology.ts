@@ -4,7 +4,7 @@
 // a "booking"); this module renders the human label for each concept based on the
 // tenant's `businessType` and the active locale. Restaurant is the fallback.
 //
-// See MULTI_BUSINESS_ROADMAP.md §3 (canonical terminology) and §5 (per-vertical spec).
+// See docs/planning/MULTI_BUSINESS_ROADMAP.md §3 (canonical terminology) and §5 (per-vertical spec).
 
 export type TermConcept =
   | 'resource'

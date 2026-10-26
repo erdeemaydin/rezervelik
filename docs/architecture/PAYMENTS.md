@@ -1,8 +1,8 @@
 # Reservation Deposit Payments
 
 How the reservation deposit / prepayment system works, how it stays trustworthy,
-and how to swap the payment provider. Companion to `PROJECT_LOGIC.md` and
-`API_DOCS.md`.
+and how to swap the payment provider. Companion to `docs/architecture/PROJECT_LOGIC.md` and
+`docs/architecture/API_DOCS.md`.
 
 Default gateway: **PayTR** (hosted iframe). Provider is pluggable — see
 §7 "Swapping providers". A **Mock** provider ships for local testing.
@@ -187,7 +187,7 @@ including testing. The `MockProvider` is living proof the seam works: the entire
 flow runs against it with zero PayTR code.
 
 > Note: we deliberately chose PayTR's **hosted iFrame** over the **Direct API**
-> (the sample in `/home/erdeemaydin/Projekte/paytr`). Direct API means collecting
+> (evaluated against PayTR's official Direct API sample). Direct API means collecting
 > the raw card number on our page (PCI SAQ D + the exact "untrusted form" trust
 > problem). Hosted iframe keeps us at SAQ A and is the trust-optimal choice; it can
 > still be swapped for Direct or any provider through the same interface.

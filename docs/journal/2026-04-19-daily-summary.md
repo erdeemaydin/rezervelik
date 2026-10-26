@@ -31,7 +31,7 @@ Today was a massive leap forward for the **ReserVue** platform. We completely ov
 ### 5. Advanced Menu Architecture
 *   **Nested Categories:** The database and UI now support Root Categories (e.g., Drinks) and Sub-Categories (e.g., Cocktails, Wines).
 *   **Dish Intelligence:** Items now support `Spice Level` (0-4), `Dietary Tags` (Vegan, GF), and `Allergens` (Nuts, Shellfish), all of which render beautifully on both the Admin and Customer fronts.
-*   **Data Integrity Rule:** Enforced a strict rule (`PROJECT_LOGIC.md`) that raw database UUIDs must *never* be shown in dropdowns; they must always resolve to human-readable names (e.g., Category Name, Table Identifier).
+*   **Data Integrity Rule:** Enforced a strict rule (`docs/architecture/PROJECT_LOGIC.md`) that raw database UUIDs must *never* be shown in dropdowns; they must always resolve to human-readable names (e.g., Category Name, Table Identifier).
 
 ---
 

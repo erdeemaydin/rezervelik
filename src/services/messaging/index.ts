@@ -7,7 +7,7 @@
 //   SMS      -> Netgsm  (https://www.netgsm.com.tr/dokuman/)
 //   WhatsApp -> Meta WhatsApp Cloud API (https://developers.facebook.com/docs/whatsapp/cloud-api)
 //
-// Env vars (see WORK_LOG.md):
+// Env vars (see docs/journal/WORK_LOG.md):
 //   NETGSM_USERCODE, NETGSM_PASSWORD, NETGSM_MSGHEADER
 //   WHATSAPP_PHONE_NUMBER_ID, WHATSAPP_ACCESS_TOKEN
 

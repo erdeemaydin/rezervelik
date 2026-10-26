@@ -26,7 +26,7 @@ export interface ScheduleViolation { type: ScheduleViolationType; message: strin
  * Authoritative, server-side version of the three hard rules the assigner UI has
  * always computed only for display (ShiftAssigner.tsx's assignmentWarnings memo):
  * DOUBLE_SHIFT (two shifts same day), CONSECUTIVE_REST (<11h between shifts, per
- * PROJECT_LOGIC.md §10), and UNAVAILABLE (staff explicitly marked not available for
+ * docs/architecture/PROJECT_LOGIC.md §10), and UNAVAILABLE (staff explicitly marked not available for
  * this shift/date). The UI never sent these as a block — any direct API call could
  * silently create an assignment that violates all three. This mirrors that same
  * algorithm so the two stay in agreement.

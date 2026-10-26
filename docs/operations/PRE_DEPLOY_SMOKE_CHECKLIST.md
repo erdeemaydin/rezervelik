@@ -1,8 +1,8 @@
 # Pre-Deploy Smoke Checklist
 
-Manual checklist, run by hand against **staging** (see `docs/STAGING.md`) before
-every merge of `develop` into `main` (per `docs/GIT_WORKFLOW.md`'s "Releasing to
-production" step and `PRODUCTION_ROADMAP.md` §4.2). Not automated, not CI — a
+Manual checklist, run by hand against **staging** (see `docs/operations/STAGING.md`) before
+every merge of `develop` into `main` (per `docs/engineering/GIT_WORKFLOW.md`'s "Releasing to
+production" step and `docs/planning/PRODUCTION_ROADMAP.md` §4.2). Not automated, not CI — a
 person clicks through this in a browser.
 
 **If any box fails, the update does not ship.** Fix on `develop`, redeploy to
@@ -12,7 +12,7 @@ staging, re-run this whole list from the top.
 > API-level check run *after* a deploy (staging or production) to confirm the
 > process is actually up (`.github/workflows/smoke.yml`). This checklist is a
 > *pre-deploy*, UI-level, human check of the actual product flows, run only on
-> staging. See `docs/STAGING.md` §5 for the full comparison. Run both — they catch
+> staging. See `docs/operations/STAGING.md` §5 for the full comparison. Run both — they catch
 > different failure classes.
 
 ---
@@ -22,7 +22,7 @@ staging, re-run this whole list from the top.
 - [ ] Staging is running the exact commit at the tip of `develop` you're about to
       release (`git log -1` on the staging checkout matches `git log -1 origin/develop`)
 - [ ] Staging's database has a reasonably fresh copy of production data
-      (`docs/STAGING.md` §3) — not empty, not months stale
+      (`docs/operations/STAGING.md` §3) — not empty, not months stale
 - [ ] You have credentials for a test account in each role: `SUPER_ADMIN`,
       `ADMIN` (or `MANAGER`), `STAFF`
 
@@ -38,7 +38,7 @@ staging, re-run this whole list from the top.
 ## 2. Reservations — all 3 logic modes
 
 For a tenant configured in each mode (`RestaurantSettings.reservationMode` —
-`PROJECT_LOGIC.md` §3; use three different test tenants, or reconfigure one
+`docs/architecture/PROJECT_LOGIC.md` §3; use three different test tenants, or reconfigure one
 tenant's settings between checks):
 
 - [ ] **`FIXED_TIME_SLOT`** — create a reservation picking one of the fixed slots;
@@ -93,7 +93,7 @@ tenant's settings between checks):
       **this checklist re-run from the top** (not just re-checking the failed box)
 - [ ] Checklist run by: ______________  Date: ______________  `develop` commit: ______________
 
-Once this passes, proceed with `docs/GIT_WORKFLOW.md`'s release steps (merge
-`develop` → `main`, tag, deploy per `docs/SERVER_SETUP.md` §12 /
-`docs/DATABASE_RUNBOOK.md` §6), then run the automated post-deploy
+Once this passes, proceed with `docs/engineering/GIT_WORKFLOW.md`'s release steps (merge
+`develop` → `main`, tag, deploy per `docs/operations/SERVER_SETUP.md` §12 /
+`docs/operations/DATABASE_RUNBOOK.md` §6), then run the automated post-deploy
 `scripts/smoke-test.mjs` against the newly deployed instance.

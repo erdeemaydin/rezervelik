@@ -80,7 +80,7 @@ export const updateSettings = async (req: Request, res: Response) => {
       return Math.min(23, Math.max(0, n));
     };
 
-    // Overbooking (see PROJECT_LOGIC.md / getEffectiveOverbookingConfig): the
+    // Overbooking (see docs/architecture/PROJECT_LOGIC.md / getEffectiveOverbookingConfig): the
     // feature must only ever be "on" with both caps validly set, so we reject
     // the whole request rather than silently saving a half-configured state.
     const isPositiveInt = (n: unknown): n is number => Number.isInteger(n) && (n as number) > 0;

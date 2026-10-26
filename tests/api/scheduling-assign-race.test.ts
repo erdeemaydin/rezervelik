@@ -10,7 +10,7 @@ import { resetDb, seedTenant, prisma, SeededTenant } from '../helpers/seed';
 // both pass the violation check, and both commit. The
 // @@unique([shiftId, userId, date]) constraint doesn't catch this because the
 // two racing requests use different shiftIds. This is exactly the
-// DOUBLE_SHIFT rule PROJECT_LOGIC.md §10 requires the assigner to enforce.
+// DOUBLE_SHIFT rule docs/architecture/PROJECT_LOGIC.md §10 requires the assigner to enforce.
 // Confirmed by hand before the fix: with several parallel requests, more than
 // one landed 201 in roughly 1 out of every 4-5 runs on a fast local Postgres —
 // this test fires enough concurrent requests to reliably reproduce that window.

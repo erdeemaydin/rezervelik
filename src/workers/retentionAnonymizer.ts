@@ -1,6 +1,6 @@
 import prisma from '../config/prisma';
 
-// KVKK storage-limitation principle (PRODUCTION_ROADMAP.md §3/§7): don't keep
+// KVKK storage-limitation principle (docs/planning/PRODUCTION_ROADMAP.md §3/§7): don't keep
 // customer PII longer than necessary to run the business. "Keep 1 year, then
 // anonymize" is the recommended posture — RETENTION_DAYS (env, default 400,
 // i.e. ~1 year plus a buffer) controls the cutoff. Anonymizing (nulling PII,

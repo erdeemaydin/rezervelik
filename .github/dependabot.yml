@@ -5,7 +5,7 @@ version: 2
 # whenever a PR/push happens to run CI; Dependabot proactively opens a PR the
 # moment an advisory is published (or on the weekly schedule for routine
 # version bumps), even if nobody touches this repo that day. See
-# PRODUCTION_ROADMAP.md §11 for the fuller writeup.
+# docs/planning/PRODUCTION_ROADMAP.md §11 for the fuller writeup.
 updates:
   - package-ecosystem: "npm"
     directory: "/"
@@ -33,7 +33,7 @@ updates:
     ignore:
       # next.js is upgraded deliberately, not automatically — see
       # frontend/AGENTS.md ("this is NOT the Next.js you know", breaking
-      # changes vs. training-data assumptions) and PRODUCTION_ROADMAP.md §11.
+      # changes vs. training-data assumptions) and docs/planning/PRODUCTION_ROADMAP.md §11.
       # A Dependabot PR still opens for it (major/minor/patch all excluded
       # here would hide even patch releases); this only blocks *major* auto-PRs
       # so 16.x patch releases (which may carry security fixes, e.g. the

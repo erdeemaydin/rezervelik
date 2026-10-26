@@ -47,7 +47,7 @@ export default function BoldEditorialLayout({ slug, initialRestaurant, initialVi
     customerEmail: '',
     guestCount: '2',
     notes: '',
-    // KVKK consent (PRODUCTION_ROADMAP.md §7.3): required booking consent +
+    // KVKK consent (docs/planning/PRODUCTION_ROADMAP.md §7.3): required booking consent +
     // separate optional marketing opt-in. Both ride along in the `...resForm`
     // spread already sent to POST /reservations.
     consentAccepted: false,

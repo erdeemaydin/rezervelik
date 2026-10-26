@@ -2,7 +2,7 @@ import { beforeAll, describe, it, expect } from 'vitest';
 import { api, auth } from '../helpers/app';
 import { resetDb, seedTenant, prisma, SeededTenant } from '../helpers/seed';
 
-// PROJECT_LOGIC.md §10's DOUBLE_SHIFT / CONSECUTIVE_REST (min 11h) / UNAVAILABLE rules
+// docs/architecture/PROJECT_LOGIC.md §10's DOUBLE_SHIFT / CONSECUTIVE_REST (min 11h) / UNAVAILABLE rules
 // used to be computed only in the frontend (ShiftAssigner.tsx) purely for display —
 // the API accepted any assignment regardless. These verify the server now blocks
 // (and force:true still allows) all three.

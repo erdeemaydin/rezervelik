@@ -3,7 +3,7 @@ import { Response } from 'express';
 // Session token storage: httpOnly cookies instead of a JS-readable store
 // (localStorage). A JWT held in localStorage (or a non-httpOnly cookie) can be
 // read and exfiltrated by any successful XSS — httpOnly cookies are simply
-// invisible to JavaScript, closing that off. See PRODUCTION_ROADMAP.md §10 for
+// invisible to JavaScript, closing that off. See docs/planning/PRODUCTION_ROADMAP.md §10 for
 // the fuller writeup and CORS_ORIGIN/COOKIE_SAME_SITE/COOKIE_SECURE below.
 
 export const TOKEN_COOKIE = 'token';
@@ -36,7 +36,7 @@ const isProd = process.env.NODE_ENV === 'production';
 //     this is the default and needs no HTTPS.
 //   - frontend/backend on genuinely different hostnames/domains need
 //     SameSite=None, which browsers only honor together with Secure (HTTPS).
-// Override via env for that second case; PRODUCTION_ROADMAP.md §1 already
+// Override via env for that second case; docs/planning/PRODUCTION_ROADMAP.md §1 already
 // establishes HTTPS as a pre-launch blocker regardless.
 const sameSite = (process.env.COOKIE_SAME_SITE as 'lax' | 'none' | 'strict' | undefined) || 'lax';
 const secure = process.env.COOKIE_SECURE

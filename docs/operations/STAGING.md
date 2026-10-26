@@ -1,7 +1,7 @@
 # Staging Environment
 
 > **Status: documented, not provisioned.** This is the runbook for standing up a
-> staging environment — the missing piece flagged in `PRODUCTION_ROADMAP.md` §4.1.
+> staging environment — the missing piece flagged in `docs/planning/PRODUCTION_ROADMAP.md` §4.1.
 > As of this writing **no staging server exists**: there is no second VPS, no
 > `staging.*` DNS record, and no credentials for one. Nothing in this repo's CI/CD
 > currently deploys anywhere. Follow this doc when you (a human, with real
@@ -9,13 +9,13 @@
 > plan, not a status report.
 
 Companion docs, read alongside this one:
-- `docs/DATABASE_RUNBOOK.md` — the authoritative backup/restore procedure this doc
+- `docs/operations/DATABASE_RUNBOOK.md` — the authoritative backup/restore procedure this doc
   points at rather than duplicating.
-- `docs/SERVER_SETUP.md` — the full from-scratch VPS setup this doc mirrors for
+- `docs/operations/SERVER_SETUP.md` — the full from-scratch VPS setup this doc mirrors for
   staging (same stack: Nginx + PM2 + PostgreSQL + Node 22).
-- `docs/GIT_WORKFLOW.md` — where `develop` (staging's branch) fits in the branching
+- `docs/engineering/GIT_WORKFLOW.md` — where `develop` (staging's branch) fits in the branching
   model.
-- `docs/PRE_DEPLOY_SMOKE_CHECKLIST.md` — the manual checklist to run **on staging**
+- `docs/operations/PRE_DEPLOY_SMOKE_CHECKLIST.md` — the manual checklist to run **on staging**
   before every merge to `main`. Different from `scripts/smoke-test.mjs` /
   `.github/workflows/smoke.yml` — see the "Two different smoke tests" section below.
 
@@ -30,8 +30,8 @@ stay the same).
 
 ### Option A — same box as production, second port-set (recommended to start)
 
-Reuses the existing production VPS (`deploy@your-server-ip` per
-`docs/DATABASE_RUNBOOK.md`). Zero new infrastructure to buy or manage — just a
+Reuses the existing production VPS (`deploy@<server-ip>` per
+`docs/operations/DATABASE_RUNBOOK.md`). Zero new infrastructure to buy or manage — just a
 second checkout, a second Postgres database, and a second pair of PM2 processes,
 all offset from prod's:
 
@@ -52,12 +52,12 @@ prod. For a small, single-operator SaaS at current scale this is an acceptable a
 common tradeoff — it's what makes staging affordable at all — but revisit it before
 it becomes actually risky (see Option B).
 
-Setup mirrors `docs/SERVER_SETUP.md` §§1–9, with these staging-specific deltas:
+Setup mirrors `docs/operations/SERVER_SETUP.md` §§1–9, with these staging-specific deltas:
 
 ```bash
 # On the server, alongside the existing ~/dining-reservation checkout:
 cd ~
-git clone https://github.com/erdeemaydin/dining-reservation.git dining-reservation-staging
+git clone https://github.com/erdeemaydin/rezervelik.git dining-reservation-staging
 cd dining-reservation-staging
 git checkout develop
 
@@ -110,16 +110,16 @@ pm2 save
 
 Nginx: add a second server block for `staging.YOUR_DOMAIN` proxying `/api` ->
 `127.0.0.1:3010` and everything else -> `127.0.0.1:3011` (copy the block in
-`docs/SERVER_SETUP.md` §9 and change the `server_name` + upstream ports), then
+`docs/operations/SERVER_SETUP.md` §9 and change the `server_name` + upstream ports), then
 `sudo certbot --nginx -d staging.YOUR_DOMAIN`.
 
 ### Option B — a second, cheap VPS
 
-Follow `docs/SERVER_SETUP.md` end-to-end on a second, smaller box (a 1–2 GB VPS is
+Follow `docs/operations/SERVER_SETUP.md` end-to-end on a second, smaller box (a 1–2 GB VPS is
 plenty for staging traffic), checked out on `develop` instead of `main`, with its
 own subdomain (`staging.YOUR_DOMAIN`) pointed at the new box's IP. This gives full
 isolation (no shared CPU/RAM/disk with prod) at the cost of an extra VPS bill
-(roughly the same ballpark as prod's phase-1 pricing, per `PRODUCTION_ROADMAP.md`
+(roughly the same ballpark as prod's phase-1 pricing, per `docs/planning/PRODUCTION_ROADMAP.md`
 §8).
 
 Move to this option once tenant count or production load makes "staging can starve
@@ -129,11 +129,11 @@ prod of resources" an actual risk rather than a theoretical one.
 
 ## 2. Branch mapping
 
-Per `docs/GIT_WORKFLOW.md`: `develop` is the integration branch, and staging is
+Per `docs/engineering/GIT_WORKFLOW.md`: `develop` is the integration branch, and staging is
 where it's meant to run. Concretely:
 
 - Staging always runs whatever is at the tip of `develop` — same loop as
-  `docs/SERVER_SETUP.md` §12's production deploy, but pulling `develop` instead of
+  `docs/operations/SERVER_SETUP.md` §12's production deploy, but pulling `develop` instead of
   `main`, into the staging checkout/ports/PM2 names from §1 instead of prod's:
 
   ```bash
@@ -145,15 +145,15 @@ where it's meant to run. Concretely:
   ```
 
 - `main` never runs on staging directly — staging's whole job is to prove
-  `develop` before it becomes the next `main`. `docs/GIT_WORKFLOW.md`'s
+  `develop` before it becomes the next `main`. `docs/engineering/GIT_WORKFLOW.md`'s
   "Releasing to production" section already says this: merge to `main` only after
-  "staging smoke-test passes" (`PRODUCTION_ROADMAP.md` §4).
+  "staging smoke-test passes" (`docs/planning/PRODUCTION_ROADMAP.md` §4).
 
 ---
 
 ## 3. Getting a copy of production data onto staging
 
-Don't reinvent backup/restore — `docs/DATABASE_RUNBOOK.md` §§2–3 already has the
+Don't reinvent backup/restore — `docs/operations/DATABASE_RUNBOOK.md` §§2–3 already has the
 full, tested `pg_dump`/`pg_restore` procedure. Staging just points the restore at
 `dining_staging` instead of `dining`:
 
@@ -169,11 +169,11 @@ pg_restore --clean --if-exists --no-owner \
 ```
 
 If staging is on a separate box (Option B), `scp` the dump across first — this is
-exactly the "off-box copies" step `docs/DATABASE_RUNBOOK.md` §2 already recommends
+exactly the "off-box copies" step `docs/operations/DATABASE_RUNBOOK.md` §2 already recommends
 for disaster-proofing, just repurposed as the transport for staging refreshes:
 
 ```bash
-scp deploy@your-server-ip:'~/db-backups/dining-*.dump' .
+scp deploy@<server-ip>:'~/db-backups/dining-*.dump' .
 scp dining-<latest>.dump deploy@STAGING_IP:~/db-backups/
 # then run the pg_restore above on the staging box
 ```
@@ -183,9 +183,9 @@ from the latest nightly prod backup before starting a release cycle," so the smo
 checklist (§5 below) runs against realistic data, not months-stale fixtures.
 
 **KVKK note:** a staging copy of production data is still customer PII
-(`PRODUCTION_ROADMAP.md` §7) — it needs the same access controls as prod (don't
+(`docs/planning/PRODUCTION_ROADMAP.md` §7) — it needs the same access controls as prod (don't
 loosen SSH/firewall rules just because it's "only staging"). The retention/
-anonymization job described in `PRODUCTION_ROADMAP.md` §3/§7 (still open) should
+anonymization job described in `docs/planning/PRODUCTION_ROADMAP.md` §3/§7 (still open) should
 eventually run against staging too, or staging refreshes should scrub PII before
 loading. Not solved by this doc — flagged here so it isn't forgotten when that job
 gets built.
@@ -204,7 +204,7 @@ stays the same shape (just copy the file and edit these keys):
 | `CORS_ORIGIN` | `.env` | `https://YOUR_DOMAIN` | `https://staging.YOUR_DOMAIN` |
 | `JWT_SECRET` | `.env` | prod secret | **a different secret** — never reuse prod's, so a leaked staging box can't forge prod sessions |
 | `SETUP_SECRET_TOKEN` | `.env` | prod secret | a different secret, same reasoning |
-| `COOKIE_SAME_SITE` / `COOKIE_SECURE` | `.env` | per `docs/SERVER_SETUP.md` §10 | same values, since staging is also same-origin HTTPS behind Nginx |
+| `COOKIE_SAME_SITE` / `COOKIE_SECURE` | `.env` | per `docs/operations/SERVER_SETUP.md` §10 | same values, since staging is also same-origin HTTPS behind Nginx |
 | `SMOKE_BASE_URL` / `SMOKE_EMAIL` / `SMOKE_PASSWORD` / `SMOKE_RESTAURANT_ID` | `.env` | prod smoke account, prod URL | staging smoke account, `https://staging.YOUR_DOMAIN` — see §6 |
 | `NEXT_PUBLIC_API_URL` | `frontend/.env` | `https://YOUR_DOMAIN/api` | `https://staging.YOUR_DOMAIN/api` |
 
@@ -215,14 +215,14 @@ supposed to behave like production, not like a stripped-down dev config.
 
 ## 5. Pre-deploy smoke checklist — run this on staging before every merge to `main`
 
-See `docs/PRE_DEPLOY_SMOKE_CHECKLIST.md` for the actual checklist (the money-path
-flows from `PRODUCTION_ROADMAP.md` §4.2, turned into a literal checkbox list). Run
+See `docs/operations/PRE_DEPLOY_SMOKE_CHECKLIST.md` for the actual checklist (the money-path
+flows from `docs/planning/PRODUCTION_ROADMAP.md` §4.2, turned into a literal checkbox list). Run
 it by hand against the staging URL after every `develop` update, before cutting a
-release per `docs/GIT_WORKFLOW.md`'s "Releasing to production" section.
+release per `docs/engineering/GIT_WORKFLOW.md`'s "Releasing to production" section.
 
 ### Two different smoke tests — don't confuse them
 
-| | `docs/PRE_DEPLOY_SMOKE_CHECKLIST.md` (this doc) | `scripts/smoke-test.mjs` / `.github/workflows/smoke.yml` |
+| | `docs/operations/PRE_DEPLOY_SMOKE_CHECKLIST.md` (this doc) | `scripts/smoke-test.mjs` / `.github/workflows/smoke.yml` |
 |---|---|---|
 | **When** | Manually, on **staging**, before merging `develop` → `main` | Automatically, against a **live URL**, after a deploy already happened |
 | **Who/what runs it** | A human, by hand, in a browser | CI (`workflow_dispatch` or `workflow_call`), or you, from a shell |
@@ -264,7 +264,7 @@ To be explicit, since this doc could otherwise read as if staging already exists
 - **No staging secrets exist** (`SMOKE_*` for a staging URL, staging `JWT_SECRET`/
   `SETUP_SECRET_TOKEN`) — nothing to wire into GitHub Actions secrets yet.
 
-This document and `docs/PRE_DEPLOY_SMOKE_CHECKLIST.md` are the paperwork/tooling
-half of closing `PRODUCTION_ROADMAP.md` §4.1/§4.2: everything needed to stand
+This document and `docs/operations/PRE_DEPLOY_SMOKE_CHECKLIST.md` are the paperwork/tooling
+half of closing `docs/planning/PRODUCTION_ROADMAP.md` §4.1/§4.2: everything needed to stand
 staging up correctly once someone with infrastructure access executes it. The
 infrastructure itself is not part of this repo and can't be created from here.
