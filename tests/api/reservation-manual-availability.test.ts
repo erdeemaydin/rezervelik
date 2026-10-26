@@ -2,7 +2,7 @@ import { beforeAll, describe, it, expect } from 'vitest';
 import { api, auth } from '../helpers/app';
 import { resetDb, seedTenant, prisma, SeededTenant } from '../helpers/seed';
 
-// MANUAL_AVAILABILITY mode (PROJECT_LOGIC.md §3): staff manually toggle a table's
+// MANUAL_AVAILABILITY mode (docs/architecture/PROJECT_LOGIC.md §3): staff manually toggle a table's
 // isAvailable flag, and that's supposed to be the only thing gating new bookings on
 // it — no strict end-time overlap check. The flag existed and was toggleable, but
 // nothing in the booking path ever read it, so marking a table "Occupied" had zero

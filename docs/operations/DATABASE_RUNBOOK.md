@@ -8,7 +8,7 @@
 
 ```bash
 # --- Connect to the server ---
-ssh deploy@your-server-ip
+ssh deploy@<server-ip>
 cd ~/dining-reservation
 
 # --- The connection string (read from .env, strip Prisma's ?schema=public) ---
@@ -38,7 +38,7 @@ pm2 restart dining-api
 | Thing | Value |
 |---|---|
 | Engine | **PostgreSQL** everywhere — production, local dev, and the test suite (tests use a disposable throwaway Postgres, not the real DB). No SQLite anywhere. |
-| Server | `deploy@your-server-ip` |
+| Server | `deploy@<server-ip>` |
 | App directory | `~/dining-reservation` |
 | DB name / user | `dining` / `dining_app` on `localhost:5432` |
 | Connection string | in `~/dining-reservation/.env` as `DATABASE_URL` (note the trailing `?schema=public` — Prisma needs it, but `psql`/`pg_dump` do **not**, so strip it) |
@@ -53,7 +53,7 @@ concurrent-write story and no PITR — great for tests, not for a multi-tenant S
 **Connection pool sizing:** `.env.example`'s `DATABASE_URL` now pins Prisma's pool
 via `connection_limit`/`pool_timeout` query params instead of relying on Prisma's
 CPU-derived default — see the comment there for rationale. Treat it as a stopgap;
-PRODUCTION_ROADMAP.md §8 Phase 2's move to managed Postgres will likely bring its
+docs/planning/PRODUCTION_ROADMAP.md §8 Phase 2's move to managed Postgres will likely bring its
 own pooling story.
 
 ---
@@ -99,7 +99,7 @@ pg_restore --list ~/db-backups/<FILE>.dump | head   # lists contents; errors if 
 
 > **Off-box copies:** these dumps live on the same server as the DB. For real
 > disaster-proofing, periodically copy them elsewhere, e.g. from your laptop:
-> `scp deploy@your-server-ip:'~/db-backups/dining-*.dump' ./local-backups/`
+> `scp deploy@<server-ip>:'~/db-backups/dining-*.dump' ./local-backups/`
 
 ---
 

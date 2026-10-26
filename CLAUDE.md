@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Multi-tenant SaaS platform for restaurants: table/reservation management, a digital QR-code menu system, waitlist/wait-time display, staff scheduling, and per-tenant frontend customization. A single Express + Prisma backend and single Next.js frontend serve all tenants. See `PROJECT_LOGIC.md` for the full domain model and `API_DOCS.md` for the endpoint reference — read both before making non-trivial backend changes. `ROADMAP.md` tracks what's built vs. planned.
+Multi-tenant SaaS platform for restaurants: table/reservation management, a digital QR-code menu system, waitlist/wait-time display, staff scheduling, and per-tenant frontend customization. A single Express + Prisma backend and single Next.js frontend serve all tenants. See `docs/architecture/PROJECT_LOGIC.md` for the full domain model and `docs/architecture/API_DOCS.md` for the endpoint reference — read both before making non-trivial backend changes. `docs/planning/ROADMAP.md` tracks what's built vs. planned.
 
 This is two apps in one repo, not a monorepo tool (no workspaces/turborepo):
 - **Root (`/`)**: Express + TypeScript + Prisma backend, runs on port 3000.
@@ -34,7 +34,7 @@ No test framework is configured for the frontend either.
 
 ### Database
 - **PostgreSQL** everywhere — production, local dev, and tests (same engine, no SQLite anywhere). `DATABASE_URL` (in `.env`) points at your Postgres. Schema: `prisma/schema.prisma`. Seed script: `prisma/seed.ts`.
-- Migrations are a single clean Postgres baseline under `prisma/migrations/` (`migration_lock.toml` = `postgresql`). After editing `schema.prisma`, run `npm run prisma:migrate` (creates + applies a dev migration) then `npm run prisma:generate` from the repo root. Deploys apply migrations with `prisma migrate deploy` (see `docs/DATABASE_RUNBOOK.md`).
+- Migrations are a single clean Postgres baseline under `prisma/migrations/` (`migration_lock.toml` = `postgresql`). After editing `schema.prisma`, run `npm run prisma:migrate` (creates + applies a dev migration) then `npm run prisma:generate` from the repo root. Deploys apply migrations with `prisma migrate deploy` (see `docs/operations/DATABASE_RUNBOOK.md`).
 - **Tests run on real Postgres.** `npm run test:setup-db` provisions an isolated test database — it starts a throwaway Postgres container (Podman/Docker) on port 5433 automatically, or uses `TEST_DATABASE_URL` if set (CI provides a service container). No local Postgres install required.
 
 ## Architecture
@@ -47,10 +47,10 @@ Auth (`src/middlewares/auth.ts`) is separate and layered on top: `authMiddleware
 Route mounting lives entirely in `src/app.ts` — that file is the map of which prefixes are public, auth-only, or tenant+auth-scoped.
 
 ### Reservation logic modes
-`RestaurantSettings` configures one of three mutually exclusive reservation behaviors per tenant (see `PROJECT_LOGIC.md` §3): `FIXED_TIME_SLOT`, `DYNAMIC_DURATION` (end time computed from `defaultDurationMinutes`), or `MANUAL_AVAILABILITY` (staff manually toggle table status). Code touching `reservationController.ts` or the booking flow needs to branch on this mode.
+`RestaurantSettings` configures one of three mutually exclusive reservation behaviors per tenant (see `docs/architecture/PROJECT_LOGIC.md` §3): `FIXED_TIME_SLOT`, `DYNAMIC_DURATION` (end time computed from `defaultDurationMinutes`), or `MANUAL_AVAILABILITY` (staff manually toggle table status). Code touching `reservationController.ts` or the booking flow needs to branch on this mode.
 
 ### Public-facing layout system
-The tenant-facing booking/menu page (`frontend/src/app/r/[slug]/page.tsx`) dispatches to one of four layout components based on `restaurant.customization.layoutStyle`: `ClassicLayout` (default/`CLASSIC_LIST`), `PremiumLayout` (`EDITORIAL_IMAGE`), `OldenLayout` (`ANIMATED`), `GardenLayout` (`GARDEN_FRESH`, light/warm). Per `PROJECT_LOGIC.md` §8, this design-architecture choice is set exclusively by the SysAdmin via `PUT /api/system/tenants/:id/settings`, not by the tenant — don't add tenant-facing UI to change it. Tenant-controllable customization (colors, typography, announcement banner, about/legal text) goes through `customizationController.ts` / `frontend/.../dashboard/customization`. A dedicated QR-friendly menu-only route (`frontend/src/app/r/[slug]/menu/page.tsx`) renders the same layout components with a `menuOnly` prop that hides the hero/reservation sections but keeps the tenant's branding.
+The tenant-facing booking/menu page (`frontend/src/app/r/[slug]/page.tsx`) dispatches to one of four layout components based on `restaurant.customization.layoutStyle`: `ClassicLayout` (default/`CLASSIC_LIST`), `PremiumLayout` (`EDITORIAL_IMAGE`), `OldenLayout` (`ANIMATED`), `GardenLayout` (`GARDEN_FRESH`, light/warm). Per `docs/architecture/PROJECT_LOGIC.md` §8, this design-architecture choice is set exclusively by the SysAdmin via `PUT /api/system/tenants/:id/settings`, not by the tenant — don't add tenant-facing UI to change it. Tenant-controllable customization (colors, typography, announcement banner, about/legal text) goes through `customizationController.ts` / `frontend/.../dashboard/customization`. A dedicated QR-friendly menu-only route (`frontend/src/app/r/[slug]/menu/page.tsx`) renders the same layout components with a `menuOnly` prop that hides the hero/reservation sections but keeps the tenant's branding.
 
 ### System admin vs. tenant admin
 There are two separate frontend surfaces and role tiers:
@@ -58,7 +58,7 @@ There are two separate frontend surfaces and role tiers:
 - `/dashboard/*` — tenant staff (`ADMIN`/`MANAGER`/`STAFF`), scoped by `X-Restaurant-ID` + JWT as above.
 
 ### Internationalization (Turkish + English)
-Both backend and frontend are fully bilingual (`PROJECT_LOGIC.md` §1) — this is not optional coverage, it's a project requirement for new user-facing strings.
+Both backend and frontend are fully bilingual (`docs/architecture/PROJECT_LOGIC.md` §1) — this is not optional coverage, it's a project requirement for new user-facing strings.
 - **Backend**: `i18next` + `i18next-fs-backend`, initialized in `src/config/i18n.ts`, dictionaries in `src/locales/{en,tr}.json`. Language is set per-request in `src/app.ts` from the `Accept-Language` header. Error/response helpers in `src/utils/response.ts` take i18n keys (e.g. `errors.unauthorized`), not literal strings.
 - **Frontend**: `react-i18next`, dictionaries in `frontend/src/i18n/locales/{en,tr}.json`, default locale is `tr` (`frontend/src/i18n/index.ts`). `scripts/merge_i18n.js` merges any stray `temp_*.json` files in that locales directory into `en.json`/`tr.json` and deletes the temp files — used when translations were generated into scratch files and need consolidating.
 - When adding new UI strings, add keys to both `en.json` and `tr.json` together.
@@ -69,14 +69,14 @@ Both backend and frontend are fully bilingual (`PROJECT_LOGIC.md` §1) — this 
 - Route layout: `dashboard/*` pages share `AdminLayout`; `system-admin/*` pages share `SystemAdminLayout`.
 
 ### Scheduled/background work
-- `src/workers/priceUpdater.ts` executes `ScheduledPriceUpdate` records (bulk percentage/fixed menu price changes, immediate or future-dated) — see `PROJECT_LOGIC.md` §9.
-- `src/services/aiMenuService.ts` is a placeholder service layer for the planned AI/OCR menu importer (`PROJECT_LOGIC.md` §6) — not yet wired to a real provider.
+- `src/workers/priceUpdater.ts` executes `ScheduledPriceUpdate` records (bulk percentage/fixed menu price changes, immediate or future-dated) — see `docs/architecture/PROJECT_LOGIC.md` §9.
+- `src/services/aiMenuService.ts` is a placeholder service layer for the planned AI/OCR menu importer (`docs/architecture/PROJECT_LOGIC.md` §6) — not yet wired to a real provider.
 
 ### Shift scheduling constraints
-`schedulingController.ts` / `EmployeeAvailability` / `ShiftAssignment` implement the rules in `PROJECT_LOGIC.md` §10: required staff counts come from `ShiftDayRequirement` (per weekday), and the assigner must warn on `DOUBLE_SHIFT` conflicts, `CONSECUTIVE_REST` violations (minimum 11 hours between shifts), and assigning staff marked `UNAVAILABLE` that day. Preserve these checks when touching the assignment logic.
+`schedulingController.ts` / `EmployeeAvailability` / `ShiftAssignment` implement the rules in `docs/architecture/PROJECT_LOGIC.md` §10: required staff counts come from `ShiftDayRequirement` (per weekday), and the assigner must warn on `DOUBLE_SHIFT` conflicts, `CONSECUTIVE_REST` violations (minimum 11 hours between shifts), and assigning staff marked `UNAVAILABLE` that day. Preserve these checks when touching the assignment logic.
 
 ### UI convention: never expose raw IDs
-Per `PROJECT_LOGIC.md` §7, dropdowns/selects in the admin dashboard must never show a raw database UUID — always map the selected `id` to its human-readable `name`/`identifier` in the displayed value.
+Per `docs/architecture/PROJECT_LOGIC.md` §7, dropdowns/selects in the admin dashboard must never show a raw database UUID — always map the selected `id` to its human-readable `name`/`identifier` in the displayed value.
 
 ## Environment
 

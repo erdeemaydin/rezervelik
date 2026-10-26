@@ -8,7 +8,7 @@ import { INVALID, parseAmount, parseCount } from '../utils/numeric';
 // their installment payment plans, guest lists (RSVP + seating), vendor
 // coordination and the e-davetiye invitation microsite. Every query is scoped to
 // req.restaurantId; sub-resources verify their parent belongs to the tenant
-// before mutating. See MULTI_BUSINESS_ROADMAP.md §6.
+// before mutating. See docs/planning/MULTI_BUSINESS_ROADMAP.md §6.
 
 export const EVENT_STAGES = ['LEAD', 'VISIT', 'QUOTE', 'CONTRACT', 'CONFIRMED', 'COMPLETED', 'CANCELED'];
 export const EVENT_TYPES = ['WEDDING', 'ENGAGEMENT', 'HENNA', 'CORPORATE'];

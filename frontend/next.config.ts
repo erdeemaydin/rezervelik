@@ -83,7 +83,7 @@ const nextConfig: NextConfig = {
   // its public IP (e.g. a throwaway PM2-managed preview instance on a
   // non-default port) without the dev server's cross-origin asset check
   // 403-ing every _next/static chunk. Has no effect on `next build`/`next start`.
-  allowedDevOrigins: isDev ? ["your-server-ip", "localhost", "127.0.0.1"] : undefined,
+  allowedDevOrigins: isDev ? [...(process.env.DEV_ALLOWED_ORIGIN ? [process.env.DEV_ALLOWED_ORIGIN] : []), "localhost", "127.0.0.1"] : undefined,
   async headers() {
     return [
       {

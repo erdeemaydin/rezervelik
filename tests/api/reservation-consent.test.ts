@@ -2,7 +2,7 @@ import { beforeAll, describe, it, expect } from 'vitest';
 import { api, auth } from '../helpers/app';
 import { resetDb, seedTenant, prisma, SeededTenant } from '../helpers/seed';
 
-// KVKK "açık rıza" (PRODUCTION_ROADMAP.md §7.3, PROJECT_LOGIC.md §14): the public
+// KVKK "açık rıza" (docs/planning/PRODUCTION_ROADMAP.md §7.3, docs/architecture/PROJECT_LOGIC.md §14): the public
 // booking form's required consent checkbox must be re-checked server-side, not
 // just trusted from the client — and the separate WhatsApp/marketing opt-in
 // must never substitute for it. Staff-entered bookings (dashboard/host) are
@@ -97,7 +97,7 @@ describe('POST /api/reservations — KVKK consent enforcement', () => {
   });
 });
 
-// KVKK data-subject deletion request (PROJECT_LOGIC.md §14): staff-triggered,
+// KVKK data-subject deletion request (docs/architecture/PROJECT_LOGIC.md §14): staff-triggered,
 // tenant-scoped, identified by phone (the natural key phoneHistory already uses).
 describe('DELETE /api/reservations/customer/:phone — data-subject deletion', () => {
   let a: SeededTenant;

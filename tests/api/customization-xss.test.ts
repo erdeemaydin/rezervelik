@@ -85,7 +85,7 @@ describe('PUT /api/customization sanitizes rich-text fields', () => {
     expect(publicRes.body.data.customization.reservationWarningText).toContain('No-shows may be charged.');
   });
 
-  // KVKK privacy notice (PROJECT_LOGIC.md §14): tenant-editable override rendered
+  // KVKK privacy notice (docs/architecture/PROJECT_LOGIC.md §14): tenant-editable override rendered
   // via dangerouslySetInnerHTML on the public /r/[slug]/privacy page — needs the
   // exact same write-time sanitization as reservationInfoText/reservationWarningText.
   it('strips a <script> tag from privacyNoticeText and it survives the round trip to the public endpoint', async () => {

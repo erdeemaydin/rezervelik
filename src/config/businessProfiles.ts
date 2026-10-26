@@ -5,7 +5,7 @@
 // are DEFAULTS only — the SysAdmin can still override any individual flag; explicit
 // flags in an update request win over the profile (see systemController).
 //
-// See MULTI_BUSINESS_ROADMAP.md §5 for the full per-vertical spec.
+// See docs/planning/MULTI_BUSINESS_ROADMAP.md §5 for the full per-vertical spec.
 
 export const BUSINESS_TYPES = [
   'RESTAURANT',

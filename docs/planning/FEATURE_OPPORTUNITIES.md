@@ -5,8 +5,8 @@
 > features worth building next. Grounded in the actual codebase — every idea
 > references the models/controllers it would touch.
 >
-> Companion docs: `ROADMAP.md` (build status), `PROJECT_LOGIC.md` (domain rules),
-> `API_DOCS.md` (endpoints), `CLAUDE.md` (architecture).
+> Companion docs: `docs/planning/ROADMAP.md` (build status), `docs/architecture/PROJECT_LOGIC.md` (domain rules),
+> `docs/architecture/API_DOCS.md` (endpoints), `CLAUDE.md` (architecture).
 
 ---
 

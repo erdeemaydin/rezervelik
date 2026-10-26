@@ -6,7 +6,7 @@
 #   1. Dumps the whole database to $BACKUP_DIR as a timestamped, compressed
 #      custom-format file (dining-YYYYmmdd-HHMMSS.dump). Custom format (-Fc)
 #      is restorable with pg_restore and supports SELECTIVE restore (one table,
-#      one schema) — see docs/DATABASE_RUNBOOK.md.
+#      one schema) — see docs/operations/DATABASE_RUNBOOK.md.
 #   2. Prunes: deletes any dump older than RETENTION_DAYS so old backups are
 #      removed automatically and the disk never fills up.
 #   3. Appends a one-line summary to $BACKUP_DIR/backup.log.

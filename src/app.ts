@@ -53,7 +53,7 @@ const allowedOrigins = (process.env.CORS_ORIGIN || process.env.APP_PUBLIC_URL ||
 // upgrades all future requests to https://, which a plain-HTTP origin can't
 // answer, silently locking users out. Flip back to helmet's default (remove
 // this override) once TLS/Caddy is confirmed live in front of the app — see
-// PRODUCTION_ROADMAP.md §10 #1/#5.
+// docs/planning/PRODUCTION_ROADMAP.md §10 #1/#5.
 app.use(helmet({ hsts: false, crossOriginResourcePolicy: false })); // Allow cross origin for images
 app.use(cors({
   origin(origin, callback) {

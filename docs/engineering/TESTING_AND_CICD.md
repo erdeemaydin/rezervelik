@@ -6,7 +6,7 @@ safely, and for guaranteeing that **an update to production doesn't break existi
 > **Refreshed 2026-08-11:** this doc previously described the test suite as running against a
 > throwaway **SQLite** file. That's stale — the suite runs on real **PostgreSQL** everywhere
 > (same engine as production, no SQLite anywhere in this repo), matching `CLAUDE.md` and
-> `docs/DATABASE_RUNBOOK.md`. §2/§3/§5/§7 below are corrected to match current code
+> `docs/operations/DATABASE_RUNBOOK.md`. §2/§3/§5/§7 below are corrected to match current code
 > (`tests/setup/prepare-test-db.mjs`, `.github/workflows/ci.yml`) as of this refresh.
 
 ## 1. Goals
@@ -95,12 +95,12 @@ container where needed (see §3):
 
 A merge is only allowed when both are green. This is the "before it can reach production" gate.
 The `npm audit` steps are dependency-CVE scanning, a separate failure mode from the
-application-logic tests above — see `PRODUCTION_ROADMAP.md` §11 and `.github/dependabot.yml` for
+application-logic tests above — see `docs/planning/PRODUCTION_ROADMAP.md` §11 and `.github/dependabot.yml` for
 the ongoing-scanning story. Both apps are 0 known vulnerabilities at every severity as of the
 2026-08-11 Next.js 16.3.0 upgrade.
 
 `.github/workflows/staging.yml` runs the same two jobs on push to `develop` (plus a placeholder
-`deploy-staging` job, since there's no staging server to deploy to yet — see `docs/STAGING.md`).
+`deploy-staging` job, since there's no staging server to deploy to yet — see `docs/operations/STAGING.md`).
 PRs targeting `develop` already get `ci.yml`'s gate via its branch-filter-less `pull_request`
 trigger; `staging.yml` additionally catches a bad merge landing directly on `develop`.
 

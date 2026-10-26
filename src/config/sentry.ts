@@ -6,7 +6,7 @@ import * as Sentry from '@sentry/node';
 // calls elsewhere in the app (see src/middlewares/errorHandler.ts and src/server.ts)
 // are safe to call unconditionally — the SDK simply does nothing without a client.
 //
-// To enable: set SENTRY_DSN in the production .env (see docs/MONITORING.md for the
+// To enable: set SENTRY_DSN in the production .env (see docs/operations/MONITORING.md for the
 // full manual setup a human needs to do — creating the Sentry project, etc).
 const dsn = process.env.SENTRY_DSN;
 

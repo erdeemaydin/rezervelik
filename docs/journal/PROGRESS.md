@@ -10,7 +10,7 @@ monitoring, frontend CSP). User asked for subagents on all five; also reported a
 ("can't add any new item to the menu") that got fixed directly first since it was blocking actual
 usage.
 
-**Menu item creation bug (fixed directly, not delegated):** root cause was commit `c1f75fb`
+**Menu item creation bug (fixed directly, not delegated):** root cause was commit `26f8632`
 (2026-06-02, unrelated pricing feature) flattening the item-create route from
 `POST /categories/:categoryId/items` to `POST /items` without updating either caller —
 `menuController.createMenuItem` kept reading `categoryId` from `req.params` (always `undefined` on
@@ -31,8 +31,8 @@ conflicts resolved by hand rather than blind `git merge --no-ff`:
   sniffed result into the provider rather than trusting client input. Also merged a same-endpoint
   add/add test-file conflict by hand, keeping both the security tests (auth-required, content-
   sniffing) from this branch and the new tenant-isolation tests from the storage branch.
-- **Staging environment** — mostly docs/tooling (`docs/STAGING.md`,
-  `docs/PRE_DEPLOY_SMOKE_CHECKLIST.md`, `.github/workflows/staging.yml`), since no live-server
+- **Staging environment** — mostly docs/tooling (`docs/operations/STAGING.md`,
+  `docs/operations/PRE_DEPLOY_SMOKE_CHECKLIST.md`, `.github/workflows/staging.yml`), since no live-server
   access exists in this sandbox to actually provision anything. Merged clean, no conflicts.
 - **Uptime/error monitoring** (Sentry, gated behind `SENTRY_DSN`) — merge conflict: this worktree's
   fork point predated `src/middlewares/errorHandler.ts`'s existence entirely, so the agent
@@ -82,18 +82,18 @@ on both apps, clean `next build`, `eslint` unchanged at 413 pre-existing warning
   context-less agent instead. Caught this mistake within seconds this session; it could have caused
   real confusion if left running longer.
 
-Consolidated all five agents' documentation notes into `PRODUCTION_ROADMAP.md`/`PROGRESS.md`
+Consolidated all five agents' documentation notes into `docs/planning/PRODUCTION_ROADMAP.md`/`docs/journal/PROGRESS.md`
 myself afterward — deliberately kept every subagent out of those two files during their individual
 runs specifically to avoid five-way merge conflicts on the same doc sections.
 
-## 2026-08-11 (cont'd) — worked the PRODUCTION_ROADMAP.md follow-ups list
+## 2026-08-11 (cont'd) — worked the docs/planning/PRODUCTION_ROADMAP.md follow-ups list
 
 Picked up the prior session's "Follow-ups — flagged but not done" list in priority order,
 re-verifying each claim against current code (not the docs) before acting, per standing practice.
 
 - **HSTS**: confirmed `src/app.ts` still had no `hsts: false` override. Since this sandbox has no
-  credentialed access to the live deploy server (tried SSH to `deploy@your-server-ip` per
-  `docs/DATABASE_RUNBOOK.md` — host reachable, key rejected, so live-HTTPS status genuinely cannot
+  credentialed access to the live deploy server (tried SSH to `deploy@<server-ip>` per
+  `docs/operations/DATABASE_RUNBOOK.md` — host reachable, key rejected, so live-HTTPS status genuinely cannot
   be confirmed from here), applied the roadmap's own prescribed interim fix: `hsts: false` in the
   `helmet()` call, closing the "poisons iOS Safari with a false HTTPS upgrade" failure mode
   regardless of whether TLS is actually live yet. Needs reverting once someone with real server
@@ -120,7 +120,7 @@ re-verifying each claim against current code (not the docs) before acting, per s
   Verified with `next build` + `next start` + `curl` (protected paths 307 without a cookie, 200
   with one; public `/r/[slug]` and `/auth/login` unaffected) since a real browser isn't available
   here either.
-- **`docs/TESTING_AND_CICD.md`**: same fact-check-every-claim treatment the roadmap doc got last
+- **`docs/engineering/TESTING_AND_CICD.md`**: same fact-check-every-claim treatment the roadmap doc got last
   session. It still described the test suite running against a throwaway SQLite file — actually
   Postgres everywhere now, and even the filename it cited (`prepare-test-db.ts`) was wrong (it's
   `.mjs`). Corrected the test-pyramid table, the "how the test DB comes from" section, the CI step
@@ -139,7 +139,7 @@ role that has `CREATEDB`. Hand-created a throwaway `dining_test` database owned 
 pointed `TEST_DATABASE_URL` at it — `npm run test:setup-db` doesn't need to spin up its own
 container in that case, it just resets + migrates whatever `TEST_DATABASE_URL` points to.
 
-## 2026-08-11 (cont'd) — dependency scanning in CI + PRODUCTION_ROADMAP.md refresh
+## 2026-08-11 (cont'd) — dependency scanning in CI + docs/planning/PRODUCTION_ROADMAP.md refresh
 
 Prompted by "how do we know we've eliminated all the bugs/security issues before production" —
 the honest answer is you can't, from audits alone; different techniques catch different blind
@@ -158,10 +158,10 @@ would have, because it's not application code.
   frontend blocking at `critical` with `high` informational-only pending the Next.js upgrade
   above) and `.github/dependabot.yml` for ongoing weekly scanning of both npm ecosystems + GitHub
   Actions versions.
-- **`PRODUCTION_ROADMAP.md` refresh**: turned out to be far staler than expected — it was written
+- **`docs/planning/PRODUCTION_ROADMAP.md` refresh**: turned out to be far staler than expected — it was written
   pre-launch and still framed SQLite→Postgres migration, "zero automated tests," and a broken
   Prisma migration workflow as open blockers, when all three have been done for a while. Bigger
-  finding: `docs/DATABASE_RUNBOOK.md` shows **the app is already running in production** (live
+  finding: `docs/operations/DATABASE_RUNBOOK.md` shows **the app is already running in production** (live
   server, pm2, daily automated backups) — a fact the roadmap doc gave no indication of. Went
   section-by-section verifying each claim against current code (not just skimming): marked
   CORS-lockdown/login-rate-limiting/httpOnly-cookie-session as done (all shipped since the doc was
@@ -173,7 +173,7 @@ would have, because it's not application code.
   bottom lists what's flagged but not fixed this pass — most notably `frontend/proxy.ts` still has
   a comment asserting the session token lives in localStorage (false since the httpOnly-cookie
   migration; nobody revisited whether server-side route gating is now worth adding) and
-  `docs/TESTING_AND_CICD.md` has its own, separate SQLite-staleness problem not addressed here.
+  `docs/engineering/TESTING_AND_CICD.md` has its own, separate SQLite-staleness problem not addressed here.
 
 **Standing lesson for future sessions:** treat "operational/roadmap" docs (not just code) as
 things that drift and need periodic fact-checking against the actual repo state, the same way
@@ -288,7 +288,7 @@ overbooking, the 4 new public layout themes) **+ fixes for everything confirmed.
   check had the same issue at lower stakes.
 - **i18n**: confirmed no "İ" (Turkish dotted capital I) misuse anywhere in
   English text — already clean. `tr.json`'s naturalness turned out to
-  already be in good shape (contrary to the stale note in `WORK_LOG.md`);
+  already be in good shape (contrary to the stale note in `docs/journal/WORK_LOG.md`);
   found and fixed two real mistranslations (`avgLeadTime`, `crimson`). Also
   found `/pay` and `/pay/[ref]` (the guest-facing deposit-payment pages,
   reached directly from an SMS/email link) were 100% hardcoded Turkish with
@@ -389,7 +389,7 @@ suite 103/103, backend+frontend `tsc` clean, `next build --experimental-build-mo
 
 **"Finish what's built": booking-confirmation messages, refunds, no-show deposit reporting**
 
-Planning pass first: cross-checked `FEATURE_OPPORTUNITIES.md`'s status table
+Planning pass first: cross-checked `docs/planning/FEATURE_OPPORTUNITIES.md`'s status table
 against the actual code and found it stale (written before the same-day
 commit that shipped payments/messaging) — payments (PayTR + Mock, both
 trigger flows) and messaging (Netgsm SMS + WhatsApp Cloud API) were already
@@ -406,7 +406,7 @@ highest-ROI gap instead of re-building what existed:
   `refundReason`/`rawRefund` columns), a new `PAYMENT` audit category, and a
   tenant-scoped `POST /api/payments/:id/refund` (ADMIN/MANAGER only) with a
   Refund action + confirm dialog on paid rows in `dashboard/payments`.
-- **No-show deposit-forfeiture reporting**: `PAYMENTS.md` already flagged this
+- **No-show deposit-forfeiture reporting**: `docs/architecture/PAYMENTS.md` already flagged this
   as a follow-up. `GET /api/payments` now includes the linked reservation's
   status; the dashboard totals paid deposits whose reservation is `NO_SHOW`
   into a "Forfeited (No-Shows)" stat card and badges those rows.
@@ -452,7 +452,7 @@ worth fixing here have consistently been one of a few shapes:
   siblings.** E.g. finding `Math.random()` used for a security token in one
   controller is a reason to grep `Math.random()` everywhere else a
   token/secret is minted, not just fix that one call site.
-- A documented feature (check `PROJECT_LOGIC.md`) whose backend field exists
+- A documented feature (check `docs/architecture/PROJECT_LOGIC.md`) whose backend field exists
   in the schema but is never read by the code paths that should gate on it —
   or exists in the schema/backend but has no UI affordance at all. That's how
   the `MANUAL_AVAILABILITY` gaps were found both times: once as "the
@@ -590,7 +590,7 @@ throwaway dev-server compile-and-serve check, not actual browser screenshots.
 - Fixed the floor plan canvas to render on a fixed logical coordinate system (1400×800) scaled via CSS transform to fit any container width, instead of raw pixel positions that didn't adapt to different screen sizes.
 
 **Docs**
-- Updated `PROJECT_LOGIC.md`, `API_DOCS.md`, `ROADMAP.md`, and `CLAUDE.md` to reflect all of the above.
+- Updated `docs/architecture/PROJECT_LOGIC.md`, `docs/architecture/API_DOCS.md`, `docs/planning/ROADMAP.md`, and `CLAUDE.md` to reflect all of the above.
 
 **Note on local test data:** two seeded dev accounts (`hello@rusticoven.com`, `admin@myrestaurant.com`) had their passwords reset to a known test value while verifying the admin dashboard changes in a browser. This only touches the local SQLite dev database, not any real credentials.
 
@@ -602,6 +602,6 @@ throwaway dev-server compile-and-serve check, not actual browser screenshots.
   - `authMiddleware`'s tenant-mismatch bypass and `requirePermission`'s bypass (`src/middlewares/auth.ts`) were keyed on `role === 'SUPER_ADMIN'` alone, so *any* SUPER_ADMIN-role JWT — including a brand-new restricted sub-admin's — got unconditional, permission-less access to every tenant's data via an arbitrary `X-Restaurant-ID` header, on every tenant route in the app, not just `/api/system/*`. Both bypasses now also require `isRootAdmin !== false`.
   - `PUT /system/users/:userId/permissions`, `POST /system/users/:userId/reset-link`, and `PUT /system/users/:userId/otp` previously let any caller with the relevant tenant permission act on *any* `userId`, including another `SUPER_ADMIN`'s. A sub-admin granted `sys_manage_tenant_users` could otherwise mint a password-reset link for a root admin, disable a root admin's 2FA, or overwrite a fellow admin's system permissions. All three now reject a `SUPER_ADMIN` target unless the actor is root.
 - Verified end-to-end via a full curl-based smoke test against a real Postgres-backed dev server (bootstrap root → create restricted sub-admin → confirm granted action succeeds, ungranted action 403s, admin management 403s, tenant-route access is fully blocked even with a spoofed `X-Restaurant-ID`, cross-admin reset-link/permission-escalation attempts are blocked, root's own last-root self-demotion is blocked, root's own access is unaffected).
-- Migration: `20260815170415_add_super_admin_sub_admin_permissions`. Docs updated: `API_DOCS.md` §2 (new `sys_*` permission table + endpoints), `PROJECT_LOGIC.md` §5.
+- Migration: `20260815170415_add_super_admin_sub_admin_permissions`. Docs updated: `docs/architecture/API_DOCS.md` §2 (new `sys_*` permission table + endpoints), `docs/architecture/PROJECT_LOGIC.md` §5.
 
 **Known limitation this session:** the new Access Level dialog UI (Add/Edit) was verified via `tsc --noEmit` + `eslint` + a dev-server compile check (page returns a normal redirect, not a 500), not an actual browser click-through — no way to drive a real logged-in browser session in this environment for this task.

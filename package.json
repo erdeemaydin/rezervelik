@@ -1,7 +1,7 @@
 {
   "name": "dining-reservation",
   "version": "1.0.0",
-  "description": "Multi-tenant Restaurant Reservation and QR Menu System",
+  "description": "Multi-tenant SaaS for restaurants and booking-based businesses: reservations, floor plans, QR menus, waitlists, staff scheduling and online ordering",
   "main": "dist/server.js",
   "scripts": {
     "start": "node dist/server.js",
@@ -24,8 +24,8 @@
     "multi-tenant",
     "qr-menu"
   ],
-  "author": "",
-  "license": "ISC",
+  "author": "Muhammed Erdem Aydin",
+  "license": "UNLICENSED",
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1107.0",
     "@prisma/client": "^5.22.0",
@@ -59,5 +59,10 @@
     "ts-node-dev": "^2.0.0",
     "typescript": "^5.1.6",
     "vitest": "^4.1.9"
+  },
+  "private": true,
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/erdeemaydin/rezervelik.git"
   }
 }

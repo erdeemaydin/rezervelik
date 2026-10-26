@@ -7,7 +7,7 @@ const router = Router();
 
 // Staff order-station surface — /api/orders/*. Mounted behind tenantMiddleware
 // in app.ts. `manage_orders` is a new tenant permission key (see
-// PROJECT_LOGIC.md's role/permission model) — a free-string entry in
+// docs/architecture/PROJECT_LOGIC.md's role/permission model) — a free-string entry in
 // User.permissions, granted the same way manage_menu/manage_reservations are;
 // no registry file to update (requirePermission is a plain string check).
 router.use(authMiddleware);

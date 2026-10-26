@@ -5,7 +5,7 @@ Market: local Turkish restaurants (TR default, EN second). Optional per-tenant a
 SysAdmin-toggled like the other `docs/packaging/` add-ons.
 
 > Do NOT start coding from this file alone. It is the decided-details brief. Read
-> `PROJECT_LOGIC.md`, `API_DOCS.md`, and `docs/packaging/` first, then follow the phased
+> `docs/architecture/PROJECT_LOGIC.md`, `docs/architecture/API_DOCS.md`, and `docs/packaging/` first, then follow the phased
 > plan (below) and confirm open questions before each phase.
 
 ---

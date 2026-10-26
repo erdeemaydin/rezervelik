@@ -48,7 +48,7 @@ export const updateCustomization = async (req: Request, res: Response) => {
   try {
     const restaurantId = req.restaurantId!;
     // layoutStyle is deliberately not destructured/accepted here: per
-    // PROJECT_LOGIC.md §8 it's a SysAdmin-exclusive design-architecture choice, set
+    // docs/architecture/PROJECT_LOGIC.md §8 it's a SysAdmin-exclusive design-architecture choice, set
     // only via PUT /api/system/tenants/:id/settings (systemController.ts). This
     // route is reachable by any tenant staffer with manage_settings — accepting
     // layoutStyle from req.body here would let a tenant admin flip their own public

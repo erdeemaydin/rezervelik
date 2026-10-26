@@ -310,11 +310,11 @@ model Guest {
 Retrospective record of the concrete changes merged for each phase. Update this at
 the end of every phase.
 
-### Phase 0 — bootstrap (commit `f37e3e7`)
+### Phase 0 — bootstrap (commit `fcfc0ee`)
 - Integration branch `feat/multi-business-platform` off `develop`; this roadmap;
   memory pointer `multi-business-platform-initiative`.
 
-### Phase 1 — vertical foundation (branch `feat/mbp-01-vertical-foundation`, merged `c887cac`)
+### Phase 1 — vertical foundation (branch `feat/mbp-01-vertical-foundation`, merged `b6d4c2a`)
 - **schema**: `Restaurant.businessType String @default("RESTAURANT")` (additive
   migration `20260705000000_add_business_type`).
 - **backend**: `src/config/businessProfiles.ts` (BUSINESS_TYPES + per-vertical
@@ -329,7 +329,7 @@ the end of every phase.
   `<select>`.
 - **verification**: backend+frontend `tsc` clean; 23/23 tests.
 
-### Phase 2 — standardization rename (branch `feat/mbp-02-standardization-rename`, merged `5623be7`)
+### Phase 2 — standardization rename (branch `feat/mbp-02-standardization-rename`, merged `8eba3e2`)
 - **schema**: `model Table → BookableResource` (`@@map("Table")`), `model TableType →
   Zone` (`@@map("TableType")`); relation TYPES updated on `Restaurant`,
   `Reservation`, `FloorElement`. **No data migration** — `db push` = "already in

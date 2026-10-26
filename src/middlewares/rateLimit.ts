@@ -10,7 +10,7 @@ import { errorResponse } from '../utils/response';
 //
 // In-process rather than a new dependency, matching this app's existing
 // single-instance patterns (priceUpdater, the shift-publish setTimeout) —
-// PRODUCTION_ROADMAP.md already documents that the backend must run as a
+// docs/planning/PRODUCTION_ROADMAP.md already documents that the backend must run as a
 // single PM2 instance for exactly that reason. If the app ever scales to
 // multiple instances, swap the Map below for a shared store (Redis) rather
 // than assuming this still works.

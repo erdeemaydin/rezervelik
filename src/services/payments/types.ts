@@ -3,7 +3,7 @@
 // Everything the rest of the app uses goes through the `PaymentProvider`
 // interface, so switching gateways (PayTR → iyzico/Stripe/…) means writing one
 // new adapter and changing an env var — no controller/route/DB changes. See
-// PAYMENTS.md §"Swapping providers".
+// docs/architecture/PAYMENTS.md §"Swapping providers".
 
 export interface CreateCheckoutInput {
   merchantOid: string;      // our unique order id (alphanumeric); echoed back on callback

@@ -74,7 +74,7 @@ Then `npm run prisma:migrate` + `npm run prisma:generate`.
 - **Realtime**: SSE endpoint (`GET /api/orders/stream`, staff-auth) broadcasting new/updated
   orders per `restaurantId`. SSE over WebSocket for simplicity on Express. **Decided 2026-08-28:
   build on Postgres `LISTEN/NOTIFY` from day one**, not an in-process `EventEmitter` — the backend
-  is expected to run multi-instance eventually (PRODUCTION_ROADMAP.md §8 Phase 3 already plans to
+  is expected to run multi-instance eventually (docs/planning/PRODUCTION_ROADMAP.md §8 Phase 3 already plans to
   split/scale it), and an in-process emitter would silently miss orders placed against a different
   instance than the one a given order-station SSE connection landed on. Each backend instance
   `LISTEN`s on a per-restaurant (or single shared, filtered app-side) channel and the order-creation

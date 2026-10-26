@@ -48,7 +48,7 @@ export default function ClassicLayout({ slug, initialRestaurant, initialView = '
     customerEmail: '',
     guestCount: '2',
     notes: '',
-    // KVKK consent (PRODUCTION_ROADMAP.md §7.3): consentAccepted is the required
+    // KVKK consent (docs/planning/PRODUCTION_ROADMAP.md §7.3): consentAccepted is the required
     // booking consent, marketingConsent a separate optional WhatsApp/marketing
     // opt-in. Both ride along in the `...resForm` spread already sent to
     // POST /reservations, so no extra plumbing is needed beyond these two fields.

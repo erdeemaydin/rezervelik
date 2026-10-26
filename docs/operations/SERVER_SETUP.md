@@ -2,7 +2,7 @@
 
 Step-by-step setup for deploying this app to a fresh **Ubuntu 24.04 LTS** VDS with
 **Nginx + HTTPS (Let's Encrypt) + PostgreSQL + PM2**. Companion to
-`PRODUCTION_ROADMAP.md` (the *why*); this doc is the *how*.
+`docs/planning/PRODUCTION_ROADMAP.md` (the *why*); this doc is the *how*.
 
 > Run every command as written, in order. Replace placeholders in ALL CAPS
 > (`YOUR_DOMAIN`, `SERVER_IP`, `DB_PASSWORD`, …) with your real values.
@@ -169,12 +169,12 @@ print `SERVER_IP`. HTTPS in step 9 needs this working first.
 ### 6.1 Clone
 ```bash
 cd ~
-git clone git@github.com:erdeemaydin/dining-reservation.git
+git clone git@github.com:erdeemaydin/rezervelik.git
 cd dining-reservation
 git checkout main          # production branch
 ```
 > If the server can't use your GitHub SSH key, clone over HTTPS instead:
-> `git clone https://github.com/erdeemaydin/dining-reservation.git`
+> `git clone https://github.com/erdeemaydin/rezervelik.git`
 
 ### 6.2 Switch Prisma to PostgreSQL
 Edit `prisma/schema.prisma` — the datasource currently hardcodes SQLite. Change it to:
@@ -225,7 +225,7 @@ npm run build               # production build (transpiles for all browsers)
 cd ..
 ```
 > **On DB migrations:** `prisma migrate` is flagged as fragile in this repo (shadow-DB
-> issue — see `PRODUCTION_ROADMAP.md` §5). `prisma db push` is the reliable way to
+> issue — see `docs/planning/PRODUCTION_ROADMAP.md` §5). `prisma db push` is the reliable way to
 > create the schema for the first deploy. Fixing the `migrate deploy` workflow is a
 > Phase-2 task before you're doing frequent schema changes in production.
 
@@ -338,7 +338,7 @@ now a secure, same-origin HTTPS context.
 
 ## 10. Backend security hardening (do these once you're live)
 
-These are `PRODUCTION_ROADMAP.md` §10 items — small backend edits:
+These are `docs/planning/PRODUCTION_ROADMAP.md` §10 items — small backend edits:
 
 1. **Restrict CORS** (`src/app.ts`): `app.use(cors({ origin: ['https://YOUR_DOMAIN'], credentials: true }))`.
 2. **Rate-limit login** (`express-rate-limit` on `/api/auth/login`).

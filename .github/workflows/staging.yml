@@ -8,13 +8,13 @@ name: Staging (develop) build & test
 # on `develop`.
 #
 # This is intentionally build+test only. There is currently no staging server
-# for it to deploy to — see docs/STAGING.md, which is the paperwork/tooling half
-# of PRODUCTION_ROADMAP.md §4.1. Once a real staging box exists (docs/STAGING.md
+# for it to deploy to — see docs/operations/STAGING.md, which is the paperwork/tooling half
+# of docs/planning/PRODUCTION_ROADMAP.md §4.1. Once a real staging box exists (docs/operations/STAGING.md
 # §1, Option A or B), add a deploy step here (SSH + `git pull` / `prisma migrate
-# deploy` / `pm2 reload`, per docs/STAGING.md §2), gated on repository secrets
+# deploy` / `pm2 reload`, per docs/operations/STAGING.md §2), gated on repository secrets
 # for the staging host the same way .github/workflows/smoke.yml is gated on
 # secrets.SMOKE_*. After a real deploy step lands, follow it with
-# docs/PRE_DEPLOY_SMOKE_CHECKLIST.md run by hand before promoting to `main`.
+# docs/operations/PRE_DEPLOY_SMOKE_CHECKLIST.md run by hand before promoting to `main`.
 on:
   push:
     branches: [develop]
@@ -47,7 +47,7 @@ jobs:
           node-version: 20
           cache: npm
       - run: npm ci
-      - name: Dependency audit (blocking — see PRODUCTION_ROADMAP.md §11)
+      - name: Dependency audit (blocking — see docs/planning/PRODUCTION_ROADMAP.md §11)
         run: npm audit --audit-level=moderate
       - name: Generate Prisma client
         run: npm run prisma:generate
@@ -74,7 +74,7 @@ jobs:
           cache: npm
           cache-dependency-path: frontend/package-lock.json
       - run: npm ci
-      - name: Dependency audit (blocking — see PRODUCTION_ROADMAP.md §11)
+      - name: Dependency audit (blocking — see docs/planning/PRODUCTION_ROADMAP.md §11)
         run: npm audit --audit-level=moderate
       - name: Lint
         run: npm run lint
@@ -85,7 +85,7 @@ jobs:
       - name: Production build
         run: npm run build
 
-  # Placeholder for the day a real staging server exists (docs/STAGING.md §1).
+  # Placeholder for the day a real staging server exists (docs/operations/STAGING.md §1).
   # No secrets are configured for this yet, so there is nothing to deploy to —
   # this job exists to make the gap visible in the Actions UI rather than silent.
   deploy-staging:
@@ -96,4 +96,4 @@ jobs:
       - name: No staging server configured
         run: |
           echo "No staging deploy target is configured yet."
-          echo "See docs/STAGING.md for the runbook to provision one, then replace this step with a real deploy."
+          echo "See docs/operations/STAGING.md for the runbook to provision one, then replace this step with a real deploy."

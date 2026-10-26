@@ -67,7 +67,7 @@ export const getReservations = async (req: Request, res: Response) => {
       // Both frontend consumers (dashboard/reservations, dashboard/host) already re-sort the
       // array client-side for display, so API order here only matters for the cap.
       orderBy: { startTime: 'desc' },
-      // Safety cap: this table grows unbounded per-tenant over time (PRODUCTION_ROADMAP.md
+      // Safety cap: this table grows unbounded per-tenant over time (docs/planning/PRODUCTION_ROADMAP.md
       // estimates ~73k reservations/year for a busy restaurant); 3000 is generous headroom
       // for callers that don't pass a date range yet. Real pagination/date-filter UI for
       // the full reservations management page is a future follow-up, not addressed here.
@@ -564,7 +564,7 @@ export const deleteReservation = async (req: Request, res: Response) => {
   }
 };
 
-// KVKK data-subject rights (PRODUCTION_ROADMAP.md §7.3 / PROJECT_LOGIC.md §14):
+// KVKK data-subject rights (docs/planning/PRODUCTION_ROADMAP.md §7.3 / docs/architecture/PROJECT_LOGIC.md §14):
 // "customers can request access, correction, or deletion" — this fulfills the
 // deletion side for a specific customer on staff's behalf, identified by phone
 // (the natural key already used for phoneHistory in getReservations above).

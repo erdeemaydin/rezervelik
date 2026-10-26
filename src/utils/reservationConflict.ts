@@ -22,7 +22,7 @@ interface ConflictArgs {
   end: Date;
   excludeReservationId?: string;
   tx?: Prisma.TransactionClient;
-  // MANUAL_AVAILABILITY mode (PROJECT_LOGIC.md §3): "reservations are accepted
+  // MANUAL_AVAILABILITY mode (docs/architecture/PROJECT_LOGIC.md §3): "reservations are accepted
   // without strict end times... subsequent reservations rely on staff clearing the
   // table." Pass true when the tenant is in this mode so the check below.
   isManualAvailability?: boolean;

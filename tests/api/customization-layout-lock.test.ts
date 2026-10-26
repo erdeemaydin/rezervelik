@@ -2,7 +2,7 @@ import { beforeAll, describe, it, expect } from 'vitest';
 import { api, auth } from '../helpers/app';
 import { resetDb, seedTenant, prisma, SeededTenant } from '../helpers/seed';
 
-// PROJECT_LOGIC.md §8: layoutStyle (which of the four public-page layout
+// docs/architecture/PROJECT_LOGIC.md §8: layoutStyle (which of the four public-page layout
 // components a tenant gets) is a SysAdmin-exclusive decision, set only via
 // PUT /api/system/tenants/:id/settings. The tenant-facing PUT /api/customization
 // route (reachable by any ADMIN/MANAGER with manage_settings) used to accept and
