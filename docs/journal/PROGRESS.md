@@ -10,7 +10,7 @@ monitoring, frontend CSP). User asked for subagents on all five; also reported a
 ("can't add any new item to the menu") that got fixed directly first since it was blocking actual
 usage.
 
-**Menu item creation bug (fixed directly, not delegated):** root cause was commit `c1f75fb`
+**Menu item creation bug (fixed directly, not delegated):** root cause was commit `26f8632`
 (2026-06-02, unrelated pricing feature) flattening the item-create route from
 `POST /categories/:categoryId/items` to `POST /items` without updating either caller —
 `menuController.createMenuItem` kept reading `categoryId` from `req.params` (always `undefined` on
