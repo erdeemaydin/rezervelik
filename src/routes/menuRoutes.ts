@@ -2,8 +2,11 @@ import { Router } from 'express';
 import * as menuController from '../controllers/menuController';
 import * as priceUpdateController from '../controllers/priceUpdateController';
 import { authMiddleware, requirePermission } from '../middlewares/auth';
+import { requireFeature } from '../middlewares/feature';
 
 const router = Router();
+
+router.use(requireFeature('hasMenuFeature'));
 
 // Publicly accessible for customer frontend
 router.get('/', menuController.getMenus);
@@ -25,6 +28,10 @@ router.delete('/items/:id', menuController.deleteMenuItem);
 
 router.post('/prices/bulk', priceUpdateController.bulkUpdatePrices);
 router.post('/prices/set', priceUpdateController.setItemPrices);
+router.get('/prices/scheduled', priceUpdateController.listScheduledPriceUpdates);
+router.delete('/prices/scheduled/:id', priceUpdateController.cancelScheduledPriceUpdate);
+router.get('/prices/history', priceUpdateController.getPriceUpdateHistory);
+router.post('/prices/undo/:id', priceUpdateController.undoPriceUpdate);
 
 router.post('/import', menuController.importMenuFromImage);
 

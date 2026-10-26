@@ -3,38 +3,83 @@ import prisma from '../config/prisma';
 import { successResponse, errorResponse } from '../utils/response';
 import { verifyToken } from '../utils/jwt';
 import { createPaymentForReservation } from '../services/paymentService';
-import { sendPaymentRequest } from '../services/notificationService';
-import { findTableConflict, findAvailableTable, BLOCKING_STATUSES } from '../utils/reservationConflict';
+import { sendPaymentRequest, sendBookingConfirmation, formatReservationLabel } from '../services/notificationService';
+import { findTableConflict, findAvailableTable, BLOCKING_STATUSES, restaurantDateStr, clearFullyBookedIfSet, getBookedCoversForDate, getEffectiveOverbookingConfig, getOverbookedCountsForDate, generateConfirmationCode, verifyTableOwnership, verifyCategoryOwnership } from '../utils/reservationConflict';
+import { logAudit } from '../services/auditService';
 
 const isStaffRequest = (req: Request): boolean => {
   const authHeader = req.headers.authorization;
   if (!authHeader || !authHeader.startsWith('Bearer ')) return false;
   try {
-    verifyToken(authHeader.split(' ')[1]);
-    return true;
+    const decoded = verifyToken(authHeader.split(' ')[1]);
+    // A valid token only proves who the caller is, not which tenant they may
+    // act as here — this endpoint is public and takes X-Restaurant-ID from
+    // the request, so without this check any staff member's own token would
+    // grant staff privileges (skip maxPartySize/day-capacity caps, force a
+    // table conflict, force past FULLY_BOOKED) against a restaurant they
+    // have no relationship to. Mirrors the tenant check in authMiddleware.
+    return decoded.role === 'SUPER_ADMIN' || decoded.restaurantId === req.restaurantId;
   } catch {
     return false;
   }
 };
 
+const ISO_DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+
+// Optional inclusive date-range filter for getReservations (YYYY-MM-DD, UTC day
+// boundaries — matches how callers already compute "today" via
+// `new Date().toISOString().split('T')[0]`, e.g. dashboard/host/page.tsx).
+// Returns an empty object (no filter applied) unless BOTH bounds are present
+// AND parse to real calendar dates, so:
+//   - existing no-params callers (the reservations list page) keep their
+//     current full-history behavior unchanged, and
+//   - a malformed-but-regex-shaped value like "2026-13-45" (passes the format
+//     check, but isn't a real date) can't reach Prisma as an Invalid Date and
+//     blow up the request with a 500 — it's just silently treated as "no filter".
+const parseDateRangeFilter = (startDate?: string, endDate?: string) => {
+  if (!startDate || !endDate || !ISO_DATE_RE.test(startDate) || !ISO_DATE_RE.test(endDate)) {
+    return {};
+  }
+  const gte = new Date(`${startDate}T00:00:00.000Z`);
+  const lte = new Date(`${endDate}T23:59:59.999Z`);
+  if (isNaN(gte.getTime()) || isNaN(lte.getTime())) {
+    return {};
+  }
+  return { startTime: { gte, lte } };
+};
+
 export const getReservations = async (req: Request, res: Response) => {
   try {
     const restaurantId = req.restaurantId!;
+    const { startDate, endDate } = req.query as { startDate?: string; endDate?: string };
+    const dateFilter = parseDateRangeFilter(startDate, endDate);
+
     const reservations = await prisma.reservation.findMany({
-      where: { restaurantId },
+      where: { restaurantId, ...dateFilter },
       include: {
         table: true,
         category: true
       },
-      orderBy: [
-        { isVIP: 'desc' },
-        { startTime: 'asc' }
-      ]
+      // Ordered newest-first so the take cap below drops the OLDEST rows first, not the
+      // most recent/upcoming ones — the isVIP-first, startTime-ascending order this used to
+      // have would otherwise make an unbounded VIP or long-history tenant's take:3000 return
+      // only its earliest-ever reservations, silently hiding today's and future bookings.
+      // Both frontend consumers (dashboard/reservations, dashboard/host) already re-sort the
+      // array client-side for display, so API order here only matters for the cap.
+      orderBy: { startTime: 'desc' },
+      // Safety cap: this table grows unbounded per-tenant over time (docs/planning/PRODUCTION_ROADMAP.md
+      // estimates ~73k reservations/year for a busy restaurant); 3000 is generous headroom
+      // for callers that don't pass a date range yet. Real pagination/date-filter UI for
+      // the full reservations management page is a future follow-up, not addressed here.
+      take: 3000
     });
 
     // Per-phone-number history: how many times this guest has visited/no-showed,
     // so repeat no-show patterns are visible directly on the reservation list.
-    const phones = [...new Set(reservations.map(r => r.customerPhone))];
+    // customerPhone is nullable (anonymized reservations past the retention
+    // window have it nulled out) — those are excluded from history entirely,
+    // same as they'd have no meaningful phone-based grouping anyway.
+    const phones = [...new Set(reservations.map(r => r.customerPhone).filter((p): p is string => !!p))];
     const historyCounts = phones.length ? await prisma.reservation.groupBy({
       by: ['customerPhone', 'status'],
       where: { restaurantId, customerPhone: { in: phones } },
@@ -43,15 +88,16 @@ export const getReservations = async (req: Request, res: Response) => {
 
     const historyByPhone = new Map<string, { totalVisits: number; noShowCount: number }>();
     for (const row of historyCounts) {
+      if (!row.customerPhone) continue;
       const entry = historyByPhone.get(row.customerPhone) || { totalVisits: 0, noShowCount: 0 };
-      entry.totalVisits += row._count._all;
-      if (row.status === 'NO_SHOW') entry.noShowCount += row._count._all;
+      entry.totalVisits += row._count?._all ?? 0;
+      if (row.status === 'NO_SHOW') entry.noShowCount += row._count?._all ?? 0;
       historyByPhone.set(row.customerPhone, entry);
     }
 
     const withHistory = reservations.map(r => ({
       ...r,
-      phoneHistory: historyByPhone.get(r.customerPhone) || { totalVisits: 1, noShowCount: 0 }
+      phoneHistory: (r.customerPhone && historyByPhone.get(r.customerPhone)) || { totalVisits: 1, noShowCount: 0 }
     }));
 
     return successResponse(res, withHistory);
@@ -64,8 +110,9 @@ export const createReservation = async (req: Request, res: Response) => {
   try {
     const restaurantId = req.restaurantId!;
     const {
-      tableId, categoryId, customerName, customerEmail, customerPhone,
-      guestCount, startTime, notes, internalNote, isVIP, overrideConflict
+      tableId, categoryId, serviceId, customerName, customerEmail, customerPhone,
+      guestCount, startTime, notes, internalNote, isVIP, overrideConflict,
+      consentAccepted, marketingConsent
     } = req.body;
 
     if (!customerName || !customerPhone || !guestCount || !startTime) {
@@ -73,19 +120,44 @@ export const createReservation = async (req: Request, res: Response) => {
     }
 
     const start = new Date(startTime);
+    // This is the public (unauthenticated) booking endpoint — a malformed
+    // startTime (e.g. a non-date string) previously reached restaurantDateStr()
+    // a few lines down, which throws a RangeError on an Invalid Date and fell
+    // through to the generic 500 handler instead of a clean 400. Any anonymous
+    // caller could trigger this.
+    if (isNaN(start.getTime())) {
+      return errorResponse(res, 'errors.validation_error', 400, { message: 'Invalid startTime' });
+    }
     const partySize = parseInt(guestCount);
+    if (!Number.isInteger(partySize) || partySize < 1) {
+      return errorResponse(res, 'errors.validation_error', 400, { message: 'Invalid guestCount' });
+    }
 
     const settings = await prisma.restaurantSettings.findUnique({
       where: { restaurantId }
     });
 
-    // The reservation's calendar day is resolved in the restaurant's own timezone
-    // (not UTC), so a booking near midnight lands on the day the guest actually
-    // picked and lines up with the DaySetting the admin blocked for that date.
-    const dateStr = new Intl.DateTimeFormat('en-CA', {
-      timeZone: settings?.timezone || 'Europe/Istanbul',
-      year: 'numeric', month: '2-digit', day: '2-digit'
-    }).format(start);
+    // maxPartySize is documented as bounding the *public* booking form (the
+    // dashboard only rendered it as a UI hint, e.g. bubble buttons 1..maxPartySize)
+    // — nothing rejected a direct API call with a larger value. Staff can still
+    // book bigger private/VIP parties manually; only guest-initiated requests are
+    // capped here.
+    const staffInitiated = isStaffRequest(req);
+    if (!staffInitiated && settings?.maxPartySize && partySize > settings.maxPartySize) {
+      return errorResponse(res, 'errors.validation_error', 400, { message: `Party size exceeds the maximum of ${settings.maxPartySize}` });
+    }
+
+    // KVKK "açık rıza" (explicit consent): required for guest-initiated bookings —
+    // the public form must not submit without it, and this is the server-side
+    // backstop so a direct API call can't skip the checkbox. Staff entering a
+    // reservation on a guest's behalf (dashboard/host screen — phone, walk-in)
+    // have no checkbox to check here, so they're exempt, same convention as
+    // maxPartySize/overrideConflict above.
+    if (!staffInitiated && consentAccepted !== true) {
+      return errorResponse(res, 'errors.consent_required', 400, { code: 'CONSENT_REQUIRED' });
+    }
+
+    const dateStr = restaurantDateStr(start, settings?.timezone);
 
     // Check DaySetting
     const daySetting = await prisma.daySetting.findUnique({
@@ -100,96 +172,197 @@ export const createReservation = async (req: Request, res: Response) => {
       return errorResponse(res, 'errors.validation_error', 400, { message: 'Reservations are currently disabled for this restaurant' });
     }
 
-    // Reservation window: how long a table is considered occupied by this booking.
+    // Reservation window: how long a resource is considered occupied by this booking.
     // Admin-configurable via Settings > Reservation Logic (defaultDurationMinutes), defaults to 90 minutes.
-    const durationMinutes = settings.defaultDurationMinutes || 90;
+    // Appointment verticals (SALON/CLINIC): if the booking references a service with
+    // an intrinsic durationMinutes, that overrides the tenant default. The service is
+    // validated to belong to this tenant (via its menu) before it's trusted/stored.
+    let durationMinutes = settings.defaultDurationMinutes || 90;
+    let finalServiceId: string | null = serviceId && serviceId !== 'none' ? serviceId : null;
+    if (finalServiceId) {
+      const service = await prisma.menuItem.findFirst({
+        where: { id: finalServiceId, category: { menu: { restaurantId } } },
+        select: { durationMinutes: true },
+      });
+      if (!service) {
+        finalServiceId = null; // unknown/foreign service → ignore rather than trust it
+      } else if (service.durationMinutes && service.durationMinutes > 0) {
+        durationMinutes = service.durationMinutes;
+      }
+    }
     const windowEnd = new Date(start.getTime() + durationMinutes * 60000);
 
-    const staffInitiated = isStaffRequest(req);
+    // The tenant's configured defaultDurationMinutes (or the service's own
+    // duration, when set) governs how long a table is considered occupied,
+    // regardless of reservation logic mode — FIXED_SLOTS/MANUAL_AVAILABILITY
+    // used to hardcode a flat 2h window here, which silently ignored the
+    // restaurant's own Settings value.
+    const endTime: Date = windowEnd;
 
-    const endTime: Date = settings.logic === 'DYNAMIC_DURATION'
-      ? windowEnd
-      : new Date(start.getTime() + 120 * 60000);
-
-    const paymentEnabled = !!settings.isPaidReservationEnabled && (settings.depositAmount || 0) > 0;
+    // hasPaymentFeature is the SysAdmin's entitlement (e.g. off by default for
+    // CLINIC); isPaidReservationEnabled is the tenant's own toggle within that
+    // entitlement. Both must hold — a tenant whose plan doesn't include payments
+    // can't turn on deposits by flipping its own setting.
+    const paymentEnabled = !!settings.hasPaymentFeature && !!settings.isPaidReservationEnabled && (settings.depositAmount || 0) > 0;
 
     // Table resolution + conflict re-check + insert all happen inside one
     // transaction so two concurrent bookings can't both pass the availability
     // check and land on the same table (the previous check-then-insert race).
-    let finalTableId: string | null = tableId === 'none' ? null : tableId;
+    const originalTableId: string | null = tableId === 'none' ? null : tableId;
+    if (!(await verifyTableOwnership(restaurantId, originalTableId))) {
+      return errorResponse(res, 'errors.validation_error', 400, { message: 'Table not found' });
+    }
+    const finalCategoryId: string | null = categoryId === 'none' ? null : categoryId;
+    if (!(await verifyCategoryOwnership(restaurantId, finalCategoryId))) {
+      return errorResponse(res, 'errors.validation_error', 400, { message: 'Category not found' });
+    }
     let requiresInstantPayment = false;
+    const isManualAvailability = settings.logic === 'MANUAL_AVAILABILITY';
 
     let reservation;
     try {
-      reservation = await prisma.$transaction(async (tx) => {
-        if (finalTableId) {
-          const conflict = await findTableConflict({
-            restaurantId, tableId: finalTableId, start, end: windowEnd, tx,
-          });
-          if (conflict) {
-            // Only an authenticated staff member may knowingly override a conflict;
-            // public/customer requests are always hard-blocked here.
-            if (!staffInitiated || !overrideConflict) {
-              throw Object.assign(new Error('TABLE_CONFLICT'), { code: 'TABLE_CONFLICT' });
-            }
-          }
-        } else {
-          // Auto-assign the smallest table that fits and is free for this window.
-          const availableTable = await findAvailableTable({
-            restaurantId, partySize, start, end: windowEnd, tx,
-          });
-          if (availableTable) {
-            finalTableId = availableTable.id;
-          } else {
-            const anyTableFitsCapacity = await tx.table.findFirst({
-              where: { restaurantId, capacity: { gte: partySize } },
+      // The transaction is retried (fresh table/capacity checks each time, not
+      // just the create) on a confirmationCode collision — collisions are rare
+      // (900,000 codes per restaurant) but the unique constraint is what
+      // actually guarantees no two reservations at this restaurant ever share
+      // a code, so a retry loop is needed rather than trusting randomness alone.
+      const MAX_CODE_ATTEMPTS = 5;
+      for (let attempt = 1; ; attempt++) {
+        const confirmationCode = generateConfirmationCode();
+        // Reset per attempt — these are mutated inside the transaction below
+        // (auto-assign on a null table, or a soft overbooking accept), and a
+        // stale value from a failed prior attempt (e.g. isOverbooked left
+        // true from an attempt that hit a confirmationCode collision after
+        // soft-accepting) must not leak into the retry.
+        let finalTableId: string | null = originalTableId;
+        let isOverbooked = false;
+        try {
+          reservation = await prisma.$transaction(async (tx) => {
+          // DaySetting.maxCapacityOverride: a total-covers cap for this specific
+          // date, independent of per-table availability (e.g. a private event or
+          // reduced staffing where the restaurant wants to accept fewer total
+          // covers than table math alone would allow). Same staff-bypass
+          // convention as maxPartySize/FULLY_BOOKED above — an admin set this
+          // cap for the automated/public flow, not to block staff discretion.
+          // Re-read inside the transaction (not just off the `daySetting` fetched
+          // earlier) so two near-simultaneous bookings can't both pass a
+          // stale count and jointly overshoot the cap.
+          if (!staffInitiated && daySetting?.maxCapacityOverride != null) {
+            const booked = await getBookedCoversForDate({
+              restaurantId, dateStr, timezone: settings.timezone, tx,
             });
-            // No table can ever seat this party → hard reject.
-            if (!anyTableFitsCapacity) {
-              throw Object.assign(new Error('NO_TABLE_CAPACITY'), { code: 'NO_TABLE_CAPACITY' });
-            }
-            // Every fitting table is booked for this slot. We never create an
-            // overlapping/unassigned booking on the public side; instead we flag
-            // the day as fully booked (manual control) and reject so the guest is
-            // offered the waitlist. Staff may still force an unassigned pending
-            // booking to resolve manually.
-            if (!staffInitiated) {
-              await tx.daySetting.upsert({
-                where: { restaurantId_date: { restaurantId, date: dateStr } },
-                create: { restaurantId, date: dateStr, isFullyBooked: true },
-                update: { isFullyBooked: true },
-              });
-              throw Object.assign(new Error('FULLY_BOOKED'), { code: 'FULLY_BOOKED' });
+            if (booked + partySize > daySetting.maxCapacityOverride) {
+              throw Object.assign(new Error('DAY_CAPACITY_EXCEEDED'), { code: 'DAY_CAPACITY_EXCEEDED' });
             }
           }
+
+          if (finalTableId) {
+            const conflict = await findTableConflict({
+              restaurantId, tableId: finalTableId, start, end: windowEnd, tx, isManualAvailability,
+            });
+            if (conflict) {
+              // Only an authenticated staff member may knowingly override a conflict;
+              // public/customer requests are always hard-blocked here.
+              if (!staffInitiated || !overrideConflict) {
+                throw Object.assign(new Error('TABLE_CONFLICT'), { code: 'TABLE_CONFLICT' });
+              }
+            }
+          } else {
+            // Auto-assign the smallest table that fits and is free for this window.
+            const availableTable = await findAvailableTable({
+              restaurantId, partySize, start, end: windowEnd, tx, isManualAvailability,
+            });
+            if (availableTable) {
+              finalTableId = availableTable.id;
+            } else {
+              const anyTableFitsCapacity = await tx.bookableResource.findFirst({
+                where: { restaurantId, capacity: { gte: partySize } },
+              });
+              // No table can ever seat this party → hard reject.
+              if (!anyTableFitsCapacity) {
+                throw Object.assign(new Error('NO_TABLE_CAPACITY'), { code: 'NO_TABLE_CAPACITY' });
+              }
+              // Every fitting table is booked for this slot. By default we never
+              // create an overlapping/unassigned booking on the public side;
+              // instead we flag the day as fully booked (manual control) and
+              // reject so the guest is offered the waitlist. Staff may still
+              // force an unassigned pending booking to resolve manually.
+              //
+              // Overbooking (admin opt-in, RestaurantSettings/DaySetting): if
+              // configured and this date is still under both caps, soft-accept
+              // instead — PENDING, no table assigned, isOverbooked: true — so
+              // staff can resolve it manually rather than turning the guest away.
+              // Re-counted inside the transaction so concurrent requests can't
+              // jointly overshoot the caps, same race protection as maxCapacityOverride.
+              if (!staffInitiated) {
+                const overbooking = getEffectiveOverbookingConfig(settings, daySetting);
+                if (overbooking.enabled) {
+                  const { count, covers } = await getOverbookedCountsForDate({
+                    restaurantId, dateStr, timezone: settings.timezone, tx,
+                  });
+                  if (count + 1 <= overbooking.maxExtraReservations && covers + partySize <= overbooking.maxExtraCovers) {
+                    isOverbooked = true;
+                  }
+                }
+
+                if (!isOverbooked) {
+                  await tx.daySetting.upsert({
+                    where: { restaurantId_date: { restaurantId, date: dateStr } },
+                    create: { restaurantId, date: dateStr, isFullyBooked: true },
+                    update: { isFullyBooked: true },
+                  });
+                  throw Object.assign(new Error('FULLY_BOOKED'), { code: 'FULLY_BOOKED' });
+                }
+              }
+            }
+          }
+
+          // Auto-confirm requires an actually-assigned, conflict-free table.
+          const isConfirmed = !!daySetting?.autoConfirm && !!finalTableId;
+
+          // Instant deposit rule (Trigger A): paid reservations enabled AND the day
+          // auto-confirms AND this is a guest (not staff) booking. Held as
+          // AWAITING_PAYMENT until the deposit is paid instead of confirming outright.
+          requiresInstantPayment = paymentEnabled && !staffInitiated && isConfirmed;
+
+          return tx.reservation.create({
+            data: {
+              restaurantId,
+              tableId: finalTableId,
+              categoryId: finalCategoryId,
+              serviceId: finalServiceId,
+              customerName,
+              customerEmail,
+              customerPhone,
+              guestCount: partySize,
+              startTime: start,
+              endTime,
+              notes,
+              // Staff-only fields: internalNote is explicitly documented as an
+              // internal/restaurant-facing note, and isVIP drives sort order on
+              // the reservation list — an anonymous public request must not be
+              // able to set either on itself.
+              internalNote: staffInitiated ? internalNote : null,
+              isVIP: staffInitiated && !!isVIP,
+              isOverbooked,
+              confirmationCode,
+              status: requiresInstantPayment ? 'AWAITING_PAYMENT' : (isConfirmed ? 'CONFIRMED' : 'PENDING'),
+              // Staff-entered bookings have no consent checkbox to reflect, so we
+              // don't record a false "accepted" for them. marketingConsent is a
+              // separate, optional opt-in — never implied by consentAccepted.
+              consentAccepted: staffInitiated ? false : true,
+              marketingConsent: staffInitiated ? false : marketingConsent === true,
+              consentTimestamp: staffInitiated ? null : new Date(),
+            },
+          });
+          });
+          break;
+        } catch (innerErr: any) {
+          const isCodeCollision = innerErr?.code === 'P2002' && innerErr?.meta?.target?.includes?.('confirmationCode');
+          if (isCodeCollision && attempt < MAX_CODE_ATTEMPTS) continue;
+          throw innerErr;
         }
-
-        // Auto-confirm requires an actually-assigned, conflict-free table.
-        const isConfirmed = !!daySetting?.autoConfirm && !!finalTableId;
-
-        // Instant deposit rule (Trigger A): paid reservations enabled AND the day
-        // auto-confirms AND this is a guest (not staff) booking. Held as
-        // AWAITING_PAYMENT until the deposit is paid instead of confirming outright.
-        requiresInstantPayment = paymentEnabled && !staffInitiated && isConfirmed;
-
-        return tx.reservation.create({
-          data: {
-            restaurantId,
-            tableId: finalTableId,
-            categoryId: categoryId === 'none' ? null : categoryId,
-            customerName,
-            customerEmail,
-            customerPhone,
-            guestCount: partySize,
-            startTime: start,
-            endTime,
-            notes,
-            internalNote,
-            isVIP: !!isVIP,
-            status: requiresInstantPayment ? 'AWAITING_PAYMENT' : (isConfirmed ? 'CONFIRMED' : 'PENDING'),
-          },
-        });
-      });
+      }
     } catch (txErr: any) {
       if (txErr?.code === 'TABLE_CONFLICT') {
         return errorResponse(res, 'errors.table_conflict', 409, { code: 'TABLE_CONFLICT' });
@@ -197,11 +370,25 @@ export const createReservation = async (req: Request, res: Response) => {
       if (txErr?.code === 'NO_TABLE_CAPACITY') {
         return errorResponse(res, 'errors.validation_error', 400, { message: 'No table can accommodate this party size.' });
       }
+      if (txErr?.code === 'DAY_CAPACITY_EXCEEDED') {
+        return errorResponse(res, 'errors.day_capacity_exceeded', 409, { code: 'DAY_CAPACITY_EXCEEDED' });
+      }
       if (txErr?.code === 'FULLY_BOOKED') {
         return errorResponse(res, 'errors.fully_booked', 409, { code: 'FULLY_BOOKED' });
       }
       throw txErr;
     }
+
+    logAudit({
+      req,
+      restaurantId,
+      category: 'RESERVATION',
+      action: 'RESERVATION_CREATED',
+      targetType: 'Reservation',
+      targetId: reservation.id,
+      targetLabel: reservation.customerName,
+      metadata: { guestCount: reservation.guestCount, startTime: reservation.startTime, status: reservation.status },
+    });
 
     if (requiresInstantPayment) {
       const pay = await createPaymentForReservation(reservation, settings);
@@ -210,12 +397,26 @@ export const createReservation = async (req: Request, res: Response) => {
         return successResponse(res, {
           ...reservation,
           status: 'AWAITING_PAYMENT',
+          possiblyFullyBooked: reservation.isOverbooked,
           payment: { token: pay.rawLinkToken, code: pay.code, url: pay.paymentUrl, amount: pay.amountMinor, currency: pay.currency, expiresAt: pay.expiresAt },
         }, 'messages.reservation_created', 201);
       }
     }
 
-    return successResponse(res, reservation, 'messages.reservation_created', 201);
+    // Reservation is confirmed outright (auto-confirm, no deposit needed) —
+    // let the guest know immediately. When a deposit is required instead,
+    // sendPaymentRequest already covers the outbound message above.
+    if (reservation.status === 'CONFIRMED') {
+      const restaurant = await prisma.restaurant.findUnique({ where: { id: restaurantId }, select: { name: true } });
+      await sendBookingConfirmation({
+        customerPhone: reservation.customerPhone,
+        restaurantName: restaurant?.name || 'Restaurant',
+        reservationLabel: formatReservationLabel(reservation.startTime, reservation.guestCount),
+        confirmationCode: reservation.confirmationCode,
+      });
+    }
+
+    return successResponse(res, { ...reservation, possiblyFullyBooked: reservation.isOverbooked }, 'messages.reservation_created', 201);
   } catch (error) {
     console.error('Create reservation error', error);
     return errorResponse(res, 'errors.internal_error', 500);
@@ -238,42 +439,97 @@ export const updateReservation = async (req: Request, res: Response) => {
     if (!existingRes) return errorResponse(res, 'errors.validation_error', 404, { message: 'Reservation not found' });
 
     const finalTableId = tableId === 'none' ? null : tableId;
+    if (!(await verifyTableOwnership(restaurantId, finalTableId))) {
+      return errorResponse(res, 'errors.validation_error', 400, { message: 'Table not found' });
+    }
+    const finalCategoryId = categoryId === 'none' ? null : categoryId;
+    if (!(await verifyCategoryOwnership(restaurantId, finalCategoryId))) {
+      return errorResponse(res, 'errors.validation_error', 400, { message: 'Category not found' });
+    }
+    // Neither startTime nor guestCount were ever validated here — an invalid/missing
+    // startTime produces an Invalid Date that later blows up inside the transaction
+    // (Prisma rejects it on the DateTime column), and a non-numeric guestCount
+    // parses to NaN and fails the same way on the Int column. Both previously fell
+    // through to the generic 500 handler instead of a clean 400, unlike
+    // createReservation which already validates both.
+    if (!startTime) {
+      return errorResponse(res, 'errors.validation_error', 400, { message: 'startTime is required' });
+    }
     const start = new Date(startTime);
-
-    const settings = await prisma.restaurantSettings.findUnique({ where: { restaurantId } });
-    const durationMinutes = settings?.defaultDurationMinutes || 90;
-    // Keep endTime in sync with the (possibly changed) start time so the timeline
-    // and conflict checks reflect the real occupied window instead of a stale value.
-    const windowEnd = new Date(start.getTime() + durationMinutes * 60000);
-
-    if (finalTableId) {
-      const isTableOccupied = await findTableConflict({
-        restaurantId, tableId: finalTableId, start, end: windowEnd, excludeReservationId: id,
-      });
-      // This route is staff-only (authMiddleware + manage_reservations), so an explicit
-      // overrideConflict from the confirmed warning dialog is enough to proceed.
-      if (isTableOccupied && !overrideConflict) {
-        return errorResponse(res, 'errors.table_conflict', 409, { code: 'TABLE_CONFLICT' });
-      }
+    if (isNaN(start.getTime())) {
+      return errorResponse(res, 'errors.validation_error', 400, { message: 'Invalid startTime' });
+    }
+    const partySize = parseInt(guestCount);
+    if (!Number.isInteger(partySize) || partySize < 1) {
+      return errorResponse(res, 'errors.validation_error', 400, { message: 'Invalid guestCount' });
     }
 
-    const updated = await prisma.reservation.update({
-      where: { id },
-      data: {
-        tableId: finalTableId,
-        categoryId: categoryId === 'none' ? null : categoryId,
-        customerName,
-        customerEmail,
-        customerPhone,
-        guestCount: parseInt(guestCount),
-        startTime: start,
-        endTime: windowEnd,
-        notes,
-        internalNote,
-        isVIP: !!isVIP,
-        status
+    const settings = await prisma.restaurantSettings.findUnique({ where: { restaurantId } });
+
+    // Mirror createReservation's window logic: a service-linked booking keeps its
+    // service's duration; otherwise the tenant's configured defaultDurationMinutes
+    // applies regardless of logic mode (see createReservation for why the old flat
+    // 2h FIXED_SLOTS/MANUAL_AVAILABILITY hardcode was removed). The edit form
+    // doesn't let staff change the linked service, so we reuse whatever service was
+    // resolved (and tenant-validated) at creation time.
+    let durationMinutes = settings?.defaultDurationMinutes || 90;
+    if (existingRes.serviceId) {
+      const service = await prisma.menuItem.findUnique({
+        where: { id: existingRes.serviceId },
+        select: { durationMinutes: true },
+      });
+      if (service?.durationMinutes && service.durationMinutes > 0) {
+        durationMinutes = service.durationMinutes;
       }
-    });
+    }
+    const endTime: Date = new Date(start.getTime() + durationMinutes * 60000);
+
+    // Conflict-check + write happen inside one transaction so two concurrent edits
+    // (or an edit racing a new booking) can't both pass the availability check and
+    // land on the same table — the same race createReservation already guards against.
+    let updated;
+    try {
+      updated = await prisma.$transaction(async (tx) => {
+        if (finalTableId) {
+          const isTableOccupied = await findTableConflict({
+            restaurantId, tableId: finalTableId, start, end: endTime, excludeReservationId: id, tx,
+            isManualAvailability: settings?.logic === 'MANUAL_AVAILABILITY',
+          });
+          // This route is staff-only (authMiddleware + manage_reservations), so an explicit
+          // overrideConflict from the confirmed warning dialog is enough to proceed.
+          if (isTableOccupied && !overrideConflict) {
+            throw Object.assign(new Error('TABLE_CONFLICT'), { code: 'TABLE_CONFLICT' });
+          }
+        }
+
+        return tx.reservation.update({
+          where: { id },
+          data: {
+            tableId: finalTableId,
+            categoryId: finalCategoryId,
+            customerName,
+            customerEmail,
+            customerPhone,
+            guestCount: partySize,
+            startTime: start,
+            endTime,
+            notes,
+            internalNote,
+            isVIP: !!isVIP,
+            status
+          }
+        });
+      });
+    } catch (txErr: any) {
+      if (txErr?.code === 'TABLE_CONFLICT') {
+        return errorResponse(res, 'errors.table_conflict', 409, { code: 'TABLE_CONFLICT' });
+      }
+      throw txErr;
+    }
+
+    // The edit may have moved the reservation off its original table/day/status —
+    // let the next booking attempt re-derive whether that original day is still full.
+    await clearFullyBookedIfSet({ restaurantId, dateStr: restaurantDateStr(existingRes.startTime, settings?.timezone) });
 
     return successResponse(res, updated);
   } catch (error) {
@@ -297,7 +553,61 @@ export const deleteReservation = async (req: Request, res: Response) => {
       where: { id }
     });
 
+    // Deleting a reservation frees whatever table it held — the day may no longer
+    // actually be fully booked, so let the next booking attempt re-derive that.
+    const settings = await prisma.restaurantSettings.findUnique({ where: { restaurantId }, select: { timezone: true } });
+    await clearFullyBookedIfSet({ restaurantId, dateStr: restaurantDateStr(existingRes.startTime, settings?.timezone) });
+
     return successResponse(res, null, 'Reservation deleted');
+  } catch (error) {
+    return errorResponse(res, 'errors.internal_error', 500);
+  }
+};
+
+// KVKK data-subject rights (docs/planning/PRODUCTION_ROADMAP.md §7.3 / docs/architecture/PROJECT_LOGIC.md §14):
+// "customers can request access, correction, or deletion" — this fulfills the
+// deletion side for a specific customer on staff's behalf, identified by phone
+// (the natural key already used for phoneHistory in getReservations above).
+// Anonymizes rather than hard-deletes, same as the retention worker: PII
+// (name/email/phone/notes) is nulled out but the rows themselves — and their
+// aggregate/statistical value, plus any Payment/audit references — are kept.
+// Tenant-scoped (only this restaurant's rows for the phone are touched) and
+// covers both Reservation and WaitlistEntry, the two places customer PII is
+// captured from the public booking surface.
+export const deleteCustomerData = async (req: Request, res: Response) => {
+  try {
+    const restaurantId = req.restaurantId!;
+    const { phone } = req.params;
+
+    if (!phone) {
+      return errorResponse(res, 'errors.validation_error', 400, { message: 'Missing phone' });
+    }
+
+    const now = new Date();
+    const [reservations, waitlistEntries] = await prisma.$transaction([
+      prisma.reservation.updateMany({
+        where: { restaurantId, customerPhone: phone, anonymizedAt: null },
+        data: {
+          customerName: null, customerEmail: null, customerPhone: null,
+          notes: null, internalNote: null, anonymizedAt: now,
+        },
+      }),
+      prisma.waitlistEntry.updateMany({
+        where: { restaurantId, customerPhone: phone, anonymizedAt: null },
+        data: { customerName: null, customerPhone: null, notes: null, anonymizedAt: now },
+      }),
+    ]);
+
+    logAudit({
+      req, restaurantId, category: 'RESERVATION', action: 'CUSTOMER_DATA_DELETED',
+      targetType: 'Customer',
+      metadata: { reservationsAnonymized: reservations.count, waitlistEntriesAnonymized: waitlistEntries.count },
+    });
+
+    return successResponse(res, {
+      reservationsAnonymized: reservations.count,
+      waitlistEntriesAnonymized: waitlistEntries.count,
+    });
   } catch (error) {
     return errorResponse(res, 'errors.internal_error', 500);
   }
@@ -320,34 +630,61 @@ export const updateReservationSchedule = async (req: Request, res: Response) => 
 
     if (!startTime) return errorResponse(res, 'errors.validation_error', 400, { message: 'startTime is required' });
 
+    const settings = await prisma.restaurantSettings.findUnique({ where: { restaurantId } });
     const finalTableId = tableId === 'none' || !tableId ? null : tableId;
+    if (!(await verifyTableOwnership(restaurantId, finalTableId))) {
+      return errorResponse(res, 'errors.validation_error', 400, { message: 'Table not found' });
+    }
     const start = new Date(startTime);
+    // A garbage startTime/endTime (e.g. dragging produced a malformed ISO string)
+    // previously reached Prisma as an Invalid Date and crashed with a generic 500
+    // instead of a clean 400 — same class of gap as create/updateReservation above.
+    if (isNaN(start.getTime())) {
+      return errorResponse(res, 'errors.validation_error', 400, { message: 'Invalid startTime' });
+    }
     let end: Date;
     if (endTime) {
       end = new Date(endTime);
+      if (isNaN(end.getTime())) {
+        return errorResponse(res, 'errors.validation_error', 400, { message: 'Invalid endTime' });
+      }
     } else if (existingRes.endTime) {
       // Preserve the reservation's current duration when only the start moved.
       const dur = new Date(existingRes.endTime).getTime() - new Date(existingRes.startTime).getTime();
       end = new Date(start.getTime() + dur);
     } else {
-      const settings = await prisma.restaurantSettings.findUnique({ where: { restaurantId } });
       end = new Date(start.getTime() + (settings?.defaultDurationMinutes || 90) * 60000);
     }
 
-    if (finalTableId) {
-      const conflict = await findTableConflict({
-        restaurantId, tableId: finalTableId, start, end, excludeReservationId: id,
+    let updated;
+    try {
+      updated = await prisma.$transaction(async (tx) => {
+        if (finalTableId) {
+          const conflict = await findTableConflict({
+            restaurantId, tableId: finalTableId, start, end, excludeReservationId: id, tx,
+            isManualAvailability: settings?.logic === 'MANUAL_AVAILABILITY',
+          });
+          if (conflict && !overrideConflict) {
+            throw Object.assign(new Error('TABLE_CONFLICT'), { code: 'TABLE_CONFLICT' });
+          }
+        }
+
+        return tx.reservation.update({
+          where: { id },
+          data: { tableId: finalTableId, startTime: start, endTime: end },
+          include: { table: true, category: true }
+        });
       });
-      if (conflict && !overrideConflict) {
+    } catch (txErr: any) {
+      if (txErr?.code === 'TABLE_CONFLICT') {
         return errorResponse(res, 'errors.table_conflict', 409, { code: 'TABLE_CONFLICT' });
       }
+      throw txErr;
     }
 
-    const updated = await prisma.reservation.update({
-      where: { id },
-      data: { tableId: finalTableId, startTime: start, endTime: end },
-      include: { table: true, category: true }
-    });
+    // The reservation may have moved off its original table/day — let the next
+    // booking attempt re-derive whether that original day is still full.
+    await clearFullyBookedIfSet({ restaurantId, dateStr: restaurantDateStr(existingRes.startTime, settings?.timezone) });
 
     return successResponse(res, updated);
   } catch (error) {
@@ -368,13 +705,28 @@ export const updateReservationStatus = async (req: Request, res: Response) => {
 
     if (!existingRes) return errorResponse(res, 'errors.validation_error', 404, { message: 'Reservation not found' });
 
+    const settings = await prisma.restaurantSettings.findUnique({ where: { restaurantId } });
+    const isManualAvailability = settings?.logic === 'MANUAL_AVAILABILITY';
+
+    // Normalize like every other reservation handler: undefined = leave unchanged,
+    // 'none' = explicitly clear, otherwise the given id. Writing the literal string
+    // 'none' into the tableId column (as this endpoint previously did) fails the FK.
+    const finalTableId: string | null | undefined =
+      tableId === undefined ? undefined : (tableId === 'none' ? null : tableId);
+    if (finalTableId && !(await verifyTableOwnership(restaurantId, finalTableId))) {
+      return errorResponse(res, 'errors.validation_error', 400, { message: 'Table not found' });
+    }
+    const conflictEnd = existingRes.endTime ?? new Date(existingRes.startTime.getTime() + 90 * 60000);
+
     // If this status change assigns/keeps a table on a booking that will occupy it,
-    // make sure we're not overlapping another active booking on that table.
-    const targetTableId = tableId ?? existingRes.tableId;
+    // make sure we're not overlapping another active booking on that table. This is
+    // a fail-fast check so we don't generate a payment link for a doomed request;
+    // the authoritative check happens again inside the transaction right before the
+    // write, closing the race window between here and the eventual write.
+    const targetTableId = finalTableId !== undefined ? finalTableId : existingRes.tableId;
     if (targetTableId && status && BLOCKING_STATUSES.includes(status)) {
-      const conflictEnd = existingRes.endTime ?? new Date(existingRes.startTime.getTime() + 90 * 60000);
       const conflict = await findTableConflict({
-        restaurantId, tableId: targetTableId, start: existingRes.startTime, end: conflictEnd, excludeReservationId: id,
+        restaurantId, tableId: targetTableId, start: existingRes.startTime, end: conflictEnd, excludeReservationId: id, isManualAvailability,
       });
       if (conflict && !overrideConflict) {
         return errorResponse(res, 'errors.table_conflict', 409, { code: 'TABLE_CONFLICT' });
@@ -387,15 +739,58 @@ export const updateReservationStatus = async (req: Request, res: Response) => {
     // the booking as AWAITING_PAYMENT until they pay. Staff can bypass with
     // `skipPayment` (e.g. a trusted regular / deposit taken in person).
     if (status === 'CONFIRMED' && !skipPayment && !existingRes.isPaid) {
-      const settings = await prisma.restaurantSettings.findUnique({ where: { restaurantId } });
-      const paymentEnabled = !!settings?.isPaidReservationEnabled && (settings.depositAmount || 0) > 0;
+      // hasPaymentFeature is the SysAdmin's entitlement; isPaidReservationEnabled
+      // is the tenant's own toggle within it — both must hold, same as createReservation.
+      const paymentEnabled = !!settings?.hasPaymentFeature && !!settings?.isPaidReservationEnabled && (settings.depositAmount || 0) > 0;
       if (paymentEnabled) {
-        const pay = await createPaymentForReservation(existingRes, settings!);
-        if (pay) {
-          const updated = await prisma.reservation.update({
-            where: { id },
-            data: { status: 'AWAITING_PAYMENT', paymentId: pay.paymentId, ...(tableId ? { tableId } : {}) },
+        // Eligibility (isPaid/status) is re-checked from a fresh read *inside*
+        // the transaction, and the Payment row is created inside it too — two
+        // concurrent "Accept" clicks on the same reservation used to both pass
+        // the isPaid check above, both create a Payment row + payment link, and
+        // both text the guest a separate deposit link. Whichever request loses
+        // the re-check below is treated as a no-op, not an error.
+        //
+        // The re-check alone isn't sufficient: a plain `findFirst` takes no row
+        // lock under Postgres' default READ COMMITTED isolation, so two
+        // concurrent transactions can both read the pre-race "not yet paid"
+        // state before either commits, and both proceed to create a Payment
+        // row. A Postgres advisory lock scoped to this reservation id (same
+        // pattern as the RSVP dedup lock in publicController.ts) makes the
+        // second transaction block until the first commits, so it then
+        // correctly observes the post-commit state and no-ops.
+        let txResult: { updated: typeof existingRes; pay: NonNullable<Awaited<ReturnType<typeof createPaymentForReservation>>> } | null;
+        try {
+          txResult = await prisma.$transaction(async (tx) => {
+            await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${`reservation-accept:${id}`}))`;
+            const fresh = await tx.reservation.findFirst({ where: { id, restaurantId } });
+            if (!fresh || fresh.isPaid || fresh.status === 'AWAITING_PAYMENT') {
+              return null;
+            }
+            if (targetTableId) {
+              const conflict = await findTableConflict({
+                restaurantId, tableId: targetTableId, start: existingRes.startTime, end: conflictEnd, excludeReservationId: id, tx, isManualAvailability,
+              });
+              if (conflict && !overrideConflict) {
+                throw Object.assign(new Error('TABLE_CONFLICT'), { code: 'TABLE_CONFLICT' });
+              }
+            }
+            const pay = await createPaymentForReservation(fresh, settings!, tx);
+            if (!pay) return null;
+            const updated = await tx.reservation.update({
+              where: { id },
+              data: { status: 'AWAITING_PAYMENT', paymentId: pay.paymentId, ...(finalTableId !== undefined ? { tableId: finalTableId } : {}) },
+            });
+            return { updated, pay };
           });
+        } catch (txErr: any) {
+          if (txErr?.code === 'TABLE_CONFLICT') {
+            return errorResponse(res, 'errors.table_conflict', 409, { code: 'TABLE_CONFLICT' });
+          }
+          throw txErr;
+        }
+
+        if (txResult) {
+          const { updated, pay } = txResult;
           const restaurant = await prisma.restaurant.findUnique({ where: { id: restaurantId } });
           const amountLabel = `${(pay.amountMinor / 100).toFixed(2)} ${pay.currency}`;
           const reservationLabel = new Date(existingRes.startTime).toLocaleString('tr-TR') + ` · ${existingRes.guestCount} kişi`;
@@ -415,12 +810,68 @@ export const updateReservationStatus = async (req: Request, res: Response) => {
             payment: { token: pay.rawLinkToken, code: pay.code, url: pay.paymentUrl, amount: pay.amountMinor, currency: pay.currency, expiresAt: pay.expiresAt },
           });
         }
+        // Lost the race (or deposit amount was zeroed out concurrently) — a
+        // sibling request already moved this reservation on. Return its
+        // current state instead of falling through to the generic update
+        // below, which would otherwise force `status` back to CONFIRMED and
+        // silently skip the payment the sibling request just required.
+        const current = await prisma.reservation.findFirst({ where: { id, restaurantId } });
+        return successResponse(res, current);
       }
     }
 
-    const updated = await prisma.reservation.update({
-      where: { id },
-      data: { status, tableId }
+    let updated;
+    try {
+      updated = await prisma.$transaction(async (tx) => {
+        if (targetTableId) {
+          const conflict = await findTableConflict({
+            restaurantId, tableId: targetTableId, start: existingRes.startTime, end: conflictEnd, excludeReservationId: id, tx, isManualAvailability,
+          });
+          if (conflict && !overrideConflict) {
+            throw Object.assign(new Error('TABLE_CONFLICT'), { code: 'TABLE_CONFLICT' });
+          }
+        }
+        return tx.reservation.update({
+          where: { id },
+          data: { status, ...(finalTableId !== undefined ? { tableId: finalTableId } : {}) }
+        });
+      });
+    } catch (txErr: any) {
+      if (txErr?.code === 'TABLE_CONFLICT') {
+        return errorResponse(res, 'errors.table_conflict', 409, { code: 'TABLE_CONFLICT' });
+      }
+      throw txErr;
+    }
+
+    // If this transition freed a table (e.g. CANCELLED/NO_SHOW/EXPIRED, previously
+    // blocking), the day may no longer actually be fully booked.
+    if (status && existingRes.status !== status &&
+        BLOCKING_STATUSES.includes(existingRes.status) && !BLOCKING_STATUSES.includes(status)) {
+      await clearFullyBookedIfSet({ restaurantId, dateStr: restaurantDateStr(existingRes.startTime, settings?.timezone) });
+    }
+
+    // Staff manually accepted a request straight to CONFIRMED (no deposit
+    // required, or skipPayment) — the payment-request branch above already
+    // handles the deposit-required path, so this only fires for the direct case.
+    if (status === 'CONFIRMED' && existingRes.status !== 'CONFIRMED') {
+      const restaurant = await prisma.restaurant.findUnique({ where: { id: restaurantId }, select: { name: true } });
+      await sendBookingConfirmation({
+        customerPhone: updated.customerPhone,
+        restaurantName: restaurant?.name || 'Restaurant',
+        reservationLabel: formatReservationLabel(updated.startTime, updated.guestCount),
+        confirmationCode: updated.confirmationCode,
+      });
+    }
+
+    logAudit({
+      req,
+      restaurantId,
+      category: 'RESERVATION',
+      action: 'RESERVATION_STATUS_CHANGED',
+      targetType: 'Reservation',
+      targetId: updated.id,
+      targetLabel: updated.customerName,
+      metadata: { from: existingRes.status, to: updated.status },
     });
 
     return successResponse(res, updated);

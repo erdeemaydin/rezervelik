@@ -3,17 +3,19 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useTranslation } from "@/i18n/provider";
+import OrderOnlineFab from '@/components/public/OrderOnlineFab';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Utensils, Calendar as CalendarIcon, Clock, ChevronRight, ChevronDown, ArrowLeft, MapPin, Phone, Info, Sparkles, CheckCircle2, XCircle, Flame, Leaf, Hourglass, AlertTriangle } from 'lucide-react';
+import { Utensils, Calendar as CalendarIcon, Clock, ChevronRight, ChevronDown, ArrowLeft, MapPin, Phone, Info, Sparkles, CheckCircle2, XCircle, Flame, Leaf, Hourglass, AlertTriangle, Camera, Share2, Globe } from 'lucide-react';
 import axios from 'axios';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import { getTimeSuggestions } from '@/lib/reservationSuggestions';
 import ReservationCalendar from './ReservationCalendar';
+import ConsentFields from './ConsentFields';
 import { getTodayInTZ, zonedWallTimeToUTC, DEFAULT_TZ } from '@/lib/datetime';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || (typeof window !== 'undefined' ? `${window.location.protocol}//${window.location.hostname}:3000/api` : 'http://localhost:3000/api');
@@ -28,22 +30,30 @@ const GALLERY_IMAGES = [
 
 type ViewState = 'welcome' | 'menu' | 'booking' | 'success';
 
-export default function ClassicLayout({ slug, initialRestaurant, initialView = 'welcome', menuOnly = false }: { slug: string, initialRestaurant: any, initialView?: string, menuOnly?: boolean }) {
+export default function ClassicLayout({ slug, initialRestaurant, initialView = 'welcome', menuOnly = false, bookingOnly = false }: { slug: string, initialRestaurant: any, initialView?: string, menuOnly?: boolean, bookingOnly?: boolean }) {
   const { t } = useTranslation();
   const restaurant = initialRestaurant;
-  const [view, setView] = useState<ViewState>(menuOnly ? 'menu' : (initialView as ViewState));
+  // bookingOnly takes precedence over menuOnly if both were ever passed together (only one is ever true in practice).
+  const [view, setView] = useState<ViewState>(bookingOnly ? 'booking' : (menuOnly ? 'menu' : (initialView as ViewState)));
 
   const [dayStatus, setDayStatus] = useState<any>(null);
   const [checkingDay, setCheckingDay] = useState(false);
-  const [isWaitlistSuccess, setIsWaitlistSuccess] = useState(false);
+
   const [isPossiblyFullyBooked, setIsPossiblyFullyBooked] = useState(false);
+  const [confirmationCode, setConfirmationCode] = useState<string | null>(null);
 
   const [resForm, setResForm] = useState({
     customerName: '',
     customerPhone: '',
     customerEmail: '',
     guestCount: '2',
-    notes: ''
+    notes: '',
+    // KVKK consent (docs/planning/PRODUCTION_ROADMAP.md §7.3): consentAccepted is the required
+    // booking consent, marketingConsent a separate optional WhatsApp/marketing
+    // opt-in. Both ride along in the `...resForm` spread already sent to
+    // POST /reservations, so no extra plumbing is needed beyond these two fields.
+    consentAccepted: false,
+    marketingConsent: false
   });
 
   const tz = restaurant?.settings?.timezone || DEFAULT_TZ;
@@ -78,21 +88,16 @@ export default function ClassicLayout({ slug, initialRestaurant, initialView = '
       return;
     }
 
+    if (!resForm.consentAccepted) {
+      toast.error(t('public.consent.required'));
+      return;
+    }
+
+    // A fully booked day has no capacity left — future demand belongs to the
+    // reservation flow (retry another date) rather than a waitlist join; the
+    // walk-in waitlist is for real-time, same-day guests only.
     if (dayStatus?.daySetting?.isFullyBooked) {
-      try {
-        await axios.post(`${API_URL}/public/restaurant/${slug}/waitlist`, {
-          customerName: resForm.customerName,
-          customerPhone: resForm.customerPhone,
-          partySize: parseInt(resForm.guestCount),
-          targetDate: selectedDate,
-          notes: `Requested Time: ${selectedTime}`
-        });
-        setIsWaitlistSuccess(true);
-        setView('success');
-        setResForm({ customerName: '', customerPhone: '', customerEmail: '', guestCount: '2', notes: '' });
-      } catch (err: any) {
-        toast.error(err.response?.data?.error || 'Failed to join waitlist');
-      }
+      toast.error('This day is fully booked. Please choose another date.');
       return;
     }
 
@@ -117,8 +122,9 @@ export default function ClassicLayout({ slug, initialRestaurant, initialView = '
         return;
       }
       setIsPossiblyFullyBooked(!!res.data?.data?.possiblyFullyBooked);
+      setConfirmationCode(res.data?.data?.confirmationCode || null);
       setView('success');
-      setResForm({ customerName: '', customerPhone: '', customerEmail: '', guestCount: '2', notes: '' });
+      setResForm({ customerName: '', customerPhone: '', customerEmail: '', guestCount: '2', notes: '', consentAccepted: false, marketingConsent: false });
     } catch (err: any) {
       toast.error(err.response?.data?.error || 'Failed to book');
     }
@@ -157,6 +163,24 @@ export default function ClassicLayout({ slug, initialRestaurant, initialView = '
       showLegal: false,
   };
 
+  // socialLinks is stored server-side as a raw JSON string (FrontendCustomization.socialLinks);
+  // parse defensively so a malformed/legacy value never breaks the public page.
+  const socialLinks = (() => {
+      const raw = customization.socialLinks;
+      if (typeof raw !== 'string' || !raw) return null;
+      try {
+          const parsed = JSON.parse(raw);
+          return {
+              instagram: typeof parsed.instagram === 'string' ? parsed.instagram : '',
+              facebook: typeof parsed.facebook === 'string' ? parsed.facebook : '',
+              website: typeof parsed.website === 'string' ? parsed.website : '',
+          };
+      } catch {
+          return null;
+      }
+  })();
+  const hasSocialLinks = !!(socialLinks && (socialLinks.instagram || socialLinks.facebook || socialLinks.website));
+
   const getFontClass = (type: string) => {
       switch(type) {
           case 'SERIF': return 'font-serif tracking-tight';
@@ -171,6 +195,7 @@ export default function ClassicLayout({ slug, initialRestaurant, initialView = '
       switch(preset) {
           case 'EARTH': return { bg: '#fdfbf7', text: '#292524', primary: '#5c4033', accent: '#d6d3d1' };
           case 'CRIMSON': return { bg: '#fffbfb', text: '#450a0a', primary: '#7f1d1d', accent: '#fecaca' };
+          case 'SAGE': return { bg: '#f6f8f4', text: '#1f2a1c', primary: '#4b6a4f', accent: '#d7e4d1' };
           case 'OBSIDIAN':
           default: return { bg: '#ffffff', text: '#0f172a', primary: '#0f172a', accent: '#e2e8f0' };
       }
@@ -287,7 +312,7 @@ export default function ClassicLayout({ slug, initialRestaurant, initialView = '
             {customization.showAboutUs && (
               <section className="mx-auto grid max-w-6xl grid-cols-1 items-center gap-12 px-6 py-24 md:grid-cols-2 md:px-12">
                 <div className="order-2 md:order-1">
-                  <span className="mb-3 block text-xs font-medium uppercase tracking-[0.2em] text-neutral-400">{t('public.ourStory')}</span>
+                  <span className="mb-3 block text-xs font-medium tracking-[0.2em] text-neutral-400">{t('public.ourStory')}</span>
                   <h2 className="mb-6 text-3xl font-semibold tracking-tight text-neutral-900 md:text-4xl">About {restaurant.name}</h2>
                   <p className="whitespace-pre-wrap text-base leading-relaxed text-neutral-500">
                     {customization.aboutUsText || 'Welcome to our restaurant. We are passionate about delivering exceptional culinary experiences.'}
@@ -332,6 +357,25 @@ export default function ClassicLayout({ slug, initialRestaurant, initialView = '
                     )}
                   </div>
                 )}
+                {hasSocialLinks && (
+                  <div className="flex items-center justify-center gap-4 text-neutral-500">
+                    {socialLinks!.instagram && (
+                      <a href={socialLinks!.instagram} target="_blank" rel="noopener noreferrer" aria-label="Instagram" className="hover:text-neutral-900">
+                        <Camera className="h-4 w-4" />
+                      </a>
+                    )}
+                    {socialLinks!.facebook && (
+                      <a href={socialLinks!.facebook} target="_blank" rel="noopener noreferrer" aria-label="Facebook" className="hover:text-neutral-900">
+                        <Share2 className="h-4 w-4" />
+                      </a>
+                    )}
+                    {socialLinks!.website && (
+                      <a href={socialLinks!.website} target="_blank" rel="noopener noreferrer" aria-label="Website" className="hover:text-neutral-900">
+                        <Globe className="h-4 w-4" />
+                      </a>
+                    )}
+                  </div>
+                )}
                 {customization.showLegal && customization.legalText && (
                   <div className="mt-6 max-w-2xl whitespace-pre-wrap border-t border-black/5 pt-6 text-xs leading-relaxed text-neutral-400">
                     {customization.legalText}
@@ -367,7 +411,7 @@ export default function ClassicLayout({ slug, initialRestaurant, initialView = '
                 <div className="flex flex-col items-center">
                     <div className="text-lg font-semibold tracking-tight text-neutral-900">{restaurant.name}</div>
                     {getWaitTimeText() && (
-                        <div className="flex items-center mt-0.5 text-[10px] font-medium uppercase tracking-wide text-amber-600">
+                        <div className="flex items-center mt-0.5 text-[10px] font-medium text-amber-600">
                             <Hourglass className="w-3 h-3 mr-1" /> {getWaitTimeText()}
                         </div>
                     )}
@@ -447,14 +491,25 @@ export default function ClassicLayout({ slug, initialRestaurant, initialView = '
       {view === 'booking' && (
         <div className="animate-in fade-in duration-300 min-h-screen flex flex-col" style={{ backgroundColor: palette.bg }}>
           <header className="bg-white/85 backdrop-blur-xl border-b border-black/5 px-4 h-16 flex items-center justify-between shrink-0 sm:px-6">
-            <Button variant="ghost" onClick={() => setView(menuOnly ? 'menu' : 'welcome')} className="font-medium text-neutral-500 hover:text-neutral-900">
-                <ArrowLeft className="mr-2 h-4 w-4" /> Back
-            </Button>
+            {bookingOnly ? (
+                <Button
+                    variant="ghost"
+                    nativeButton={false}
+                    className="font-medium text-neutral-500 hover:text-neutral-900"
+                    render={<Link href={`/r/${slug}`} />}
+                >
+                    <ArrowLeft className="mr-2 h-4 w-4" /> {restaurant.name}
+                </Button>
+            ) : (
+                <Button variant="ghost" onClick={() => setView(menuOnly ? 'menu' : 'welcome')} className="font-medium text-neutral-500 hover:text-neutral-900">
+                    <ArrowLeft className="mr-2 h-4 w-4" /> Back
+                </Button>
+            )}
 
             <div className="flex flex-col items-center">
                 <div className="text-base font-semibold tracking-tight text-neutral-900">Secure Your Table</div>
                 {getWaitTimeText() && (
-                    <div className="flex items-center mt-0.5 text-[10px] font-medium uppercase tracking-wide text-amber-600">
+                    <div className="flex items-center mt-0.5 text-[10px] font-medium text-amber-600">
                         <Hourglass className="w-3 h-3 mr-1" /> {getWaitTimeText()}
                     </div>
                 )}
@@ -473,7 +528,7 @@ export default function ClassicLayout({ slug, initialRestaurant, initialView = '
                             </div>
                             <div>
                                 <h2 className="text-xl font-semibold tracking-tight text-neutral-900">{restaurant.name}</h2>
-                                <p className="text-xs font-medium uppercase tracking-wide text-neutral-400">Reservation</p>
+                                <p className="text-xs font-medium text-neutral-400">Reservation</p>
                             </div>
                         </div>
 
@@ -499,16 +554,16 @@ export default function ClassicLayout({ slug, initialRestaurant, initialView = '
                         <div className="flex items-start gap-4 rounded-3xl bg-amber-500 p-6 text-white animate-in fade-in duration-300">
                             <Clock className="h-5 w-5 shrink-0 mt-1" />
                             <div>
-                                <p className="mb-1 text-xs font-medium uppercase tracking-wide opacity-80">{selectedDateLabel}</p>
-                                <p className="mb-1.5 font-semibold leading-none">Fully Booked (Waitlist Open)</p>
-                                <p className="text-sm font-medium opacity-90">We are fully booked for reservations on this day, but you can join our online waitlist to be notified if a table opens up.</p>
+                                <p className="mb-1 text-xs font-medium opacity-80">{selectedDateLabel}</p>
+                                <p className="mb-1.5 font-semibold leading-none">Fully Booked</p>
+                                <p className="text-sm font-medium opacity-90">We are fully booked for reservations on this day. Please choose another date, or call us directly.</p>
                             </div>
                         </div>
                     ) : dayStatus?.daySetting?.isReservationEnabled === false ? (
                         <div className="flex items-start gap-4 rounded-3xl bg-red-500 p-6 text-white animate-in fade-in duration-300">
                             <XCircle className="h-5 w-5 shrink-0 mt-1" />
                             <div>
-                                <p className="mb-1 text-xs font-medium uppercase tracking-wide opacity-80">{selectedDateLabel}</p>
+                                <p className="mb-1 text-xs font-medium opacity-80">{selectedDateLabel}</p>
                                 <p className="mb-1.5 font-semibold leading-none">Sold Out / Closed</p>
                                 <p className="text-sm font-medium opacity-90">Unfortunately we&apos;re closed to the reservations for that day.</p>
                             </div>
@@ -517,7 +572,7 @@ export default function ClassicLayout({ slug, initialRestaurant, initialView = '
                         <div className="flex items-start gap-4 rounded-3xl bg-emerald-500 p-6 text-white animate-in fade-in duration-300">
                             <CheckCircle2 className="h-5 w-5 shrink-0 mt-1" />
                             <div>
-                                <p className="mb-1 text-xs font-medium uppercase tracking-wide opacity-80">{selectedDateLabel}</p>
+                                <p className="mb-1 text-xs font-medium opacity-80">{selectedDateLabel}</p>
                                 <p className="mb-1.5 font-semibold leading-none">Immediate Booking</p>
                                 <p className="text-sm font-medium opacity-90">Good news! We have a table for you. Your reservation will be confirmed automatically.</p>
                             </div>
@@ -526,11 +581,21 @@ export default function ClassicLayout({ slug, initialRestaurant, initialView = '
                          <div className="flex items-start gap-4 rounded-3xl bg-blue-500 p-6 text-white animate-in fade-in duration-300">
                             <Info className="h-5 w-5 shrink-0 mt-1" />
                             <div>
-                                <p className="mb-1 text-xs font-medium uppercase tracking-wide opacity-80">{selectedDateLabel}</p>
+                                <p className="mb-1 text-xs font-medium opacity-80">{selectedDateLabel}</p>
                                 <p className="mb-1.5 font-semibold leading-none">Confirmation Queue</p>
                                 <p className="text-sm font-medium opacity-90">This date requires manual staff review. You&apos;ll receive a notification once confirmed.</p>
                             </div>
                          </div>
+                    )}
+
+                    {dayStatus?.daySetting?.isCapacityFull && (
+                        <div className="flex items-start gap-3 rounded-3xl border border-amber-200 bg-amber-50 p-4 text-sm font-medium text-amber-800 animate-in fade-in duration-300">
+                            <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5" />
+                            <div>
+                                <p className="mb-0.5 font-semibold">{t('public.capacityFullTitle')}</p>
+                                <p>{t('public.capacityFullDesc')}</p>
+                            </div>
+                        </div>
                     )}
                 </div>
 
@@ -546,17 +611,17 @@ export default function ClassicLayout({ slug, initialRestaurant, initialView = '
                         )}
                         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
                             <div className="space-y-2">
-                                <Label className="text-xs font-medium uppercase tracking-wide text-neutral-500">Full Name</Label>
+                                <Label className="text-xs font-medium text-neutral-500">Full Name</Label>
                                 <Input required className="h-14 rounded-2xl border-black/10 bg-neutral-50 px-5 text-base font-medium focus:bg-white focus:ring-4 focus:ring-black/5" value={resForm.customerName} onChange={e => setResForm({...resForm, customerName: e.target.value})} placeholder="Ex: John Doe" />
                             </div>
                             <div className="space-y-2">
-                                <Label className="text-xs font-medium uppercase tracking-wide text-neutral-500">Phone Number</Label>
+                                <Label className="text-xs font-medium text-neutral-500">Phone Number</Label>
                                 <Input required type="tel" className="h-14 rounded-2xl border-black/10 bg-neutral-50 px-5 text-base font-medium focus:bg-white focus:ring-4 focus:ring-black/5" value={resForm.customerPhone} onChange={e => setResForm({...resForm, customerPhone: e.target.value})} placeholder="+90 ..." />
                             </div>
                         </div>
 
                         <div className="space-y-4">
-                             <Label className="text-xs font-medium uppercase tracking-wide text-neutral-500">Date Selection</Label>
+                             <Label className="text-xs font-medium text-neutral-500">Date Selection</Label>
                              <div className="rounded-2xl border border-black/10 bg-white p-4">
                                 <ReservationCalendar value={selectedDate} onChange={setSelectedDate} tz={tz} accent="var(--primary)" />
                              </div>
@@ -564,7 +629,7 @@ export default function ClassicLayout({ slug, initialRestaurant, initialView = '
 
                         <div className="space-y-8 border-t border-black/5 pt-8">
                             <div className="space-y-4">
-                                <Label className="text-xs font-medium uppercase tracking-wide text-neutral-500">Preferred Time</Label>
+                                <Label className="text-xs font-medium text-neutral-500">Preferred Time</Label>
                                 <div className="grid grid-cols-4 gap-2">
                                     {[...times.lunch, ...times.dinner].map(t => (
                                         <Button key={t} type="button" variant={selectedTime === t ? 'default' : 'outline'} className={cn("h-11 rounded-xl text-sm font-medium border-black/10", selectedTime === t ? "bg-[var(--primary)] border-[var(--primary)] text-white" : "bg-white hover:bg-neutral-50")} onClick={() => setSelectedTime(t)}>{t}</Button>
@@ -572,7 +637,7 @@ export default function ClassicLayout({ slug, initialRestaurant, initialView = '
                                 </div>
                             </div>
                             <div className="space-y-4">
-                                <Label className="text-xs font-medium uppercase tracking-wide text-neutral-500">Guest Count</Label>
+                                <Label className="text-xs font-medium text-neutral-500">Guest Count</Label>
                                 <div className="flex flex-wrap gap-2">
                                     {Array.from({ length: maxPartySize }, (_, i) => i + 1).map(n => (
                                         <button key={n} type="button" onClick={() => setResForm(f => ({...f, guestCount: String(n)}))} className={cn("h-12 w-12 rounded-full border text-base font-semibold transition-all", resForm.guestCount === String(n) ? "bg-[var(--primary)] border-[var(--primary)] text-white scale-105" : "border-black/10 bg-white hover:bg-neutral-50")}>{n}</button>
@@ -581,9 +646,17 @@ export default function ClassicLayout({ slug, initialRestaurant, initialView = '
                             </div>
                         </div>
 
-                        <Button type="submit" disabled={checkingDay || (dayStatus && !dayStatus.daySetting?.isReservationEnabled && dayStatus.daySetting && !dayStatus.daySetting?.isFullyBooked)} className="h-16 w-full rounded-2xl bg-[var(--primary)] text-base font-semibold text-white hover:bg-[var(--primary-hover)] disabled:opacity-50">
+                        <ConsentFields
+                          slug={slug}
+                          consentAccepted={resForm.consentAccepted}
+                          onConsentAcceptedChange={(v) => setResForm({ ...resForm, consentAccepted: v })}
+                          marketingConsent={resForm.marketingConsent}
+                          onMarketingConsentChange={(v) => setResForm({ ...resForm, marketingConsent: v })}
+                        />
+
+                        <Button type="submit" disabled={checkingDay || (dayStatus?.daySetting?.isFullyBooked) || (dayStatus && !dayStatus.daySetting?.isReservationEnabled && dayStatus.daySetting)} className="h-16 w-full rounded-2xl bg-[var(--primary)] text-base font-semibold text-white hover:bg-[var(--primary-hover)] disabled:opacity-50">
                             {checkingDay ? "Checking Availability..." :
-                             (dayStatus && dayStatus.daySetting?.isFullyBooked) ? "Join Waitlist for this Day" :
+                             (dayStatus && dayStatus.daySetting?.isFullyBooked) ? "Fully Booked" :
                              (dayStatus && !dayStatus.daySetting?.isReservationEnabled && dayStatus.daySetting) ? "Sold Out" : "Send Booking Request"}
                         </Button>
                     </form>
@@ -600,35 +673,40 @@ export default function ClassicLayout({ slug, initialRestaurant, initialView = '
                   <CheckCircle2 className="h-10 w-10" />
               </div>
               <h1 className="mb-4 text-center text-3xl font-semibold tracking-tight text-neutral-900 md:text-4xl">
-                  {isWaitlistSuccess ? "Added to Waitlist!" : "Reservation Request Sent!"}
+                  Reservation Request Sent!
               </h1>
               <div className="mb-12 max-w-lg text-center text-lg font-light leading-relaxed text-neutral-500">
-                  {isWaitlistSuccess ? (
-                      <>
-                          You&apos;ve successfully joined the waitlist for <span className="font-medium text-neutral-900">{new Date(`${selectedDate}T00:00:00`).toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' })}</span>. You will receive an SMS if a table becomes available.
-                      </>
-                  ) : (
-                      <>
-                          You are going to receive an SMS confirmation soon. We are excited that you chose <span className="font-medium text-neutral-900">{restaurant.name}</span>.
-                      </>
-                  )}
-                  <p className="mt-4 text-sm font-medium uppercase tracking-wide text-emerald-600">See you soon!</p>
+                  You are going to receive an SMS confirmation soon. We are excited that you chose <span className="font-medium text-neutral-900">{restaurant.name}</span>.
+                  <p className="mt-4 text-sm font-medium text-emerald-600">See you soon!</p>
               </div>
-              {!isWaitlistSuccess && isPossiblyFullyBooked && (
+              {confirmationCode && (
+                  <div className="mb-8 flex flex-col items-center rounded-2xl border border-black/5 bg-neutral-50 px-8 py-5">
+                      <span className="text-xs font-medium text-neutral-400">{t('public.confirmationCodeLabel')}</span>
+                      <span className="mt-1 text-3xl font-semibold tracking-[0.2em] text-neutral-900">{confirmationCode}</span>
+                      <span className="mt-2 max-w-xs text-center text-xs text-neutral-400">{t('public.confirmationCodeHint')}</span>
+                  </div>
+              )}
+              {isPossiblyFullyBooked && (
                   <div className="mb-8 max-w-md rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm font-medium text-amber-800">
                       Heads up — we may be fully booked around this time, so your table hasn&apos;t been assigned yet. Our team will confirm by phone shortly.
                   </div>
               )}
               <div className="flex flex-col gap-3 sm:flex-row">
-                  <Button onClick={() => { setView('menu'); setIsWaitlistSuccess(false); }} variant="outline" className="h-14 rounded-full border-black/10 px-8 text-base font-medium">
-                      <Utensils className="mr-2 h-4 w-4" /> Explore Our Menu
-                  </Button>
-                  {menuOnly ? (
+                  {bookingOnly ? (
+                      <Button nativeButton={false} variant="outline" className="h-14 rounded-full border-black/10 px-8 text-base font-medium" render={<Link href={`/r/${slug}/menu`} />}>
+                          <Utensils className="mr-2 h-4 w-4" /> Explore Our Menu
+                      </Button>
+                  ) : (
+                      <Button onClick={() => { setView('menu'); }} variant="outline" className="h-14 rounded-full border-black/10 px-8 text-base font-medium">
+                          <Utensils className="mr-2 h-4 w-4" /> Explore Our Menu
+                      </Button>
+                  )}
+                  {menuOnly || bookingOnly ? (
                       <Button nativeButton={false} className="h-14 rounded-full bg-[var(--primary)] px-8 text-base font-medium text-white hover:bg-[var(--primary-hover)]" render={<Link href={`/r/${slug}`} />}>
                           Return to Home
                       </Button>
                   ) : (
-                      <Button onClick={() => { setView('welcome'); setIsWaitlistSuccess(false); }} className="h-14 rounded-full bg-[var(--primary)] px-8 text-base font-medium text-white hover:bg-[var(--primary-hover)]">
+                      <Button onClick={() => { setView('welcome'); }} className="h-14 rounded-full bg-[var(--primary)] px-8 text-base font-medium text-white hover:bg-[var(--primary-hover)]">
                           Return to Home
                       </Button>
                   )}
@@ -636,6 +714,7 @@ export default function ClassicLayout({ slug, initialRestaurant, initialView = '
           </div>
       )}
 
+      <OrderOnlineFab slug={slug} restaurant={restaurant} />
     </div>
   );
 }

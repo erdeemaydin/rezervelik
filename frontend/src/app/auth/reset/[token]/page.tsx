@@ -3,16 +3,22 @@
 import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { PasswordInput } from '@/components/auth/PasswordInput';
+import { PasswordStrength } from '@/components/auth/PasswordStrength';
 import { toast } from 'sonner';
 import api from '@/lib/api';
+import { getApiErrorMessage } from '@/lib/apiError';
+import { evaluatePassword } from '@/lib/passwordPolicy';
 import { ShieldCheck, Loader2, XCircle } from 'lucide-react';
+import { useTranslation } from '@/i18n/provider';
+import { BrandLogo } from '@/components/BrandLogo';
 
 export default function ResetPasswordPage() {
   const router = useRouter();
   const params = useParams();
+  const { t } = useTranslation();
   const token = params.token as string;
 
   const [status, setStatus] = useState<'checking' | 'valid' | 'invalid'>('checking');
@@ -20,6 +26,10 @@ export default function ResetPasswordPage() {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
+
+  const { valid } = evaluatePassword(password);
+  const matches = password.length > 0 && password === confirmPassword;
+  const canSubmit = valid && matches && !loading;
 
   useEffect(() => {
     let active = true;
@@ -38,50 +48,51 @@ export default function ResetPasswordPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (password !== confirmPassword) {
-      toast.error('Passwords do not match');
+    if (!valid) {
+      toast.error(t('auth.passwordPolicyUnmet'));
       return;
     }
-    if (password.length < 8) {
-      toast.error('Password must be at least 8 characters long');
+    if (password !== confirmPassword) {
+      toast.error(t('auth.passwordsDontMatch'));
       return;
     }
     try {
       setLoading(true);
       await api.post('/auth/reset-password', { token, password });
-      toast.success('Password updated. Please sign in with your new password.');
+      toast.success(t('auth.passwordUpdated'));
       router.push('/auth/login');
     } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Failed to reset password. The link may be expired.');
+      toast.error(getApiErrorMessage(error, t('auth.resetFailed')));
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-50 p-4">
-      <Card className="w-full max-w-md shadow-lg border-0">
-        <CardHeader className="space-y-1 bg-slate-900 text-white rounded-t-lg p-6">
-          <CardTitle className="text-2xl font-bold tracking-tight text-center">Reset Your Password</CardTitle>
-          <CardDescription className="text-slate-300 text-center text-xs">
-            Choose a new, secure password for your account.
+    <div className="min-h-screen flex flex-col items-center justify-center gap-6 bg-[#ecf0f5] p-4">
+      <BrandLogo size={40} tile="#1f6fb2" textClassName="text-2xl text-[#1f2d3d]" />
+      <Card className="w-full max-w-md gap-0 py-0 rounded-[4px] border border-[#9ca8b7] shadow-[0_1px_3px_rgba(0,0,0,0.1)] overflow-hidden">
+        <CardHeader className="space-y-1 bg-[#222d32] border-t-[3px] border-t-[#1f6fb2] text-white p-6">
+          <CardTitle className="text-2xl font-bold tracking-tight text-center">{t('auth.resetTitle')}</CardTitle>
+          <CardDescription className="text-[#b8c7ce] text-center text-xs">
+            {t('auth.resetSubtitle')}
           </CardDescription>
         </CardHeader>
         <CardContent className="p-6">
           {status === 'checking' && (
-            <div className="flex flex-col items-center justify-center gap-3 py-10 text-slate-400">
+            <div className="flex flex-col items-center justify-center gap-3 py-10 text-stone-400">
               <Loader2 className="w-6 h-6 animate-spin" />
-              <span className="text-xs font-bold uppercase tracking-widest">Verifying link…</span>
+              <span className="text-xs font-bold uppercase tracking-widest">{t('auth.verifyingLink')}</span>
             </div>
           )}
 
           {status === 'invalid' && (
             <div className="flex flex-col items-center justify-center gap-3 py-8 text-center">
               <XCircle className="w-10 h-10 text-red-500" />
-              <p className="text-sm font-bold text-slate-700">This reset link is invalid or has expired.</p>
-              <p className="text-xs text-slate-400">Ask a system administrator to generate a new one.</p>
+              <p className="text-sm font-bold text-stone-700">{t('auth.linkInvalid')}</p>
+              <p className="text-xs text-stone-400">{t('auth.linkInvalidHelp')}</p>
               <Button variant="outline" onClick={() => router.push('/auth/login')} className="mt-2 h-10 text-xs font-bold uppercase">
-                Back to Sign In
+                {t('auth.backToSignIn')}
               </Button>
             </div>
           )}
@@ -95,15 +106,37 @@ export default function ResetPasswordPage() {
                 </div>
               )}
               <div className="space-y-2">
-                <Label className="text-xs font-bold text-slate-700 uppercase">New Password</Label>
-                <Input type="password" required value={password} onChange={(e) => setPassword(e.target.value)} className="h-11" placeholder="••••••••" />
+                <Label className="text-xs font-bold text-stone-700 uppercase">{t('auth.newPassword')}</Label>
+                <PasswordInput
+                  required
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  autoComplete="new-password"
+                  className="h-11"
+                  placeholder="••••••••"
+                  showLabel={t('auth.showPassword')}
+                  hideLabel={t('auth.hidePassword')}
+                />
+                <PasswordStrength password={password} className="pt-1" />
               </div>
               <div className="space-y-2">
-                <Label className="text-xs font-bold text-slate-700 uppercase">Confirm Password</Label>
-                <Input type="password" required value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} className="h-11" placeholder="••••••••" />
+                <Label className="text-xs font-bold text-stone-700 uppercase">{t('auth.confirmPassword')}</Label>
+                <PasswordInput
+                  required
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  autoComplete="new-password"
+                  className="h-11"
+                  placeholder="••••••••"
+                  showLabel={t('auth.showPassword')}
+                  hideLabel={t('auth.hidePassword')}
+                />
+                {confirmPassword.length > 0 && !matches && (
+                  <p className="text-xs font-medium text-red-600">{t('auth.passwordsDontMatch')}</p>
+                )}
               </div>
-              <Button type="submit" disabled={loading} className="w-full h-11 bg-emerald-600 hover:bg-emerald-700 text-sm font-bold uppercase tracking-wide mt-4">
-                {loading ? 'Updating…' : 'Update Password'}
+              <Button type="submit" disabled={!canSubmit} className="w-full h-11 bg-stone-900 hover:bg-stone-800 text-sm font-bold uppercase tracking-wide mt-2">
+                {loading ? t('auth.updating') : t('auth.updatePassword')}
               </Button>
             </form>
           )}

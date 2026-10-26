@@ -8,27 +8,30 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Button } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
 
-export function LanguageSwitcher() {
+// `triggerClassName` lets a host surface restyle the trigger — e.g. the admin
+// top navbar, where the default muted-gray icon would be illegible on the
+// skin color.
+export function LanguageSwitcher({ triggerClassName }: { triggerClassName?: string } = {}) {
   const { locale, setLocale, t } = useTranslation();
 
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger className="flex items-center justify-center h-8 w-8 text-slate-500 hover:text-slate-900 rounded-md hover:bg-slate-100 transition-colors">
+      <DropdownMenuTrigger className={cn("flex items-center justify-center h-8 w-8 text-muted-foreground hover:text-foreground rounded-md hover:bg-muted transition-colors", triggerClassName)}>
         <Globe className="h-4 w-4" />
         <span className="sr-only">{t('systemAdmin.language') || 'Language'}</span>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-32 bg-white rounded-md shadow-lg border border-slate-100">
+      <DropdownMenuContent align="end" className="w-32 bg-card rounded-md shadow-lg border border-border">
         <DropdownMenuItem 
-          className={`text-xs cursor-pointer ${locale === 'tr' ? 'bg-slate-50 font-bold' : ''}`}
-          onClick={() => setLocale('tr')}
+          className={`text-xs cursor-pointer ${locale === 'tr' ? 'bg-muted font-bold' : ''}`}
+          onClick={() => setLocale('tr', true)}
         >
           Türkçe
         </DropdownMenuItem>
         <DropdownMenuItem 
-          className={`text-xs cursor-pointer ${locale === 'en' ? 'bg-slate-50 font-bold' : ''}`}
-          onClick={() => setLocale('en')}
+          className={`text-xs cursor-pointer ${locale === 'en' ? 'bg-muted font-bold' : ''}`}
+          onClick={() => setLocale('en', true)}
         >
           English
         </DropdownMenuItem>

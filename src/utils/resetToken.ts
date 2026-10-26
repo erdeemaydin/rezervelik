@@ -13,10 +13,16 @@ export function hashResetToken(rawToken: string): string {
 
 // Mint a new reset token: 256 bits of CSPRNG entropy plus its at-rest hash and expiry.
 export function generateResetToken() {
+  return generateHashedToken(RESET_TOKEN_TTL_MS);
+}
+
+// Same CSPRNG-token-plus-hash shape as generateResetToken, but with a caller-chosen
+// TTL — used for longer-lived tokens like a tenant's one-time setup invite.
+export function generateHashedToken(ttlMs: number) {
   const rawToken = crypto.randomBytes(32).toString('hex');
   return {
     rawToken,
     tokenHash: hashResetToken(rawToken),
-    expiresAt: new Date(Date.now() + RESET_TOKEN_TTL_MS),
+    expiresAt: new Date(Date.now() + ttlMs),
   };
 }

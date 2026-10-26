@@ -2,18 +2,15 @@
 
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useTranslation } from "@/i18n/provider";
-import AdminLayout from '@/components/layout/AdminLayout';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
+import { TimeSelect } from '@/components/ui/time-select';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
-import { 
-  Users, Clock, Search, Calendar, Plus, Star, Phone, Check, X, Bell, 
-  ChevronRight, RefreshCw, Smile, ArrowRight, UserCheck, Flame, Leaf, HelpCircle, Utensils, RotateCcw
-} from 'lucide-react';
+import { Users, Clock, MagnifyingGlass, Calendar, Plus, Star, Phone, Check, X, Bell, ArrowClockwise, ArrowCounterClockwise, Hash, Pencil, NoteBlank } from '@phosphor-icons/react';
 import api from '@/lib/api';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
@@ -31,6 +28,7 @@ interface Reservation {
   notes: string | null;
   internalNote: string | null;
   isVIP: boolean;
+  confirmationCode: string | null;
 }
 
 interface WaitlistEntry {
@@ -46,6 +44,14 @@ interface WaitlistEntry {
   targetDate: string | null;
 }
 
+// Today's date as YYYY-MM-DD (UTC), matching the format the backend's
+// startDate/endDate reservation filters and WaitlistEntry.targetDate both
+// use. Called fresh at each use site (not memoized/hoisted to a constant)
+// so a host-stand tab left open across midnight still re-evaluates to the
+// correct day on its next fetch/filter, instead of freezing on whichever
+// day the page happened to load.
+const todayDateStr = () => new Date().toISOString().split('T')[0];
+
 export default function HostConsolePage() {
   const { t } = useTranslation();
   const confirm = useConfirm();
@@ -59,7 +65,7 @@ export default function HostConsolePage() {
   const [waitlistHistory, setWaitlistHistory] = useState<WaitlistEntry[]>([]);
   const [tables, setTables] = useState<any[]>([]);
   const [categories, setCategories] = useState<any[]>([]);
-  
+
   // History Drawer State
   const [isHistoryDrawerOpen, setIsHistoryDrawerOpen] = useState(false);
 
@@ -94,44 +100,112 @@ export default function HostConsolePage() {
 
   // Time Tick for Waitlist elapsed calculations
   const [tick, setTick] = useState(0);
+  // Tracks whether any fetch has ever fully succeeded, so a later background
+  // refresh failure (e.g. a deploy restart) can fail silently instead of
+  // interrupting a host who already has working data on screen.
+  const hasLoadedOnce = useRef(false);
+  // Gates the full-screen loading spinner to the very first load only — once
+  // the screen has data, later `loading` flips (manual refresh button) must
+  // not blank the list out from under a host who's mid-action, which is what
+  // was causing the "panel refreshes/flashes on every click" complaint.
+  const [initialLoadDone, setInitialLoadDone] = useState(false);
+
+  // A host stand refetches constantly (every action, every 30s tick) and a
+  // backend restart/blip is common during deploys — one failed round-trip
+  // shouldn't throw an alarming error at someone mid-shift. Retries silently
+  // once before surfacing anything, and only toasts if data has never loaded
+  // (a background refresh failing while the screen already has data just
+  // keeps the stale data up rather than interrupting with an error).
+  const fetchData = async (isRetry = false) => {
+    try {
+      if (!isRetry) setLoading(true);
+      // Each resource is fetched independently: one flaky/slow endpoint (e.g. a
+      // backend restart mid-request) must not wipe out the others that succeeded,
+      // which is what Promise.all previously did by rejecting the whole batch.
+      // The host stand only ever reads today's reservations (every consumer below
+      // filters with `startsWith(todayStr)`), so ask the server to scope the query
+      // to today instead of pulling the tenant's full reservation history.
+      const todayStr = todayDateStr();
+      const [resRes, waitlistRes, waitlistHistoryRes, tablesRes, catRes] = await Promise.allSettled([
+        api.get('/reservations', { params: { startDate: todayStr, endDate: todayStr } }),
+        api.get('/wait-time/entries'),
+        api.get('/wait-time/entries', { params: { history: 'true' } }),
+        api.get('/tables'),
+        api.get('/categories'),
+      ]);
+      if (resRes.status === 'fulfilled') setReservations(resRes.value.data.data);
+      if (waitlistRes.status === 'fulfilled') setWaitlist(waitlistRes.value.data.data);
+      if (waitlistHistoryRes.status === 'fulfilled') setWaitlistHistory(waitlistHistoryRes.value.data.data);
+      if (tablesRes.status === 'fulfilled') setTables(tablesRes.value.data.data);
+      if (catRes.status === 'fulfilled') setCategories(catRes.value.data.data);
+
+      const coreResults = [resRes, waitlistRes, waitlistHistoryRes, tablesRes, catRes];
+      const failed = coreResults.filter((r) => r.status === 'rejected');
+      if (failed.length > 0) {
+        for (const r of failed) console.error('Failed to fetch host console data', (r as PromiseRejectedResult).reason);
+        // All 5 failing together usually means the backend was mid-restart for
+        // that one round-trip (not a lasting outage) — one silent retry clears
+        // most of these without ever bothering the host.
+        if (!isRetry && failed.length === coreResults.length) {
+          setTimeout(() => fetchData(true), 1500);
+          return;
+        }
+        if (hasLoadedOnce.current) {
+          // Background refresh failed but the screen already has data — stay quiet.
+        } else {
+          toast.error(t("host.toastFailedLoad"));
+        }
+      } else {
+        hasLoadedOnce.current = true;
+      }
+    } finally {
+      if (!isRetry) {
+        setLoading(false);
+        setInitialLoadDone(true);
+      }
+    }
+  };
+
+  // Lightweight background refresh used after a host action (confirm/seat/
+  // cancel, add walk-in, save reservation) and on the 30s auto-refresh tick.
+  // Only re-fetches the two lists that actually change from those actions
+  // (tables/categories don't), and never touches `loading`, so the row list
+  // stays mounted and visible the whole time instead of flashing to a spinner.
+  const refreshActivity = async () => {
+    try {
+      const todayStr = todayDateStr();
+      const [resRes, waitlistRes, waitlistHistoryRes] = await Promise.allSettled([
+        api.get('/reservations', { params: { startDate: todayStr, endDate: todayStr } }),
+        api.get('/wait-time/entries'),
+        api.get('/wait-time/entries', { params: { history: 'true' } }),
+      ]);
+      if (resRes.status === 'fulfilled') setReservations(resRes.value.data.data);
+      if (waitlistRes.status === 'fulfilled') setWaitlist(waitlistRes.value.data.data);
+      if (waitlistHistoryRes.status === 'fulfilled') setWaitlistHistory(waitlistHistoryRes.value.data.data);
+    } catch (err) {
+      console.error('Failed background refresh', err);
+    }
+  };
 
   useEffect(() => {
     fetchData();
     const interval = setInterval(() => {
       setTick(prev => prev + 1);
-    }, 30000); // Trigger re-render every 30 seconds for timers
+      // Keep data live in the background every 30s so a host doesn't have to
+      // hit refresh to see another device's changes; refreshActivity never
+      // touches `loading`, so this never blanks or flashes the list.
+      refreshActivity();
+    }, 30000);
     return () => clearInterval(interval);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
-  const fetchData = async () => {
-    try {
-      setLoading(true);
-      const [resRes, waitlistRes, waitlistHistoryRes, tablesRes, catRes] = await Promise.all([
-        api.get('/reservations'),
-        api.get('/wait-time/entries'),
-        api.get('/wait-time/entries', { params: { history: 'true' } }),
-        api.get('/tables'),
-        api.get('/categories')
-      ]);
-      setReservations(resRes.data.data);
-      setWaitlist(waitlistRes.data.data);
-      setWaitlistHistory(waitlistHistoryRes.data.data);
-      setTables(tablesRes.data.data);
-      setCategories(catRes.data.data);
-    } catch (error) {
-      console.error('Failed to fetch data', error);
-      toast.error(t("host.toastFailedLoad"));
-    } finally {
-      setLoading(false);
-    }
-  };
 
   // Revert reservation status
   const handleRevertResStatus = async (id: string, status: string) => {
     try {
       await api.put(`/reservations/${id}/status`, { status });
       toast.success(t("host.toastActionReverted"));
-      fetchData();
+      refreshActivity();
     } catch (err) {
       toast.error(t("host.toastRevertFailed"));
     }
@@ -165,7 +239,7 @@ export default function HostConsolePage() {
           }
         }
       });
-      fetchData();
+      refreshActivity();
     } catch (err) {
       toast.error(t("host.toastFailedUpdateStatus"));
     }
@@ -176,7 +250,7 @@ export default function HostConsolePage() {
     try {
       await api.put(`/wait-time/entries/${entryId}/status`, { status });
       toast.success(t("host.toastActionReverted"));
-      fetchData();
+      refreshActivity();
     } catch (err) {
       toast.error(t("host.toastRevertFailed"));
     }
@@ -210,7 +284,7 @@ export default function HostConsolePage() {
           }
         }
       });
-      fetchData();
+      refreshActivity();
     } catch (err) {
       toast.error(t("host.toastFailedUpdateStatus"));
     }
@@ -243,7 +317,7 @@ export default function HostConsolePage() {
         quotedWaitTime: '15',
         notes: ''
       });
-      fetchData();
+      refreshActivity();
     } catch (err: any) {
       toast.error(err.response?.data?.error || t("host.toastAddGuestFailed"));
     }
@@ -253,8 +327,7 @@ export default function HostConsolePage() {
   const handleResSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const todayString = new Date().toISOString().split('T')[0];
-      const combinedDateTime = new Date(`${todayString}T${resForm.selectedTime}`);
+      const combinedDateTime = new Date(`${todayDateStr()}T${resForm.selectedTime}`);
       
       const payload = {
         customerName: resForm.customerName,
@@ -276,7 +349,7 @@ export default function HostConsolePage() {
       }
       setIsResModalOpen(false);
       setSelectedReservation(null);
-      fetchData();
+      refreshActivity();
     } catch (err: any) {
       toast.error(err.response?.data?.error || t("host.toastSaveResFailed"));
     }
@@ -300,7 +373,7 @@ export default function HostConsolePage() {
 
   // Filtered lists
   const filteredReservations = useMemo(() => {
-    const todayStr = new Date().toISOString().split('T')[0];
+    const todayStr = todayDateStr();
     
     return reservations.filter(res => {
       // Host view only focuses on active/upcoming items for TODAY
@@ -314,7 +387,10 @@ export default function HostConsolePage() {
       const nameMatch = res.customerName.toLowerCase().includes(searchQuery.toLowerCase());
       const phoneMatch = res.customerPhone.includes(searchQuery);
       const tableMatch = res.table?.identifier.toLowerCase().includes(searchQuery.toLowerCase()) || false;
-      const matchesSearch = nameMatch || phoneMatch || tableMatch;
+      // A guest reading their confirmation code off an SMS is a faster, more
+      // reliable lookup than a name search when the queue is long.
+      const codeMatch = !!res.confirmationCode && res.confirmationCode.includes(searchQuery.trim());
+      const matchesSearch = nameMatch || phoneMatch || tableMatch || codeMatch;
 
       if (!matchesSearch) return false;
 
@@ -326,7 +402,7 @@ export default function HostConsolePage() {
   }, [reservations, searchQuery, selectedHour]);
 
   const reservationsHistory = useMemo(() => {
-    const todayStr = new Date().toISOString().split('T')[0];
+    const todayStr = todayDateStr();
     return reservations.filter(res => {
       const isToday = res.startTime.startsWith(todayStr);
       const isResolved = ['COMPLETED', 'CANCELLED', 'NO_SHOW'].includes(res.status);
@@ -336,7 +412,7 @@ export default function HostConsolePage() {
 
   // Filter waitlist to walk-ins (targetDate === null) or today's date-specific waitlist
   const todayWaitlist = useMemo(() => {
-    const todayStr = new Date().toISOString().split('T')[0];
+    const todayStr = todayDateStr();
     return waitlist.filter(entry => entry.targetDate === null || entry.targetDate === todayStr);
   }, [waitlist]);
 
@@ -349,7 +425,7 @@ export default function HostConsolePage() {
   }, [todayWaitlist, searchQuery]);
 
   const filteredWaitlistHistory = useMemo(() => {
-    const todayStr = new Date().toISOString().split('T')[0];
+    const todayStr = todayDateStr();
     return waitlistHistory.filter(entry => entry.targetDate === null || entry.targetDate === todayStr);
   }, [waitlistHistory]);
 
@@ -372,62 +448,62 @@ export default function HostConsolePage() {
   const getStatusBadgeClass = (status: string) => {
     switch (status) {
       case 'PENDING':
-        return 'bg-amber-100 text-amber-800 border-amber-200';
+        return 'bg-amber-100 dark:bg-amber-950/40 text-amber-800 dark:text-amber-400 border-amber-200 dark:border-amber-800/50';
       case 'CONFIRMED':
         return 'bg-blue-100 text-blue-800 border-blue-200 animate-pulse';
       case 'NOTIFIED':
-        return 'bg-purple-100 text-purple-800 border-purple-200';
+        return 'bg-purple-100 dark:bg-purple-950/40 text-purple-800 dark:text-purple-400 border-purple-200 dark:border-purple-800/50';
       case 'SEATED':
-        return 'bg-emerald-100 text-emerald-800 border-emerald-200';
+        return 'bg-emerald-100 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800/50';
       default:
-        return 'bg-slate-100 text-slate-800 border-slate-200';
+        return 'bg-muted text-foreground border-border';
     }
   };
 
   return (
-    <AdminLayout>
+    <>
       <div className="flex flex-col gap-2 sm:gap-3 max-w-7xl mx-auto h-[calc(100dvh-84px)] lg:h-[calc(100vh-120px)]">
 
-        {/* Main Header / iPad Top Panel */}
-        <div className="bg-slate-900 rounded-xl px-4 py-2.5 text-white shadow-lg flex flex-wrap items-center justify-between gap-3 shrink-0">
-          <div className="flex items-center gap-2.5 min-w-0">
-            <div className="bg-blue-600 p-1.5 rounded-lg shrink-0">
-              <Smile className="w-5 h-5 text-white stroke-[2.5]" />
-            </div>
-            <div className="min-w-0">
-              <h1 className="text-base font-black tracking-tight flex items-center gap-2 truncate">
-                {t("host.hostConsoleTitle")}
-                <Badge variant="outline" className="hidden sm:inline-flex text-[9px] font-black border-blue-400 text-blue-400 uppercase tracking-widest px-1.5 py-0 rounded-sm">{t("host.ipadMode")}</Badge>
-              </h1>
-              <p className="hidden sm:block text-slate-400 text-[10px] font-bold uppercase tracking-wider">{t("host.hostConsoleSubtitle")}</p>
-            </div>
-          </div>
+        {/* Main Header — stripped down to what's actually clickable: the tab
+            toggle and the primary action. Every piece of text here truncates/
+            shrinks with the available space instead of assuming a fixed width,
+            so a longer localization (e.g. Turkish) reflows instead of overflowing. */}
+        <div className="bg-slate-900 rounded-xl px-3 sm:px-4 py-3 text-white shadow-lg flex flex-wrap items-center justify-between gap-2 sm:gap-3 shrink-0">
+          <h1 className="text-base sm:text-lg font-black tracking-tight truncate min-w-0 shrink">
+            {t("host.hostConsoleTitle")}
+          </h1>
 
           {/* Toggle Switch & Quick Action Button. On phones it takes a full row
-              below the title; the tab group shrinks + scrolls so nothing overflows. */}
+              below the title; the two tabs share the row equally and each
+              truncates its own label independently, so neither one can push the
+              other (or the count) out of view. */}
           <div className="flex items-center gap-2 w-full sm:w-auto min-w-0">
-            <div className="bg-slate-800 p-1 rounded-lg border border-slate-700 flex overflow-x-auto hide-scrollbar min-w-0 flex-1 sm:flex-none">
+            <div className="bg-slate-800 p-1 rounded-lg border border-slate-700 flex min-w-0 flex-1 sm:flex-none">
               <button
                 onClick={() => { setActiveTab('reservations'); }}
                 className={cn(
-                  "px-2.5 sm:px-3.5 h-9 text-[11px] font-black uppercase rounded-md transition-all flex items-center gap-1.5 border border-transparent whitespace-nowrap",
+"px-2 sm:px-4 h-11 sm:h-12 text-[11px] sm:text-xs font-semibold rounded-md transition-all flex items-center justify-center gap-1.5 sm:gap-2 border border-transparent active:scale-[0.97] min-w-0 flex-1 sm:flex-none",
                   activeTab === 'reservations'
                     ? "bg-blue-600 text-white shadow-md shadow-blue-600/20 border-blue-500"
-                    : "text-slate-400 hover:text-white"
+                    : "text-muted-foreground hover:text-white"
                 )}
               >
-                <Calendar className="w-3.5 h-3.5 shrink-0" /> {t("host.reservationsTab")} ({reservations.filter(r => r.startTime.startsWith(new Date().toISOString().split('T')[0]) && r.status !== 'CANCELLED' && r.status !== 'COMPLETED').length})
+                <Calendar className="w-4 h-4 shrink-0" />
+                <span className="truncate min-w-0">{t("host.reservationsTab")}</span>
+                <span className="shrink-0">({reservations.filter(r => r.startTime.startsWith(todayDateStr()) && r.status !== 'CANCELLED' && r.status !== 'COMPLETED').length})</span>
               </button>
               <button
                 onClick={() => { setActiveTab('waitlist'); }}
                 className={cn(
-                  "px-2.5 sm:px-3.5 h-9 text-[11px] font-black uppercase rounded-md transition-all flex items-center gap-1.5 border border-transparent whitespace-nowrap",
+"px-2 sm:px-4 h-11 sm:h-12 text-[11px] sm:text-xs font-semibold rounded-md transition-all flex items-center justify-center gap-1.5 sm:gap-2 border border-transparent active:scale-[0.97] min-w-0 flex-1 sm:flex-none",
                   activeTab === 'waitlist'
                     ? "bg-blue-600 text-white shadow-md shadow-blue-600/20 border-blue-500"
-                    : "text-slate-400 hover:text-white"
+                    : "text-muted-foreground hover:text-white"
                 )}
               >
-                <Clock className="w-3.5 h-3.5 shrink-0" /> {t("host.waitlistQueueTab")} ({todayWaitlist.length})
+                <Clock className="w-4 h-4 shrink-0" />
+                <span className="truncate min-w-0">{t("host.waitlistQueueTab")}</span>
+                <span className="shrink-0">({todayWaitlist.length})</span>
               </button>
             </div>
 
@@ -450,59 +526,59 @@ export default function HostConsolePage() {
                   setIsWalkinModalOpen(true);
                 }
               }}
-              className="bg-emerald-600 hover:bg-emerald-700 text-white h-9 px-3 sm:px-4 font-black uppercase tracking-wider text-[11px] rounded-lg shadow-md shadow-emerald-600/20 active:scale-95 transition-all whitespace-nowrap"
+              className="bg-emerald-600 hover:bg-emerald-700 text-white h-11 sm:h-12 px-3 sm:px-5 font-semibold text-xs rounded-lg shadow-md shadow-emerald-600/20 active:scale-95 transition-all shrink-0"
             >
-              <Plus className="w-4 h-4 sm:mr-1.5 stroke-[3]" />
-              <span className="hidden sm:inline">{activeTab === 'reservations' ? t("host.bookTableBtn") : t("host.addWalkinBtn")}</span>
+              <Plus className="w-5 h-5 md:mr-1.5 stroke-[3]" />
+              <span className="hidden md:inline truncate">{activeTab === 'reservations' ? t("host.bookTableBtn") : t("host.addWalkinBtn")}</span>
             </Button>
           </div>
         </div>
 
         {/* Global Filter Bar */}
-        <div className="bg-white rounded-xl p-2 border border-slate-200 shadow-sm flex items-center gap-2 shrink-0">
+        <div className="bg-card rounded-xl p-2 border border-border shadow-sm flex items-center gap-2 shrink-0">
           <div className="relative flex-1 w-full">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+            <MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <Input
               placeholder={t("host.searchPlaceholder")}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-9 h-10 text-sm font-bold bg-slate-50 border-slate-200 focus:bg-white focus:ring-4 focus:ring-blue-500/10 rounded-lg transition-all"
+              className="pl-9 h-12 text-sm font-bold bg-muted border-border focus:bg-card focus:ring-4 focus:ring-blue-500/10 rounded-lg transition-all"
             />
           </div>
 
           <Button
             variant="outline"
             onClick={() => setIsHistoryDrawerOpen(true)}
-            className="h-10 px-3 shrink-0 rounded-lg border-slate-200 hover:bg-slate-50 flex items-center gap-1.5 font-bold text-[11px] uppercase text-slate-600 whitespace-nowrap"
+            className="h-12 px-3.5 shrink-0 rounded-lg border-border hover:bg-muted flex items-center gap-1.5 font-bold text-[11px] text-muted-foreground whitespace-nowrap"
           >
-            <RotateCcw className="w-4 h-4 text-blue-600 stroke-[2.5]" />
+            <ArrowCounterClockwise className="w-4 h-4 text-blue-600 stroke-[2.5]" />
             <span className="hidden sm:inline">{t("host.activityLogBtn")}</span>
           </Button>
 
           <Button
             variant="outline"
-            onClick={fetchData}
+            onClick={() => fetchData()}
             disabled={loading}
-            className="h-10 w-10 shrink-0 rounded-lg border-slate-200 hover:bg-slate-50"
+            className="h-12 w-12 shrink-0 rounded-lg border-border hover:bg-muted"
           >
-            <RefreshCw className={cn("w-4 h-4 text-slate-600", loading && "animate-spin")} />
+            <ArrowClockwise className={cn("w-4 h-4 text-muted-foreground", loading && "animate-spin")} />
           </Button>
         </div>
 
         {/* Content Pane */}
-        <div className="flex-1 min-h-0 overflow-hidden bg-slate-50 border border-slate-200 rounded-xl shadow-inner p-2.5">
-          
+        <div className="flex-1 min-h-0 overflow-hidden bg-muted border border-border rounded-xl shadow-inner p-2">
+
           {/* 1. RESERVATIONS VIEW */}
           {activeTab === 'reservations' && (
-            <div className="flex flex-col sm:flex-row gap-3 h-full">
+            <div className="flex flex-col sm:flex-row gap-2 h-full">
 
               {/* Hour Slot Navigator Panel (Left Side on iPad) */}
-              <div className="w-full sm:w-32 lg:w-40 shrink-0 bg-white border border-slate-200 rounded-lg p-2 flex sm:flex-col gap-1.5 overflow-x-auto sm:overflow-y-auto hide-scrollbar">
-                <div className="hidden sm:block text-[9px] font-black uppercase text-slate-400 tracking-wider mb-1 px-2">{t("host.filterByTime")}</div>
+              <div className="w-full sm:w-28 lg:w-32 shrink-0 bg-card border border-border rounded-lg p-1.5 flex sm:flex-col gap-1.5 overflow-x-auto sm:overflow-y-auto hide-scrollbar">
+                <div className="hidden sm:block text-[9px] font-semibold text-muted-foreground mb-0.5 px-1.5">{t("host.filterByTime")}</div>
                 {hourSlots.map((hour) => {
                   const isActive = selectedHour === hour.value;
                   const resInHour = reservations.filter(r => {
-                    const isToday = r.startTime.startsWith(new Date().toISOString().split('T')[0]);
+                    const isToday = r.startTime.startsWith(todayDateStr());
                     const hourMatch = hour.value === 'all' || new Date(r.startTime).getHours() === hour.value;
                     return isToday && hourMatch && r.status !== 'CANCELLED' && r.status !== 'COMPLETED';
                   }).length;
@@ -512,17 +588,17 @@ export default function HostConsolePage() {
                       key={hour.label}
                       onClick={() => setSelectedHour(hour.value)}
                       className={cn(
-                        "h-9 shrink-0 px-2.5 rounded-md font-black text-[11px] uppercase text-left transition-all flex items-center justify-between gap-1 border whitespace-nowrap",
+"h-10 min-w-0 shrink-0 px-2 rounded-md font-semibold text-[11px] text-left transition-all flex items-center justify-between gap-1 border active:scale-[0.97]",
                         isActive
                           ? "bg-slate-900 border-slate-900 text-white shadow-md shadow-slate-900/10"
-                          : "bg-slate-50 border-slate-100 text-slate-600 hover:bg-slate-100"
+                          : "bg-muted border-border text-muted-foreground hover:bg-muted"
                       )}
                     >
-                      <span>{hour.label}</span>
+                      <span className="min-w-0 flex-1 truncate">{hour.label}</span>
                       {resInHour > 0 && (
                         <span className={cn(
-                          "px-1.5 py-0 rounded-full text-[9px] font-black tracking-tight shrink-0",
-                          isActive ? "bg-blue-600 text-white" : "bg-slate-200 text-slate-800"
+                          "min-w-[16px] text-center px-1 py-0 rounded-full text-[9px] font-black tracking-tight shrink-0",
+                          isActive ? "bg-blue-600 text-white" : "bg-muted text-foreground"
                         )}>
                           {resInHour}
                         </span>
@@ -532,96 +608,119 @@ export default function HostConsolePage() {
                 })}
               </div>
 
-              {/* Reservations Card List (Right/Main Side on iPad) */}
-              <div className="flex-1 min-h-0 overflow-y-auto pr-1 space-y-2.5">
-                {loading ? (
+              {/* Reservations Row List (Right/Main Side on iPad) — one reservation per
+                  line, always a horizontal row (no breakpoint dependency, unlike the
+                  old xl:flex-row card which never went horizontal on any iPad size).
+                  Maximizes how many reservations are visible without scrolling. */}
+              <div className="flex-1 min-h-0 overflow-y-auto pr-1 space-y-1.5">
+                {loading && !initialLoadDone ? (
                   <div className="h-64 flex flex-col items-center justify-center gap-3">
-                    <RefreshCw className="w-8 h-8 animate-spin text-blue-600" />
-                    <div className="text-slate-400 text-xs font-black uppercase tracking-widest">{t("host.updatingTimeline")}</div>
+                    <ArrowClockwise className="w-8 h-8 animate-spin text-blue-600" />
+                    <div className="text-muted-foreground text-xs font-semibold">{t("host.updatingTimeline")}</div>
                   </div>
                 ) : filteredReservations.length === 0 ? (
-                  <div className="bg-white border border-slate-200 border-dashed rounded-xl p-16 text-center">
+                  <div className="bg-card border border-border border-dashed rounded-xl p-16 text-center">
                     <Calendar className="w-12 h-12 text-slate-300 mx-auto mb-4" />
-                    <h3 className="font-black text-slate-800 uppercase tracking-tight text-sm mb-1">{t("host.noActiveBookings")}</h3>
-                    <p className="text-slate-400 text-xs max-w-xs mx-auto">{t("host.noActiveBookingsDesc")}</p>
+                    <h3 className="font-semibold text-foreground tracking-tight text-sm mb-1">{t("host.noActiveBookings")}</h3>
+                    <p className="text-muted-foreground text-xs max-w-xs mx-auto">{t("host.noActiveBookingsDesc")}</p>
                   </div>
                 ) : (
                   filteredReservations.map((res) => {
                     const dateObj = new Date(res.startTime);
                     const formattedTime = dateObj.toLocaleTimeString([], { hour12: false, hour: '2-digit', minute: '2-digit' });
-                    
+                    const hasNote = !!(res.notes || res.internalNote);
+
                     return (
                       <div
                         key={res.id}
                         className={cn(
-                          "bg-white border rounded-xl shadow-sm p-3 transition-all flex flex-col xl:flex-row items-start xl:items-center justify-between gap-4 hover:shadow-md",
-                          res.isVIP ? "border-amber-300 bg-amber-50/20" : "border-slate-200"
+                          "bg-card border rounded-lg shadow-sm h-24 px-3 flex items-center gap-2 transition-all hover:shadow-md",
+                          res.isVIP ? "border-amber-300 dark:border-amber-800/50 bg-amber-50/20 dark:bg-amber-950/40" : "border-border"
                         )}
                       >
-                        {/* Left Section: Time & Guest Info */}
-                        <div className="flex gap-4 min-w-0">
-                          <div className="h-12 w-16 bg-slate-900 text-white rounded-lg flex flex-col items-center justify-center shrink-0">
-                            <span className="text-[8px] font-black uppercase text-slate-400 tracking-wider leading-none mb-0.5">{t("host.time")}</span>
-                            <span className="text-sm font-black tracking-tight leading-none">{formattedTime}</span>
-                          </div>
-                          <div className="space-y-1">
-                            <div className="flex items-center gap-2 flex-wrap">
-                              <span className="font-black text-slate-900 text-sm uppercase tracking-tight">{res.customerName}</span>
-                              {res.isVIP && (
-                                <Badge className="bg-amber-500 text-white border-transparent text-[8px] font-black uppercase px-2 py-0.5 rounded-sm">
-                                  <Star className="w-2.5 h-2.5 mr-1 fill-white" /> {t("host.vip")}
-                                </Badge>
-                              )}
-                              <Badge className={cn("text-[9px] font-black uppercase px-2 py-0.5 rounded-sm border", getStatusBadgeClass(res.status))}>
-                                {res.status}
-                              </Badge>
-                            </div>
-                            <div className="flex items-center gap-4 text-xs font-bold text-slate-500 uppercase tracking-wide">
-                              <span className="flex items-center gap-1"><Users className="w-3.5 h-3.5" /> {res.guestCount} {t("host.guests")}</span>
-                              {res.table && <span className="flex items-center gap-1 text-blue-600 bg-blue-50 px-2 py-0.5 rounded"><Utensils className="w-3.5 h-3.5" /> {t("host.table")} {res.table.identifier}</span>}
-                              {!res.table && <span className="flex items-center gap-1 text-slate-400">{t("host.noTableAssigned")}</span>}
-                            </div>
-                            {res.notes && (
-                              <p className="text-slate-500 text-[11px] font-medium leading-relaxed bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-100 mt-2 max-w-lg">
-                                <span className="font-bold text-slate-700">{t("host.guestNoteLabel")}</span> {res.notes}
-                              </p>
-                            )}
-                            {res.internalNote && (
-                              <p className="text-amber-800 text-[11px] font-medium leading-relaxed bg-amber-50/50 px-3 py-1.5 rounded-lg border border-amber-100 mt-1 max-w-lg">
-                                <span className="font-bold text-amber-900">{t("host.hostNoteLabel")}</span> {res.internalNote}
-                              </p>
-                            )}
+                        {/* Status (top) + Time (bottom) */}
+                        <div className="w-16 shrink-0 flex flex-col items-center justify-center gap-1">
+ <Badge className={cn("text-[7px] font-semibold px-1 py-0 rounded-sm border leading-tight shrink-0 whitespace-nowrap", getStatusBadgeClass(res.status))}>
+                            {res.status}
+                          </Badge>
+                          <div className="text-sm font-black text-foreground tracking-tight leading-tight">{formattedTime}</div>
+                        </div>
+
+                        <div className="w-px h-14 bg-muted shrink-0" />
+
+                        {/* Confirmation code (top) + Name (bottom) — guests read the
+                            code off their SMS, so it needs to be as scannable as the
+                            name, and stacking keeps the row from getting crowded. */}
+                        <div className="flex-1 min-w-0 flex flex-col justify-center gap-1">
+                          {res.confirmationCode && (
+                            <span className="inline-flex items-center gap-1 bg-blue-50 text-blue-700 border border-blue-200 text-[10px] font-black font-mono tracking-widest px-1.5 py-0.5 rounded-sm shrink-0 w-fit">
+                              <Hash className="w-2.5 h-2.5 stroke-[3]" />{res.confirmationCode}
+                            </span>
+                          )}
+                          <div className="flex items-center gap-2 min-w-0">
+                            <span className="font-semibold text-foreground text-base tracking-tight truncate">{res.customerName}</span>
+                            {res.isVIP && <Star weight="fill" className="w-3.5 h-3.5 text-amber-500 dark:text-amber-400 shrink-0" />}
                           </div>
                         </div>
 
-                        {/* Right Section: Touch Actions */}
-                        <div className="flex items-center flex-wrap gap-2 w-full xl:w-auto shrink-0 justify-start xl:justify-end">
+                        {/* Table (top) + Pax (bottom) — stacked into one narrow column */}
+                        <div className="hidden sm:flex flex-col items-center justify-center gap-0.5 w-14 shrink-0">
+                          {res.table ? (
+                            <span className="block text-center text-blue-600 bg-blue-50 px-1 py-0.5 rounded text-[11px] font-bold truncate w-full">
+                              {res.table.identifier}
+                            </span>
+                          ) : (
+                            <span className="block text-center text-[9px] font-bold text-slate-300">{t("host.noTableAssigned")}</span>
+                          )}
+                          <span className="flex items-center gap-1 text-[10px] font-bold text-muted-foreground">
+                            <Users className="w-3 h-3" /> {res.guestCount}
+                          </span>
+                        </div>
+
+                        {/* Notes indicator — informational only; the pencil below is the
+                            single control that opens the details dialog. Full text
+                            stays in that dialog so the row never grows past one line. */}
+                        {hasNote && (
+                          <span
+                            title={res.notes || res.internalNote || ''}
+                            className={cn(
+                              "hidden sm:flex h-7 w-7 rounded-lg items-center justify-center shrink-0",
+                              res.internalNote ? "bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400" : "bg-muted text-muted-foreground"
+                            )}
+                          >
+                            <NoteBlank className="w-3.5 h-3.5" />
+                          </span>
+                        )}
+
+                        {/* Actions */}
+                        <div className="flex items-center gap-1.5 shrink-0">
                           <button
                             onClick={() => handleOpenEditRes(res)}
-                            className="flex-1 xl:flex-none h-11 px-4 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold uppercase text-[10px] tracking-wider rounded-lg transition-all flex items-center justify-center gap-1 border border-slate-200"
+                            className="h-11 w-11 bg-muted hover:bg-accent text-foreground rounded-lg transition-all flex items-center justify-center active:scale-[0.97] shrink-0"
+                            title={t("host.detailsBtn")}
                           >
-                            {t("host.detailsBtn")}
+                            <Pencil className="w-4 h-4" />
                           </button>
-                           {res.status === 'PENDING' && (
+                          {res.status === 'PENDING' && (
                             <button
                               onClick={() => handleUpdateResStatus(res.id, 'CONFIRMED', res.status)}
-                              className="flex-1 xl:flex-none h-11 px-4 bg-blue-50 border border-blue-200 hover:bg-blue-100 text-blue-700 font-black uppercase text-[10px] tracking-wider rounded-lg transition-all flex items-center justify-center gap-1"
+                              className="h-11 px-3 bg-blue-50 border border-blue-200 hover:bg-blue-100 text-blue-700 font-semibold text-[10px] rounded-lg transition-all flex items-center justify-center gap-1 active:scale-[0.97] whitespace-nowrap shrink-0"
                             >
                               {t("host.confirmBtn")}
                             </button>
                           )}
                           <button
                             onClick={() => handleUpdateResStatus(res.id, 'COMPLETED', res.status)}
-                            className="flex-1 xl:flex-none h-11 px-5 bg-emerald-600 hover:bg-emerald-700 text-white font-black uppercase text-[10px] tracking-wider rounded-lg shadow-md shadow-emerald-600/10 transition-all flex items-center justify-center gap-1.5"
+                            className="h-11 px-3.5 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-[10px] rounded-lg shadow-sm shadow-emerald-600/10 transition-all flex items-center justify-center gap-1.5 active:scale-[0.97] whitespace-nowrap shrink-0"
                           >
                             <Check className="w-4 h-4 stroke-[3]" /> {t("host.seatBtn")}
                           </button>
                           <button
                             onClick={() => handleUpdateResStatus(res.id, 'NO_SHOW', res.status)}
-                            className="h-11 w-11 bg-rose-50 border border-rose-100 hover:bg-rose-100 text-rose-600 rounded-lg flex items-center justify-center transition-all shrink-0"
+                            className="h-11 w-11 bg-rose-50 dark:bg-rose-950/40 border border-rose-100 dark:border-rose-800/50 hover:bg-rose-100 text-rose-600 dark:text-rose-400 rounded-lg flex items-center justify-center transition-all shrink-0 active:scale-[0.97]"
                             title={t("host.noShowTitle")}
                           >
-                            <X className="w-5 h-5 stroke-[2.5]" />
+                            <X className="w-4 h-4 stroke-[2.5]" />
                           </button>
                         </div>
                       </div>
@@ -634,104 +733,116 @@ export default function HostConsolePage() {
 
           {/* 2. WAITLIST VIEW */}
           {activeTab === 'waitlist' && (
-            <div className="h-full overflow-y-auto space-y-2.5 pr-1">
-              {loading ? (
+            <div className="h-full overflow-y-auto pr-1">
+              {loading && !initialLoadDone ? (
                 <div className="h-64 flex flex-col items-center justify-center gap-3">
-                  <RefreshCw className="w-8 h-8 animate-spin text-blue-600" />
-                  <div className="text-slate-400 text-xs font-black uppercase tracking-widest">{t("host.updatingWaitlist")}</div>
+                  <ArrowClockwise className="w-8 h-8 animate-spin text-blue-600" />
+                  <div className="text-muted-foreground text-xs font-semibold">{t("host.updatingWaitlist")}</div>
                 </div>
               ) : filteredWaitlist.length === 0 ? (
-                <div className="bg-white border border-slate-200 border-dashed rounded-xl p-16 text-center">
+                <div className="bg-card border border-border border-dashed rounded-xl p-16 text-center">
                   <Clock className="w-12 h-12 text-slate-300 mx-auto mb-4" />
-                  <h3 className="font-black text-slate-800 uppercase tracking-tight text-sm mb-1">{t("host.waitlistEmpty")}</h3>
-                  <p className="text-slate-400 text-xs max-w-xs mx-auto">{t("host.waitlistEmptyDesc")}</p>
+                  <h3 className="font-semibold text-foreground tracking-tight text-sm mb-1">{t("host.waitlistEmpty")}</h3>
+                  <p className="text-muted-foreground text-xs max-w-xs mx-auto">{t("host.waitlistEmptyDesc")}</p>
                 </div>
               ) : (
-                filteredWaitlist.map((entry) => {
-                  const elapsed = getElapsedTime(entry.joinedAt);
-                  const isOvertime = entry.quotedWaitTime && (parseFloat(elapsed) > entry.quotedWaitTime);
+                <div className="space-y-1.5">
+                  {filteredWaitlist.map((entry) => {
+                    const elapsed = getElapsedTime(entry.joinedAt);
+                    const isOvertime = entry.quotedWaitTime && (parseFloat(elapsed) > entry.quotedWaitTime);
 
-                  return (
-                    <div
-                      key={entry.id}
-                      className={cn(
-                        "bg-white border border-slate-200 rounded-xl shadow-sm p-3 transition-all flex flex-col xl:flex-row items-start xl:items-center justify-between gap-4 hover:shadow-md",
-                        entry.status === 'NOTIFIED' && "border-purple-300 bg-purple-50/20"
-                      )}
-                    >
-                      {/* Left: Info */}
-                      <div className="flex gap-4 min-w-0">
+                    return (
+                      <div
+                        key={entry.id}
+                        className={cn(
+                          "bg-card border border-border rounded-lg shadow-sm h-24 px-3 flex items-center gap-2 transition-all hover:shadow-md",
+                          entry.status === 'NOTIFIED' && "border-purple-300 dark:border-purple-800/50 bg-purple-50/20 dark:bg-purple-950/40"
+                        )}
+                      >
+                        {/* Elapsed/wait capsule */}
                         <div className={cn(
-                          "h-12 w-16 rounded-xl flex flex-col items-center justify-center text-white shrink-0 shadow-sm",
+                          "w-16 h-16 rounded-lg flex flex-col items-center justify-center text-white shrink-0 shadow-sm",
                           entry.targetDate
                             ? "bg-amber-600"
-                            : isOvertime 
-                              ? "bg-rose-600 animate-pulse" 
+                            : isOvertime
+                              ? "bg-rose-600 animate-pulse"
                               : entry.status === 'NOTIFIED'
                                 ? "bg-purple-600"
                                 : "bg-blue-600"
                         )}>
-                          <span className="text-[10px] font-black uppercase opacity-75 tracking-wider leading-none mb-1">
+                          <span className="text-[8px] font-semibold opacity-75 leading-none mb-1">
                             {entry.targetDate ? t("host.bookWait") : t("host.waiting")}
                           </span>
-                          <span className="text-sm font-black tracking-tight leading-none">
+                          <span className="text-[13px] font-black tracking-tight leading-none">
                             {entry.targetDate ? t("host.date") : elapsed}
                           </span>
                         </div>
-                        <div className="space-y-1">
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <span className="font-black text-slate-800 text-sm uppercase tracking-tight">{entry.customerName}</span>
-                            <Badge className={cn("text-[9px] font-black uppercase px-2 py-0.5 rounded-sm border", getStatusBadgeClass(entry.status))}>
+
+                        <div className="w-px h-14 bg-muted shrink-0" />
+
+                        {/* Status + quote (top), Name (middle), Phone (bottom) —
+                            stacked so nothing crowds the name, same pattern as the
+                            reservation row's code-over-name treatment. */}
+                        <div className="flex-1 min-w-0 flex flex-col justify-center gap-0.5">
+                          <div className="flex items-center gap-1.5 flex-wrap">
+ <Badge className={cn("text-[9px] font-semibold px-1.5 py-0.5 rounded-sm border shrink-0", getStatusBadgeClass(entry.status))}>
                               {entry.status}
                             </Badge>
                             {entry.targetDate && (
-                              <Badge className="bg-amber-100 text-amber-800 border-amber-200 text-[8px] font-black uppercase px-2 py-0.5 rounded-sm">
+                              <Badge className="hidden sm:inline-flex bg-amber-100 dark:bg-amber-950/40 text-amber-800 dark:text-amber-400 border-amber-200 dark:border-amber-800/50 text-[8px] font-semibold px-1.5 py-0.5 rounded-sm shrink-0">
                                 {t("host.dateWaitlist")} ({entry.targetDate})
                               </Badge>
                             )}
                             {entry.quotedWaitTime && !entry.targetDate && (
-                              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-tight">
+                              <span className="hidden sm:inline text-[10px] font-bold text-muted-foreground tracking-tight shrink-0">
                                 ({t("host.quotePrefix")} {entry.quotedWaitTime} {t("host.minSuffix")})
                               </span>
                             )}
                           </div>
-                          <div className="flex items-center gap-4 text-xs font-bold text-slate-500 uppercase tracking-wide">
-                            <span className="flex items-center gap-1"><Users className="w-3.5 h-3.5" /> {entry.partySize} {t("host.guests")}</span>
-                            <span className="flex items-center gap-1"><Phone className="w-3.5 h-3.5" /> {entry.customerPhone}</span>
-                          </div>
-                          {entry.notes && (
-                            <p className="text-slate-500 text-[11px] font-medium leading-relaxed bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-100 mt-2 max-w-lg">
-                              <span className="font-bold text-slate-700">{t("host.noteLabel")}</span> {entry.notes}
-                            </p>
-                          )}
+                          <span className="font-semibold text-foreground text-base tracking-tight truncate">{entry.customerName}</span>
+                          <span className="hidden sm:flex items-center gap-1 text-[11px] font-bold text-muted-foreground truncate">
+                            <Phone className="w-3 h-3 shrink-0" /> {entry.customerPhone}
+                          </span>
+                        </div>
+
+                        {/* Party size */}
+                        <div className="hidden sm:flex items-center gap-1 text-xs font-bold text-muted-foreground w-10 shrink-0">
+                          <Users className="w-3.5 h-3.5" /> {entry.partySize}
+                        </div>
+
+                        {entry.notes && (
+                          <span title={entry.notes} className="hidden sm:flex h-7 w-7 rounded-lg items-center justify-center shrink-0 bg-muted text-muted-foreground">
+                            <NoteBlank className="w-3.5 h-3.5" />
+                          </span>
+                        )}
+
+                        {/* Actions */}
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          <button
+                            onClick={() => handleUpdateWaitlistStatus(entry.id, 'NOTIFIED', entry.status)}
+                            className="h-11 px-3 bg-purple-50 dark:bg-purple-950/40 border border-purple-200 dark:border-purple-800/50 hover:bg-purple-100 text-purple-700 dark:text-purple-400 font-semibold text-[10px] rounded-lg transition-all flex items-center justify-center gap-1.5 active:scale-[0.97] whitespace-nowrap shrink-0"
+                            title={t("host.notifyReadyBtn")}
+                          >
+                            <Bell className="w-4 h-4 stroke-[2.5]" /> <span className="hidden md:inline">{t("host.notifyReadyBtn")}</span>
+                          </button>
+                          <button
+                            onClick={() => handleUpdateWaitlistStatus(entry.id, 'SEATED', entry.status)}
+                            className="h-11 px-3.5 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-[10px] rounded-lg shadow-sm shadow-emerald-600/10 transition-all flex items-center justify-center gap-1.5 active:scale-[0.97] whitespace-nowrap shrink-0"
+                          >
+                            <Check className="w-4 h-4 stroke-[3]" /> {t("host.seatGuestBtn")}
+                          </button>
+                          <button
+                            onClick={() => handleUpdateWaitlistStatus(entry.id, 'CANCELED', entry.status)}
+                            className="h-11 w-11 bg-rose-50 dark:bg-rose-950/40 border border-rose-100 dark:border-rose-800/50 hover:bg-rose-100 text-rose-600 dark:text-rose-400 rounded-lg flex items-center justify-center transition-all shrink-0 active:scale-[0.97]"
+                            title={t("host.removeGuestTitle")}
+                          >
+                            <X className="w-4 h-4 stroke-[2.5]" />
+                          </button>
                         </div>
                       </div>
-
-                      {/* Right: Touch actions */}
-                      <div className="flex items-center flex-wrap gap-2 w-full xl:w-auto shrink-0 justify-start xl:justify-end">
-                        <button
-                          onClick={() => handleUpdateWaitlistStatus(entry.id, 'NOTIFIED', entry.status)}
-                          className="flex-1 xl:flex-none h-11 px-5 bg-purple-50 border border-purple-200 hover:bg-purple-100 text-purple-700 font-black uppercase text-[10px] tracking-wider rounded-lg transition-all flex items-center justify-center gap-1.5"
-                        >
-                          <Bell className="w-4 h-4 stroke-[2.5]" /> {t("host.notifyReadyBtn")}
-                        </button>
-                        <button
-                          onClick={() => handleUpdateWaitlistStatus(entry.id, 'SEATED', entry.status)}
-                          className="flex-1 xl:flex-none h-11 px-6 bg-emerald-600 hover:bg-emerald-700 text-white font-black uppercase text-[10px] tracking-wider rounded-lg shadow-md shadow-emerald-600/10 transition-all flex items-center justify-center gap-1.5"
-                        >
-                          <Check className="w-4 h-4 stroke-[3]" /> {t("host.seatGuestBtn")}
-                        </button>
-                        <button
-                          onClick={() => handleUpdateWaitlistStatus(entry.id, 'CANCELED', entry.status)}
-                          className="h-11 w-11 bg-rose-50 border border-rose-100 hover:bg-rose-100 text-rose-600 rounded-lg flex items-center justify-center transition-all shrink-0"
-                          title={t("host.removeGuestTitle")}
-                        >
-                          <X className="w-5 h-5 stroke-[2.5]" />
-                        </button>
-                      </div>
-                    </div>
-                  );
-                })
+                    );
+                  })}
+                </div>
               )}
             </div>
           )}
@@ -741,14 +852,14 @@ export default function HostConsolePage() {
 
       {/* 📱 A. Sleek, Easy Touch Walk-In Entry Modal */}
       <Dialog open={isWalkinModalOpen} onOpenChange={setIsWalkinModalOpen}>
-        <DialogContent className="p-0 rounded-2xl overflow-y-auto max-h-[92dvh] border-0 max-w-md w-full bg-white shadow-2xl">
+        <DialogContent className="p-0 rounded-2xl overflow-y-auto max-h-[92dvh] border-0 max-w-md w-full bg-card shadow-2xl">
           <form onSubmit={handleAddWalkinSubmit}>
             <div className="bg-slate-900 p-6 text-white">
               <DialogHeader>
-                <DialogTitle className="text-base font-black uppercase tracking-widest flex items-center gap-2">
+                <DialogTitle className="text-base font-semibold flex items-center gap-2">
                   <Plus className="w-5 h-5 text-blue-400 stroke-[3]" /> {t("host.addToWaitlistTitle")}
                 </DialogTitle>
-                <DialogDescription className="text-slate-400 text-xs">
+                <DialogDescription className="text-muted-foreground text-xs">
                   {t("host.addToWaitlistDesc")}
                 </DialogDescription>
               </DialogHeader>
@@ -758,32 +869,32 @@ export default function HostConsolePage() {
               
               {/* Customer Name */}
               <div className="space-y-2">
-                <Label className="text-[10px] font-black uppercase text-slate-400 tracking-wider">{t("host.guestNameLabel")}</Label>
+                <Label className="text-[10px] font-semibold text-muted-foreground">{t("host.guestNameLabel")}</Label>
                 <Input 
                   placeholder={t("host.guestNamePlaceholder")}
                   value={walkinForm.customerName}
                   onChange={(e) => setWalkinForm({...walkinForm, customerName: e.target.value})}
                   required
-                  className="h-12 font-bold text-slate-800 rounded-lg border-slate-200 bg-slate-50 focus:bg-white"
+                  className="h-12 font-bold text-foreground rounded-lg border-border bg-muted focus:bg-card"
                 />
               </div>
 
               {/* Customer Phone */}
               <div className="space-y-2">
-                <Label className="text-[10px] font-black uppercase text-slate-400 tracking-wider">{t("host.phoneLabel")}</Label>
+                <Label className="text-[10px] font-semibold text-muted-foreground">{t("host.phoneLabel")}</Label>
                 <Input 
                   type="tel"
                   placeholder={t("host.phonePlaceholder")}
                   value={walkinForm.customerPhone}
                   onChange={(e) => setWalkinForm({...walkinForm, customerPhone: e.target.value})}
                   required
-                  className="h-12 font-bold text-slate-800 rounded-lg border-slate-200 bg-slate-50 focus:bg-white"
+                  className="h-12 font-bold text-foreground rounded-lg border-border bg-muted focus:bg-card"
                 />
               </div>
 
               {/* Touch Preset: Party Size */}
               <div className="space-y-2">
-                <Label className="text-[10px] font-black uppercase text-slate-400 tracking-wider">{t("host.partySizeLabel")} ({walkinForm.partySize} {t("host.guests")})</Label>
+                <Label className="text-[10px] font-semibold text-muted-foreground">{t("host.partySizeLabel")} ({walkinForm.partySize} {t("host.guests")})</Label>
                 <div className="grid grid-cols-5 gap-2">
                   {['1', '2', '3', '4', '6', '8', '10', '12'].map((size) => (
                     <button
@@ -794,7 +905,7 @@ export default function HostConsolePage() {
                         "h-12 rounded-lg font-black text-xs border transition-all",
                         walkinForm.partySize === size 
                           ? "bg-blue-600 border-blue-600 text-white shadow-md shadow-blue-600/10" 
-                          : "bg-slate-50 border-slate-100 text-slate-600 hover:bg-slate-100"
+                          : "bg-muted border-border text-muted-foreground hover:bg-muted"
                       )}
                     >
                       {size}
@@ -805,7 +916,7 @@ export default function HostConsolePage() {
 
               {/* Touch Preset: Quoted Wait Time */}
               <div className="space-y-2">
-                <Label className="text-[10px] font-black uppercase text-slate-400 tracking-wider">{t("host.quotedWaitTimeLabel")} ({walkinForm.quotedWaitTime} {t("host.minSuffix")})</Label>
+                <Label className="text-[10px] font-semibold text-muted-foreground">{t("host.quotedWaitTimeLabel")} ({walkinForm.quotedWaitTime} {t("host.minSuffix")})</Label>
                 <div className="grid grid-cols-4 gap-2">
                   {['0', '15', '30', '45', '60', '75', '90'].map((time) => (
                     <button
@@ -816,7 +927,7 @@ export default function HostConsolePage() {
                         "h-12 rounded-lg font-black text-xs border transition-all",
                         walkinForm.quotedWaitTime === time 
                           ? "bg-amber-600 border-amber-600 text-white shadow-md shadow-amber-600/10" 
-                          : "bg-slate-50 border-slate-100 text-slate-600 hover:bg-slate-100"
+                          : "bg-muted border-border text-muted-foreground hover:bg-muted"
                       )}
                     >
                       {time === '0' ? t("host.noWait") : `${time}${t("host.mSuffix")}`}
@@ -827,37 +938,37 @@ export default function HostConsolePage() {
 
               {/* Notes */}
               <div className="space-y-2">
-                <Label className="text-[10px] font-black uppercase text-slate-400 tracking-wider">{t("host.seatingNotesLabel")}</Label>
+                <Label className="text-[10px] font-semibold text-muted-foreground">{t("host.seatingNotesLabel")}</Label>
                 <Textarea 
                   placeholder={t("host.seatingNotesPlaceholder")}
                   value={walkinForm.notes}
                   onChange={(e) => setWalkinForm({...walkinForm, notes: e.target.value})}
-                  className="rounded-lg border-slate-200 bg-slate-50 focus:bg-white text-xs font-bold min-h-[80px]"
+                  className="rounded-lg border-border bg-muted focus:bg-card text-xs font-bold min-h-[80px]"
                 />
               </div>
 
             </div>
 
-            <DialogFooter className="p-6 bg-slate-50 border-t border-slate-100 flex gap-2 justify-end">
+            <DialogFooter className="p-6 bg-muted border-t border-border flex gap-2 justify-end">
               <Button 
                 type="button" 
                 variant="ghost" 
                 onClick={() => setIsWalkinModalOpen(false)}
-                className="h-12 text-slate-500 font-bold uppercase text-[10px] tracking-wider"
+                className="h-12 text-muted-foreground font-bold text-[10px]"
               >
                 {t("host.closeBtn")}
               </Button>
               <Button 
                 type="button" 
                 onClick={(e) => handleAddWalkinSubmit(e, true)}
-                className="h-12 bg-emerald-600 hover:bg-emerald-700 text-white font-black uppercase text-[10px] tracking-wider px-6 rounded-lg shadow-md shadow-emerald-600/10"
+                className="h-12 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-[10px] px-6 rounded-lg shadow-md shadow-emerald-600/10"
               >
                 {t("host.seatInstantlyBtn")}
               </Button>
               <Button 
                 type="submit" 
                 onClick={(e) => handleAddWalkinSubmit(e, false)}
-                className="h-12 bg-blue-600 hover:bg-blue-700 text-white font-black uppercase text-[10px] tracking-wider px-6 rounded-lg shadow-md shadow-blue-600/10"
+                className="h-12 bg-blue-600 hover:bg-blue-700 text-white font-semibold text-[10px] px-6 rounded-lg shadow-md shadow-blue-600/10"
               >
                 {t("host.addToWaitlistBtn")}
               </Button>
@@ -868,15 +979,15 @@ export default function HostConsolePage() {
 
       {/* 📱 B. Touch Reservation Details / Add Modal */}
       <Dialog open={isResModalOpen} onOpenChange={setIsResModalOpen}>
-        <DialogContent className="p-0 rounded-2xl overflow-y-auto max-h-[92dvh] border-0 max-w-md w-full bg-white shadow-2xl">
+        <DialogContent className="p-0 rounded-2xl overflow-y-auto max-h-[92dvh] border-0 max-w-md w-full bg-card shadow-2xl">
           <form onSubmit={handleResSubmit}>
             <div className="bg-slate-900 p-6 text-white">
               <DialogHeader>
-                <DialogTitle className="text-base font-black uppercase tracking-widest flex items-center gap-2">
+                <DialogTitle className="text-base font-semibold flex items-center gap-2">
                   <Calendar className="w-5 h-5 text-blue-400 stroke-[3]" />
                   {selectedReservation ? t("host.resDetailsTitle") : t("host.newResTitle")}
                 </DialogTitle>
-                <DialogDescription className="text-slate-400 text-xs">
+                <DialogDescription className="text-muted-foreground text-xs">
                   {selectedReservation ? t("host.resDetailsDesc") : t("host.newResDesc")}
                 </DialogDescription>
               </DialogHeader>
@@ -886,31 +997,31 @@ export default function HostConsolePage() {
               
               {/* Guest Name */}
               <div className="space-y-2">
-                <Label className="text-[10px] font-black uppercase text-slate-400 tracking-wider">{t("host.guestNameLabel")}</Label>
+                <Label className="text-[10px] font-semibold text-muted-foreground">{t("host.guestNameLabel")}</Label>
                 <Input 
                   placeholder={t("host.resGuestNamePlaceholder")}
                   value={resForm.customerName}
                   onChange={(e) => setResForm({...resForm, customerName: e.target.value})}
                   required
-                  className="h-12 font-bold text-slate-800 rounded-lg border-slate-200 bg-slate-50 focus:bg-white"
+                  className="h-12 font-bold text-foreground rounded-lg border-border bg-muted focus:bg-card"
                 />
               </div>
 
               {/* Phone */}
               <div className="space-y-2">
-                <Label className="text-[10px] font-black uppercase text-slate-400 tracking-wider">{t("host.resPhoneLabel")}</Label>
+                <Label className="text-[10px] font-semibold text-muted-foreground">{t("host.resPhoneLabel")}</Label>
                 <Input 
                   placeholder={t("host.resPhonePlaceholder")}
                   value={resForm.customerPhone}
                   onChange={(e) => setResForm({...resForm, customerPhone: e.target.value})}
                   required
-                  className="h-12 font-bold text-slate-800 rounded-lg border-slate-200 bg-slate-50 focus:bg-white"
+                  className="h-12 font-bold text-foreground rounded-lg border-border bg-muted focus:bg-card"
                 />
               </div>
 
               {/* Touch Preset: Guests Count */}
               <div className="space-y-2">
-                <Label className="text-[10px] font-black uppercase text-slate-400 tracking-wider">{t("host.guestCountLabel")} ({resForm.guestCount} {t("host.guests")})</Label>
+                <Label className="text-[10px] font-semibold text-muted-foreground">{t("host.guestCountLabel")} ({resForm.guestCount} {t("host.guests")})</Label>
                 <div className="grid grid-cols-5 gap-2">
                   {['1', '2', '3', '4', '6', '8', '10'].map((size) => (
                     <button
@@ -921,7 +1032,7 @@ export default function HostConsolePage() {
                         "h-12 rounded-lg font-black text-xs border transition-all",
                         resForm.guestCount === size 
                           ? "bg-blue-600 border-blue-600 text-white shadow-md shadow-blue-600/10" 
-                          : "bg-slate-50 border-slate-100 text-slate-600 hover:bg-slate-100"
+                          : "bg-muted border-border text-muted-foreground hover:bg-muted"
                       )}
                     >
                       {size}
@@ -933,23 +1044,21 @@ export default function HostConsolePage() {
               <div className="grid grid-cols-2 gap-4">
                 {/* Time Selection */}
                 <div className="space-y-2">
-                  <Label className="text-[10px] font-black uppercase text-slate-400 tracking-wider">{t("host.resTimeLabel")}</Label>
-                  <Input 
-                    type="time"
+                  <Label className="text-[10px] font-semibold text-muted-foreground">{t("host.resTimeLabel")}</Label>
+                  <TimeSelect
                     value={resForm.selectedTime}
-                    onChange={(e) => setResForm({...resForm, selectedTime: e.target.value})}
-                    required
-                    className="h-12 font-bold text-slate-800 rounded-lg border-slate-200 bg-slate-50 focus:bg-white"
+                    onChange={(v) => setResForm({...resForm, selectedTime: v})}
+                    className="w-full h-12 font-bold text-foreground rounded-lg border-border bg-muted focus:bg-card"
                   />
                 </div>
 
                 {/* Table Assignment Select */}
                 <div className="space-y-2">
-                  <Label className="text-[10px] font-black uppercase text-slate-400 tracking-wider">{t("host.assignTableLabel")}</Label>
+                  <Label className="text-[10px] font-semibold text-muted-foreground">{t("host.assignTableLabel")}</Label>
                   <select 
                     value={resForm.tableId}
                     onChange={(e) => setResForm({...resForm, tableId: e.target.value})}
-                    className="h-12 w-full font-bold text-slate-800 rounded-lg border border-slate-200 bg-slate-50 focus:bg-white px-3 text-sm outline-none"
+                    className="h-12 w-full font-bold text-foreground rounded-lg border border-border bg-muted hover:border-ring focus:bg-card px-3 text-sm outline-none transition-colors focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
                   >
                     <option value="none">{t("host.noneHoldAtDoor")}</option>
                     {tables.map((tableItem) => (
@@ -962,19 +1071,19 @@ export default function HostConsolePage() {
               </div>
 
               {/* VIP Toggle Switch-like layout */}
-              <div className="flex items-center justify-between p-3 border border-slate-200 rounded-xl bg-slate-50">
+              <div className="flex items-center justify-between p-3 border border-border rounded-xl bg-muted">
                 <div className="space-y-0.5">
-                  <Label className="text-xs font-black uppercase text-slate-800">{t("host.vipStatusLabel")}</Label>
-                  <p className="text-[10px] text-slate-400">{t("host.vipStatusDesc")}</p>
+                  <Label className="text-xs font-semibold text-foreground">{t("host.vipStatusLabel")}</Label>
+                  <p className="text-[10px] text-muted-foreground">{t("host.vipStatusDesc")}</p>
                 </div>
                 <button
                   type="button"
                   onClick={() => setResForm({...resForm, isVIP: !resForm.isVIP})}
                   className={cn(
-                    "w-20 h-10 font-black uppercase text-[10px] tracking-wider rounded-lg transition-all border",
+"w-20 h-10 font-semibold text-[10px] rounded-lg transition-all border",
                     resForm.isVIP 
                       ? "bg-amber-500 border-amber-500 text-white shadow-md shadow-amber-500/10" 
-                      : "bg-white border-slate-200 text-slate-400"
+                      : "bg-card border-border text-muted-foreground"
                   )}
                 >
                   {resForm.isVIP ? t("host.vipOn") : t("host.vipOff")}
@@ -983,40 +1092,40 @@ export default function HostConsolePage() {
 
               {/* Notes */}
               <div className="space-y-2">
-                <Label className="text-[10px] font-black uppercase text-slate-400 tracking-wider">{t("host.guestNotesLabel")}</Label>
+                <Label className="text-[10px] font-semibold text-muted-foreground">{t("host.guestNotesLabel")}</Label>
                 <Textarea 
                   placeholder={t("host.guestNotesPlaceholder")}
                   value={resForm.notes}
                   onChange={(e) => setResForm({...resForm, notes: e.target.value})}
-                  className="rounded-lg border-slate-200 bg-slate-50 focus:bg-white text-xs font-bold min-h-[60px]"
+                  className="rounded-lg border-border bg-muted focus:bg-card text-xs font-bold min-h-[60px]"
                 />
               </div>
 
               {/* Internal Notes */}
               <div className="space-y-2">
-                <Label className="text-[10px] font-black uppercase text-slate-400 tracking-wider">{t("host.hostInternalNoteLabel")}</Label>
+                <Label className="text-[10px] font-semibold text-muted-foreground">{t("host.hostInternalNoteLabel")}</Label>
                 <Textarea 
                   placeholder={t("host.hostInternalNotePlaceholder")}
                   value={resForm.internalNote}
                   onChange={(e) => setResForm({...resForm, internalNote: e.target.value})}
-                  className="rounded-lg border-slate-200 bg-slate-50 focus:bg-white text-xs font-bold min-h-[60px]"
+                  className="rounded-lg border-border bg-muted focus:bg-card text-xs font-bold min-h-[60px]"
                 />
               </div>
 
             </div>
 
-            <DialogFooter className="p-6 bg-slate-50 border-t border-slate-100">
+            <DialogFooter className="p-6 bg-muted border-t border-border">
               <Button 
                 type="button" 
                 variant="ghost" 
                 onClick={() => setIsResModalOpen(false)}
-                className="h-12 text-slate-500 font-bold uppercase text-[10px] tracking-wider"
+                className="h-12 text-muted-foreground font-bold text-[10px]"
               >
                 {t("host.cancelBtn")}
               </Button>
               <Button 
                 type="submit" 
-                className="h-12 bg-blue-600 hover:bg-blue-700 text-white font-black uppercase text-[10px] tracking-wider px-6 rounded-lg shadow-md shadow-blue-600/10"
+                className="h-12 bg-blue-600 hover:bg-blue-700 text-white font-semibold text-[10px] px-6 rounded-lg shadow-md shadow-blue-600/10"
               >
                 {selectedReservation ? t("host.saveChangesBtn") : t("host.createBookingBtn")}
               </Button>
@@ -1030,10 +1139,10 @@ export default function HostConsolePage() {
         <DialogContent className="!fixed !top-0 !left-auto !right-0 !-translate-x-0 !-translate-y-0 !h-screen !rounded-r-none !rounded-l-2xl !max-w-md !gap-0 !p-0 flex flex-col animate-in slide-in-from-right duration-300">
           <div className="bg-slate-900 p-6 text-white shrink-0">
             <DialogHeader>
-              <DialogTitle className="text-base font-black uppercase tracking-widest flex items-center gap-2">
-                <RotateCcw className="w-5 h-5 text-blue-400 stroke-[3]" /> {t("host.activityRecoveryLogTitle")}
+              <DialogTitle className="text-base font-semibold flex items-center gap-2">
+                <ArrowCounterClockwise className="w-5 h-5 text-blue-400 stroke-[3]" /> {t("host.activityRecoveryLogTitle")}
               </DialogTitle>
-              <DialogDescription className="text-slate-400 text-xs">
+              <DialogDescription className="text-muted-foreground text-xs">
                 {t("host.activityRecoveryLogDesc")}
               </DialogDescription>
             </DialogHeader>
@@ -1043,21 +1152,21 @@ export default function HostConsolePage() {
             
             {/* Reservations Resolved History */}
             <div className="space-y-3">
-              <h3 className="text-xs font-black uppercase text-slate-400 tracking-wider">{t("host.recentlySeatedCancelledBookings")}</h3>
+              <h3 className="text-xs font-semibold text-muted-foreground">{t("host.recentlySeatedCancelledBookings")}</h3>
               <div className="space-y-3">
                 {reservationsHistory.length === 0 ? (
-                  <div className="text-xs text-slate-400 italic py-4 bg-slate-50 text-center rounded-lg border border-slate-100">{t("host.noRecentResChanges")}</div>
+                  <div className="text-xs text-muted-foreground italic py-4 bg-muted text-center rounded-lg border border-border">{t("host.noRecentResChanges")}</div>
                 ) : (
                   reservationsHistory.map((res) => (
-                    <div key={res.id} className="p-3 border border-slate-200 rounded-xl bg-slate-50 flex items-center justify-between gap-3">
+                    <div key={res.id} className="p-3 border border-border rounded-xl bg-muted flex items-center justify-between gap-3">
                       <div>
-                        <div className="font-bold text-xs uppercase text-slate-800 flex items-center gap-1.5">
+                        <div className="font-bold text-xs text-foreground flex items-center gap-1.5">
                           {res.customerName}
-                          <Badge variant="outline" className="text-[8px] font-black uppercase px-1">
+                          <Badge variant="outline" className="text-[8px] font-semibold px-1">
                             {res.status === 'COMPLETED' ? t("host.seated") : res.status.toLowerCase()}
                           </Badge>
                         </div>
-                        <div className="text-[10px] text-slate-400 font-bold uppercase mt-0.5">
+                        <div className="text-[10px] text-muted-foreground font-bold mt-0.5">
                           {res.guestCount} {t("host.paxDivider")} {new Date(res.startTime).toLocaleTimeString([], { hour12: false, hour: '2-digit', minute: '2-digit' })}
                         </div>
                       </div>
@@ -1068,7 +1177,7 @@ export default function HostConsolePage() {
                           handleRevertResStatus(res.id, 'CONFIRMED');
                           setIsHistoryDrawerOpen(false);
                         }}
-                        className="h-8 text-[10px] font-black uppercase tracking-wider text-blue-600 border-blue-200 bg-blue-50/50 hover:bg-blue-100 hover:text-blue-700"
+                        className="h-8 text-[10px] font-semibold text-blue-600 border-blue-200 bg-blue-50/50 hover:bg-blue-100 hover:text-blue-700"
                       >
                         {t("host.undoBtn")}
                       </Button>
@@ -1079,22 +1188,22 @@ export default function HostConsolePage() {
             </div>
 
             {/* Waitlist Resolved History */}
-            <div className="space-y-3 pt-4 border-t border-slate-100">
-              <h3 className="text-xs font-black uppercase text-slate-400 tracking-wider">{t("host.recentlySeatedCancelledWalkins")}</h3>
+            <div className="space-y-3 pt-4 border-t border-border">
+              <h3 className="text-xs font-semibold text-muted-foreground">{t("host.recentlySeatedCancelledWalkins")}</h3>
               <div className="space-y-3">
                 {filteredWaitlistHistory.length === 0 ? (
-                  <div className="text-xs text-slate-400 italic py-4 bg-slate-50 text-center rounded-lg border border-slate-100">{t("host.noRecentWaitlistChanges")}</div>
+                  <div className="text-xs text-muted-foreground italic py-4 bg-muted text-center rounded-lg border border-border">{t("host.noRecentWaitlistChanges")}</div>
                 ) : (
                   filteredWaitlistHistory.map((entry) => (
-                    <div key={entry.id} className="p-3 border border-slate-200 rounded-xl bg-slate-50 flex items-center justify-between gap-3">
+                    <div key={entry.id} className="p-3 border border-border rounded-xl bg-muted flex items-center justify-between gap-3">
                       <div>
-                        <div className="font-bold text-xs uppercase text-slate-800 flex items-center gap-1.5">
+                        <div className="font-bold text-xs text-foreground flex items-center gap-1.5">
                           {entry.customerName}
-                          <Badge variant="outline" className="text-[8px] font-black uppercase px-1">
+                          <Badge variant="outline" className="text-[8px] font-semibold px-1">
                             {entry.status === 'SEATED' ? t("host.seated") : entry.status.toLowerCase()}
                           </Badge>
                         </div>
-                        <div className="text-[10px] text-slate-400 font-bold uppercase mt-0.5">
+                        <div className="text-[10px] text-muted-foreground font-bold mt-0.5">
                           {entry.partySize} {t("host.paxDivider")} {entry.targetDate ? `${t("host.dateWaitlist")} (${entry.targetDate})` : `${t("host.waited")} ${getElapsedTime(entry.joinedAt)}`}
                         </div>
                       </div>
@@ -1105,7 +1214,7 @@ export default function HostConsolePage() {
                           handleRevertWaitlistStatus(entry.id, 'WAITING');
                           setIsHistoryDrawerOpen(false);
                         }}
-                        className="h-8 text-[10px] font-black uppercase tracking-wider text-blue-600 border-blue-200 bg-blue-50/50 hover:bg-blue-100 hover:text-blue-700"
+                        className="h-8 text-[10px] font-semibold text-blue-600 border-blue-200 bg-blue-50/50 hover:bg-blue-100 hover:text-blue-700"
                       >
                         {t("host.undoBtn")}
                       </Button>
@@ -1117,11 +1226,11 @@ export default function HostConsolePage() {
 
           </div>
 
-          <div className="p-6 bg-slate-50 border-t border-slate-100 shrink-0">
+          <div className="p-6 bg-muted border-t border-border shrink-0">
             <Button 
               variant="outline" 
               onClick={() => setIsHistoryDrawerOpen(false)}
-              className="w-full h-12 font-black uppercase text-xs"
+              className="w-full h-12 font-semibold text-xs"
             >
               {t("host.closeActivityLogBtn")}
             </Button>
@@ -1129,6 +1238,6 @@ export default function HostConsolePage() {
         </DialogContent>
       </Dialog>
 
-    </AdminLayout>
+    </>
   );
 }

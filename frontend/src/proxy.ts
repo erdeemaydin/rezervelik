@@ -19,6 +19,12 @@ function getLocale(request: NextRequest) {
   }
 }
 
+const PROTECTED_PREFIXES = ['/dashboard', '/system-admin'];
+
+function isProtectedPath(pathname: string): boolean {
+  return PROTECTED_PREFIXES.some((p) => pathname === p || pathname.startsWith(`${p}/`));
+}
+
 export function proxy(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
 
@@ -32,17 +38,24 @@ export function proxy(request: NextRequest) {
     return NextResponse.next();
   }
 
-  const response = NextResponse.next();
+  // Lightweight server-side gate: the session token is an httpOnly cookie
+  // (see src/utils/authCookie.ts on the backend), which — unlike the old
+  // localStorage-based session — this proxy CAN read, since cookie matching
+  // ignores port (dev: frontend/backend on different ports of the same host)
+  // and production runs both apps same-origin behind the reverse proxy. This
+  // only checks *presence*, not validity — it can't verify the JWT without
+  // sharing JWT_SECRET into the frontend, and doesn't try to. An expired or
+  // otherwise invalid token still reaches the client shell, same as before;
+  // the backend's authMiddleware remains the real enforcement boundary (every
+  // data request 401s without a valid token) and AdminLayout/SystemAdminLayout
+  // still redirect on that 401 via lib/api.ts's response interceptor. What
+  // this adds is just closing the gap where a fully logged-out visitor could
+  // load the dashboard shell HTML/JS before the client-side redirect fired.
+  if (isProtectedPath(pathname) && !request.cookies.get('token')) {
+    return NextResponse.redirect(new URL('/auth/login', request.url));
+  }
 
-  // NOTE: route protection is intentionally NOT done here. The session token
-  // lives in localStorage (not a cookie), so this server-side proxy cannot read
-  // it — gating on a `token` cookie here would redirect every browser to /login
-  // even when logged in. Access control is enforced in two places instead:
-  //   1. The backend rejects any data request without a valid Bearer token.
-  //   2. AdminLayout / SystemAdminLayout redirect unauthenticated users on the
-  //      client. The dashboard pages are client shells with no server-rendered
-  //      private data, so serving the empty shell before that redirect is safe.
-  // See src/lib/authStorage.ts for why the token is not a cookie.
+  const response = NextResponse.next();
 
   // Check if NEXT_LOCALE cookie exists
   let locale = request.cookies.get('NEXT_LOCALE')?.value;

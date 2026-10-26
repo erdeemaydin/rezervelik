@@ -1,8 +1,30 @@
 import { Request, Response } from 'express';
+import crypto from 'crypto';
 import bcrypt from 'bcrypt';
 import prisma from '../config/prisma';
 import { successResponse, errorResponse } from '../utils/response';
-import { generateResetToken, RESET_TOKEN_TTL_MS } from '../utils/resetToken';
+import { generateResetToken, RESET_TOKEN_TTL_MS, generateHashedToken } from '../utils/resetToken';
+import { validatePassword } from '../utils/passwordPolicy';
+
+const SETUP_TOKEN_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
+import {
+  DEFAULT_BUSINESS_TYPE,
+  FEATURE_FLAG_KEYS,
+  getFeatureProfile,
+  isBusinessType,
+} from '../config/businessProfiles';
+import { generatePublicApiKey } from '../utils/publicApiKey';
+import { bustMaintenanceCache } from '../middlewares/maintenance';
+import { logAudit } from '../services/auditService';
+import { sanitizeSystemPermissions } from '../config/systemPermissions';
+
+// A platform-administrator account (role SUPER_ADMIN) is never a valid target
+// for a tenant/user-management endpoint — its `permissions` column holds
+// sys_* system capabilities, not tenant data, and it's reachable only through
+// the root-only /admins endpoints. Centralized here so every tenant-user-scoped
+// admin action (present and future) enforces this the same way instead of
+// hand-rolling the role check.
+const isPlatformAdminAccount = (user: { role: string }) => user.role === 'SUPER_ADMIN';
 
 // POST /system/users/:userId/reset-link (SUPER_ADMIN only)
 // Mints a single-use password reset link for any user. The raw token is returned
@@ -14,11 +36,30 @@ export const createPasswordResetLink = async (req: Request, res: Response) => {
     const user = await prisma.user.findUnique({ where: { id: userId } });
     if (!user) return errorResponse(res, 'errors.validation_error', 404, { message: 'User not found' });
 
+    // Minting a reset link for another platform administrator is root-only —
+    // sys_manage_tenant_users (the permission that gates this route for a
+    // sub-admin) only ever covers tenant-scoped users. Without this check a
+    // sub-admin could mint a reset link for a root account, or even its own,
+    // and use it to escalate.
+    if (isPlatformAdminAccount(user) && req.user?.isRootAdmin === false) {
+      return errorResponse(res, 'errors.forbidden', 403, { message: 'Root administrator access required' });
+    }
+
     const { rawToken, tokenHash, expiresAt } = generateResetToken();
 
     await prisma.user.update({
       where: { id: user.id },
       data: { resetTokenHash: tokenHash, resetTokenExpiresAt: expiresAt }
+    });
+
+    logAudit({
+      req,
+      restaurantId: user.restaurantId,
+      category: 'SYSTEM',
+      action: 'PASSWORD_RESET_LINK_GENERATED',
+      targetType: 'User',
+      targetId: user.id,
+      targetLabel: user.email,
     });
 
     return successResponse(res, {
@@ -45,11 +86,27 @@ export const setUserOtp = async (req: Request, res: Response) => {
     const user = await prisma.user.findUnique({ where: { id: userId } });
     if (!user) return errorResponse(res, 'errors.validation_error', 404, { message: 'User not found' });
 
+    // Same rationale as createPasswordResetLink above — disabling 2FA on
+    // another platform administrator's account is root-only.
+    if (isPlatformAdminAccount(user) && req.user?.isRootAdmin === false) {
+      return errorResponse(res, 'errors.forbidden', 403, { message: 'Root administrator access required' });
+    }
+
     const updated = await prisma.user.update({
       where: { id: user.id },
       data: required
         ? { otpRequired: true }
         : { otpRequired: false, otpSecret: null, otpConfirmedAt: null }
+    });
+
+    logAudit({
+      req,
+      restaurantId: user.restaurantId,
+      category: 'SYSTEM',
+      action: required ? 'TWO_FACTOR_ENABLED' : 'TWO_FACTOR_DISABLED',
+      targetType: 'User',
+      targetId: user.id,
+      targetLabel: user.email,
     });
 
     return successResponse(res, {
@@ -98,7 +155,19 @@ export const createTenant = async (req: Request, res: Response) => {
       return errorResponse(res, 'errors.validation_error', 400, { message: 'Required fields missing' });
     }
 
+    // Vertical/business type drives terminology + the default feature profile.
+    const businessType = isBusinessType(req.body.businessType)
+      ? req.body.businessType
+      : DEFAULT_BUSINESS_TYPE;
+    const featureProfile = getFeatureProfile(businessType);
+
     const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+    
+    const existingRestaurant = await prisma.restaurant.findUnique({ where: { slug } });
+    if (existingRestaurant) {
+      return errorResponse(res, 'errors.validation_error', 400, { message: 'Tenant name is already taken' });
+    }
+
     const existingUser = await prisma.user.findUnique({ where: { email: contactEmail } });
 
     if (existingUser) {
@@ -106,16 +175,21 @@ export const createTenant = async (req: Request, res: Response) => {
     }
 
     let isInvite = false;
-    let setupToken = null;
-    let setupTokenExpiresAt = null;
+    let rawSetupToken: string | null = null;
+    let setupTokenHash: string | null = null;
+    let setupTokenExpiresAt: Date | null = null;
     let finalPassword = adminPassword;
 
     if (!finalPassword) {
       isInvite = true;
-      finalPassword = Math.random().toString(36).slice(-10) + 'A1!'; // random secure dummy password
-      setupToken = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
-      setupTokenExpiresAt = new Date();
-      setupTokenExpiresAt.setDate(setupTokenExpiresAt.getDate() + 7); // 7 days expiry
+      // Dummy password the account is created with until setup completes — never
+      // shown or sent anywhere, but still a real credential accepted by /auth/login
+      // until then, so it needs the same CSPRNG entropy as the setup token itself.
+      finalPassword = crypto.randomBytes(16).toString('hex') + 'A1!';
+      const setup = generateHashedToken(SETUP_TOKEN_TTL_MS);
+      rawSetupToken = setup.rawToken;
+      setupTokenHash = setup.tokenHash;
+      setupTokenExpiresAt = setup.expiresAt;
     }
 
     const hashedPassword = await bcrypt.hash(finalPassword, 10);
@@ -128,13 +202,14 @@ export const createTenant = async (req: Request, res: Response) => {
       const restaurant = await prisma.restaurant.create({
         data: {
           name,
-          slug: `${slug}-${Date.now()}`,
+          slug,
           contactEmail,
+          businessType,
           subscriptionPlan: 'TRIAL',
           subscriptionStatus: 'ACTIVE',
           subscriptionEndsAt,
           settings: {
-            create: {}
+            create: { ...featureProfile }
           },
           customization: {
             create: {}
@@ -149,9 +224,9 @@ export const createTenant = async (req: Request, res: Response) => {
           firstName: adminFirstName,
           lastName: adminLastName,
           role: 'ADMIN',
-          permissions: 'manage_reservations,manage_tables,manage_menu,manage_calendar,manage_staff,manage_settings',
+          permissions: 'manage_reservations,manage_tables,edit_floor_plan,manage_menu,manage_calendar,manage_staff,manage_settings,manage_events',
           restaurantId: restaurant.id,
-          setupToken,
+          setupTokenHash,
           setupTokenExpiresAt
         }
       });
@@ -159,11 +234,33 @@ export const createTenant = async (req: Request, res: Response) => {
       return { restaurant, adminUser: user };
     });
 
+    logAudit({
+      req,
+      restaurantId: result.restaurant.id,
+      category: 'TENANT',
+      action: 'TENANT_PROVISIONED',
+      targetType: 'Restaurant',
+      targetId: result.restaurant.id,
+      targetLabel: result.restaurant.name,
+      metadata: { businessType, contactEmail },
+    });
+
     if (isInvite) {
-      return successResponse(res, { ...result, setupLink: `/auth/setup/${setupToken}` }, undefined, 201);
+      return successResponse(res, { ...result, setupLink: `/auth/setup/${rawSetupToken}` }, undefined, 201);
     }
     return successResponse(res, result, undefined, 201);
-  } catch (error) {
+  } catch (error: any) {
+    // The findUnique checks above are fail-fast convenience, not the real guard —
+    // Restaurant.slug and User.email are both DB-unique, so two near-simultaneous
+    // provisioning requests can both pass those checks and race to create(). Same
+    // pattern already fixed in authController.register / staffController.createStaffMember.
+    if (error?.code === 'P2002') {
+      const target = Array.isArray(error?.meta?.target) ? error.meta.target.join(',') : String(error?.meta?.target ?? '');
+      if (target.includes('slug')) {
+        return errorResponse(res, 'errors.validation_error', 400, { message: 'Tenant name is already taken' });
+      }
+      return errorResponse(res, 'errors.validation_error', 400, { message: 'Admin email already exists' });
+    }
     console.error('Create tenant error:', error);
     return errorResponse(res, 'errors.internal_error', 500);
   }
@@ -184,6 +281,17 @@ export const updateTenantSubscription = async (req: Request, res: Response) => {
       }
     });
 
+    logAudit({
+      req,
+      restaurantId: id,
+      category: 'SUBSCRIPTION',
+      action: 'SUBSCRIPTION_UPDATED',
+      targetType: 'Restaurant',
+      targetId: id,
+      targetLabel: updated.name,
+      metadata: { subscriptionPlan, subscriptionStatus },
+    });
+
     return successResponse(res, updated);
   } catch (error) {
     console.error('Update tenant subscription error:', error);
@@ -195,33 +303,94 @@ export const updateTenantSettings = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const {
-      isVipEnabled,
-      isInternalNotesEnabled,
-      isCategoriesEnabled,
-      hasWaitTimeFeature,
-      hasShiftFeature,
-      hasMenuFeature,
-      hasPaymentFeature,
       currency,
       twoFactorEnabled,
-      defaultLanguage
+      twoFactorRoles,
+      defaultLanguage,
+      showAuditLogToTenant
     } = req.body;
+
+    // 2FA is a root-admin-only control: the SysAdmin decides both whether the
+    // tenant uses 2FA (`twoFactorEnabled`) and which roles it applies to
+    // (`twoFactorRoles`). Normalize the roles to a comma-separated string; when
+    // 2FA is switched off, clear the role list so a later re-enable starts clean.
+    let twoFactorRolesUpdate: string | undefined;
+    if (twoFactorEnabled === false) {
+      twoFactorRolesUpdate = '';
+    } else if (twoFactorRoles !== undefined) {
+      twoFactorRolesUpdate = Array.isArray(twoFactorRoles)
+        ? twoFactorRoles.join(',')
+        : String(twoFactorRoles || '');
+    }
+
+    // When the SysAdmin switches the tenant's businessType, seed the vertical's
+    // default feature profile — but any flag explicitly present in this request
+    // wins over the profile default.
+    const businessTypeProvided = isBusinessType(req.body.businessType);
+    const profile = businessTypeProvided ? getFeatureProfile(req.body.businessType) : null;
+
+    const featureData: Record<string, boolean> = {};
+    for (const key of FEATURE_FLAG_KEYS) {
+      if (req.body[key] !== undefined) {
+        featureData[key] = Boolean(req.body[key]);
+      } else if (profile) {
+        featureData[key] = profile[key];
+      }
+    }
+
+    // Commercial add-on packages + custom domain (SysAdmin-only). Booleans for the
+    // two packages, the tenant's custom domain, and publishable-key rotation.
+    const {
+      hasHostedFrontend,
+      hasReservationWidget,
+      hasOnlineOrdering,
+      customDomain,
+      rotatePublicApiKey,
+    } = req.body;
+
+    const restaurantData: Record<string, unknown> = {};
+    if (businessTypeProvided) restaurantData.businessType = req.body.businessType;
+    if (hasHostedFrontend !== undefined) restaurantData.hasHostedFrontend = Boolean(hasHostedFrontend);
+    if (hasReservationWidget !== undefined) restaurantData.hasReservationWidget = Boolean(hasReservationWidget);
+    if (hasOnlineOrdering !== undefined) restaurantData.hasOnlineOrdering = Boolean(hasOnlineOrdering);
+
+    // Normalize a custom domain to a bare, lowercase host (strip scheme, path,
+    // trailing slash). Changing it invalidates any prior verification.
+    if (customDomain !== undefined) {
+      const normalized = typeof customDomain === 'string' && customDomain.trim()
+        ? customDomain.trim().toLowerCase().replace(/^https?:\/\//, '').replace(/\/.*$/, '')
+        : null;
+      restaurantData.customDomain = normalized;
+      restaurantData.customDomainVerifiedAt = null;
+    }
+
+    // Mint a publishable key when the widget is switched on and none exists yet,
+    // or whenever the SysAdmin explicitly asks to rotate it.
+    if (rotatePublicApiKey === true) {
+      restaurantData.publicApiKey = generatePublicApiKey();
+    } else if (Boolean(hasReservationWidget) === true) {
+      const existing = await prisma.restaurant.findUnique({
+        where: { id },
+        select: { publicApiKey: true },
+      });
+      if (!existing?.publicApiKey) restaurantData.publicApiKey = generatePublicApiKey();
+    }
+
+    if (Object.keys(restaurantData).length > 0) {
+      await prisma.restaurant.update({ where: { id }, data: restaurantData });
+    }
 
     const updated = await prisma.restaurantSettings.update({
       where: { restaurantId: id },
       data: {
-        isVipEnabled,
-        isInternalNotesEnabled,
-        isCategoriesEnabled,
-        hasWaitTimeFeature,
-        hasShiftFeature,
-        hasMenuFeature,
-        hasPaymentFeature,
+        ...featureData,
         // Currency, the 2FA capability flag and the default language are
         // root-admin-only controls.
         ...(currency !== undefined ? { currency } : {}),
         ...(twoFactorEnabled !== undefined ? { twoFactorEnabled } : {}),
-        ...(defaultLanguage !== undefined ? { defaultLanguage } : {})
+        ...(twoFactorRolesUpdate !== undefined ? { twoFactorRoles: twoFactorRolesUpdate } : {}),
+        ...(defaultLanguage !== undefined ? { defaultLanguage } : {}),
+        ...(showAuditLogToTenant !== undefined ? { showAuditLogToTenant: Boolean(showAuditLogToTenant) } : {})
       }
     });
 
@@ -232,6 +401,19 @@ export const updateTenantSettings = async (req: Request, res: Response) => {
         create: { restaurantId: id, layoutStyle: req.body.layoutStyle }
       });
     }
+
+    // Scope this to the tenant so it also surfaces in that tenant's own audit view.
+    const tenant = await prisma.restaurant.findUnique({ where: { id }, select: { name: true } });
+    logAudit({
+      req,
+      restaurantId: id,
+      category: 'SETTINGS',
+      action: 'TENANT_SETTINGS_UPDATED',
+      targetType: 'Restaurant',
+      targetId: id,
+      targetLabel: tenant?.name,
+      metadata: { ...featureData, ...(req.body.layoutStyle ? { layoutStyle: req.body.layoutStyle } : {}) },
+    });
 
     return successResponse(res, updated);
   } catch (error) {
@@ -245,11 +427,35 @@ export const updateTenantUserPermissions = async (req: Request, res: Response) =
     const { userId } = req.params;
     const { permissions } = req.body;
 
+    // This route is scoped to tenant staff only — a platform administrator's
+    // `permissions` column holds sys_* system capabilities, not tenant module
+    // keys, and is only ever settable via the root-only admins endpoint.
+    // Without this check, sys_manage_tenant_users would let a sub-admin
+    // overwrite ANY SUPER_ADMIN's permissions column (including its own),
+    // which is a privilege-escalation path even though root itself doesn't
+    // consult this column.
+    const target = await prisma.user.findUnique({ where: { id: userId }, select: { role: true, restaurantId: true } });
+    if (!target) return errorResponse(res, 'errors.validation_error', 404, { message: 'User not found' });
+    if (isPlatformAdminAccount(target) || !target.restaurantId) {
+      return errorResponse(res, 'errors.validation_error', 400, { message: 'This endpoint only manages tenant-scoped staff permissions' });
+    }
+
     const updatedUser = await prisma.user.update({
       where: { id: userId },
       data: {
         permissions: Array.isArray(permissions) ? permissions.join(',') : permissions
       }
+    });
+
+    logAudit({
+      req,
+      restaurantId: updatedUser.restaurantId,
+      category: 'PERMISSIONS',
+      action: 'PERMISSIONS_UPDATED',
+      targetType: 'User',
+      targetId: updatedUser.id,
+      targetLabel: updatedUser.email,
+      metadata: { permissions: updatedUser.permissions },
     });
 
     return successResponse(res, updatedUser);
@@ -259,15 +465,43 @@ export const updateTenantUserPermissions = async (req: Request, res: Response) =
   }
 };
 
+// Bootstraps the very first SUPER_ADMIN account. Necessarily reachable without
+// a logged-in caller (there's no admin yet to log in as), so it's gated
+// entirely by SETUP_SECRET_TOKEN plus the hardening below instead of a normal
+// auth/role check: a timing-safe token comparison (not a plain !==, which
+// leaks how many leading characters matched), per-IP rate limiting wired in
+// systemRoutes.ts, and the same password policy every other account-creation
+// path enforces. See the comment on the token check below for the full
+// rationale (added after a security-audit pass found this endpoint
+// unprotected and unthrottled).
 export const createSuperAdmin = async (req: Request, res: Response) => {
-  // NOTE: In production, this should be a CLI script or heavily protected.
-  // We leave it open for initial setup, but ideally you check for a secret token.
   try {
     const { email, password, firstName, lastName, secretToken } = req.body;
 
+    if (!email || !password || !firstName || !lastName) {
+      return errorResponse(res, 'errors.validation_error', 400, { message: 'Required fields missing' });
+    }
+
+    // Security-audit finding: this endpoint mints the highest-privilege
+    // account in the system (SUPER_ADMIN) and was gated only by a plain `!==`
+    // string comparison with zero rate limiting — a timing side-channel
+    // (leaking how many leading characters matched) combined with unlimited
+    // guesses. Every other secret comparison in this codebase (TOTP, PayTR
+    // callback hash) already uses crypto.timingSafeEqual; this one didn't.
+    // Route-level rate limiting is added alongside this in systemRoutes.ts.
     const envSecretToken = process.env.SETUP_SECRET_TOKEN;
-    if (!envSecretToken || secretToken !== envSecretToken) {
+    const providedToken = typeof secretToken === 'string' ? secretToken : '';
+    const tokenMatches =
+      !!envSecretToken &&
+      Buffer.byteLength(providedToken) === Buffer.byteLength(envSecretToken) &&
+      crypto.timingSafeEqual(Buffer.from(providedToken), Buffer.from(envSecretToken));
+    if (!tokenMatches) {
       return errorResponse(res, 'errors.unauthorized', 403, { message: 'Invalid or unconfigured setup token' });
+    }
+
+    const policy = validatePassword(password);
+    if (!policy.valid) {
+      return errorResponse(res, 'errors.password_policy', 400, { failed: policy.failed });
     }
 
     const existingUser = await prisma.user.findUnique({ where: { email } });
@@ -287,9 +521,130 @@ export const createSuperAdmin = async (req: Request, res: Response) => {
       }
     });
 
+    // Minting a platform-level SUPER_ADMIN is one of the most sensitive actions
+    // in the system — this bootstrap path (token-gated, no logged-in actor)
+    // was the one creation path that left no audit trail at all, unlike its
+    // sibling createSystemAdmin below.
+    logAudit({
+      req,
+      category: 'SYSTEM',
+      action: 'SUPER_ADMIN_BOOTSTRAPPED',
+      targetType: 'User',
+      targetId: user.id,
+      targetLabel: user.email,
+    });
+
     return successResponse(res, user, undefined, 201);
   } catch (error) {
     console.error('Create super admin error:', error);
+    return errorResponse(res, 'errors.internal_error', 500);
+  }
+};
+
+// POST /system/admins (SUPER_ADMIN only)
+// Add another platform administrator from within the console. Unlike
+// createSuperAdmin (the token-gated bootstrap for the very first admin), this is
+// already behind authMiddleware + roleMiddleware(['SUPER_ADMIN']) in the router,
+// so no setup token is required.
+export const createSystemAdmin = async (req: Request, res: Response) => {
+  try {
+    const { email, password, firstName, lastName } = req.body;
+
+    if (!email || !password || !firstName || !lastName) {
+      return errorResponse(res, 'errors.validation_error', 400, { message: 'Required fields missing' });
+    }
+    if (typeof password !== 'string' || password.length < 8) {
+      return errorResponse(res, 'errors.validation_error', 400, { message: 'Password must be at least 8 characters' });
+    }
+
+    const existingUser = await prisma.user.findUnique({ where: { email } });
+    if (existingUser) {
+      return errorResponse(res, 'errors.validation_error', 400, { message: 'Email already exists' });
+    }
+
+    // Defaults to a restricted sub-admin with zero capabilities — root access
+    // must be explicitly opted into, never implicit. `permissions` is ignored
+    // entirely (left null) for a root admin, since root bypasses permission
+    // checks regardless of what the column holds.
+    const isRootAdmin = req.body.isRootAdmin === true;
+    const permissions = isRootAdmin ? null : sanitizeSystemPermissions(req.body.permissions);
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+    const user = await prisma.user.create({
+      data: {
+        email,
+        passwordHash: hashedPassword,
+        firstName,
+        lastName,
+        role: 'SUPER_ADMIN',
+        isRootAdmin,
+        permissions
+        // restaurantId remains null — platform-level admin, not tenant-scoped
+      },
+      select: { id: true, email: true, firstName: true, lastName: true, role: true, isActive: true, isRootAdmin: true, permissions: true, createdAt: true }
+    });
+
+    logAudit({
+      req,
+      category: 'SYSTEM',
+      action: 'SYSTEM_ADMIN_CREATED',
+      targetType: 'User',
+      targetId: user.id,
+      targetLabel: user.email,
+      metadata: { isRootAdmin, permissions },
+    });
+
+    return successResponse(res, user, undefined, 201);
+  } catch (error) {
+    console.error('Create system admin error:', error);
+    return errorResponse(res, 'errors.internal_error', 500);
+  }
+};
+
+// PUT /system/admins/:id/permissions (root-only)
+// Changes an existing platform administrator's root/restricted status and, for
+// a restricted sub-admin, which sys_* capabilities they hold. Root-only for the
+// same reason POST /admins is — letting anyone else touch this would let a
+// sub-admin mint itself (or another account) more access than it was granted.
+export const updateSystemAdminPermissions = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { isRootAdmin } = req.body;
+
+    if (typeof isRootAdmin !== 'boolean') {
+      return errorResponse(res, 'errors.validation_error', 400, { message: 'isRootAdmin must be a boolean' });
+    }
+    // Mirrors the "can't deactivate your own account" guard on setSystemAdminActive
+    // below — without it, the last remaining root admin could strand the
+    // platform with no one able to manage administrators at all.
+    if (id === req.user!.userId && !isRootAdmin) {
+      return errorResponse(res, 'errors.validation_error', 400, { message: 'You cannot remove root access from your own account' });
+    }
+
+    const target = await prisma.user.findFirst({ where: { id, role: 'SUPER_ADMIN' } });
+    if (!target) return errorResponse(res, 'errors.not_found', 404);
+
+    const permissions = isRootAdmin ? null : sanitizeSystemPermissions(req.body.permissions);
+
+    const updated = await prisma.user.update({
+      where: { id },
+      data: { isRootAdmin, permissions },
+      select: { id: true, email: true, firstName: true, lastName: true, role: true, isActive: true, isRootAdmin: true, permissions: true, createdAt: true },
+    });
+
+    logAudit({
+      req,
+      category: 'PERMISSIONS',
+      action: 'SYSTEM_ADMIN_PERMISSIONS_UPDATED',
+      targetType: 'User',
+      targetId: updated.id,
+      targetLabel: updated.email,
+      metadata: { isRootAdmin, permissions },
+    });
+
+    return successResponse(res, updated);
+  } catch (error) {
+    console.error('Update system admin permissions error:', error);
     return errorResponse(res, 'errors.internal_error', 500);
   }
 };
@@ -309,17 +664,38 @@ export const getGlobalSettings = async (req: Request, res: Response) => {
 
 export const updateGlobalSettings = async (req: Request, res: Response) => {
   try {
-    const { maintenanceMode, publicRegistrationEnabled, enforce2FAForAdmins, measurementSystem } = req.body;
+    const { maintenanceMode, publicRegistrationEnabled, enforce2FAForAdmins, measurementSystem, dashboardTheme } = req.body;
 
     // Only accept the two supported conventions; anything else falls back to METRIC.
     const normalizedSystem = measurementSystem === 'US' ? 'US' : 'METRIC';
 
+    // Theme for the system-admin surface. Whitelist to the ids in
+    // frontend/src/lib/themes.ts; ignore an unknown value rather than persisting it.
+    const ALLOWED_THEMES = ['default', 'terracotta', 'forest', 'burgundy', 'amber'];
+    const themeUpdate =
+      dashboardTheme !== undefined && ALLOWED_THEMES.includes(dashboardTheme)
+        ? { dashboardTheme }
+        : {};
+
     const settings = await prisma.globalSettings.upsert({
       where: { id: 'global_1' },
-      update: { maintenanceMode, publicRegistrationEnabled, enforce2FAForAdmins, measurementSystem: normalizedSystem },
-      create: { id: 'global_1', maintenanceMode, publicRegistrationEnabled, enforce2FAForAdmins, measurementSystem: normalizedSystem }
+      update: { maintenanceMode, publicRegistrationEnabled, enforce2FAForAdmins, measurementSystem: normalizedSystem, ...themeUpdate },
+      create: { id: 'global_1', maintenanceMode, publicRegistrationEnabled, enforce2FAForAdmins, measurementSystem: normalizedSystem, ...themeUpdate }
     });
-    
+
+    // Drop the maintenance-flag cache so the toggle takes effect immediately
+    // instead of after the cache TTL.
+    bustMaintenanceCache();
+
+    logAudit({
+      req,
+      category: 'SYSTEM',
+      action: 'GLOBAL_SETTINGS_UPDATED',
+      targetType: 'GlobalSettings',
+      targetId: 'global_1',
+      metadata: { maintenanceMode, publicRegistrationEnabled, enforce2FAForAdmins, measurementSystem: normalizedSystem, ...themeUpdate },
+    });
+
     return successResponse(res, settings);
   } catch (error) {
     console.error('Update global settings error:', error);
@@ -337,12 +713,60 @@ export const getSystemAdmins = async (req: Request, res: Response) => {
         firstName: true,
         lastName: true,
         role: true,
+        isActive: true,
+        isRootAdmin: true,
+        permissions: true,
         createdAt: true
       }
     });
     return successResponse(res, admins);
   } catch (error) {
     console.error('Get system admins error:', error);
+    return errorResponse(res, 'errors.internal_error', 500);
+  }
+};
+
+// PUT /system/admins/:id/active — revoke or restore a SUPER_ADMIN account.
+// Security-audit finding: there was previously no way to revoke a
+// compromised/offboarded SysAdmin credential through the product at all,
+// only directly in the DB. Deactivating blocks new logins immediately
+// (authController.login) and any already-issued token on its very next
+// request of any kind (authMiddleware re-checks isActive live for every
+// SUPER_ADMIN request) — unlike a tenant staff token, which is stateless
+// until it expires, this one is checked live specifically because SUPER_ADMIN
+// is the highest-privilege role in the system.
+export const setSystemAdminActive = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { isActive } = req.body;
+    if (typeof isActive !== 'boolean') {
+      return errorResponse(res, 'errors.validation_error', 400, { message: 'isActive must be a boolean' });
+    }
+    if (id === req.user!.userId && !isActive) {
+      return errorResponse(res, 'errors.validation_error', 400, { message: 'You cannot deactivate your own account' });
+    }
+
+    const target = await prisma.user.findFirst({ where: { id, role: 'SUPER_ADMIN' } });
+    if (!target) return errorResponse(res, 'errors.not_found', 404);
+
+    const updated = await prisma.user.update({
+      where: { id },
+      data: { isActive },
+      select: { id: true, email: true, firstName: true, lastName: true, role: true, isActive: true, isRootAdmin: true, permissions: true, createdAt: true },
+    });
+
+    logAudit({
+      req,
+      category: 'SYSTEM',
+      action: isActive ? 'SUPER_ADMIN_REACTIVATED' : 'SUPER_ADMIN_DEACTIVATED',
+      targetType: 'User',
+      targetId: updated.id,
+      targetLabel: updated.email,
+    });
+
+    return successResponse(res, updated);
+  } catch (error) {
+    console.error('Set system admin active error:', error);
     return errorResponse(res, 'errors.internal_error', 500);
   }
 };
@@ -364,17 +788,27 @@ export const getSystemMetrics = async (req: Request, res: Response) => {
   }
 };
 
-import { generateToken } from '../utils/jwt';
+import { generateToken, verifyToken } from '../utils/jwt';
+import { setAuthCookie, setAdminStashCookie, clearAdminStashCookie } from '../utils/authCookie';
+import { parseCookies } from '../utils/cookies';
+import { ADMIN_STASH_COOKIE } from '../utils/authCookie';
 
 export const impersonateTenant = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
 
+    // Suspended/deactivated tenants must not be impersonable, even by SUPER_ADMIN.
+    const restaurant = await prisma.restaurant.findUnique({ where: { id }, select: { isActive: true } });
+    if (!restaurant || !restaurant.isActive) {
+      return errorResponse(res, 'errors.forbidden', 403, { message: 'Tenant is not active.' });
+    }
+
     // Find the primary admin of this restaurant
     const adminUser = await prisma.user.findFirst({
-      where: { 
+      where: {
         restaurantId: id,
-        role: 'ADMIN'
+        role: 'ADMIN',
+        isActive: true
       }
     });
 
@@ -382,8 +816,26 @@ export const impersonateTenant = async (req: Request, res: Response) => {
       return errorResponse(res, 'errors.not_found', 404, { message: 'No admin user found for this tenant.' });
     }
 
-    // Generate a token for this user
-    const token = generateToken(adminUser.id, adminUser.restaurantId, adminUser.role);
+    // impersonatedBy links every action taken during this session back to the
+    // real SUPER_ADMIN driving it (see logAudit, which reads this claim off
+    // req.user) — previously the only trace was the single audit row below;
+    // every subsequent action was indistinguishable from the tenant admin's own.
+    const token = generateToken(adminUser.id, adminUser.restaurantId, adminUser.role, adminUser.isRootAdmin, req.user!.userId);
+    setAuthCookie(res, token);
+    // Stash the SUPER_ADMIN's own current token server-side (also httpOnly)
+    // so stop-impersonation can restore it without a fresh login. req.token is
+    // the raw token this very request authenticated with (set by authMiddleware).
+    if (req.token) setAdminStashCookie(res, req.token);
+
+    logAudit({
+      req,
+      restaurantId: id,
+      category: 'SYSTEM',
+      action: 'IMPERSONATION_STARTED',
+      targetType: 'User',
+      targetId: adminUser.id,
+      targetLabel: adminUser.email,
+    });
 
     return successResponse(res, {
       user: {
@@ -399,6 +851,68 @@ export const impersonateTenant = async (req: Request, res: Response) => {
     });
   } catch (error) {
     console.error('Impersonate tenant error:', error);
+    return errorResponse(res, 'errors.internal_error', 500);
+  }
+};
+
+// POST /system/stop-impersonation — restores the stashed SUPER_ADMIN session
+// set aside by impersonateTenant. Reads the adminToken cookie directly (not
+// req.user) since the caller's *current* session is the impersonated tenant
+// admin's, not the SUPER_ADMIN's — this endpoint's whole job is switching back.
+export const stopImpersonation = async (req: Request, res: Response) => {
+  try {
+    const stashed = parseCookies(req.headers.cookie)[ADMIN_STASH_COOKIE];
+    if (!stashed) {
+      return errorResponse(res, 'errors.validation_error', 400, { message: 'No impersonation session to return from' });
+    }
+
+    let decoded;
+    try {
+      decoded = verifyToken(stashed);
+    } catch {
+      clearAdminStashCookie(res);
+      return errorResponse(res, 'errors.unauthorized', 401, { message: 'Stashed session is no longer valid' });
+    }
+    if (decoded.role !== 'SUPER_ADMIN') {
+      clearAdminStashCookie(res);
+      return errorResponse(res, 'errors.unauthorized', 401);
+    }
+
+    const admin = await prisma.user.findUnique({ where: { id: decoded.userId } });
+    if (!admin) {
+      clearAdminStashCookie(res);
+      return errorResponse(res, 'errors.unauthorized', 401);
+    }
+
+    setAuthCookie(res, stashed);
+    clearAdminStashCookie(res);
+
+    logAudit({
+      req,
+      actorId: admin.id,
+      actorEmail: admin.email,
+      actorName: `${admin.firstName ?? ''} ${admin.lastName ?? ''}`.trim() || null,
+      actorRole: admin.role,
+      category: 'SYSTEM',
+      action: 'IMPERSONATION_STOPPED',
+      targetType: 'User',
+      targetId: admin.id,
+      targetLabel: admin.email,
+    });
+
+    return successResponse(res, {
+      user: {
+        id: admin.id,
+        email: admin.email,
+        firstName: admin.firstName,
+        lastName: admin.lastName,
+        role: admin.role,
+        restaurantId: admin.restaurantId,
+        permissions: admin.permissions,
+      },
+    });
+  } catch (error) {
+    console.error('Stop impersonation error:', error);
     return errorResponse(res, 'errors.internal_error', 500);
   }
 };

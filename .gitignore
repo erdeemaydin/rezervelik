@@ -12,6 +12,10 @@ build/
 .next/
 out/
 
+# Local-disk fallback for uploads (src/services/storage/LocalDiskProvider.ts) —
+# only used in local dev when no S3_* env vars are set; never wanted in git.
+public/uploads/
+
 # Database
 prisma/dev.db
 prisma/dev.db-journal
@@ -57,3 +61,16 @@ Icon?
 # Misc
 .vercel
 *.tsbuildinfo
+
+# Local deploy/dev-instance artifacts (never commit)
+.ssh_bot/
+ecosystem.dev.config.js
+nginx-dining-dev.conf
+
+# Local AI-agent state (worktrees, settings)
+.claude/worktrees/
+.claude/settings.local.json
+
+# User-uploaded content (runtime-generated, not source; directory is
+# recreated at runtime by src/controllers/uploadController.ts)
+public/uploads/*

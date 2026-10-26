@@ -1,7 +1,7 @@
 name: CI
 
 # The "before it can reach production" gate: both jobs must pass on every PR and
-# on pushes to main. See docs/TESTING_AND_CICD.md for the full strategy.
+# on pushes to main. See docs/engineering/TESTING_AND_CICD.md for the full strategy.
 on:
   push:
     branches: [main]
@@ -11,6 +11,25 @@ jobs:
   backend:
     name: Backend (unit + API integration)
     runs-on: ubuntu-latest
+    # Tests run on real PostgreSQL (same engine as production). GitHub provides it
+    # as a service container; the harness sees TEST_DATABASE_URL and just resets +
+    # migrates it (no local container management needed here).
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: dining_test
+        ports:
+          - 5433:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      TEST_DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5433/dining_test?schema=public
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -18,6 +37,9 @@ jobs:
           node-version: 20
           cache: npm
       - run: npm ci
+      - name: Dependency audit (blocking — backend is currently 0 vulnerabilities
+          at every severity; see docs/planning/PRODUCTION_ROADMAP.md §11)
+        run: npm audit --audit-level=moderate
       - name: Generate Prisma client
         run: npm run prisma:generate
       - name: Provision isolated test database
@@ -43,6 +65,10 @@ jobs:
           cache: npm
           cache-dependency-path: frontend/package-lock.json
       - run: npm ci
+      - name: Dependency audit (blocking — frontend is currently 0
+          vulnerabilities at every severity as of the next@16.3.0 upgrade;
+          see docs/planning/PRODUCTION_ROADMAP.md §11)
+        run: npm audit --audit-level=moderate
       - name: Lint
         run: npm run lint
       - name: Type-check

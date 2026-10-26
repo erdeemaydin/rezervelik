@@ -1,19 +1,19 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import SystemAdminLayout from '@/components/layout/SystemAdminLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Building2, Plus, Settings2, ShieldCheck, ShieldAlert, Globe, Mail, Search, KeyRound, Copy } from 'lucide-react';
-import { 
-  Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter 
+import { Buildings, Plus, GearSix, ShieldCheck, ShieldWarning, Globe, Envelope, MagnifyingGlass, Key, Copy, CreditCard, SlidersHorizontal } from '@phosphor-icons/react';
+import {
+  Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Switch } from '@/components/ui/switch';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { useAuthStore } from '@/store/useAuthStore';
@@ -24,7 +24,7 @@ import { useTranslation } from '@/i18n/provider';
 export default function TenantManagementPage() {
   const { t } = useTranslation();
   const router = useRouter();
-  const login = useAuthStore((s) => s.login);
+  const startImpersonation = useAuthStore((s) => s.startImpersonation);
   const [tenants, setTenants] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -33,7 +33,8 @@ export default function TenantManagementPage() {
   const [searchQuery, setSearchQuery] = useState('');
 
   const [formData, setFormData] = useState({
-    name: '', contactEmail: '', adminFirstName: '', adminLastName: '', adminPassword: ''
+    name: '', contactEmail: '', adminFirstName: '', adminLastName: '', adminPassword: '',
+    businessType: 'RESTAURANT'
   });
   
   const [inviteLink, setInviteLink] = useState<string | null>(null);
@@ -41,9 +42,16 @@ export default function TenantManagementPage() {
   const [settingsForm, setSettingsForm] = useState({
     isVipEnabled: true, isInternalNotesEnabled: true, isCategoriesEnabled: true,
     hasWaitTimeFeature: true, hasShiftFeature: true, hasMenuFeature: true, hasPaymentFeature: true,
+    // Organizer / wedding modules (default off; the WEDDING profile turns them on).
+    hasEventPipeline: false, hasInstallmentPlans: false, hasGuestList: false, hasVendors: false,
+    // Commercial add-on on the Restaurant model (SysAdmin-only), not part of a vertical profile.
+    hasOnlineOrdering: false,
+    businessType: 'RESTAURANT',
     layoutStyle: 'CLASSIC_LIST',
     // Root-admin-only controls: platform currency + 2FA capability + default language.
-    currency: 'TRY', twoFactorEnabled: false, defaultLanguage: 'tr'
+    currency: 'TRY', twoFactorEnabled: false, twoFactorRoles: '', defaultLanguage: 'tr',
+    // Whether this tenant's own admins may view their activity audit log.
+    showAuditLogToTenant: false
   });
   
   const [subscriptionForm, setSubscriptionForm] = useState({
@@ -103,13 +111,16 @@ export default function TenantManagementPage() {
 
   useEffect(() => { fetchTenants(); }, []);
 
-  const fetchTenants = async () => {
+  const fetchTenants = async (): Promise<any[]> => {
     try {
       setLoading(true);
       const res = await api.get('/system/tenants');
       setTenants(res.data.data);
+      return res.data.data as any[];
     } catch (error) {
       console.error('Failed to fetch tenants:', error);
+      toast.error(t('systemAdmin.fetchTenantsError'));
+      return [];
     } finally { setLoading(false); }
   };
 
@@ -129,15 +140,15 @@ export default function TenantManagementPage() {
       }
       
       fetchTenants();
-      setFormData({ name: '', contactEmail: '', adminFirstName: '', adminLastName: '', adminPassword: '' });
+      setFormData({ name: '', contactEmail: '', adminFirstName: '', adminLastName: '', adminPassword: '', businessType: 'RESTAURANT' });
     } catch (err: any) { toast.error('Provisioning failed'); }
   };
 
   const handleImpersonate = async (tenantId: string) => {
     try {
       const res = await api.post(`/system/tenants/${tenantId}/impersonate`);
-      const { user, token } = res.data.data;
-      login(token, user);
+      const { user } = res.data.data;
+      startImpersonation(user);
       toast.success('Impersonation successful');
       router.push('/dashboard');
     } catch (err: any) {
@@ -155,9 +166,18 @@ export default function TenantManagementPage() {
       hasShiftFeature: tenant.settings?.hasShiftFeature ?? true,
       hasMenuFeature: tenant.settings?.hasMenuFeature ?? true,
       hasPaymentFeature: tenant.settings?.hasPaymentFeature ?? true,
+      hasEventPipeline: tenant.settings?.hasEventPipeline ?? false,
+      hasInstallmentPlans: tenant.settings?.hasInstallmentPlans ?? false,
+      hasGuestList: tenant.settings?.hasGuestList ?? false,
+      hasVendors: tenant.settings?.hasVendors ?? false,
+      // Add-on flags live on the Restaurant row itself, not on settings.
+      hasOnlineOrdering: tenant.hasOnlineOrdering ?? false,
       currency: tenant.settings?.currency ?? 'TRY',
       twoFactorEnabled: tenant.settings?.twoFactorEnabled ?? false,
+      twoFactorRoles: tenant.settings?.twoFactorRoles ?? '',
       defaultLanguage: tenant.settings?.defaultLanguage ?? 'tr',
+      showAuditLogToTenant: tenant.settings?.showAuditLogToTenant ?? false,
+      businessType: tenant.businessType || 'RESTAURANT',
       layoutStyle: tenant.customization?.layoutStyle || 'CLASSIC_LIST',
     });
     
@@ -184,113 +204,142 @@ export default function TenantManagementPage() {
       setAdminPermissions(newPerms);
   };
 
+  const [saving, setSaving] = useState(false);
+
   const handleUpdateSettings = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (saving) return; // guard against a double-submit racing the refetch
+    setSaving(true);
     try {
-      await api.put(`/system/tenants/${selectedTenant.id}/settings`, settingsForm);
-      await api.put(`/system/tenants/${selectedTenant.id}/subscription`, subscriptionForm);
-      
+      const tenantId = selectedTenant.id;
+      // Persist all three concerns for this tenant. Each awaits the previous so a
+      // single "Commit" reliably lands every change in one click.
+      await api.put(`/system/tenants/${tenantId}/settings`, settingsForm);
+      await api.put(`/system/tenants/${tenantId}/subscription`, subscriptionForm);
+
       const adminUser = selectedTenant.users?.find((u: any) => u.role === 'ADMIN');
       if (adminUser) {
           await api.put(`/system/users/${adminUser.id}/permissions`, {
               permissions: Array.from(adminPermissions)
           });
       }
-      
+
       toast.success('Entitlements updated');
+      // Await the refetch and re-point selectedTenant at the fresh row so that
+      // reopening the dialog never shows pre-save values (the reason it used to
+      // look like a change needed committing twice).
+      const fresh = await fetchTenants();
+      const updatedTenant = fresh.find((tt) => tt.id === tenantId);
+      if (updatedTenant) setSelectedTenant(updatedTenant);
       setIsSettingsOpen(false);
-      fetchTenants();
     } catch (err) { toast.error('Update failed'); }
+    finally { setSaving(false); }
   };
 
   const filteredTenants = tenants.filter(t => t.name.toLowerCase().includes(searchQuery.toLowerCase()) || t.slug.toLowerCase().includes(searchQuery.toLowerCase()));
 
   return (
-    <SystemAdminLayout>
+    <>
       <div className="flex flex-col gap-4">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-xl font-bold text-slate-800">{t('systemAdmin.tenantEcosystem')}</h1>
-            <p className="text-[10px] text-slate-400 uppercase tracking-[0.2em] font-black">{t('systemAdmin.globalInfrastructure')}</p>
+            <h1 className="text-2xl font-semibold tracking-tight text-foreground font-heading">{t('systemAdmin.tenantEcosystem')}</h1>
+            <p className="text-[10px] text-muted-foreground tracking-[0.2em] font-semibold">{t('systemAdmin.globalInfrastructure')}</p>
           </div>
-          <Button size="sm" onClick={() => setIsDialogOpen(true)} className="bg-emerald-600 hover:bg-emerald-700 h-8 text-[10px] font-black uppercase">{t('systemAdmin.provisionNewRestaurant')}</Button>
+          <Button size="sm" onClick={() => setIsDialogOpen(true)} className="bg-emerald-600 hover:bg-emerald-700 h-8 text-[10px] font-semibold">{t('systemAdmin.provisionNewRestaurant')}</Button>
         </div>
 
-        <Card className="rounded-md border-slate-200 shadow-sm overflow-hidden bg-white">
-          <CardHeader className="p-3 bg-slate-50/50 border-b border-slate-200">
+        <Card className="rounded-md border-border shadow-sm overflow-hidden bg-card">
+          <CardHeader className="p-3 bg-muted/50 border-b border-border">
              <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                    <Globe className="w-4 h-4 text-emerald-500" />
-                    <span className="text-xs font-bold text-slate-700">{t('systemAdmin.activeInstances')}</span>
+                    <Globe className="w-4 h-4 text-emerald-500 dark:text-emerald-400" />
+                    <span className="text-xs font-bold text-foreground">{t('systemAdmin.activeInstances')}</span>
                 </div>
                 <div className="relative w-64">
-                    <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
-                    <Input placeholder={t('systemAdmin.searchPlaceholder')} className="pl-8 h-8 text-xs bg-white border-slate-200 rounded-md" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
+                    <MagnifyingGlass className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
+                    <Input placeholder={t('systemAdmin.searchPlaceholder')} className="pl-8 h-8 text-xs bg-card border-border rounded-md" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
                 </div>
              </div>
           </CardHeader>
           <CardContent className="p-0">
             <Table>
-              <TableHeader className="bg-slate-50/80">
+              <TableHeader className="bg-muted/80">
                 <TableRow className="h-9">
-                  <TableHead className="text-[9px] font-black text-slate-400 uppercase tracking-widest px-4">{t('systemAdmin.restaurantDomain')}</TableHead>
-                  <TableHead className="text-[9px] font-black text-slate-400 uppercase tracking-widest">{t('systemAdmin.subscription')}</TableHead>
-                  <TableHead className="text-[9px] font-black text-slate-400 uppercase tracking-widest">{t('systemAdmin.featureFlags')}</TableHead>
-                  <TableHead className="text-[9px] font-black text-slate-400 uppercase tracking-widest">{t('systemAdmin.provisioned')}</TableHead>
-                  <TableHead className="text-[9px] font-black text-slate-400 uppercase tracking-widest text-right px-4">{t('systemAdmin.command')}</TableHead>
+                  <TableHead className="text-[9px] font-semibold text-muted-foreground px-4">{t('systemAdmin.restaurantDomain')}</TableHead>
+                  <TableHead className="text-[9px] font-semibold text-muted-foreground">{t('systemAdmin.subscription')}</TableHead>
+                  <TableHead className="text-[9px] font-semibold text-muted-foreground">{t('systemAdmin.featureFlags')}</TableHead>
+                  <TableHead className="text-[9px] font-semibold text-muted-foreground">{t('systemAdmin.provisioned')}</TableHead>
+                  <TableHead className="text-[9px] font-semibold text-muted-foreground text-right px-4">{t('systemAdmin.command')}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {loading ? (
-                    <TableRow><TableCell colSpan={4} className="h-32 text-center text-[10px] font-black text-slate-400 uppercase tracking-widest">Querying Tenants...</TableCell></TableRow>
+                    <TableRow><TableCell colSpan={5} className="h-32 text-center text-[10px] font-semibold text-muted-foreground">Querying Tenants...</TableCell></TableRow>
                 ) : filteredTenants.map(tenant => (
-                  <TableRow key={tenant.id} className="h-12 hover:bg-slate-50/50 border-b border-slate-100">
+                  <TableRow key={tenant.id} className="h-12 hover:bg-muted/50 border-b border-border">
                     <TableCell className="px-4">
                       <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded bg-emerald-50 flex items-center justify-center text-emerald-600 border border-emerald-100">
-                            <Building2 className="w-4 h-4" />
+                        <div className="w-8 h-8 rounded bg-emerald-50 dark:bg-emerald-950/40 flex items-center justify-center text-emerald-600 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-800/50">
+                            <Buildings className="w-4 h-4" />
                         </div>
-                        <div>
-                            <div className="font-bold text-slate-900 text-xs uppercase tracking-tight">{tenant.name}</div>
-                            <div className="text-[9px] text-slate-400 font-mono">{tenant.slug}.reservue.com</div>
+                        <div className="min-w-0">
+                            <div className="font-bold text-foreground text-xs tracking-tight truncate">{tenant.name}</div>
+                            <div className="text-[9px] text-muted-foreground font-mono truncate">{tenant.slug}.your-domain.com</div>
+                            {(() => {
+                              const adminUser = tenant.users?.find((u: any) => u.role === 'ADMIN');
+                              const email = adminUser?.email || tenant.contactEmail;
+                              const adminName = adminUser ? `${adminUser.firstName ?? ''} ${adminUser.lastName ?? ''}`.trim() : '';
+                              if (!email) return null;
+                              return (
+                                <a
+                                  href={`mailto:${email}`}
+                                  title={adminName ? `${adminName} · ${email}` : email}
+                                  className="mt-0.5 flex items-center gap-1 text-[10px] text-muted-foreground hover:text-emerald-600 dark:text-emerald-400 truncate"
+                                >
+                                  <Envelope className="w-3 h-3 shrink-0" />
+                                  <span className="truncate">{email}</span>
+                                </a>
+                              );
+                            })()}
                         </div>
                       </div>
                     </TableCell>
                     <TableCell>
                       <div className="flex flex-col items-start justify-center gap-1">
                         <Badge variant="outline" className={cn(
-                          "text-[9px] font-black uppercase px-1.5 py-0 border",
-                          tenant.subscriptionPlan === 'PREMIUM' ? 'bg-indigo-50 text-indigo-700 border-indigo-200' :
-                          tenant.subscriptionPlan === 'PRO' ? 'bg-purple-50 text-purple-700 border-purple-200' :
+"text-[9px] font-semibold px-1.5 py-0 border",
+                          tenant.subscriptionPlan === 'PREMIUM' ? 'bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-400 border-indigo-200 dark:border-indigo-800/50' :
+                          tenant.subscriptionPlan === 'PRO' ? 'bg-purple-50 dark:bg-purple-950/40 text-purple-700 dark:text-purple-400 border-purple-200 dark:border-purple-800/50' :
                           tenant.subscriptionPlan === 'BASIC' ? 'bg-blue-50 text-blue-700 border-blue-200' :
-                          'bg-amber-50 text-amber-700 border-amber-200'
+                          'bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-800/50'
                         )}>{tenant.subscriptionPlan || 'TRIAL'}</Badge>
                         {tenant.subscriptionPlan === 'TRIAL' && tenant.subscriptionEndsAt ? (
-                          <span className="text-[8px] font-bold text-slate-400">
+                          <span className="text-[8px] font-bold text-muted-foreground">
                             {Math.max(0, Math.ceil((new Date(tenant.subscriptionEndsAt).getTime() - new Date().getTime()) / (1000 * 3600 * 24)))} days left
                           </span>
                         ) : tenant.subscriptionStatus !== 'ACTIVE' ? (
-                           <span className="text-[8px] font-bold text-red-500 uppercase">{tenant.subscriptionStatus}</span>
+                           <span className="text-[8px] font-bold text-red-500 dark:text-red-400">{tenant.subscriptionStatus}</span>
                         ) : null}
                       </div>
                     </TableCell>
                     <TableCell>
                         <div className="flex gap-1">
-                            {tenant.settings?.isVipEnabled && <Badge className="bg-amber-50 text-amber-700 border-amber-100 text-[8px] font-black px-1 rounded-sm shadow-none">VIP</Badge>}
+                            {tenant.settings?.isVipEnabled && <Badge className="bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400 border-amber-100 dark:border-amber-800/50 text-[8px] font-black px-1 rounded-sm shadow-none">VIP</Badge>}
                             {tenant.settings?.isInternalNotesEnabled && <Badge className="bg-blue-50 text-blue-700 border-blue-100 text-[8px] font-black px-1 rounded-sm shadow-none">NOTE</Badge>}
-                            {tenant.settings?.isCategoriesEnabled && <Badge className="bg-emerald-50 text-emerald-700 border-emerald-100 text-[8px] font-black px-1 rounded-sm shadow-none">CAT</Badge>}
+                            {tenant.settings?.isCategoriesEnabled && <Badge className="bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 border-emerald-100 dark:border-emerald-800/50 text-[8px] font-black px-1 rounded-sm shadow-none">CAT</Badge>}
                         </div>
                     </TableCell>
                     <TableCell>
-                        <div className="text-[10px] font-bold text-slate-500">{new Date(tenant.createdAt).toLocaleDateString()}</div>
+                        <div className="text-[10px] font-bold text-muted-foreground">{new Date(tenant.createdAt).toLocaleDateString()}</div>
                     </TableCell>
                     <TableCell className="px-4 text-right">
                         <div className="flex justify-end gap-1">
-                          <Button variant="ghost" size="sm" className="h-7 text-[10px] font-bold text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 px-2" onClick={() => handleImpersonate(tenant.id)}>
+                          <Button variant="ghost" size="sm" className="h-7 text-[10px] font-bold text-muted-foreground hover:text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:bg-indigo-950/40 px-2" onClick={() => handleImpersonate(tenant.id)}>
                               {t('systemAdmin.loginAs')}
                           </Button>
-                          <Button variant="ghost" size="icon" className="h-7 w-7 text-slate-300 hover:text-emerald-600" onClick={() => openSettings(tenant)}>
-                              <Settings2 className="w-3.5 h-3.5" />
+                          <Button variant="ghost" size="icon" className="h-7 w-7 text-slate-300 hover:text-emerald-600 dark:text-emerald-400" onClick={() => openSettings(tenant)}>
+                              <GearSix className="w-3.5 h-3.5" />
                           </Button>
                         </div>
                     </TableCell>
@@ -307,47 +356,62 @@ export default function TenantManagementPage() {
             <form onSubmit={handleCreateTenant}>
                 <div className="bg-emerald-900 p-4 text-white">
                     <DialogHeader>
-                        <DialogTitle className="text-lg font-bold uppercase tracking-tight">Provision New Tenant</DialogTitle>
+                        <DialogTitle className="text-lg font-bold tracking-tight">Provision New Tenant</DialogTitle>
                     </DialogHeader>
                 </div>
-                <div className="p-6 space-y-4 bg-white">
+                <div className="p-6 space-y-4 bg-card">
                     <div className="grid gap-1.5">
-                        <Label className="text-[10px] font-black uppercase text-slate-400 ml-1">Restaurant Name</Label>
-                        <Input required value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} className="h-10 text-sm font-bold border-slate-200 rounded-sm" />
+                        <Label className="text-[10px] font-semibold text-muted-foreground ml-1">Restaurant Name</Label>
+                        <Input required value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} className="h-10 text-sm font-bold border-border rounded-sm" />
                     </div>
                     <div className="grid gap-1.5">
-                        <Label className="text-[10px] font-black uppercase text-slate-400 ml-1">Admin Email</Label>
-                        <Input required type="email" value={formData.contactEmail} onChange={e => setFormData({...formData, contactEmail: e.target.value})} className="h-10 text-sm font-bold border-slate-200 rounded-sm" />
+                        <Label className="text-[10px] font-semibold text-muted-foreground ml-1">Admin Email</Label>
+                        <Input required type="email" value={formData.contactEmail} onChange={e => setFormData({...formData, contactEmail: e.target.value})} className="h-10 text-sm font-bold border-border rounded-sm" />
                     </div>
                     <div className="grid grid-cols-2 gap-4">
                         <div className="grid gap-1.5">
-                            <Label className="text-[10px] font-black uppercase text-slate-400 ml-1">First Name</Label>
-                            <Input required value={formData.adminFirstName} onChange={e => setFormData({...formData, adminFirstName: e.target.value})} className="h-10 text-sm font-bold border-slate-200 rounded-sm" />
+                            <Label className="text-[10px] font-semibold text-muted-foreground ml-1">First Name</Label>
+                            <Input required value={formData.adminFirstName} onChange={e => setFormData({...formData, adminFirstName: e.target.value})} className="h-10 text-sm font-bold border-border rounded-sm" />
                         </div>
                         <div className="grid gap-1.5">
-                            <Label className="text-[10px] font-black uppercase text-slate-400 ml-1">Last Name</Label>
-                            <Input required value={formData.adminLastName} onChange={e => setFormData({...formData, adminLastName: e.target.value})} className="h-10 text-sm font-bold border-slate-200 rounded-sm" />
+                            <Label className="text-[10px] font-semibold text-muted-foreground ml-1">Last Name</Label>
+                            <Input required value={formData.adminLastName} onChange={e => setFormData({...formData, adminLastName: e.target.value})} className="h-10 text-sm font-bold border-border rounded-sm" />
                         </div>
                     </div>
                     <div className="grid gap-1.5">
-                        <Label className="text-[10px] font-black uppercase text-slate-400 ml-1">Initial Password (Optional)</Label>
-                        <Input type="password" value={formData.adminPassword} onChange={e => setFormData({...formData, adminPassword: e.target.value})} placeholder="Leave blank to generate invite link" className="h-10 text-sm font-bold border-slate-200 rounded-sm" />
+                        <Label className="text-[10px] font-semibold text-muted-foreground ml-1">Initial Password (Optional)</Label>
+                        <Input type="password" value={formData.adminPassword} onChange={e => setFormData({...formData, adminPassword: e.target.value})} placeholder="Leave blank to generate invite link" className="h-10 text-sm font-bold border-border rounded-sm" />
+                    </div>
+                    <div className="grid gap-1.5">
+                        <Label className="text-[10px] font-semibold text-muted-foreground ml-1">Business Type</Label>
+                        <select
+                          value={formData.businessType}
+                          onChange={e => setFormData({...formData, businessType: e.target.value})}
+                          className="h-10 px-2 text-sm font-bold border border-border rounded-sm bg-card transition-colors outline-none hover:border-ring focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+                        >
+                          <option value="RESTAURANT">Restaurant</option>
+                          <option value="SALON">Salon / Barber</option>
+                          <option value="SPORTS">Sports / Courts</option>
+                          <option value="COWORKING">Coworking</option>
+                          <option value="CLINIC">Clinic</option>
+                          <option value="WEDDING">Wedding / Events</option>
+                        </select>
                     </div>
                 </div>
                 {inviteLink && (
                   <div className="px-6 pb-4">
-                    <div className="bg-emerald-50 border border-emerald-200 p-4 rounded-sm">
-                      <Label className="text-[10px] font-black uppercase text-emerald-700">Setup Invite Link Generated</Label>
+                    <div className="bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/50 p-4 rounded-sm">
+                      <Label className="text-[10px] font-semibold text-emerald-700 dark:text-emerald-400">Setup Invite Link Generated</Label>
                       <div className="flex mt-1 gap-2">
-                        <Input readOnly value={inviteLink} className="h-8 text-xs bg-white" />
+                        <Input readOnly value={inviteLink} className="h-8 text-xs bg-card" />
                         <Button type="button" size="sm" onClick={() => { navigator.clipboard.writeText(inviteLink); toast.success('Copied to clipboard!'); }} className="h-8 bg-emerald-600 hover:bg-emerald-700">Copy</Button>
                       </div>
                     </div>
                   </div>
                 )}
-                <div className="p-4 bg-slate-50 border-t border-slate-100 flex justify-end gap-2">
-                    <Button type="button" variant="ghost" onClick={() => { setIsDialogOpen(false); setInviteLink(null); }} className="h-9 text-xs font-bold text-slate-400">CLOSE</Button>
-                    {!inviteLink && <Button type="submit" className="h-9 bg-emerald-600 hover:bg-emerald-700 text-xs font-black uppercase px-6 rounded-sm">INITIALIZE PROVISIONING</Button>}
+                <div className="p-4 bg-muted border-t border-border flex justify-end gap-2">
+                    <Button type="button" variant="ghost" onClick={() => { setIsDialogOpen(false); setInviteLink(null); }} className="h-9 text-xs font-bold text-muted-foreground">CLOSE</Button>
+                    {!inviteLink && <Button type="submit" className="h-9 bg-emerald-600 hover:bg-emerald-700 text-xs font-semibold px-6 rounded-sm">INITIALIZE PROVISIONING</Button>}
                 </div>
             </form>
           </DialogContent>
@@ -355,23 +419,32 @@ export default function TenantManagementPage() {
 
         {/* Entitlements Dialog */}
         <Dialog open={isSettingsOpen} onOpenChange={setIsSettingsOpen}>
-            <DialogContent maxWidth="sm:max-w-2xl" className="p-0 rounded-md border-0 shadow-2xl">
+            <DialogContent maxWidth="sm:max-w-4xl" className="p-0 rounded-lg border-0 shadow-2xl">
                 <form onSubmit={handleUpdateSettings}>
-                    <div className="bg-slate-900 p-4 text-white">
+                    <div className="bg-slate-900 px-6 py-4 text-white rounded-t-lg">
                         <DialogHeader>
-                            <DialogTitle className="text-sm font-bold uppercase tracking-widest">Entitlements: {selectedTenant?.name}</DialogTitle>
+                            <DialogTitle className="text-sm font-bold">Entitlements</DialogTitle>
+                            <p className="text-[11px] text-muted-foreground font-medium normal-case tracking-normal">{selectedTenant?.name} · {selectedTenant?.slug}.your-domain.com</p>
                         </DialogHeader>
                     </div>
-                    <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-8 bg-white max-h-[80vh] overflow-y-auto">
-                        <div className="col-span-1 md:col-span-2 border-b border-slate-100 pb-6 mb-2">
-                            <div className="flex items-center gap-2 mb-4">
-                                <Label className="text-xs font-black uppercase text-slate-800 tracking-tight">Subscription Management</Label>
-                            </div>
-                            <div className="grid grid-cols-3 gap-4">
+                    <div className="bg-card max-h-[82vh] overflow-y-auto">
+                      <Tabs defaultValue="subscription" className="w-full gap-0">
+                        <div className="px-6 pt-4 border-b border-border sticky top-0 bg-card z-10">
+                          <TabsList className="bg-muted/60">
+                            <TabsTrigger value="subscription" className="text-[10px] font-semibold gap-1.5"><CreditCard className="w-3.5 h-3.5" /> Subscription</TabsTrigger>
+                            <TabsTrigger value="configuration" className="text-[10px] font-semibold gap-1.5"><GearSix className="w-3.5 h-3.5" /> Configuration</TabsTrigger>
+                            <TabsTrigger value="features" className="text-[10px] font-semibold gap-1.5"><SlidersHorizontal className="w-3.5 h-3.5" /> Feature Flags</TabsTrigger>
+                            <TabsTrigger value="admin" className="text-[10px] font-semibold gap-1.5"><ShieldWarning className="w-3.5 h-3.5" /> Admin &amp; Security</TabsTrigger>
+                          </TabsList>
+                        </div>
+                        <div className="p-6">
+                        <TabsContent value="subscription" className="mt-0 space-y-6">
+                        <div>
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                                 <div className="space-y-1.5">
-                                    <Label className="text-[10px] font-black uppercase text-slate-400">Plan Tier</Label>
+                                    <Label className="text-[10px] font-semibold text-muted-foreground">Plan Tier</Label>
                                     <select 
-                                      className="w-full h-9 px-3 text-xs font-bold border border-slate-200 rounded-sm bg-slate-50"
+                                      className="w-full h-9 px-3 text-xs font-bold border border-border rounded-sm bg-muted transition-colors outline-none hover:border-ring focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
                                       value={subscriptionForm.subscriptionPlan}
                                       onChange={e => {
                                         const plan = e.target.value;
@@ -395,9 +468,9 @@ export default function TenantManagementPage() {
                                     </select>
                                 </div>
                                 <div className="space-y-1.5">
-                                    <Label className="text-[10px] font-black uppercase text-slate-400">Status</Label>
+                                    <Label className="text-[10px] font-semibold text-muted-foreground">Status</Label>
                                     <select 
-                                      className="w-full h-9 px-3 text-xs font-bold border border-slate-200 rounded-sm bg-slate-50"
+                                      className="w-full h-9 px-3 text-xs font-bold border border-border rounded-sm bg-muted transition-colors outline-none hover:border-ring focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
                                       value={subscriptionForm.subscriptionStatus}
                                       onChange={e => setSubscriptionForm({...subscriptionForm, subscriptionStatus: e.target.value})}
                                     >
@@ -407,37 +480,63 @@ export default function TenantManagementPage() {
                                     </select>
                                 </div>
                                 <div className="space-y-1.5">
-                                    <Label className="text-[10px] font-black uppercase text-slate-400">Subscription Ends At</Label>
+                                    <Label className="text-[10px] font-semibold text-muted-foreground">Subscription Ends At</Label>
                                     <Input 
                                       type="date" 
-                                      className="h-9 text-xs font-bold border-slate-200 rounded-sm bg-slate-50"
+                                      className="h-9 text-xs font-bold border-border rounded-sm bg-muted"
                                       value={subscriptionForm.subscriptionEndsAt}
                                       onChange={e => setSubscriptionForm({...subscriptionForm, subscriptionEndsAt: e.target.value})}
                                     />
                                 </div>
                             </div>
                             <div className="mt-4 space-y-1.5">
-                                <Label className="text-[10px] font-black uppercase text-slate-400">SysAdmin Notes</Label>
+                                <Label className="text-[10px] font-semibold text-muted-foreground">SysAdmin Notes</Label>
                                 <textarea 
-                                  className="w-full h-24 p-3 text-xs font-medium border border-slate-200 rounded-sm bg-slate-50 resize-none"
+                                  className="w-full h-24 p-3 text-xs font-medium border border-border rounded-sm bg-muted resize-none"
                                   placeholder="Internal notes about billing, integration, or custom agreements..."
                                   value={subscriptionForm.sysAdminNotes}
                                   onChange={e => setSubscriptionForm({...subscriptionForm, sysAdminNotes: e.target.value})}
                                 />
                             </div>
                         </div>
+                        </TabsContent>
+
+                        <TabsContent value="configuration" className="mt-0 space-y-6">
+                        <div className="space-y-4">
+                            <div className="flex items-center gap-2 mb-2">
+                                <Label className="text-xs font-semibold text-foreground tracking-tight">Business Vertical</Label>
+                            </div>
+                            <div className="flex items-center justify-between p-3 border border-border rounded-sm">
+                                <div className="space-y-0.5">
+                                    <Label className="text-xs font-semibold">Business Type</Label>
+                                    <p className="text-[9px] text-muted-foreground font-bold">Terminology & default features</p>
+                                </div>
+                                <select
+                                  className="h-8 px-2 text-xs font-bold border border-border rounded-sm bg-muted transition-colors outline-none hover:border-ring focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+                                  value={settingsForm.businessType}
+                                  onChange={e => setSettingsForm({...settingsForm, businessType: e.target.value})}
+                                >
+                                  <option value="RESTAURANT">Restaurant</option>
+                                  <option value="SALON">Salon / Barber</option>
+                                  <option value="SPORTS">Sports / Courts</option>
+                                  <option value="COWORKING">Coworking</option>
+                                  <option value="CLINIC">Clinic</option>
+                                  <option value="WEDDING">Wedding / Events</option>
+                                </select>
+                            </div>
+                        </div>
 
                         <div className="space-y-4">
                             <div className="flex items-center gap-2 mb-2">
-                                <Label className="text-xs font-black uppercase text-slate-800 tracking-tight">Design Architecture</Label>
+                                <Label className="text-xs font-semibold text-foreground tracking-tight">Design Architecture</Label>
                             </div>
-                            <div className="flex items-center justify-between p-3 border border-slate-100 rounded-sm">
+                            <div className="flex items-center justify-between p-3 border border-border rounded-sm">
                                 <div className="space-y-0.5">
-                                    <Label className="text-xs font-black uppercase">Layout Style</Label>
-                                    <p className="text-[9px] text-slate-400 font-bold uppercase">Customer Portal Theme</p>
+                                    <Label className="text-xs font-semibold">Layout Style</Label>
+                                    <p className="text-[9px] text-muted-foreground font-bold">Customer Portal Theme</p>
                                 </div>
                                 <select 
-                                  className="h-8 px-2 text-xs font-bold border border-slate-200 rounded-sm bg-slate-50"
+                                  className="h-8 px-2 text-xs font-bold border border-border rounded-sm bg-muted transition-colors outline-none hover:border-ring focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
                                   value={settingsForm.layoutStyle}
                                   onChange={e => setSettingsForm({...settingsForm, layoutStyle: e.target.value})}
                                 >
@@ -445,22 +544,26 @@ export default function TenantManagementPage() {
                                   <option value="EDITORIAL_IMAGE">Premium Editorial</option>
                                   <option value="ANIMATED">Olden (Vintage)</option>
                                   <option value="GARDEN_FRESH">Garden (Light & Creative)</option>
+                                  <option value="NOIR_LOUNGE">Noir Lounge (Dark & Neon)</option>
+                                  <option value="NORDIC_MINIMAL">Nordic Minimal (Clean & Quiet)</option>
+                                  <option value="TRATTORIA_RUSTIC">Trattoria Rustic (Warm & Handcrafted)</option>
+                                  <option value="BOLD_EDITORIAL">Bold Editorial (Magazine & Asymmetric)</option>
                                 </select>
                             </div>
                         </div>
 
                         <div className="space-y-4">
                             <div className="flex items-center gap-2 mb-2">
-                                <Label className="text-xs font-black uppercase text-slate-800 tracking-tight">Platform Configuration</Label>
+                                <Label className="text-xs font-semibold text-foreground tracking-tight">Platform Configuration</Label>
                             </div>
                             {/* Global currency — root-admin-only; tenant admins see it read-only. */}
-                            <div className="flex items-center justify-between p-3 border border-slate-100 rounded-sm">
+                            <div className="flex items-center justify-between p-3 border border-border rounded-sm">
                                 <div className="space-y-0.5">
-                                    <Label className="text-xs font-black uppercase">Currency</Label>
-                                    <p className="text-[9px] text-slate-400 font-bold uppercase">Global Menu & Deposit Currency</p>
+                                    <Label className="text-xs font-semibold">Currency</Label>
+                                    <p className="text-[9px] text-muted-foreground font-bold">Global Menu & Deposit Currency</p>
                                 </div>
                                 <select
-                                  className="h-8 px-2 text-xs font-bold border border-slate-200 rounded-sm bg-slate-50"
+                                  className="h-8 px-2 text-xs font-bold border border-border rounded-sm bg-muted transition-colors outline-none hover:border-ring focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
                                   value={settingsForm.currency}
                                   onChange={e => setSettingsForm({...settingsForm, currency: e.target.value})}
                                 >
@@ -471,13 +574,13 @@ export default function TenantManagementPage() {
                                 </select>
                             </div>
                             {/* Default UI language — applied for users who haven't chosen one. */}
-                            <div className="flex items-center justify-between p-3 border border-slate-100 rounded-sm">
+                            <div className="flex items-center justify-between p-3 border border-border rounded-sm">
                                 <div className="space-y-0.5">
-                                    <Label className="text-xs font-black uppercase">Default Language</Label>
-                                    <p className="text-[9px] text-slate-400 font-bold uppercase">Dashboard UI Language</p>
+                                    <Label className="text-xs font-semibold">Default Language</Label>
+                                    <p className="text-[9px] text-muted-foreground font-bold">Dashboard UI Language</p>
                                 </div>
                                 <select
-                                  className="h-8 px-2 text-xs font-bold border border-slate-200 rounded-sm bg-slate-50"
+                                  className="h-8 px-2 text-xs font-bold border border-border rounded-sm bg-muted transition-colors outline-none hover:border-ring focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
                                   value={settingsForm.defaultLanguage}
                                   onChange={e => setSettingsForm({...settingsForm, defaultLanguage: e.target.value})}
                                 >
@@ -485,80 +588,170 @@ export default function TenantManagementPage() {
                                   <option value="en">English (EN)</option>
                                 </select>
                             </div>
-                            {/* 2FA capability — when on, the tenant admin can require 2FA by role. */}
-                            <div className="flex items-center justify-between p-3 border border-slate-100 rounded-sm bg-rose-50/30">
-                                <div className="space-y-0.5">
-                                    <Label className="text-xs font-black uppercase text-rose-900">Two-Factor Capability</Label>
-                                    <p className="text-[9px] text-rose-400 font-bold uppercase">Let Tenant Require 2FA By Role</p>
-                                </div>
-                                <Checkbox checked={settingsForm.twoFactorEnabled} onCheckedChange={(c) => setSettingsForm({...settingsForm, twoFactorEnabled: !!c})} />
-                            </div>
                         </div>
+                        </TabsContent>
 
-                        <div className="space-y-4">
-                            <div className="flex items-center gap-2 mb-2">
-                                <Label className="text-xs font-black uppercase text-slate-800 tracking-tight">Feature Flags</Label>
-                            </div>
-                            <div className="flex items-center justify-between p-3 border border-slate-100 rounded-sm">
+                        <TabsContent value="features" className="mt-0">
+                        <div className="flex items-center gap-2 mb-3">
+                            <Label className="text-xs font-semibold text-foreground tracking-tight">Feature Flags</Label>
+                        </div>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <div className="flex items-center justify-between p-3 border border-border rounded-sm">
                                 <div className="space-y-0.5">
-                                    <Label className="text-xs font-black uppercase">VIP Status</Label>
-                                    <p className="text-[9px] text-slate-400 font-bold uppercase">Staff VIP Marking</p>
+                                    <Label className="text-xs font-semibold">VIP Status</Label>
+                                    <p className="text-[9px] text-muted-foreground font-bold">Staff VIP Marking</p>
                                 </div>
                                 <Checkbox checked={settingsForm.isVipEnabled} onCheckedChange={(c) => setSettingsForm({...settingsForm, isVipEnabled: !!c})} />
                             </div>
-                            <div className="flex items-center justify-between p-3 border border-slate-100 rounded-sm">
+                            <div className="flex items-center justify-between p-3 border border-border rounded-sm">
                                 <div className="space-y-0.5">
-                                    <Label className="text-xs font-black uppercase">Internal Notes</Label>
-                                    <p className="text-[9px] text-slate-400 font-bold uppercase">Staff Instructions</p>
+                                    <Label className="text-xs font-semibold">Internal Notes</Label>
+                                    <p className="text-[9px] text-muted-foreground font-bold">Staff Instructions</p>
                                 </div>
                                 <Checkbox checked={settingsForm.isInternalNotesEnabled} onCheckedChange={(c) => setSettingsForm({...settingsForm, isInternalNotesEnabled: !!c})} />
                             </div>
-                            <div className="flex items-center justify-between p-3 border border-slate-100 rounded-sm">
+                            <div className="flex items-center justify-between p-3 border border-border rounded-sm">
                                 <div className="space-y-0.5">
-                                    <Label className="text-xs font-black uppercase">Categories</Label>
-                                    <p className="text-[9px] text-slate-400 font-bold uppercase">Source Tracking</p>
+                                    <Label className="text-xs font-semibold">Categories</Label>
+                                    <p className="text-[9px] text-muted-foreground font-bold">Source Tracking</p>
                                 </div>
                                 <Checkbox checked={settingsForm.isCategoriesEnabled} onCheckedChange={(c) => setSettingsForm({...settingsForm, isCategoriesEnabled: !!c})} />
                             </div>
-                            <div className="flex items-center justify-between p-3 border border-slate-100 rounded-sm bg-indigo-50/30">
+                            <div className="flex items-center justify-between p-3 border border-border rounded-sm bg-indigo-50/30 dark:bg-indigo-950/40">
                                 <div className="space-y-0.5">
-                                    <Label className="text-xs font-black uppercase text-indigo-900">Wait Time Module</Label>
-                                    <p className="text-[9px] text-indigo-400 font-bold uppercase">Enable Waitlist</p>
+                                    <Label className="text-xs font-semibold text-indigo-900 dark:text-indigo-400">Wait Time Module</Label>
+                                    <p className="text-[9px] text-indigo-400 font-bold">Enable Waitlist</p>
                                 </div>
                                 <Checkbox checked={settingsForm.hasWaitTimeFeature} onCheckedChange={(c) => setSettingsForm({...settingsForm, hasWaitTimeFeature: !!c})} />
                             </div>
-                            <div className="flex items-center justify-between p-3 border border-slate-100 rounded-sm bg-indigo-50/30">
+                            <div className="flex items-center justify-between p-3 border border-border rounded-sm bg-indigo-50/30 dark:bg-indigo-950/40">
                                 <div className="space-y-0.5">
-                                    <Label className="text-xs font-black uppercase text-indigo-900">Shift Management</Label>
-                                    <p className="text-[9px] text-indigo-400 font-bold uppercase">Staff Rostering</p>
+                                    <Label className="text-xs font-semibold text-indigo-900 dark:text-indigo-400">Shift Management</Label>
+                                    <p className="text-[9px] text-indigo-400 font-bold">Staff Rostering</p>
                                 </div>
                                 <Checkbox checked={settingsForm.hasShiftFeature} onCheckedChange={(c) => setSettingsForm({...settingsForm, hasShiftFeature: !!c})} />
                             </div>
-                            <div className="flex items-center justify-between p-3 border border-slate-100 rounded-sm bg-indigo-50/30">
+                            <div className="flex items-center justify-between p-3 border border-border rounded-sm bg-indigo-50/30 dark:bg-indigo-950/40">
                                 <div className="space-y-0.5">
-                                    <Label className="text-xs font-black uppercase text-indigo-900">Digital Menu</Label>
-                                    <p className="text-[9px] text-indigo-400 font-bold uppercase">Menu & QR</p>
+                                    <Label className="text-xs font-semibold text-indigo-900 dark:text-indigo-400">Digital Menu</Label>
+                                    <p className="text-[9px] text-indigo-400 font-bold">Menu & QR</p>
                                 </div>
                                 <Checkbox checked={settingsForm.hasMenuFeature} onCheckedChange={(c) => setSettingsForm({...settingsForm, hasMenuFeature: !!c})} />
                             </div>
-                            <div className="flex items-center justify-between p-3 border border-slate-100 rounded-sm bg-indigo-50/30">
+                            <div className="flex items-center justify-between p-3 border border-border rounded-sm bg-indigo-50/30 dark:bg-indigo-950/40">
                                 <div className="space-y-0.5">
-                                    <Label className="text-xs font-black uppercase text-indigo-900">Paid Reservations</Label>
-                                    <p className="text-[9px] text-indigo-400 font-bold uppercase">Deposits & Payment</p>
+                                    <Label className="text-xs font-semibold text-indigo-900 dark:text-indigo-400">Paid Reservations</Label>
+                                    <p className="text-[9px] text-indigo-400 font-bold">Deposits & Payment</p>
                                 </div>
                                 <Checkbox checked={settingsForm.hasPaymentFeature} onCheckedChange={(c) => setSettingsForm({...settingsForm, hasPaymentFeature: !!c})} />
                             </div>
+                            {/* Online ordering — commercial add-on on the Restaurant row, SysAdmin-only. */}
+                            <div className="flex items-center justify-between p-3 border border-border rounded-sm bg-emerald-50/40 dark:bg-emerald-950/40">
+                                <div className="space-y-0.5">
+                                    <Label className="text-xs font-semibold text-emerald-900 dark:text-emerald-400">Online Ordering</Label>
+                                    <p className="text-[9px] text-emerald-500 dark:text-emerald-400 font-bold">Checkout, Delivery & Kitchen</p>
+                                </div>
+                                <Checkbox checked={settingsForm.hasOnlineOrdering} onCheckedChange={(c) => setSettingsForm({...settingsForm, hasOnlineOrdering: !!c})} />
+                            </div>
+                            {/* Organizer / wedding modules — meaningful for the WEDDING vertical. */}
+                            <div className="flex items-center justify-between p-3 border border-border rounded-sm bg-amber-50/40 dark:bg-amber-950/40">
+                                <div className="space-y-0.5">
+                                    <Label className="text-xs font-semibold text-amber-900 dark:text-amber-400">Event Pipeline</Label>
+                                    <p className="text-[9px] text-amber-500 dark:text-amber-400 font-bold">Lead → Confirmed</p>
+                                </div>
+                                <Checkbox checked={settingsForm.hasEventPipeline} onCheckedChange={(c) => setSettingsForm({...settingsForm, hasEventPipeline: !!c})} />
+                            </div>
+                            <div className="flex items-center justify-between p-3 border border-border rounded-sm bg-amber-50/40 dark:bg-amber-950/40">
+                                <div className="space-y-0.5">
+                                    <Label className="text-xs font-semibold text-amber-900 dark:text-amber-400">Installment Plans</Label>
+                                    <p className="text-[9px] text-amber-500 dark:text-amber-400 font-bold">Kapora & Taksit</p>
+                                </div>
+                                <Checkbox checked={settingsForm.hasInstallmentPlans} onCheckedChange={(c) => setSettingsForm({...settingsForm, hasInstallmentPlans: !!c})} />
+                            </div>
+                            <div className="flex items-center justify-between p-3 border border-border rounded-sm bg-amber-50/40 dark:bg-amber-950/40">
+                                <div className="space-y-0.5">
+                                    <Label className="text-xs font-semibold text-amber-900 dark:text-amber-400">Guest List & Seating</Label>
+                                    <p className="text-[9px] text-amber-500 dark:text-amber-400 font-bold">RSVP & Seating</p>
+                                </div>
+                                <Checkbox checked={settingsForm.hasGuestList} onCheckedChange={(c) => setSettingsForm({...settingsForm, hasGuestList: !!c})} />
+                            </div>
+                            <div className="flex items-center justify-between p-3 border border-border rounded-sm bg-amber-50/40 dark:bg-amber-950/40">
+                                <div className="space-y-0.5">
+                                    <Label className="text-xs font-semibold text-amber-900 dark:text-amber-400">Vendor Coordination</Label>
+                                    <p className="text-[9px] text-amber-500 dark:text-amber-400 font-bold">Photographers, DJs…</p>
+                                </div>
+                                <Checkbox checked={settingsForm.hasVendors} onCheckedChange={(c) => setSettingsForm({...settingsForm, hasVendors: !!c})} />
+                            </div>
+                        </div>
+                        </TabsContent>
+
+                        <TabsContent value="admin" className="mt-0 space-y-6">
+                        <div className="space-y-4">
+                            <div className="flex items-center gap-2 mb-1">
+                                <Label className="text-xs font-semibold text-foreground tracking-tight">Platform-Enforced Security</Label>
+                            </div>
+                            {/* 2FA — root-admin-only. The SysAdmin both enables 2FA and
+                                picks which roles must use it; tenant admins have no 2FA
+                                controls of their own. */}
+                            <div className="p-3 border border-border rounded-sm bg-rose-50/30 dark:bg-rose-950/40 space-y-3">
+                                <div className="flex items-center justify-between">
+                                    <div className="space-y-0.5">
+                                        <Label className="text-xs font-semibold text-rose-900 dark:text-rose-400">Two-Factor Authentication</Label>
+                                        <p className="text-[9px] text-rose-400 font-bold">Require 2FA For Selected Roles</p>
+                                    </div>
+                                    <Checkbox
+                                        checked={settingsForm.twoFactorEnabled}
+                                        onCheckedChange={(c) => setSettingsForm({
+                                            ...settingsForm,
+                                            twoFactorEnabled: !!c,
+                                            // Clearing the capability clears the role list too.
+                                            twoFactorRoles: c ? settingsForm.twoFactorRoles : '',
+                                        })}
+                                    />
+                                </div>
+                                {settingsForm.twoFactorEnabled && (
+                                    <div className="grid grid-cols-5 gap-1.5 pt-1">
+                                        {['ADMIN', 'MANAGER', 'HOST', 'KITCHEN', 'STAFF'].map(role => {
+                                            const list = settingsForm.twoFactorRoles ? settingsForm.twoFactorRoles.split(',').filter(Boolean) : [];
+                                            const active = list.includes(role);
+                                            return (
+                                                <button
+                                                    key={role}
+                                                    type="button"
+                                                    onClick={() => {
+                                                        const set = new Set(list);
+                                                        if (set.has(role)) set.delete(role); else set.add(role);
+                                                        setSettingsForm({ ...settingsForm, twoFactorRoles: Array.from(set).join(',') });
+                                                    }}
+ className={`px-1.5 py-1.5 rounded-sm border text-[10px] font-semibold tracking-tight transition-all ${active ?'border-rose-500 bg-rose-500 text-white':'border-border bg-card text-muted-foreground hover:border-rose-300 dark:border-rose-800/50'}`}
+                                                >
+                                                    {role}
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
+                                )}
+                            </div>
+                            {/* Audit log visibility — let this tenant's admins see their own activity log. */}
+                            <div className="flex items-center justify-between p-3 border border-border rounded-sm bg-muted/40">
+                                <div className="space-y-0.5">
+                                    <Label className="text-xs font-semibold">Audit Log Visibility</Label>
+                                    <p className="text-[9px] text-muted-foreground font-bold">Let Tenant Admins See Their Activity Log</p>
+                                </div>
+                                <Checkbox checked={settingsForm.showAuditLogToTenant} onCheckedChange={(c) => setSettingsForm({...settingsForm, showAuditLogToTenant: !!c})} />
+                            </div>
                         </div>
 
-                        <div className="space-y-4 border-l border-slate-100 pl-6">
-                            <div className="flex items-center gap-2 mb-2">
-                                <ShieldCheck className="w-4 h-4 text-emerald-500" />
-                                <Label className="text-xs font-black uppercase text-slate-800 tracking-tight">Tenant Admin Permissions</Label>
+                        {/* Tenant admin permissions — full width */}
+                        <div className="space-y-4">
+                            <div className="flex items-center gap-2 mb-1">
+                                <ShieldCheck className="w-4 h-4 text-emerald-500 dark:text-emerald-400" />
+                                <Label className="text-xs font-semibold text-foreground tracking-tight">Tenant Admin Permissions</Label>
                             </div>
-                            <div className="grid gap-2">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
                                 {AVAILABLE_PERMISSIONS.map(perm => (
-                                    <div key={perm.id} className={cn("flex items-center justify-between p-2.5 border rounded-sm transition-all", adminPermissions.has(perm.id) ? "border-emerald-200 bg-emerald-50/30" : "border-slate-100 bg-slate-50/50")}>
-                                        <div className={cn("text-[10px] font-black uppercase tracking-tight", adminPermissions.has(perm.id) ? "text-emerald-700" : "text-slate-600")}>{perm.label}</div>
+                                    <div key={perm.id} className={cn("flex items-center justify-between p-2.5 border rounded-sm transition-all", adminPermissions.has(perm.id) ? "border-emerald-200 dark:border-emerald-800/50 bg-emerald-50/30 dark:bg-emerald-950/40" : "border-border bg-muted/50")}>
+ <div className={cn("text-[10px] font-semibold tracking-tight", adminPermissions.has(perm.id) ?"text-emerald-700 dark:text-emerald-400":"text-muted-foreground")}>{perm.label}</div>
                                         <Checkbox checked={adminPermissions.has(perm.id)} onCheckedChange={() => togglePermission(perm.id)} />
                                     </div>
                                 ))}
@@ -568,61 +761,64 @@ export default function TenantManagementPage() {
                                 const adminUser = selectedTenant?.users?.find((u: any) => u.role === 'ADMIN');
                                 if (!adminUser) return null;
                                 return (
-                                  <>
-                                    <div className="pt-4 mt-2 border-t border-slate-100 space-y-2">
+                                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-6 mt-2 border-t border-border">
+                                    <div className="p-4 border border-border rounded-md space-y-2">
                                         <div className="flex items-center justify-between">
                                             <div className="flex items-center gap-2">
-                                                <ShieldCheck className="w-4 h-4 text-emerald-500" />
-                                                <Label className="text-xs font-black uppercase text-slate-800 tracking-tight">Two-Factor (OTP)</Label>
+                                                <ShieldCheck className="w-4 h-4 text-emerald-500 dark:text-emerald-400" />
+                                                <Label className="text-xs font-semibold text-foreground tracking-tight">Two-Factor (OTP)</Label>
                                             </div>
                                             <Switch checked={otpRequired} disabled={otpBusy} onCheckedChange={(v: boolean) => handleToggleOtp(adminUser.id, v)} />
                                         </div>
-                                        <p className="text-[10px] text-slate-400 font-medium leading-relaxed">
-                                            Require an authenticator-app code at sign-in for <span className="font-bold text-slate-600">{adminUser.email}</span>.
+                                        <p className="text-[10px] text-muted-foreground font-medium leading-relaxed">
+                                            Require an authenticator-app code at sign-in for <span className="font-bold text-muted-foreground">{adminUser.email}</span>.
                                             {otpRequired && (otpEnrolled
-                                                ? <span className="text-emerald-600 font-bold"> Enrolled.</span>
-                                                : <span className="text-amber-600 font-bold"> Awaiting setup at next sign-in.</span>)}
+                                                ? <span className="text-emerald-600 dark:text-emerald-400 font-bold"> Enrolled.</span>
+                                                : <span className="text-amber-600 dark:text-amber-400 font-bold"> Awaiting setup at next sign-in.</span>)}
                                         </p>
                                     </div>
-                                    <div className="pt-4 mt-2 border-t border-slate-100 space-y-2">
+                                    <div className="p-4 border border-border rounded-md space-y-2">
                                         <div className="flex items-center gap-2">
-                                            <KeyRound className="w-4 h-4 text-amber-500" />
-                                            <Label className="text-xs font-black uppercase text-slate-800 tracking-tight">Password Reset</Label>
+                                            <Key className="w-4 h-4 text-amber-500 dark:text-amber-400" />
+                                            <Label className="text-xs font-semibold text-foreground tracking-tight">Password Reset</Label>
                                         </div>
-                                        <p className="text-[10px] text-slate-400 font-medium leading-relaxed">
-                                            Generate a secure single-use link to reset <span className="font-bold text-slate-600">{adminUser.email}</span>. The password is never shown or stored in plain text.
+                                        <p className="text-[10px] text-muted-foreground font-medium leading-relaxed">
+                                            Generate a secure single-use link to reset <span className="font-bold text-muted-foreground">{adminUser.email}</span>. The password is never shown or stored in plain text.
                                         </p>
                                         {resetLink ? (
                                             <div className="space-y-2">
                                                 <div className="flex items-center gap-2">
-                                                    <Input readOnly value={resetLink} className="h-9 text-[10px] font-mono border-slate-200 bg-slate-50 rounded-sm" onFocus={(e) => e.target.select()} />
+                                                    <Input readOnly value={resetLink} className="h-9 text-[10px] font-mono border-border bg-muted rounded-sm" onFocus={(e) => e.target.select()} />
                                                     <Button type="button" size="sm" onClick={() => { navigator.clipboard.writeText(resetLink); toast.success('Copied to clipboard!'); }} className="h-9 shrink-0 bg-slate-900 hover:bg-slate-800 text-white">
                                                         <Copy className="w-3.5 h-3.5" />
                                                     </Button>
                                                 </div>
-                                                <p className="text-[9px] text-amber-600 font-bold uppercase tracking-wide">
+                                                <p className="text-[9px] text-amber-600 dark:text-amber-400 font-bold">
                                                     Share securely{resetExpiryMins ? ` · Expires in ${resetExpiryMins} min` : ''} · Single use
                                                 </p>
                                             </div>
                                         ) : (
-                                            <Button type="button" onClick={() => handleGenerateReset(adminUser.id)} disabled={resetLoading} className="h-9 w-full bg-amber-500 hover:bg-amber-600 text-white text-[10px] font-black uppercase rounded-sm">
+                                            <Button type="button" onClick={() => handleGenerateReset(adminUser.id)} disabled={resetLoading} className="h-9 w-full bg-amber-500 hover:bg-amber-600 text-white text-[10px] font-semibold rounded-sm">
                                                 {resetLoading ? 'Generating…' : 'Generate Reset Link'}
                                             </Button>
                                         )}
                                     </div>
-                                  </>
+                                  </div>
                                 );
                             })()}
                         </div>
+                        </TabsContent>
+                        </div>
+                      </Tabs>
                     </div>
-                    <div className="p-4 bg-slate-50 border-t border-slate-100 flex justify-end gap-2">
-                        <Button type="button" variant="ghost" onClick={() => setIsSettingsOpen(false)} className="h-9 text-xs font-bold text-slate-400">CANCEL</Button>
-                        <Button type="submit" className="h-9 bg-slate-900 text-white text-xs font-black uppercase px-6 rounded-sm">COMMIT ENTITLEMENTS</Button>
+                    <div className="p-4 bg-muted border-t border-border flex justify-end gap-2">
+                        <Button type="button" variant="ghost" disabled={saving} onClick={() => setIsSettingsOpen(false)} className="h-9 text-xs font-bold text-muted-foreground">CANCEL</Button>
+                        <Button type="submit" disabled={saving} className="h-9 bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold px-6 rounded-sm disabled:opacity-60">{saving ? 'COMMITTING…' : 'COMMIT ENTITLEMENTS'}</Button>
                     </div>
                 </form>
             </DialogContent>
         </Dialog>
       </div>
-    </SystemAdminLayout>
+    </>
   );
 }

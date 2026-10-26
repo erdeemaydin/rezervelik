@@ -35,13 +35,13 @@ export function StatusDots({ items, className, onSelect, activeStatus }: StatusD
     const content = (
       <span className={cn(
         'inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold',
-        active ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-700',
-        onSelect && 'cursor-pointer hover:bg-slate-200 transition-colors',
+        active ? 'bg-slate-900 text-white' : 'bg-muted text-foreground',
+        onSelect && 'cursor-pointer hover:bg-accent transition-colors',
         active && onSelect && 'hover:bg-slate-900',
       )}>
         {dotClass ? <span className={cn('w-2 h-2 rounded-full', dotClass)} /> : null}
         <span>{label}</span>
-        <span className={cn('tabular-nums font-black', active ? 'text-white' : 'text-slate-900')}>{count}</span>
+        <span className={cn('tabular-nums font-black', active ? 'text-white' : 'text-foreground')}>{count}</span>
       </span>
     );
     if (!onSelect) return content;

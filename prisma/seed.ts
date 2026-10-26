@@ -69,7 +69,7 @@ async function main() {
   });
 
   // 3. Table Types (Zones)
-  const indoor = await prisma.tableType.create({
+  const indoor = await prisma.zone.create({
     data: {
       name: 'Indoor',
       description: 'Main dining hall',
@@ -77,7 +77,7 @@ async function main() {
     },
   });
 
-  const terrace = await prisma.tableType.create({
+  const terrace = await prisma.zone.create({
     data: {
       name: 'Terrace',
       description: 'Outdoor seating with a view',
@@ -96,7 +96,7 @@ async function main() {
   ];
 
   for (const t of tableData) {
-    await prisma.table.create({
+    await prisma.bookableResource.create({
       data: {
         ...t,
         restaurantId: restaurant.id,

@@ -1,17 +1,19 @@
 {
   "name": "dining-reservation",
   "version": "1.0.0",
-  "description": "Multi-tenant Restaurant Reservation and QR Menu System",
+  "description": "Multi-tenant SaaS for restaurants and booking-based businesses: reservations, floor plans, QR menus, waitlists, staff scheduling and online ordering",
   "main": "dist/server.js",
   "scripts": {
     "start": "node dist/server.js",
     "dev": "ts-node-dev --respawn --transpile-only src/server.ts",
-    "build": "tsc",
-    "typecheck": "tsc --noEmit",
+    "build": "prisma generate && tsc",
+    "postinstall": "prisma generate",
+    "typecheck": "prisma generate && tsc --noEmit",
     "test:setup-db": "node tests/setup/prepare-test-db.mjs",
     "test": "vitest run",
     "test:watch": "vitest",
     "smoke": "node scripts/smoke-test.mjs",
+    "demo": "ts-node --transpile-only scripts/demo-data.ts",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
     "prisma:studio": "prisma studio"
@@ -22,10 +24,12 @@
     "multi-tenant",
     "qr-menu"
   ],
-  "author": "",
-  "license": "ISC",
+  "author": "Muhammed Erdem Aydin",
+  "license": "UNLICENSED",
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.1107.0",
     "@prisma/client": "^5.22.0",
+    "@sentry/node": "^10.70.0",
     "bcrypt": "^6.0.0",
     "cors": "^2.8.5",
     "dotenv": "^16.3.1",
@@ -35,6 +39,8 @@
     "i18next-fs-backend": "^2.1.5",
     "jsonwebtoken": "^9.0.3",
     "multer": "^2.2.0",
+    "pg": "^8.23.0",
+    "sanitize-html": "^2.17.6",
     "zod": "^3.21.4"
   },
   "devDependencies": {
@@ -44,11 +50,19 @@
     "@types/jsonwebtoken": "^9.0.10",
     "@types/multer": "^2.1.0",
     "@types/node": "^20.5.0",
+    "@types/pg": "^8.23.1",
+    "@types/sanitize-html": "^2.16.1",
     "@types/supertest": "^7.2.0",
+    "aws-sdk-client-mock": "^4.1.0",
     "prisma": "^5.22.0",
     "supertest": "^7.2.2",
     "ts-node-dev": "^2.0.0",
     "typescript": "^5.1.6",
     "vitest": "^4.1.9"
+  },
+  "private": true,
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/erdeemaydin/rezervelik.git"
   }
 }

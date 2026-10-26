@@ -1,11 +1,12 @@
 import { Request, Response } from 'express';
 import prisma from '../config/prisma';
 import { successResponse, errorResponse } from '../utils/response';
+import { INVALID, parseCount } from '../utils/numeric';
 
 export const getTables = async (req: Request, res: Response) => {
   try {
     const restaurantId = req.restaurantId!;
-    const tables = await prisma.table.findMany({
+    const tables = await prisma.bookableResource.findMany({
       where: { restaurantId },
       include: { tableType: true }
     });
@@ -23,8 +24,14 @@ export const createTable = async (req: Request, res: Response) => {
     if (!tableTypeId || !identifier || !capacity) {
       return errorResponse(res, 'errors.validation_error', 400, { message: 'Required fields missing' });
     }
+    // Bug fix: `!capacity` only rejected 0/falsy — capacity: -5 is truthy and
+    // passed straight through into party-size-fit matching (findAvailableTable).
+    const parsedCapacity = parseCount(capacity, 0, 1);
+    if (parsedCapacity === INVALID) {
+      return errorResponse(res, 'errors.validation_error', 400, { message: 'capacity must be a positive integer' });
+    }
 
-    const typeExists = await prisma.tableType.findFirst({
+    const typeExists = await prisma.zone.findFirst({
       where: { id: tableTypeId, restaurantId }
     });
 
@@ -32,10 +39,10 @@ export const createTable = async (req: Request, res: Response) => {
       return errorResponse(res, 'errors.validation_error', 400, { message: 'Invalid TableType' });
     }
 
-    const table = await prisma.table.create({
+    const table = await prisma.bookableResource.create({
       data: {
         identifier,
-        capacity,
+        capacity: parsedCapacity,
         isAvailable: isAvailable ?? true,
         restaurantId,
         tableTypeId,
@@ -60,14 +67,14 @@ export const updateTable = async (req: Request, res: Response) => {
     const { id } = req.params;
     const { tableTypeId, identifier, capacity, isAvailable, positionX, positionY, shape, width, height, color } = req.body;
 
-    const existingTable = await prisma.table.findFirst({
+    const existingTable = await prisma.bookableResource.findFirst({
       where: { id, restaurantId }
     });
 
     if (!existingTable) return errorResponse(res, 'errors.validation_error', 404, { message: 'Table not found' });
 
     if (tableTypeId) {
-      const typeExists = await prisma.tableType.findFirst({
+      const typeExists = await prisma.zone.findFirst({
         where: { id: tableTypeId, restaurantId }
       });
       if (!typeExists) return errorResponse(res, 'errors.validation_error', 400, { message: 'Invalid TableType' });
@@ -76,7 +83,13 @@ export const updateTable = async (req: Request, res: Response) => {
     const dataToUpdate: any = {};
     if (tableTypeId !== undefined) dataToUpdate.tableTypeId = tableTypeId;
     if (identifier !== undefined) dataToUpdate.identifier = identifier;
-    if (capacity !== undefined) dataToUpdate.capacity = capacity;
+    if (capacity !== undefined) {
+      const parsedCapacity = parseCount(capacity, 0, 1);
+      if (parsedCapacity === INVALID) {
+        return errorResponse(res, 'errors.validation_error', 400, { message: 'capacity must be a positive integer' });
+      }
+      dataToUpdate.capacity = parsedCapacity;
+    }
     if (isAvailable !== undefined) dataToUpdate.isAvailable = isAvailable;
     if (positionX !== undefined) dataToUpdate.positionX = positionX;
     if (positionY !== undefined) dataToUpdate.positionY = positionY;
@@ -85,7 +98,7 @@ export const updateTable = async (req: Request, res: Response) => {
     if (height !== undefined) dataToUpdate.height = height;
     if (color !== undefined) dataToUpdate.color = color;
 
-    const table = await prisma.table.update({
+    const table = await prisma.bookableResource.update({
       where: { id },
       data: dataToUpdate
     });
@@ -101,13 +114,13 @@ export const deleteTable = async (req: Request, res: Response) => {
     const restaurantId = req.restaurantId!;
     const { id } = req.params;
 
-    const existingTable = await prisma.table.findFirst({
+    const existingTable = await prisma.bookableResource.findFirst({
       where: { id, restaurantId }
     });
 
     if (!existingTable) return errorResponse(res, 'errors.validation_error', 404, { message: 'Table not found' });
 
-    await prisma.table.delete({ where: { id } });
+    await prisma.bookableResource.delete({ where: { id } });
 
     return successResponse(res, { message: 'Deleted successfully' });
   } catch (error) {

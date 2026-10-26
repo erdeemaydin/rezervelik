@@ -10,7 +10,7 @@
     "featureFlags": "Özellikler",
     "provisioned": "Oluşturulma",
     "command": "İşlem",
-    "loginAs": "GİRİŞ YAP",
+    "loginAs": "Giriş yap",
     "daysLeft": "gün kaldı",
     "language": "Dil",
     "globalOverview": "Genel Bakış",
@@ -23,9 +23,72 @@
     "configuration": "Yapılandırma",
     "globalSettings": "Genel Ayarlar",
     "rootAuthority": "Kök Yetki",
+    "restrictedAdministrator": "Kısıtlı Yönetici",
     "logoutSystem": "Sistemden Çıkış",
     "systemManagement": "Sistem Yönetimi",
-    "globalClusterActive": "Küresel Küme: Aktif"
+    "globalClusterActive": "Küresel Küme: Aktif",
+    "fetchTenantsError": "Kiracılar yüklenemedi",
+    "admins": {
+      "pageSubtitle": "Platform yöneticilerini ve erişim seviyelerini yönetin.",
+      "addAdministrator": "Yönetici Ekle",
+      "addingEllipsis": "Ekleniyor…",
+      "accessRoster": "Erişim Listesi",
+      "colName": "İsim",
+      "colEmail": "E-posta",
+      "colAccessLevel": "Erişim Seviyesi",
+      "colStatus": "Durum",
+      "colCreatedAt": "Oluşturulma Tarihi",
+      "colActions": "İşlemler",
+      "loadingAdmins": "Yöneticiler yükleniyor...",
+      "root": "Kök",
+      "restricted": "Kısıtlı",
+      "permission": "yetki",
+      "permissions": "yetki",
+      "deactivated": "Devre Dışı",
+      "accessButton": "Erişim",
+      "resetLinkButton": "Sıfırlama Bağlantısı",
+      "generatingEllipsis": "Oluşturuluyor…",
+      "cannotDeactivateSelf": "Kendi hesabınızı devre dışı bırakamazsınız",
+      "deactivateButton": "Devre Dışı Bırak",
+      "reactivateButton": "Yeniden Etkinleştir",
+      "updatingEllipsis": "Güncelleniyor…",
+      "deactivateConfirmTitle": "Bu yönetici devre dışı bırakılsın mı?",
+      "deactivateConfirmDescription": "Hemen oturumu kapatılır ve yeniden etkinleştirilene kadar tekrar giriş yapamaz.",
+      "adminLabel": "Yönetici",
+      "cancel": "İptal",
+      "toastAdminDeactivated": "Yönetici devre dışı bırakıldı",
+      "toastAdminReactivated": "Yönetici yeniden etkinleştirildi",
+      "toastUpdateFailed": "Yönetici güncellenemedi",
+      "toastPasswordTooShort": "Şifre en az 8 karakter olmalıdır",
+      "toastAdminAdded": "Yönetici eklendi",
+      "toastAddFailed": "Yönetici eklenemedi",
+      "toastAccessUpdated": "Erişim seviyesi güncellendi",
+      "toastAccessUpdateFailed": "Erişim seviyesi güncellenemedi",
+      "toastResetLinkFailed": "Sıfırlama bağlantısı oluşturulamadı",
+      "toastLoadFailed": "Yöneticiler yüklenemedi",
+      "copiedToClipboard": "Panoya kopyalandı!",
+      "addDialogDescription": "Tam kök erişimine veya kısıtlı bir yetenek kümesine sahip yeni bir platform düzeyinde yönetici oluşturun.",
+      "firstName": "Ad",
+      "lastName": "Soyad",
+      "password": "Şifre",
+      "passwordPlaceholder": "En az 8 karakter",
+      "rootAdministrator": "Kök yönetici",
+      "restrictedAdministratorLabel": "Kısıtlı yönetici",
+      "rootAdminDescription": "Her platform işlemine sınırsız erişim.",
+      "restrictedAdminDescription": "Yalnızca aşağıda işaretlenen yetenekler.",
+      "cannotRemoveOwnRoot": "Kendi hesabınızdan kök erişimini kaldıramazsınız.",
+      "permissionsLabel": "Yetkiler",
+      "editDescriptionPrefix": "",
+      "editDescriptionSuffix": "kullanıcısının erişebileceklerini değiştirin.",
+      "saveAccessLevel": "Erişim Seviyesini Kaydet",
+      "savingEllipsis": "Kaydediliyor…",
+      "resetDialogTitle": "Şifre Sıfırlama Bağlantısı",
+      "resetDialogDescriptionPrefix": "",
+      "resetDialogDescriptionSuffix": "için tek kullanımlık bağlantı. Güvenli şekilde paylaşın — bağlantıya sahip olan herkes yeni bir şifre belirleyebilir.",
+      "expiresInPrefix": "",
+      "expiresInSuffix": "dakika içinde sona erer",
+      "singleUse": "Tek kullanımlık"
+    }
   },
   "admin": {
     "dashboard": "Panel",
@@ -39,6 +102,7 @@
     "menuWizard": "Menü Sihirbazı",
     "reviews": "Değerlendirmeler",
     "staffSchedule": "Personel Planlaması",
+    "orders": "Siparişler",
     "timesheet": "Mesai Takibi",
     "staffMembers": "Personeller",
     "payments": "Ödemeler",
@@ -46,11 +110,26 @@
     "customization": "Özelleştirme",
     "sectionOperations": "Operasyonlar",
     "sectionAdministration": "Yönetim",
+    "sectionPeople": "Personel",
+    "sectionBusiness": "İşletme Ayarları",
+    "sectionCompliance": "Uyumluluk",
+    "bookingMode": "Rezervasyon Modu",
+    "bookingModeManual": "Manuel Uygunluk",
+    "editInSettings": "Ayarlardan Düzenle",
     "systemOnline": "Sistem Aktif",
     "zone": "Bölge",
     "mainDiningRoom": "Ana Yemek Salonu",
     "logout": "Çıkış Yap",
-    "userSettings": "Kullanıcı Ayarları"
+    "userSettings": "Kullanıcı Ayarları",
+    "auditLog": "Etkinlik Kaydı",
+    "impersonationBanner": "{{name}} olarak görüntüleniyor — buradaki değişiklikler onların hesabını etkiler.",
+    "returnToAdmin": "Yöneticiye Dön",
+    "returnToAdminFailed": "Yönetici oturumunuza dönülemedi — lütfen tekrar giriş yapın."
+  },
+  "commandPalette": {
+    "title": "Sayfaya git",
+    "placeholder": "Sayfa ara... (Ctrl+K)",
+    "noResults": "Eşleşen sayfa yok"
   },
   "timesheet": {
     "title": "Mesai Takibi",
@@ -106,6 +185,7 @@
     "reservations": "Rezervasyonlar",
     "aCulinaryJourney": "Bir Lezzet Yolculuğu",
     "bookATable": "Masa Ayırt",
+    "orderOnline": "Online Sipariş",
     "joinWaitlist": "Sıraya Katıl",
     "selectDate": "Tarih Seç",
     "selectTime": "Saat Seç",
@@ -114,13 +194,42 @@
     "containsAlcohol": "Alkol İçerir",
     "containsPork": "Domuz Türevi İçerir",
     "allergens": "Alerjenler",
-    "redirectingToPayment": "Rezervasyon oluşturuldu — güvenli ödeme sayfasına yönlendiriliyorsunuz…"
+    "redirectingToPayment": "Rezervasyon oluşturuldu — güvenli ödeme sayfasına yönlendiriliyorsunuz…",
+    "capacityFullTitle": "Kapasiteye Yakın",
+    "capacityFullDesc": "Bu gün rezervasyon kapasitesine ulaşmış veya yakın durumda — talebiniz onaylanmadan önce manuel inceleme gerektirebilir.",
+    "confirmationCodeLabel": "Rezervasyon kodunuz",
+    "confirmationCodeHint": "Sizi isimle bulamazsak bu kodu görevliye gösterin.",
+    "consent": {
+      "bookingPrefix": "Okudum, kabul ediyorum:",
+      "privacyNoticeLinkText": "Aydınlatma Metni",
+      "bookingSuffix": " ve bu rezervasyonu oluşturmak ve yönetmek amacıyla kişisel verilerimin işlenmesine rıza gösteriyorum.",
+      "marketing": "Ayrıca WhatsApp/SMS üzerinden rezervasyon hatırlatmaları ve kampanya bilgisi almak istiyorum (isteğe bağlı).",
+      "required": "Devam etmek için veri işleme onayını kabul etmelisiniz."
+    },
+    "privacyNotice": {
+      "title": "Aydınlatma Metni",
+      "intro": "Bu metin, rezervasyon yaparken kişisel verilerinizin genel hatlarıyla nasıl işlendiğini açıklar. Bu içerik, rezervasyon yaptığınız restoran tarafından, bu platform üzerinden sağlanmaktadır.",
+      "controllerTitle": "Verilerinizden kim sorumludur",
+      "controllerBody": "Rezervasyon yaptığınız restoran, gönderdiğiniz bilgiler için veri sorumlusudur. Bu platform yalnızca veri işleyen sıfatıyla, restoranın talimatları doğrultusunda verilerinizi işler.",
+      "whatTitle": "Hangi veriler toplanır",
+      "whatBody": "Genellikle: adınız, telefon numaranız ve (belirtmişseniz) e-posta adresiniz ile tarih, saat ve kişi sayısı gibi rezervasyon detayları.",
+      "whyTitle": "Neden toplanır",
+      "whyBody": "Rezervasyonunuzu oluşturmak, onaylamak ve yönetmek, sizinle rezervasyon hakkında iletişime geçmek (örneğin onay, hatırlatma veya değişiklik bildirimleri) ve yalnızca ayrıca onay verdiğiniz takdirde pazarlama mesajları göndermek amacıyla.",
+      "howLongTitle": "Ne kadar süreyle saklanır",
+      "howLongBody": "Verileriniz, rezervasyonun tamamlanması için gerekli süre boyunca ve ardından sınırlı bir saklama süresi için tutulur; bu sürenin sonunda anonim hale getirilir veya silinir.",
+      "whoWithTitle": "Kimlerle paylaşılır",
+      "whoWithBody": "Verileriniz yalnızca bu platformun işletilmesine ve rezervasyonla ilgili mesajların (örn. SMS/WhatsApp gönderimi) iletilmesine yardımcı olan hizmet sağlayıcılarla paylaşılır; satılmaz veya ilgisiz amaçlarla paylaşılmaz.",
+      "rightsTitle": "Haklarınız",
+      "rightsBody": "Kişisel verilerinize erişim, düzeltme veya silinmesini talep etmek için doğrudan restoranla iletişime geçebilirsiniz.",
+      "tenantOverrideNote": "Bu restoran aşağıda kendi metnini sağlamıştır.",
+      "backLink": "Geri"
+    }
   },
   "dashboard": {
     "loading": "Kontrol merkezi yükleniyor...",
     "todaysOperations": "Günün Operasyonları",
     "realtimeCommand": "Günün servisi için gerçek zamanlı kontrol merkezi.",
-    "liveData": "CANLI VERİ AKTİF",
+    "liveData": "Canlı veri aktif",
     "reservationsToday": "Günün Rezervasyonları",
     "expectedGuests": "Beklenen Misafir",
     "confirmed": "onaylı",
@@ -158,7 +267,8 @@
     "reservationsArrivingToday": "rezervasyon o gün geliyor",
     "noMoreReservations": "O gün için başka yaklaşan rezervasyon yok.",
     "today": "Bugün",
-    "now": "Şimdi"
+    "now": "Şimdi",
+    "loadFailed": "Pano istatistikleri yüklenemedi"
   },
   "analytics": {
     "fetchError": "Analiz verileri yüklenemedi",
@@ -197,7 +307,7 @@
     "clear": "Temizle",
     "cancelRate": "İptal Oranı",
     "noShowRate": "Gelmeme Oranı",
-    "avgLeadTime": "Ort. Rezervasyon Önceliği",
+    "avgLeadTime": "Ort. Önceden Rezervasyon Süresi",
     "leadTimeHint": "Misafirler ne kadar önceden rezervasyon yapıyor",
     "days": "gün",
     "hours": "saat",
@@ -217,7 +327,7 @@
     "of3": "/ 3",
     "basicInfo": "Temel Bilgiler",
     "basicInfoDesc": "Menünüze bir isim verin ve alt bilgileri ayarlayın.",
-    "logo": "LOGO",
+    "logo": "Logo",
     "menuName": "Menü Adı",
     "menuNamePlaceholder": "örn. Özel Akşam Yemeği Menüsü",
     "footnotes": "Alt Bilgiler / Yasal",
@@ -283,18 +393,119 @@
     "reference": "Referans",
     "date": "Tarih",
     "loading": "İşlemler yükleniyor…",
-    "empty": "Henüz ödeme yok"
+    "empty": "Henüz ödeme yok",
+    "actions": "İşlemler",
+    "refund": "İade Et",
+    "refunding": "İade ediliyor…",
+    "refundConfirmTitle": "Bu kapora iade edilsin mi?",
+    "refundConfirmDesc": "Ödeme sağlayıcısı kaporayı misafirin kartına iade edecek. Bu işlem geri alınamaz.",
+    "refundSuccess": "Kapora iade edildi",
+    "refundFailed": "İade başarısız oldu",
+    "forfeited": "Gelmeyen Misafir Kaporası",
+    "forfeitedHint": "gelmeyen misafirde tutulan kapora",
+    "forfeitedBadge": "Gelmedi"
+  },
+  "payGuest": {
+    "codeEntryTitle": "Ödeme Kodu ile Devam Et",
+    "codeEntrySubtitle": "Rezervasyon onayınızda size verilen ödeme kodunu girin.",
+    "codePlaceholder": "ÖRN. K7P2M9QR",
+    "goToPayment": "Ödemeye Git",
+    "securityNote": "Kart bilgileriniz yalnızca güvenli ödeme ekranında (PayTR) alınır. Görevliler kart bilginizi telefonda/SMS ile asla istemez.",
+    "notFoundTitle": "Ödeme bulunamadı",
+    "notFoundDesc": "Bu ödeme bağlantısı geçersiz.",
+    "depositLabel": "Rezervasyon Kaporası",
+    "guestLabel": "Misafir",
+    "partyLabel": "Kişi",
+    "dateLabel": "Tarih",
+    "timeLabel": "Saat",
+    "amountDueLabel": "Ödenecek Kapora",
+    "paidTitle": "Ödeme Alındı",
+    "paidDesc": "Rezervasyonunuz onaylandı. Teşekkür ederiz!",
+    "expiredTitle": "Bağlantı Süresi Doldu",
+    "expiredDesc": "Bu ödeme bağlantısının süresi doldu. Lütfen restoranla iletişime geçin.",
+    "failedTitle": "Ödeme Başarısız",
+    "failedDesc": "Ödeme tamamlanamadı. Kartınızı kontrol edip tekrar deneyebilirsiniz.",
+    "iframeTitle": "Güvenli Ödeme",
+    "cardNoticeLine1": "Kart bilgileriniz doğrudan PayTR'ın güvenli ekranına girilir; bu bilgiler restorana veya bize iletilmez.",
+    "cardNoticeLine2": "Görevliler kart bilginizi telefonda veya SMS ile asla istemez.",
+    "secureFooter": "Güvenli ödeme"
+  },
+  "waitlistOffer": {
+    "notFoundTitle": "Teklif Geçersiz",
+    "returnToRestaurant": "Restorana Dön",
+    "confirmedTitle": "Rezervasyon Onaylandı",
+    "confirmedDesc": "Masanız bekleme listesinden başarıyla ayrıldı! Sizi ağırlamak için sabırsızlanıyoruz.",
+    "backToRestaurant": "Restorana Dön",
+    "declinedTitle": "Teklif Reddedildi",
+    "declinedDesc": "Bu rezervasyon teklifini reddettiniz. Sizi başka bir zaman ağırlamayı umuyoruz.",
+    "badge": "Rezervasyon Teklifi",
+    "greetingBefore": "Harika haber, ",
+    "greetingAfter": "! Bekleme listesinden size bir masa açıldı. Rezervasyonunuzu onaylamak için aşağıdaki detayları inceleyip kabul edin.",
+    "dateLabel": "Tarih",
+    "timeLabel": "Saat",
+    "dinnerService": "Akşam Yemeği Servisi",
+    "partySizeLabel": "Kişi Sayısı",
+    "guestsSuffix": "Kişi",
+    "expiresLabel": "Teklifin Geçerlilik Süresi",
+    "decline": "Reddet",
+    "accept": "Teklifi Kabul Et",
+    "notFoundOrExpired": "Teklif bulunamadı veya süresi doldu.",
+    "acceptFailed": "Teklif kabul edilemedi.",
+    "declineFailed": "Teklif reddedilemedi."
+  },
+  "publicWaitlist": {
+    "pageTag": "Sanal Bekleme Listesi",
+    "restaurantNotFound": "Restoran bulunamadı.",
+    "successTitle": "Listeye eklendiniz!",
+    "successDesc": "Yeriniz ayrıldı. Masanız hazır olmak üzereyken size SMS göndereceğiz.",
+    "estimatedWaitLabel": "Tahmini Bekleme",
+    "waitingForEstimate": "Tahmin hesaplanıyor...",
+    "minsSuffix": "dk",
+    "closedTitle": "Bekleme Listesi Kapalı",
+    "closedDesc": "Şu anda sanal bekleme listesine yeni kayıt almıyoruz. Lütfen içeride görevliyle görüşün.",
+    "joinTitle": "Sıraya Katıl",
+    "joinSubtitle": "Kapıda beklemeyin. Yerinizi ayırtın, dilerseniz kısa bir tur atın.",
+    "currentWaitPrefix": "Şu anki bekleme süresi yaklaşık",
+    "nameLabel": "Ad Soyad",
+    "namePlaceholder": "Ahmet Yılmaz",
+    "phoneLabel": "Cep Telefonu",
+    "phonePlaceholder": "+90 5XX XXX XX XX",
+    "phoneHint": "Masanız hazır olduğunda size SMS göndereceğiz.",
+    "partySizeLabel": "Kişi Sayısı",
+    "joinButton": "Bekleme Listesine Katıl",
+    "joiningButton": "Katılıyor...",
+    "joinFailed": "Bekleme listesine katılamadınız"
   },
   "reviews": {
     "title": "Değerlendirmeler ve Geri Bildirim",
-    "subtitle": "Müşteri geri bildirimlerini izleyin ve yanıtlayın.",
+    "subtitle": "Canlı Google değerlendirmeleriniz.",
     "enableAutoReply": "Yapay Zeka Otomatik Yanıtını Etkinleştir",
     "averageRating": "Ortalama Puan",
     "basedOn": "1.284 değerlendirmeye göre",
     "replied": "Yanıtlandı",
     "writeResponse": "Bir yanıt yazın...",
     "aiDraft": "Yapay Zeka Taslağı",
-    "postReply": "Yanıt Gönder"
+    "postReply": "Yanıt Gönder",
+    "basedOnCount": "{{count}} Google değerlendirmesine göre",
+    "connectTitle": "Google değerlendirmelerinizi bağlayın",
+    "connectDesc": "Gerçek Google değerlendirmelerinizi burada göstermek için restoranınızın Google Haritalar bağlantısını yapıştırın.",
+    "mapsLinkLabel": "Google Haritalar bağlantısı",
+    "mapsLinkPlaceholder": "https://maps.app.goo.gl/…  veya  https://maps.google.com/…",
+    "save": "Kaydet",
+    "saving": "Kaydediliyor…",
+    "saved": "Değerlendirme kaynağı kaydedildi.",
+    "saveFailed": "Bağlantı kaydedilemedi.",
+    "loadFailed": "Değerlendirmeler yüklenemedi.",
+    "invalidLink": "Bu bağlantıda bir Google konumu bulamadık. Lütfen Google Haritalar kaydınızdaki bağlantıyı yapıştırın.",
+    "changeLink": "Bağlantıyı değiştir",
+    "openInGoogle": "Google'da görüntüle",
+    "refresh": "Yenile",
+    "apiKeyMissingTitle": "Google API anahtarı yapılandırılmamış",
+    "apiKeyMissingDesc": "Bağlantı kaydedildi, ancak sunucunun değerlendirmeleri getirmek için bir Google Places API anahtarına ihtiyacı var. Yöneticinizden GOOGLE_PLACES_API_KEY değerini ayarlamasını isteyin.",
+    "googleErrorTitle": "Google değerlendirmeleri döndüremedi",
+    "noReviews": "Henüz Google değerlendirmesi yok.",
+    "replyComingSoon": "Değerlendirmelere yanıt verme özelliği yakında geliyor.",
+    "fromGoogle": "Google'dan değerlendirmeler"
   },
   "scheduling": {
     "title": "Planlama Sistemi",
@@ -409,7 +620,13 @@
       "forceTitle": "Müsait olmayan personel atansın mı?",
       "forceDesc": "bu vardiya için kendini MÜSAİT DEĞİL olarak işaretledi. Yine de atansın mı?",
       "forceConfirm": "Yine de ata",
-      "force": "Zorla"
+      "force": "Zorla",
+      "warnUnavailable": "Personel bu gün/vardiya için Müsait Değil olarak işaretledi.",
+      "warnUnspecified": "Personel bu gün için müsaitlik bildirmedi.",
+      "warnDoubleShift": "Aynı gün çift vardiya",
+      "warnConsecutiveRestPrefix": "Kısa dinlenme uyarısı: vardiyalar arasında sadece",
+      "warnConsecutiveRestSuffix": "saat boşluk var",
+      "warnConsecutiveRestAnd": "ve yarınki"
     },
     "availability": {
       "loadFailed": "Müsaitlik verileri yüklenemedi",
@@ -474,6 +691,7 @@
       "baseRoleTemplate": "Temel Rol Şablonu",
       "roleManager": "Yönetici (Tüm İşlemler)",
       "roleHost": "Karşılama (Masalar ve Rez.)",
+      "roleKitchen": "Mutfak (Sipariş İstasyonu)",
       "roleStaff": "Standart Personel (Sadece Görüntüleme)",
       "granularEntitlements": "Detaylı Yetkiler",
       "entitlementsDesc": "Temel rol şablonunun ötesinde belirli erişim haklarını değiştirin.",
@@ -520,6 +738,10 @@
       "view_reviews": {
         "label": "Değerlendirmeleri Görüntüle",
         "desc": "Değerlendirmeler panosunu görüntüle"
+      },
+      "manage_orders": {
+        "label": "Siparişleri Yönet",
+        "desc": "Çevrimiçi sipariş istasyonuna erişim"
       }
     }
   },
@@ -527,12 +749,7 @@
     "toast": {
       "appliedDaysPrefix": "",
       "appliedDaysSuffix": " güne uygulandı",
-      "updateFailed": "Ayarlar güncellenemedi",
-      "applyingFuture": "Ayarlar gelecek günlere uygulanıyor...",
-      "noNewDays": "Güncellenecek yeni gün yok.",
-      "futureSuccessPrefix": "Mod başarıyla ",
-      "futureSuccessSuffix": " gelecek güne uygulandı.",
-      "futureFailed": "Gelecek ayarları uygulanamadı"
+      "updateFailed": "Ayarlar güncellenemedi"
     },
     "badge": {
       "event": "Etkinlik"
@@ -545,12 +762,6 @@
     "header": {
       "title": "Takvim Yönetimi",
       "subtitle": "Operasyon Yöneticisi"
-    },
-    "futureMode": {
-      "placeholder": "Gelecek Varsayılan Modunu Ayarla",
-      "autoConfirm": "Oto-Onay",
-      "standard": "Standart (Manuel)",
-      "blackout": "Kapalı"
     },
     "buttons": {
       "singleEdit": "Tekli Düzenleme",
@@ -579,6 +790,14 @@
       "waitlistDesc": "O Tarih İçin Bekleme Listesi Girişlerini Kabul Et",
       "autoConfirm": "Oto-Onay",
       "autoConfirmDesc": "İnceleme Sırasını Atla",
+      "overbookingOverride": "Aşırı Rezervasyon Geçersiz Kılma",
+      "overbookingOverrideDesc": "Bu gün için restoran genelindeki aşırı rezervasyon ayarını geçersiz kılın",
+      "overbookingInherit": "Restoran ayarını kullan",
+      "overbookingOn": "Bu gün için açık",
+      "overbookingOff": "Bu gün için kapalı",
+      "overbookingOverrideMaxCovers": "Maksimum ek misafir (bu gün)",
+      "overbookingOverrideMaxReservations": "Maksimum ek rezervasyon (bu gün)",
+      "overbookingOverrideRequiresCaps": "Bu gün için aşırı rezervasyonu açmadan önce hem maksimum ek misafir hem de maksimum ek rezervasyon değerlerini girin.",
       "clear": "Temizle",
       "saveDaysPrefix": "",
       "saveDaysSuffix": " Günü Kaydet",
@@ -613,7 +832,8 @@
       "selectPalette": "Renk paleti seçin",
       "obsidian": "Obsidyen (Koyu / Sade)",
       "earth": "Toprak (Sıcak / Rustik)",
-      "crimson": "Kızıl (Kalın / Şarap)",
+      "crimson": "Kızıl (Cesur / Şarap)",
+      "sage": "Adaçayı (Taze / Yeşil)",
       "primaryColor": "Ana Marka Rengi (Hex)"
     },
     "banner": {
@@ -633,6 +853,18 @@
         "title": "Yasal / Şartlar",
         "desc": "Hizmet şartları veya gizlilik politikası",
         "placeholder": "Yasal şartlarınızı buraya yazın..."
+      },
+      "privacyNotice": {
+        "title": "Aydınlatma Metni (KVKK)",
+        "desc": "Rezervasyon onay kutusundan bağlantı verilen aydınlatma metninin isteğe bağlı, restorana özel sürümü.",
+        "placeholder": "Kendi aydınlatma metninizi buraya yazın — hangi verileri topladığınızı, nedenini, ne kadar süre saklandığını ve kimlerle paylaşıldığını. Temel HTML desteklenir.",
+        "hint": "Boş bırakırsanız misafirlere platformun genel varsayılan metni gösterilir. Bu platform yön gösterir, hukuki tavsiye vermez — kendi metninizi yayınlamadan önce bir KVKK danışmanıyla gözden geçirin."
+      },
+      "social": {
+        "title": "Sosyal Medya ve Web Sitesi Bağlantıları",
+        "desc": "Herkese açık sayfanızın altbilgisinde simge olarak gösterilir.",
+        "website": "Web Sitesi",
+        "hint": "Bir simgeyi gizlemek için ilgili alanı boş bırakın."
       }
     },
     "rules": {
@@ -647,8 +879,11 @@
     },
     "preview": {
       "title": "Canlı Önizleme",
-      "desc": "Burada yapılan değişiklikler herkese açık rezervasyon sayfanızı anında etkileyecektir.",
-      "palette": "PALET"
+      "desc": "Kaydedilmemiş değişiklikleriniz aşağıda anında görünür. Değişiklikleri Yayınla'ya tıklamadan hiçbir şey herkese açık hale gelmez.",
+      "palette": "Palet",
+      "refresh": "Önizlemeyi yenile",
+      "openNewTab": "Herkese açık sayfayı yeni sekmede aç",
+      "unavailable": "Önizleme kullanılamıyor — herkese açık sayfa adresiniz belirlenemedi."
     }
   },
   "reservations": {
@@ -668,7 +903,7 @@
     "deleteFailed": "Silme başarısız oldu",
     "dashboardTitle": "Rezervasyon Panosu",
     "serviceControlUnit": "Servis Kontrol Ünitesi",
-    "newReservation": "YENİ REZERVASYON",
+    "newReservation": "Yeni rezervasyon",
     "liveAndPending": "Canlı ve Bekleyen",
     "serviceHistory": "Servis Geçmişi",
     "timeline": "Zaman Çizelgesi",
@@ -688,9 +923,9 @@
     "command": "İşlem",
     "refreshing": "Kat Senkronizasyonu Yenileniyor...",
     "noRecords": "Eşleşen Kayıt Yok",
-    "pax": "KİŞİ",
+    "pax": "Kişi",
     "manual": "Manuel",
-    "assigned": "ATANDI",
+    "assigned": "Atandı",
     "noShowHistoryLabel": "gelmedi",
     "noShowHistoryHint": "Bu telefon numarasının bu restoranda gelmeme geçmişi var",
     "needsAssign": "Atama Bekliyor",
@@ -714,14 +949,16 @@
     "serviceIntelligence": "Servis Bilgisi (Sadece Personel)",
     "notesPlaceholder": "Örn. Alerji uyarısı, oturma tercihi, VIP detayı...",
     "elevateVIP": "VIP Öncelik Durumuna Yükselt",
-    "abort": "İPTAL",
-    "commitEntry": "KAYDI ONAYLA",
+    "abort": "İptal",
+    "commitEntry": "Kaydı onayla",
     "rescheduled": "Rezervasyon yeniden planlandı",
     "conflictBlocked": "Bu masa seçilen saatte zaten dolu — taşıma engellendi.",
     "overCapacity": "Kapasite aşımı",
     "overCapacityHint": "Kişi sayısı bu masanın kapasitesinden fazla",
     "overCapacityDialog": "Kişi sayısı masa kapasitesini aşıyor",
     "displayHours": "Saat aralığı",
+    "zone": "Bölüm",
+    "allZones": "Tüm bölümler",
     "paymentRequested": "Kapora ödemesi talep edildi",
     "paymentRequestedTitle": "Kapora Ödemesi Talep Edildi",
     "paymentRequestedDesc": "Misafire güvenli ödeme bağlantısı içeren bir SMS/e-posta gönderildi. Aşağıdaki bağlantıyı veya kodu da paylaşabilirsiniz.",
@@ -775,6 +1012,13 @@
       "scanText": "Menü İçin QR Kodu Okutun",
       "complianceText": "Alerjen, kalori ve içindekiler bilgileri dijital menümüzde yer almaktadır."
     },
+    "pdf": {
+      "buttonLabel": "Menü PDF",
+      "lastPriceUpdate": "Son Fiyat Güncelleme:",
+      "containsAlcohol": "Alkol İçerir",
+      "containsPork": "Domuz Eti İçerir",
+      "page": "Sayfa"
+    },
     "toast": {
       "valueRequired": "Değer gereklidir",
       "priceUpdateScheduled": "Fiyat güncellemesi planlandı",
@@ -808,8 +1052,14 @@
       "dishInfo": "Yemek Bilgisi",
       "tagsSpecs": "Etiketler / Özellikler",
       "price": "Fiyat",
+      "onlineOrdering": "Online Sipariş",
       "actions": "İşlemler",
       "noItems": "Bu kategoride ürün bulunmamaktadır."
+    },
+    "onlineOrdering": {
+      "prepTimePlaceholder": "Hazırlık (dk)",
+      "updated": "Online sipariş ayarı kaydedildi",
+      "updateFailed": "Online sipariş ayarı kaydedilemedi"
     },
     "buttons": {
       "addDish": "Kategoriye Yemek Ekle",
@@ -822,6 +1072,7 @@
       "addRootCategory": "Ana Kategori Ekle",
       "cancel": "İptal",
       "saveMenu": "Menüyü Kaydet",
+      "saving": "Kaydediliyor...",
       "saveCategory": "Kategoriyi Kaydet",
       "saveDishDetails": "Yemek Detaylarını Kaydet",
       "scheduleUpdate": "Güncellemeyi Planla",
@@ -867,6 +1118,7 @@
       "dishNamePlaceholder": "örn. Trüflü Risotto",
       "ingredients": "Açıklama / İçindekiler",
       "priceTry": "Fiyat (TRY)",
+      "serviceDuration": "Süre (dk)",
       "imageUpload": "Resim Yükle",
       "dietaryTags": "Diyet Etiketleri",
       "dietaryTagsPlaceholder": "örn. Vegan, Glutensiz (Virgülle ayrılmış)",
@@ -918,7 +1170,20 @@
       "schedule": "Planla",
       "roundUpShort": "Yuvarla",
       "pickSchedule": "Planlanan güncelleme için tarih ve saat seçin",
-      "scheduledSuffix": "fiyat değişikliği planlandı"
+      "scheduledSuffix": "fiyat değişikliği planlandı",
+      "scheduledTitle": "Bekleyen Planlanmış Değişiklikler",
+      "historyTitle": "Son Değişiklikler",
+      "itemsSuffix": "ürün",
+      "editButton": "Düzenle",
+      "cancelButton": "İptal Et",
+      "undoButton": "Geri Al",
+      "undoneBadge": "Geri Alındı",
+      "editingScheduled": "Bekleyen bir planlanmış değişiklik düzenleniyor — kaydetmek onun yerine geçer",
+      "cancelEdit": "Düzenlemeyi vazgeç",
+      "cancelSuccess": "Planlanmış değişiklik iptal edildi",
+      "cancelFailed": "Planlanmış değişiklik iptal edilemedi",
+      "undoSuccess": "Değişiklik geri alındı",
+      "undoFailed": "Değişiklik geri alınamadı"
     }
   },
   "host": {
@@ -948,8 +1213,6 @@
     "waitlistStatusCancelled": "iptal edildi",
     "waitlistStatusNoShow": "gelmedi olarak işaretlendi",
     "hostConsoleTitle": "Karşılama Konsolu",
-    "ipadMode": "iPad Modu",
-    "hostConsoleSubtitle": "Karşılama Masası • Aktif Salon Senkronizasyonu",
     "reservationsTab": "Rezervasyonlar",
     "waitlistQueueTab": "Bekleme Listesi",
     "bookTableBtn": "Masa Rezervasyonu Yap",
@@ -977,7 +1240,7 @@
     "waitlistEmptyDesc": "Şu anda masa bekleyen aktif rezervasyonsuz misafir yok.",
     "bookWait": "Rezervasyon Bekleyişi",
     "waiting": "Bekliyor",
-    "date": "TARİH",
+    "date": "Tarih",
     "dateWaitlist": "Tarihli Bekleme Listesi",
     "quotePrefix": "Tahmini:",
     "minSuffix": "dk",
@@ -1038,6 +1301,12 @@
     "cancel": "İptal"
   },
   "settings": {
+    "tabs": {
+      "reservations": "Rezervasyonlar",
+      "scheduling": "Planlama",
+      "payments": "Ödemeler",
+      "appearance": "Görünüm"
+    },
     "failedLoad": "Ayarlar yüklenemedi",
     "updatedSuccessfully": "Ayarlar başarıyla güncellendi",
     "failedSave": "Ayarlar kaydedilemedi",
@@ -1071,6 +1340,7 @@
     "selectLogic": "Mantık seçin",
     "dynamicDuration": "Dinamik Süre",
     "fixedTimeSlots": "Sabit Zaman Dilimleri",
+    "manualAvailability": "Manuel Uygunluk",
     "calendarCustomization": "Takvim Özelleştirme",
     "calendarCustomizationDesc": "Genel takvim davranışını ve toplu işlemleri yönetin",
     "setFutureMode": "Gelecek Varsayılan Modu Ayarla",
@@ -1079,7 +1349,7 @@
     "standardBulk": "Standart (Manuel İnceleme)",
     "blackoutBulk": "Kapatma (Rezervasyonları Kapat)",
     "bulkActionDesc": "Bu işlem, Takvim Yöneticinizdeki sonraki 365 güne bir operasyonel modu toplu olarak uygulamanızı sağlar.",
-    "paymentsDeposits": "Ödemeler ve Kaporalar",
+    "paymentsDeposits": "Kapora Kuralları",
     "secureBookings": "Rezervasyonları finansal taahhütlerle güvence altına alın",
     "enableDeposit": "Kapora Ödemesini Etkinleştir",
     "depositAmount": "Kapora Tutarı",
@@ -1108,6 +1378,15 @@
     "openingHour": "Açılış Saati",
     "closingHour": "Kapanış Saati",
     "openingHoursHint": "Hizmet aralığı (0–23). Rezervasyon saati seçeneklerini ve analiz yoğun saatler ısı haritasını sınırlar.",
+    "overbooking": "Aşırı Rezervasyon",
+    "overbookingDesc": "Boş masa kalmadığında misafirleri geri çevirmek yerine talebi beklemeye alın",
+    "allowOverbooking": "Aşırı rezervasyona izin ver",
+    "allowOverbookingHint": "Misafirin istediği saatte boş masa yoksa ancak grubu restoranın bir yerine sığabilecekse, talebi doğrudan reddetmek yerine manuel inceleme için beklemede olarak kaydedin. Varsayılan olarak kapalıdır.",
+    "overbookingMaxExtraCovers": "Maksimum ek misafir",
+    "overbookingMaxExtraCoversHint": "Gün başına beklemeye alınabilecek toplam ek misafir sayısı.",
+    "overbookingMaxExtraReservations": "Maksimum ek rezervasyon",
+    "overbookingMaxExtraReservationsHint": "Gün başına beklemeye alınabilecek toplam ek rezervasyon sayısı.",
+    "overbookingRequiresCaps": "Aşırı rezervasyonu etkinleştirmeden önce hem maksimum ek misafir hem de maksimum ek rezervasyon değerlerini 0'dan büyük bir sayı olarak ayarlayın.",
     "defaultBreak": "Varsayılan mola",
     "defaultBreakDesc": "Giriş/çıkış girilmediğinde planlanan vardiyadan düşülen ücretsiz mola.",
     "privacyExplain": {
@@ -1117,7 +1396,8 @@
     },
     "logicExplain": {
       "DYNAMIC_DURATION": "Bir rezervasyonun bitiş saati, yukarıda belirlenen varsayılan süreden otomatik olarak hesaplanır (örneğin başlangıçtan 90 dakika sonra).",
-      "FIXED_SLOTS": "Rezervasyonlar önceden tanımlanmış sabit zaman dilimlerini kullanır. Her rezervasyon, süre alanından bağımsız olarak belirli bir dilimi kaplar."
+      "FIXED_SLOTS": "Rezervasyonlar önceden tanımlanmış sabit zaman dilimlerini kullanır. Her rezervasyon, dilimin başlangıcından itibaren yukarıda belirlenen varsayılan süre kadar masayı kaplar.",
+      "MANUAL_AVAILABILITY": "Otomatik zaman bazlı çakışma kontrolü yapılmaz. Bir masa, yalnızca personel Masalar sayfasında \"Dolu\" olarak işaretlediği sürece yeni rezervasyonları engeller — masayı boşaltmak (tekrar \"Müsait\" işaretlemek) bir sonraki rezervasyon için masayı açar, saat değil."
     },
     "currencyManagedBySystem": "Platform yöneticisi belirler",
     "currencyHint": "Para birimi, sistem yöneticisi tarafından yönetilen platform genelinde bir ayardır ve buradan değiştirilemez.",
@@ -1128,8 +1408,12 @@
       "ADMIN": "Yönetici",
       "MANAGER": "Müdür",
       "HOST": "Karşılama",
+      "KITCHEN": "Mutfak",
       "STAFF": "Personel"
-    }
+    },
+    "appearance": "Pano Teması",
+    "appearanceDesc": "Tüm ekibiniz için pano renk temasını seçin.",
+    "appearanceHint": "Ekibinizdeki herkes bu temayı görür. Değişiklikler kaydettikten sonra uygulanır."
   },
   "waitTime": {
     "error": {
@@ -1152,6 +1436,8 @@
     "subtitle": "Rezervasyonsuz gelenleri ve bekleme sürelerini yönetin",
     "config": {
       "title": "Bekleme Listesi Ayarı",
+      "statusOpen": "Liste Açık",
+      "statusClosed": "Liste Kapalı",
       "acceptPublic": "Herkese Açık Bekleme Listesini Kabul Et (QR)",
       "acceptPublicDesc": "Misafirlerin bekleme listesi URL'si aracılığıyla katılmasına izin verin.",
       "displayEstimatedTime": "Tahmini Süreyi Göster",
@@ -1173,14 +1459,11 @@
     "saving": "Kaydediliyor...",
     "tabs": {
       "walkins": "Bekleyenler",
-      "futureDates": "Gelecek Tarihler",
       "addWalkIn": "Bekleyen Ekle"
     },
     "empty": {
       "queueTitle": "Sıra şu anda boş",
-      "queueDesc": "Bekleyenler burada görünecektir.",
-      "futureTitle": "Gelecek Bekleme Listesi Yok",
-      "futureDesc": "Tamamen dolu tarihler için bekleyen misafirler burada görünecektir."
+      "queueDesc": "Bekleyenler burada görünecektir."
     },
     "table": {
       "guest": "Misafir",
@@ -1188,14 +1471,13 @@
       "waitTime": "Bekleme Süresi",
       "status": "Durum",
       "actions": "İşlemler",
-      "date": "Tarih",
       "mElapsed": "dk geçti",
       "quoted": "Verilen Süre"
     },
     "status": {
-      "waiting": "BEKLİYOR",
-      "notified": "BİLDİRİLDİ",
-      "offerSent": "TEKLİF GÖNDERİLDİ"
+      "waiting": "Bekliyor",
+      "notified": "Bildirildi",
+      "offerSent": "Teklif gönderildi"
     },
     "action": {
       "notify": "Bildir",
@@ -1251,7 +1533,7 @@
     "createZoneBtn": "Bölge Oluştur",
     "existingZones": "Mevcut Bölgeler",
     "noDescription": "Açıklama yok",
-    "closeBtn": "KAPAT",
+    "closeBtn": "Kapat",
     "addTable": "Masa Ekle",
     "addBox": "Kutu Ekle",
     "floorPlan": "Kat Planı",
@@ -1271,7 +1553,7 @@
     "refreshing": "Kat Yenileniyor...",
     "noTablesFound": "Masa bulunamadı",
     "standard": "Standart",
-    "pax": "KİŞİ",
+    "pax": "Kişi",
     "available": "Müsait",
     "occupied": "Dolu",
     "viewOnly": "Sadece Görüntüleme",
@@ -1291,15 +1573,15 @@
     "heightPx": "Yükseklik (px)",
     "deleteTableBtn": "Masayı Sil",
     "deleteBtn": "Sil",
-    "cancelBtn": "İPTAL",
-    "savePhysicalTableBtn": "FİZİKSEL MASAYI KAYDET",
+    "cancelBtn": "İptal",
+    "savePhysicalTableBtn": "Fiziksel masayı kaydet",
     "editVisualBox": "Görsel Kutuyu Düzenle",
     "addVisualBox": "Görsel Kutu Ekle",
     "labelOptional": "Etiket (İsteğe Bağlı)",
     "labelPlaceholder": "örn. Teras Sol Kapı",
     "backgroundColor": "Arka Plan Rengi",
     "deleteBoxBtn": "Kutuyu Sil",
-    "saveBoxBtn": "KUTUYU KAYDET"
+    "saveBoxBtn": "Kutuyu kaydet"
   },
   "profile": {
     "title": "Hesabım",
@@ -1340,6 +1622,613 @@
     "confirm": "Onayla",
     "cancel": "İptal",
     "delete": "Sil",
-    "deleteConfirm": "Bu işlem geri alınamaz."
+    "deleteConfirm": "Bu işlem geri alınamaz.",
+    "loading": "Yükleniyor…",
+    "save": "Kaydet",
+    "saved": "Kaydedildi",
+    "moreInfo": "Detaylar"
+  },
+  "events": {
+    "navTitle": "Organizasyonlar",
+    "title": "Organizasyonlar",
+    "subtitle": "Düğün & organizasyon süreci",
+    "new": "Yeni Organizasyon",
+    "empty": "Henüz organizasyon yok — ilkini oluşturun.",
+    "loadError": "Organizasyonlar yüklenemedi",
+    "saveError": "Kaydedilemedi",
+    "missingFields": "Müşteri adı, telefon ve tarih gereklidir",
+    "created": "Organizasyon oluşturuldu",
+    "guestsShort": "davetli",
+    "backToBoard": "Panoya dön",
+    "stageUpdated": "Aşama güncellendi",
+    "detailsTitle": "Detaylar",
+    "guestsTitle": "Davetli Listesi",
+    "rsvpConfirmed": "Onaylı",
+    "noGuests": "Henüz davetli yok",
+    "paymentTitle": "Ödeme Planı",
+    "planTotal": "Toplam",
+    "installmentLabel": "Etiket",
+    "addInstallment": "Taksit ekle",
+    "noInstallments": "Henüz taksit yok",
+    "markPaid": "Ödendi işaretle",
+    "installment": "Taksit",
+    "stages": {
+      "LEAD": "Aday",
+      "VISIT": "Ziyaret",
+      "QUOTE": "Teklif",
+      "CONTRACT": "Sözleşme",
+      "CONFIRMED": "Onaylandı",
+      "COMPLETED": "Tamamlandı",
+      "CANCELED": "İptal"
+    },
+    "types": {
+      "WEDDING": "Düğün",
+      "ENGAGEMENT": "Nişan",
+      "HENNA": "Kına",
+      "CORPORATE": "Kurumsal"
+    },
+    "rsvp": {
+      "PENDING": "Bekliyor",
+      "YES": "Evet",
+      "NO": "Hayır",
+      "MAYBE": "Belki"
+    },
+    "form": {
+      "clientName": "Müşteri Adı",
+      "clientPhone": "Telefon",
+      "clientEmail": "E-posta",
+      "eventType": "Tür",
+      "stage": "Aşama",
+      "date": "Tarih",
+      "slot": "Seans",
+      "slotPlaceholder": "Akşam…",
+      "guestCount": "Davetli Sayısı",
+      "notes": "Notlar",
+      "guestName": "Davetli adı",
+      "quotedTotal": "Teklif Tutarı (₺)",
+      "coordinator": "Koordinatör",
+      "hall": "Salon / Mekan",
+      "package": "Paket",
+      "venueName": "Mekan adı",
+      "venueAddress": "Mekan adresi",
+      "invitationMessage": "Davetiye mesajı"
+    },
+    "none": "Yok",
+    "quotePreview": "Tahmini teklif",
+    "pricePerPerson": "kişi başı",
+    "seatingTitle": "Oturma Düzeni",
+    "unseated": "Yerleştirilmemiş",
+    "assignSeat": "Yer ata",
+    "selfResponded": "Davetiyeden yanıtladı",
+    "vendorsTitle": "Tedarikçiler",
+    "addVendor": "Ekle",
+    "vendorRole": "Görev",
+    "noVendors": "Henüz tedarikçi eklenmedi.",
+    "manageVendors": "Rehberi yönet",
+    "selectVendor": "Tedarikçi seçin…",
+    "vendorStatuses": {
+      "PENDING": "Bekliyor",
+      "CONFIRMED": "Onaylı",
+      "CANCELED": "İptal"
+    },
+    "contractTitle": "Sözleşme & Teklif",
+    "contractUrl": "Sözleşme bağlantısı",
+    "markSigned": "İmzalandı işaretle",
+    "signed": "İmzalandı",
+    "markProposalSent": "Teklif gönderildi işaretle",
+    "proposalSent": "Teklif gönderildi",
+    "invitationTitle": "e-Davetiye",
+    "invitationHint": "Herkese açık RSVP sayfası paylaşın; davetliler doğrudan listeye yanıt verir.",
+    "generateLink": "Bağlantı oluştur",
+    "copyLink": "Bağlantıyı kopyala",
+    "linkCopied": "Davetiye bağlantısı kopyalandı",
+    "regenerate": "Bağlantıyı yenile"
+  },
+  "vendors": {
+    "navTitle": "Tedarikçiler",
+    "title": "Tedarikçiler",
+    "subtitle": "Fotoğrafçı, DJ, çiçekçi ve daha fazlası",
+    "add": "Tedarikçi ekle",
+    "editTitle": "Tedarikçi düzenle",
+    "all": "Tümü",
+    "name": "Ad",
+    "category": "Kategori",
+    "contactName": "İlgili kişi",
+    "phone": "Telefon",
+    "email": "E-posta",
+    "notes": "Notlar",
+    "empty": "Henüz tedarikçi yok. İlk iş ortağınızı ekleyin.",
+    "eventsCount": "{{count}} etkinlik",
+    "deleteConfirm": "Bu tedarikçi silinsin mi?",
+    "loadError": "Tedarikçiler yüklenemedi",
+    "saveError": "Kaydedilemedi",
+    "categories": {
+      "PHOTOGRAPHER": "Fotoğrafçı",
+      "VIDEOGRAPHER": "Kameraman",
+      "DJ": "DJ",
+      "MUSIC": "Müzik",
+      "FLORIST": "Çiçekçi",
+      "CATERING": "Catering",
+      "DECOR": "Dekor",
+      "TRANSPORT": "Ulaşım",
+      "CAKE": "Pasta",
+      "OTHER": "Diğer"
+    },
+    "eventsWord": "etkinlik"
+  },
+  "audit": {
+    "title": "Etkinlik Kaydı",
+    "subtitle": "Hesabınızdaki etkinliklerin kaydı.",
+    "notEnabledTitle": "Etkinlik kaydı kullanılamıyor",
+    "notEnabledDesc": "Etkinlik kaydı hesabınız için etkinleştirilmemiş. Erişim talep etmek için platform yöneticinizle iletişime geçin.",
+    "colTime": "Zaman",
+    "colActor": "Kullanıcı",
+    "colAction": "İşlem",
+    "colTarget": "Hedef",
+    "allCategories": "Tüm Kategoriler",
+    "empty": "Henüz kayıtlı etkinlik yok.",
+    "loading": "Etkinlikler yükleniyor…",
+    "refresh": "Yenile",
+    "detailCategory": "Kategori",
+    "detailIp": "IP Adresi",
+    "detailChanges": "Ayrıntılar / Değişiklikler",
+    "detailNoChanges": "Bu kayıt için ek ayrıntı kaydedilmemiş."
+  },
+  "themes": {
+    "default": "Klasik Mavi",
+    "terracotta": "Terrakota",
+    "forest": "Orman",
+    "burgundy": "Bordo",
+    "amber": "Kehribar"
+  },
+  "auth": {
+    "resetTitle": "Şifrenizi Sıfırlayın",
+    "resetSubtitle": "Hesabınız için yeni ve güvenli bir şifre seçin.",
+    "verifyingLink": "Bağlantı doğrulanıyor…",
+    "linkInvalid": "Bu sıfırlama bağlantısı geçersiz veya süresi dolmuş.",
+    "linkInvalidHelp": "Yeni bir tane oluşturması için bir sistem yöneticisine başvurun.",
+    "backToSignIn": "Girişe Dön",
+    "newPassword": "Yeni Şifre",
+    "confirmPassword": "Şifreyi Onayla",
+    "updating": "Güncelleniyor…",
+    "updatePassword": "Şifreyi Güncelle",
+    "passwordsDontMatch": "Şifreler eşleşmiyor",
+    "passwordTooShort": "Şifre en az 8 karakter olmalıdır",
+    "passwordUpdated": "Şifre güncellendi. Lütfen yeni şifrenizle giriş yapın.",
+    "resetFailed": "Şifre sıfırlanamadı. Bağlantının süresi dolmuş olabilir.",
+    "setupTitle": "Hesabınızı Kurun",
+    "setupSubtitle": "Restoran panonuza erişmek için güvenli bir şifre oluşturun.",
+    "settingUp": "Kuruluyor…",
+    "completeSetup": "Kurulumu Tamamla",
+    "setupComplete": "Hesap kurulumu tamamlandı!",
+    "setupFailed": "Kurulum tamamlanamadı. Bağlantının süresi dolmuş olabilir.",
+    "signInTitle": "Tekrar hoş geldiniz",
+    "signInSubtitle": "Restoranınızı yönetmek için giriş yapın",
+    "emailLabel": "E-posta",
+    "emailPlaceholder": "siz@restoran.com",
+    "passwordLabel": "Şifre",
+    "signInButton": "Giriş yap",
+    "signingIn": "Giriş yapılıyor…",
+    "loginError": "Giriş yapılırken bir sorun oluştu. Lütfen tekrar deneyin.",
+    "networkError": "Sunucuya ulaşılamıyor. Bağlantınızı kontrol edip tekrar deneyin.",
+    "showPassword": "Şifreyi göster",
+    "hidePassword": "Şifreyi gizle",
+    "brandTagline": "Rezervasyonlar, menüler ve ekibiniz için hepsi bir arada platform.",
+    "passwordRequirements": "Şifre gereksinimleri",
+    "passwordPolicyUnmet": "Lütfen aşağıdaki tüm şifre gereksinimlerini karşılayın.",
+    "passwordStrengthWeak": "Zayıf",
+    "passwordStrengthMedium": "Orta",
+    "passwordStrengthStrong": "Güçlü",
+    "passwordRules": {
+      "length": "En az 8 karakter",
+      "lowercase": "Bir küçük harf",
+      "uppercase": "Bir büyük harf",
+      "number": "Bir rakam"
+    },
+    "twoFactorTitle": "İki adımlı doğrulama",
+    "twoFactorSetupDesc": "Yöneticiniz 2FA gerektiriyor. QR kodunu bir kimlik doğrulama uygulamasıyla tarayın, ardından 6 haneli kodu girin.",
+    "twoFactorDesc": "Kimlik doğrulama uygulamanızdaki 6 haneli kodu girin.",
+    "manualKey": "Manuel anahtar",
+    "verificationCode": "Doğrulama kodu",
+    "verifyAndSignIn": "Doğrula ve giriş yap",
+    "verifying": "Doğrulanıyor…",
+    "invalidCode": "Geçersiz veya süresi dolmuş kod.",
+    "emailInvalid": "Lütfen geçerli bir e-posta adresi girin.",
+    "passwordRequired": "Lütfen şifrenizi girin."
+  },
+  "maintenance": {
+    "title": "Bakım çalışması",
+    "message": "Planlı bir bakım çalışması yapıyoruz, kısa süre içinde geri döneceğiz. Sabrınız için teşekkürler.",
+    "retry": "Tekrar dene",
+    "adminSignIn": "Yönetici girişi",
+    "adminSignInHint": "Platform yöneticileri bakım sırasında da giriş yapabilir."
+  },
+  "orderStation": {
+    "logout": "Çıkış yap",
+    "title": "Sipariş İstasyonu",
+    "connectionLive": "Canlı",
+    "connectionReconnecting": "Yeniden bağlanıyor…",
+    "refreshBtn": "Yenile",
+    "soundOnTitle": "Ses açık — kapatmak için dokunun",
+    "soundOffTitle": "Ses kapalı — açmak için dokunun",
+    "loadFailed": "Siparişler yüklenemedi. Tekrar deneniyor…",
+    "statusUpdateFailed": "Sipariş güncellenemedi. Lütfen tekrar deneyin.",
+    "statusUpdated": "#{number} numaralı sipariş {status} olarak işaretlendi",
+    "emptyColumn": "Sipariş yok",
+    "columns": {
+      "NEW": "Yeni",
+      "ACCEPTED": "Kabul Edildi",
+      "PREPARING": "Hazırlanıyor",
+      "READY": "Hazır",
+      "OUT_FOR_DELIVERY": "Yolda"
+    },
+    "card": {
+      "unknownCustomer": "Misafir",
+      "itemsSuffix": "ürün",
+      "advanceTo": "{status} olarak işaretle",
+      "rejectBtn": "Reddet",
+      "cancelBtn": "İptal Et",
+      "minutesAgo": "{minutes} dk önce",
+      "justNow": "Az önce"
+    },
+    "print": {
+      "kitchenTicket": "Mutfak fişi",
+      "courierSlip": "Kurye fişi",
+      "receipt": "Fiş"
+    },
+    "cancelDialog": {
+      "rejectTitle": "#{number} numaralı siparişi reddet",
+      "cancelTitle": "#{number} numaralı siparişi iptal et",
+      "description": "Bu işlem geri alınamaz. Neden, siparişin denetim kaydına işlenir.",
+      "reasonLabel": "Neden (isteğe bağlı)",
+      "reasonPlaceholder": "Örn. Stok tükendi, müşteri talebi",
+      "confirmBtn": "Onayla",
+      "closeBtn": "Vazgeç"
+    },
+    "ticket": {
+      "orderLabel": "Sipariş",
+      "noteLabel": "Not",
+      "noItems": "Ürün yok",
+      "kitchenHeading": "Mutfak Fişi",
+      "courierHeading": "Kurye Fişi",
+      "receiptHeading": "Fiş",
+      "customerLabel": "Müşteri",
+      "phoneLabel": "Telefon",
+      "addressLabel": "Teslimat adresi",
+      "codLabel": "Kapıda tahsil edilecek",
+      "mapCaption": "Yol tarifi için taratın",
+      "subtotalLabel": "Ara toplam",
+      "deliveryFeeLabel": "Teslimat ücreti",
+      "totalLabel": "Toplam",
+      "paymentMethodLabel": "Ödeme yöntemi",
+      "paidLabel": "Ödendi",
+      "unpaidLabel": "Ödenmedi",
+      "thankYou": "Siparişiniz için teşekkür ederiz!"
+    }
+  },
+  "orders": {
+    "title": "Siparişler",
+    "subtitle": "Online sipariş geçmişi ve müşteri dizini",
+    "settingsBtn": "Sipariş Ayarları",
+    "tabs": {
+      "history": "Sipariş Geçmişi",
+      "customers": "Müşteriler"
+    },
+    "filters": {
+      "today": "Bugün",
+      "thisWeek": "Bu Hafta",
+      "thisMonth": "Bu Ay",
+      "allTime": "Tüm Zamanlar",
+      "custom": "Özel",
+      "picker": "Tarih Seç",
+      "statusAll": "Tüm Durumlar"
+    },
+    "searchPlaceholder": "Sipariş no, müşteri adı veya telefon ile ara",
+    "table": {
+      "orderNumber": "Sipariş",
+      "customer": "Müşteri",
+      "fulfillment": "Teslimat Şekli",
+      "status": "Durum",
+      "total": "Toplam",
+      "placedAt": "Sipariş Zamanı",
+      "actions": "İşlemler",
+      "loading": "Siparişler yükleniyor…",
+      "noOrders": "Seçili filtrelerle eşleşen sipariş yok",
+      "view": "Görüntüle"
+    },
+    "status": {
+      "NEW": "Yeni",
+      "ACCEPTED": "Kabul Edildi",
+      "PREPARING": "Hazırlanıyor",
+      "READY": "Hazır",
+      "OUT_FOR_DELIVERY": "Yolda",
+      "COMPLETED": "Tamamlandı",
+      "CANCELLED": "İptal Edildi",
+      "REJECTED": "Reddedildi"
+    },
+    "fulfillment": {
+      "DELIVERY": "Paket Servis",
+      "PICKUP": "Gel-Al"
+    },
+    "paymentMethod": {
+      "CASH_ON_DELIVERY": "Kapıda Ödeme",
+      "ONLINE_CARD": "Online Kart"
+    },
+    "paymentStatus": {
+      "UNPAID": "Ödenmedi",
+      "PAID": "Ödendi",
+      "REFUNDED": "İade Edildi"
+    },
+    "detail": {
+      "title": "Sipariş",
+      "items": "Ürünler",
+      "quantity": "Adet",
+      "unitPrice": "Birim Fiyat",
+      "modifiers": "Ek Seçenekler",
+      "subtotal": "Ara Toplam",
+      "deliveryFee": "Teslimat Ücreti",
+      "total": "Toplam",
+      "address": "Teslimat Adresi",
+      "noAddress": "Kayıtlı adres yok (gel-al siparişi)",
+      "customerNote": "Müşteri Notu",
+      "noNote": "Müşteri not bırakmamış",
+      "prepTime": "Hazırlık Süresi",
+      "minutesSuffix": "dk",
+      "readyBy": "Hazır Olma Zamanı",
+      "paymentMethod": "Ödeme Yöntemi",
+      "paymentStatus": "Ödeme Durumu",
+      "placedAt": "Sipariş Zamanı",
+      "customer": "Müşteri",
+      "close": "Kapat"
+    },
+    "customers": {
+      "searchPlaceholder": "İsim veya telefon ile ara",
+      "table": {
+        "name": "İsim",
+        "phone": "Telefon",
+        "orderCount": "Sipariş",
+        "joined": "Müşteri Olma Tarihi",
+        "actions": "İşlemler",
+        "loading": "Müşteriler yükleniyor…",
+        "noCustomers": "Henüz müşteri yok",
+        "view": "Görüntüle"
+      }
+    },
+    "customerDetail": {
+      "title": "Müşteri",
+      "phoneVerified": "Telefon doğrulandı",
+      "phoneNotVerified": "Telefon doğrulanmadı",
+      "addresses": "Kayıtlı Adresler",
+      "noAddresses": "Kayıtlı adres yok",
+      "orderHistory": "Sipariş Geçmişi",
+      "noOrders": "Henüz sipariş yok",
+      "close": "Kapat"
+    },
+    "errors": {
+      "loadFailed": "Siparişler yüklenemedi",
+      "loadCustomersFailed": "Müşteriler yüklenemedi",
+      "loadCustomerDetailFailed": "Müşteri bilgileri yüklenemedi"
+    },
+    "settings": {
+      "title": "Sipariş Ayarları",
+      "subtitle": "Teslimat, gel-al, ödeme yöntemleri ve kapasiteyi yapılandırın",
+      "tabs": {
+        "general": "Genel",
+        "zones": "Teslimat Bölgeleri"
+      },
+      "saveBtn": "Değişiklikleri Kaydet",
+      "saved": "Sipariş ayarları kaydedildi",
+      "saveFailed": "Sipariş ayarları kaydedilemedi",
+      "loadFailed": "Sipariş ayarları yüklenemedi",
+      "killSwitch": {
+        "title": "Online Sipariş",
+        "statusOpen": "AÇIK — sipariş alınıyor",
+        "statusClosed": "KAPALI — sipariş alınmıyor",
+        "descOpen": "Müşteriler şu anda sipariş verebilir. Kapanış saatinde veya yoğunlukta yeni siparişleri anında durdurmak için bunu kapatın.",
+        "descClosed": "Sipariş alımı kapalı. Siz tekrar açana kadar müşteriler yeni sipariş veremez."
+      },
+      "fulfillment": {
+        "title": "Teslimat Şekilleri",
+        "delivery": "Paket Servis",
+        "deliveryDesc": "Müşterilerin paket servis siparişi vermesine izin ver",
+        "pickup": "Gel-Al",
+        "pickupDesc": "Müşterilerin gel-al siparişi vermesine izin ver"
+      },
+      "payment": {
+        "title": "Ödeme Yöntemleri",
+        "cod": "Kapıda Ödeme",
+        "codDesc": "Sipariş vardığında yerinde ödeme al",
+        "card": "Online Kart Ödemesi",
+        "cardDesc": "Ödeme ekranında kartla öde",
+        "comingSoon": "Yakında",
+        "cardHint": "Online kart ödemesi henüz kurulmamış bir ödeme altyapısı entegrasyonu (Faz 2) gerektiriyor. Müşterilerin ödeme ekranında sessizce başarısız olacak bir yöntemi seçememesi için bu kapalı tutuluyor."
+      },
+      "capacity": {
+        "title": "Kapasite ve Zamanlama",
+        "maxConcurrent": "Maksimum Eşzamanlı Sipariş",
+        "maxConcurrentHint": "Sınırsız için boş bırakın",
+        "prepTime": "Varsayılan Hazırlık Süresi (dakika)",
+        "prepTimeHint": "Bir menü ürününün kendi hazırlık süresi yoksa kullanılır"
+      },
+      "hours": {
+        "title": "Sipariş Saatleri",
+        "desc": "Bir günü tamamen kapatmak için o günü \"Kapalı\" bırakın",
+        "closed": "Kapalı",
+        "open": "Açılış",
+        "close": "Kapanış",
+        "days": {
+          "mon": "Pazartesi",
+          "tue": "Salı",
+          "wed": "Çarşamba",
+          "thu": "Perşembe",
+          "fri": "Cuma",
+          "sat": "Cumartesi",
+          "sun": "Pazar"
+        }
+      },
+      "zones": {
+        "title": "Teslimat Bölgeleri",
+        "addBtn": "Bölge Ekle",
+        "table": {
+          "name": "Bölge",
+          "matchType": "Tip",
+          "fee": "Teslimat Ücreti",
+          "minOrder": "Min. Sipariş",
+          "active": "Aktif",
+          "actions": "İşlemler",
+          "loading": "Bölgeler yükleniyor…",
+          "noZones": "Henüz teslimat bölgesi tanımlanmadı"
+        },
+        "matchType": {
+          "RADIUS": "Yarıçap",
+          "AREA": "Bölge / Mahalle"
+        },
+        "dialog": {
+          "createTitle": "Yeni Teslimat Bölgesi",
+          "editTitle": "Teslimat Bölgesini Düzenle",
+          "name": "Bölge Adı",
+          "namePlaceholder": "örn. Şehir Merkezi",
+          "matchType": "Eşleştirme Tipi",
+          "radiusMeters": "Yarıçap (metre)",
+          "deliveryFee": "Teslimat Ücreti",
+          "minOrderAmount": "Minimum Sipariş Tutarı",
+          "active": "Bölge aktif",
+          "save": "Bölgeyi Kaydet"
+        },
+        "confirm": {
+          "deleteTitle": "Bu teslimat bölgesi silinsin mi?"
+        },
+        "toast": {
+          "created": "Teslimat bölgesi oluşturuldu",
+          "updated": "Teslimat bölgesi güncellendi",
+          "deleted": "Teslimat bölgesi silindi",
+          "saveFailed": "Teslimat bölgesi kaydedilemedi",
+          "deleteFailed": "Teslimat bölgesi silinemedi",
+          "loadFailed": "Teslimat bölgeleri yüklenemedi"
+        }
+      }
+    }
+  },
+  "publicOrder": {
+    "restaurantNotFound": "Restoran bulunamadı.",
+    "notAvailable": "Bu restoran için online sipariş kullanılamıyor.",
+    "loadFailed": "Menü yüklenemedi. Lütfen tekrar deneyin.",
+    "closed": {
+      "title": "Şu anda sipariş alınmıyor",
+      "description": "Şu anda online sipariş kabul etmiyoruz. Lütfen daha sonra tekrar kontrol edin."
+    },
+    "nav": {
+      "back": "Geri",
+      "continue": "Devam Et",
+      "myOrders": "Siparişlerim",
+      "step": {
+        "menu": "Menü",
+        "checkout": "Sepet ve Teslimat",
+        "identify": "Telefon Doğrulama",
+        "payment": "Ödeme",
+        "placed": "Sipariş Alındı"
+      }
+    },
+    "menu": {
+      "empty": "Şu anda online siparişe açık ürün bulunmuyor.",
+      "itemsSuffix": "ürün",
+      "viewCart": "Sepeti Gör",
+      "addedToast": "Sepete eklendi"
+    },
+    "item": {
+      "required": "Zorunlu",
+      "optional": "İsteğe Bağlı",
+      "quantity": "Adet",
+      "decrease": "Adedi azalt",
+      "increase": "Adedi artır",
+      "addToCart": "Sepete Ekle"
+    },
+    "cart": {
+      "title": "Siparişiniz",
+      "remove": "Kaldır"
+    },
+    "fulfillment": {
+      "title": "Paket Servis mi, Gel-Al mı?",
+      "delivery": "Paket Servis",
+      "pickup": "Gel-Al",
+      "onlyOneAvailable": "Şu anda yalnızca bir sipariş türü kullanılabilir."
+    },
+    "address": {
+      "zoneLabel": "Teslimat Bölgesi",
+      "noZones": "Henüz teslimat bölgesi tanımlanmamış.",
+      "deliveryFeeLabel": "Ücret:",
+      "minOrderLabel": "Min. sipariş:",
+      "fullAddressLabel": "Teslimat Adresi",
+      "fullAddressPlaceholder": "Sokak, bina, kat, daire numarası…",
+      "neighborhoodLabel": "Mahalle",
+      "neighborhoodPlaceholder": "örn. Kadıköy",
+      "noteLabel": "Kurye için not",
+      "notePlaceholder": "örn. Zili iki kez çalın"
+    },
+    "quote": {
+      "calculating": "Toplam hesaplanıyor…",
+      "subtotal": "Ara Toplam",
+      "deliveryFee": "Teslimat Ücreti",
+      "total": "Toplam",
+      "belowMinimum": "Bu bölge için minimum sipariş tutarı:",
+      "waiting": "Toplamı görmek için sepete ürün ekleyin.",
+      "failed": "Toplam hesaplanamadı. Lütfen tekrar deneyin."
+    },
+    "identify": {
+      "title": "Telefon Numaranızı Doğrulayın",
+      "phoneLabel": "Cep Telefonu",
+      "phonePlaceholder": "+90 5XX XXX XX XX",
+      "sendCodeButton": "Kod Gönder",
+      "codeSentTo": "6 haneli kodu şu numaraya gönderdik:",
+      "codeLabel": "Doğrulama Kodu",
+      "codePlaceholder": "······",
+      "trustDeviceLabel": "Bu cihazı hatırla, bir dahaki sefere kod istemeyeyim",
+      "verifyButton": "Doğrula ve Devam Et",
+      "changePhoneButton": "Telefon numarasını değiştir",
+      "resendButton": "Kodu Tekrar Gönder",
+      "resendPrefix": "Tekrar gönder:",
+      "nameSubtitle": "İlk siparişiniz — adınızı öğrenebilir miyiz?",
+      "nameLabel": "Adınız",
+      "namePlaceholder": "Ad Soyad",
+      "requestFailed": "Kod gönderilemedi. Lütfen tekrar deneyin.",
+      "verifyFailed": "Kod doğrulanamadı. Lütfen tekrar deneyin."
+    },
+    "payment": {
+      "title": "Ödeme Yöntemi",
+      "cashOnDelivery": "Kapıda Ödeme",
+      "onlineCard": "Online Kart ile Öde",
+      "noneAvailable": "Şu anda kullanılabilir ödeme yöntemi yok.",
+      "noteLabel": "Mutfak için not (isteğe bağlı)",
+      "notePlaceholder": "örn. Soğansız olsun lütfen"
+    },
+    "confirm": {
+      "summaryTitle": "Sipariş Özeti",
+      "prepTimePrefix": "Yaklaşık hazırlanma süresi:",
+      "minutesSuffix": "dk",
+      "placeOrderButton": "Siparişi Ver",
+      "placeFailed": "Siparişiniz alınamadı. Lütfen tekrar deneyin."
+    },
+    "placed": {
+      "title": "Siparişiniz Alındı!",
+      "orderNumberPrefix": "Sipariş",
+      "statusLabel": "Durum",
+      "readyByPrefix": "Tahmini hazır olma saati:",
+      "viewHistoryButton": "Siparişlerim",
+      "orderAgainButton": "Tekrar Sipariş Ver"
+    },
+    "history": {
+      "title": "Siparişlerim",
+      "empty": "Henüz geçmiş siparişiniz yok."
+    },
+    "status": {
+      "NEW": "Alındı",
+      "ACCEPTED": "Onaylandı",
+      "PREPARING": "Hazırlanıyor",
+      "READY": "Hazır",
+      "OUT_FOR_DELIVERY": "Yolda",
+      "COMPLETED": "Tamamlandı",
+      "CANCELLED": "İptal Edildi",
+      "REJECTED": "Reddedildi"
+    }
   }
 }

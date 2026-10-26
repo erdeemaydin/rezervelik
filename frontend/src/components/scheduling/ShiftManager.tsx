@@ -4,6 +4,7 @@ import React, { useEffect, useState, useMemo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { TimeSelect } from '@/components/ui/time-select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Pencil, Trash2 } from 'lucide-react';
 import { Shift, ShiftDayRequirement, getShifts, createShift, updateShift, deleteShift } from '@/lib/api/scheduling';
@@ -85,13 +86,13 @@ export default function ShiftManager() {
   };
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-      <Card className="col-span-1 h-fit">
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <Card size="sm" className="col-span-1 h-fit">
         <CardHeader>
           <CardTitle>{editingShift.id ? t('scheduling.shiftManager.editShift') : t('scheduling.shiftManager.addShift')}</CardTitle>
           <CardDescription>{t('scheduling.shiftManager.defineHours')}</CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent className="space-y-3">
           <div className="space-y-2">
             <label className="text-sm font-medium">{t('scheduling.shiftManager.shiftName')}</label>
             <Input
@@ -103,18 +104,18 @@ export default function ShiftManager() {
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <label className="text-sm font-medium">{t('scheduling.shiftManager.startTime')}</label>
-              <Input
-                type="time"
+              <TimeSelect
+                className="w-full"
                 value={editingShift.startTime || ''}
-                onChange={(e) => setEditingShift({ ...editingShift, startTime: e.target.value })}
+                onChange={(v) => setEditingShift({ ...editingShift, startTime: v })}
               />
             </div>
             <div className="space-y-2">
               <label className="text-sm font-medium">{t('scheduling.shiftManager.endTime')}</label>
-              <Input
-                type="time"
+              <TimeSelect
+                className="w-full"
                 value={editingShift.endTime || ''}
-                onChange={(e) => setEditingShift({ ...editingShift, endTime: e.target.value })}
+                onChange={(v) => setEditingShift({ ...editingShift, endTime: v })}
               />
             </div>
           </div>
@@ -161,13 +162,13 @@ export default function ShiftManager() {
         </CardContent>
       </Card>
 
-      <Card className="col-span-1 md:col-span-2">
+      <Card size="sm" className="col-span-1 md:col-span-2">
         <CardHeader>
           <CardTitle>{t('scheduling.shiftManager.existingShifts')}</CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-0">
           {loading ? (
-            <p>{t('scheduling.shiftManager.loading')}</p>
+            <p className="px-4 py-3">{t('scheduling.shiftManager.loading')}</p>
           ) : (
             <Table>
               <TableHeader>
@@ -194,7 +195,7 @@ export default function ShiftManager() {
                         {shift.dayRequirements?.reduce((acc, curr) => acc + curr.requiredStaff, 0) || 0}
                       </TableCell>
                       <TableCell className="text-right">
-                        <Button variant="ghost" size="icon" onClick={() => {
+                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => {
                           const fullReqs = DAY_INDEXES.map((i) => {
                             return shift.dayRequirements?.find(r => r.dayOfWeek === i) || { dayOfWeek: i, requiredStaff: 1 } as ShiftDayRequirement;
                           });
@@ -202,7 +203,7 @@ export default function ShiftManager() {
                         }}>
                           <Pencil className="h-4 w-4" />
                         </Button>
-                        <Button variant="ghost" size="icon" className="text-red-500 hover:text-red-600" onClick={() => handleDelete(shift.id)}>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-red-500 hover:text-red-600" onClick={() => handleDelete(shift.id)}>
                           <Trash2 className="h-4 w-4" />
                         </Button>
                       </TableCell>

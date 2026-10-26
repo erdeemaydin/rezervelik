@@ -12,20 +12,21 @@ const api = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
+  // The session credential is an httpOnly cookie now (see lib/authStorage.ts) —
+  // this tells the browser to actually attach it (and accept Set-Cookie back)
+  // on cross-origin requests to the API. Requires the backend's CORS origin
+  // allowlist + credentials:true (see CORS_ORIGIN in .env.example); a wildcard
+  // origin can't be combined with credentialed requests.
+  withCredentials: true,
 });
 
 api.interceptors.request.use(
   (config) => {
-    // Read straight from authStorage (in-memory cache → localStorage → legacy
-    // cookie). No store coupling here, so a Fast Refresh that re-creates the
-    // Zustand singleton can't desync the token the interceptor sends.
-    const authToken = readAuth('token');
+    // No Authorization header to attach anymore — the session cookie rides
+    // automatically via withCredentials above. X-Restaurant-ID isn't
+    // sensitive (the backend cross-checks it against the cookie's own
+    // restaurantId claim) and still needs to be sent explicitly.
     const restaurantId = readAuth('restaurantId');
-
-    if (authToken) {
-      config.headers.Authorization = `Bearer ${authToken}`;
-    }
-
     if (restaurantId) {
       config.headers['X-Restaurant-ID'] = restaurantId;
     }
@@ -44,6 +45,22 @@ api.interceptors.response.use(
         window.location.href = '/auth/login';
       }
     }
+
+    // Platform in maintenance mode: the backend 503s tenant/public traffic (but
+    // never SUPER_ADMIN or /auth·/system). Send those users to the maintenance
+    // screen. The system-admin console and auth pages are exempt so the root
+    // admin can still sign in and toggle maintenance back off.
+    if (
+      error.response?.status === 503 &&
+      error.response?.data?.code === 'errors.maintenance' &&
+      typeof window !== 'undefined'
+    ) {
+      const p = window.location.pathname;
+      if (!p.startsWith('/maintenance') && !p.startsWith('/system-admin') && !p.startsWith('/auth')) {
+        window.location.href = '/maintenance';
+      }
+    }
+
     return Promise.reject(error);
   }
 );

@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useTranslation } from "@/i18n/provider";
+import OrderOnlineFab from '@/components/public/OrderOnlineFab';
 import { Calendar as CalendarIcon, ChevronDown, CheckCircle2, X, Clock, Menu, ArrowLeft, Leaf, Sparkles, AlertTriangle, Flame } from 'lucide-react';
 import axios from 'axios';
 import { toast } from 'sonner';
@@ -13,6 +14,7 @@ import { Label } from '@/components/ui/label';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import { getTimeSuggestions } from '@/lib/reservationSuggestions';
 import ReservationCalendar from './ReservationCalendar';
+import ConsentFields from './ConsentFields';
 import { getTodayInTZ, zonedWallTimeToUTC, DEFAULT_TZ } from '@/lib/datetime';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || (typeof window !== 'undefined' ? `${window.location.protocol}//${window.location.hostname}:3000/api` : 'http://localhost:3000/api');
@@ -25,16 +27,17 @@ const GALLERY_IMAGES = [
   'https://images.unsplash.com/photo-1592861956120-e524fc739696?auto=format&fit=crop&q=80&w=800',
 ];
 
-export default function GardenLayout({ slug, initialRestaurant, initialView, menuOnly = false }: { slug: string, initialRestaurant: any, initialView?: string, menuOnly?: boolean }) {
+export default function GardenLayout({ slug, initialRestaurant, initialView, menuOnly = false, bookingOnly = false }: { slug: string, initialRestaurant: any, initialView?: string, menuOnly?: boolean, bookingOnly?: boolean }) {
   const { t } = useTranslation();
   const restaurant = initialRestaurant;
   const [scrolled, setScrolled] = useState(false);
 
   const [dayStatus, setDayStatus] = useState<any>(null);
   const [checkingDay, setCheckingDay] = useState(false);
-  const [isWaitlistSuccess, setIsWaitlistSuccess] = useState(false);
+
   const [isBookingSuccess, setIsBookingSuccess] = useState(false);
   const [isPossiblyFullyBooked, setIsPossiblyFullyBooked] = useState(false);
+  const [confirmationCode, setConfirmationCode] = useState<string | null>(null);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const customization = restaurant?.customization || {};
@@ -48,7 +51,12 @@ export default function GardenLayout({ slug, initialRestaurant, initialView, men
     customerPhone: '',
     customerEmail: '',
     guestCount: '2',
-    notes: ''
+    notes: '',
+    // KVKK consent (docs/planning/PRODUCTION_ROADMAP.md §7.3): required booking consent +
+    // separate optional marketing opt-in. Both ride along in the `...resForm`
+    // spread already sent to POST /reservations.
+    consentAccepted: false,
+    marketingConsent: false
   });
 
   useEffect(() => {
@@ -82,19 +90,16 @@ export default function GardenLayout({ slug, initialRestaurant, initialView, men
       return;
     }
 
+    if (!resForm.consentAccepted) {
+      toast.error(t('public.consent.required'));
+      return;
+    }
+
+    // A fully booked day has no capacity left — future demand belongs to the
+    // reservation flow (retry another date) rather than a waitlist join; the
+    // walk-in waitlist is for real-time, same-day guests only.
     if (dayStatus?.daySetting?.isFullyBooked) {
-      try {
-        await axios.post(`${API_URL}/public/restaurant/${slug}/waitlist`, {
-          customerName: resForm.customerName,
-          customerPhone: resForm.customerPhone,
-          partySize: parseInt(resForm.guestCount),
-          targetDate: selectedDate,
-          notes: `Requested Time: ${selectedTime} - ${resForm.notes}`
-        });
-        setIsWaitlistSuccess(true);
-      } catch (err: any) {
-        toast.error(err.response?.data?.error || 'Failed to join waitlist');
-      }
+      toast.error('This day is fully booked. Please choose another date.');
       return;
     }
 
@@ -119,6 +124,7 @@ export default function GardenLayout({ slug, initialRestaurant, initialView, men
         return;
       }
       setIsPossiblyFullyBooked(!!res.data?.data?.possiblyFullyBooked);
+      setConfirmationCode(res.data?.data?.confirmationCode || null);
       setIsBookingSuccess(true);
     } catch (err: any) {
       toast.error(err.response?.data?.error || 'Failed to book');
@@ -131,13 +137,15 @@ export default function GardenLayout({ slug, initialRestaurant, initialView, men
   };
 
   useEffect(() => {
-    if (menuOnly) return;
+    // menuOnly/bookingOnly pages render only their one relevant section, so
+    // there's nothing to scroll to — they already start on it.
+    if (menuOnly || bookingOnly) return;
     if (initialView === 'menu') {
       setTimeout(() => scrollToSection('menu'), 500);
     } else if (initialView === 'booking') {
       setTimeout(() => scrollToSection('reservations'), 500);
     }
-  }, [initialView, menuOnly]);
+  }, [initialView, menuOnly, bookingOnly]);
 
   if (!restaurant) return <div className="min-h-screen flex items-center justify-center bg-[#fdfaf3] text-[#3d3524] font-medium">Experience not found.</div>;
 
@@ -160,6 +168,7 @@ export default function GardenLayout({ slug, initialRestaurant, initialView, men
       switch(preset) {
           case 'CRIMSON': return { bg: '#fdf6f4', text: '#3d1f1a', accent: '#9a4a3c' };
           case 'PEARL': return { bg: '#f6f8fa', text: '#1f2937', accent: '#5b7fa6' };
+          case 'SAGE': return { bg: '#f5f7f2', text: '#283024', accent: '#7c9473' };
           case 'OBSIDIAN': return { bg: '#faf9f6', text: '#2c2c2c', accent: '#6b6459' };
           case 'EARTH':
           default: return { bg: '#fdfaf3', text: '#3d3524', accent: '#6f8a5c' };
@@ -232,8 +241,23 @@ export default function GardenLayout({ slug, initialRestaurant, initialView, men
           </Button>
           <div className="flex items-center gap-3">
             <LanguageSwitcher />
-            <Button nativeButton={false} className="rounded-full bg-[var(--accent)] px-5 py-2 text-xs font-semibold uppercase tracking-widest text-white hover:bg-[var(--accent-hover)]" render={<Link href={`/r/${slug}?view=booking`} />}>
+            <Button nativeButton={false} className="rounded-full bg-[var(--accent)] px-5 py-2 text-xs font-semibold text-white hover:bg-[var(--accent-hover)]" render={<Link href={`/r/${slug}?view=booking`} />}>
               {t('public.bookATable')}
+            </Button>
+          </div>
+        </nav>
+      ) : bookingOnly ? (
+        <nav className={cn(
+          "fixed w-full z-40 flex items-center justify-between px-6 md:px-12 py-4 bg-white/90 backdrop-blur-md border-b border-black/5",
+          customization.announcementText ? "top-9" : "top-0"
+        )}>
+          <Button variant="ghost" nativeButton={false} className="px-0 text-sm font-medium opacity-70 hover:opacity-100 hover:bg-transparent" render={<Link href={`/r/${slug}`} />}>
+            <ArrowLeft className="mr-2 h-4 w-4" /> {restaurant.name}
+          </Button>
+          <div className="flex items-center gap-3">
+            <LanguageSwitcher />
+            <Button nativeButton={false} className="rounded-full bg-[var(--accent)] px-5 py-2 text-xs font-semibold text-white hover:bg-[var(--accent-hover)]" render={<Link href={`/r/${slug}/menu`} />}>
+              {t('public.menu')}
             </Button>
           </div>
         </nav>
@@ -243,7 +267,7 @@ export default function GardenLayout({ slug, initialRestaurant, initialView, men
         scrolled ? "bg-white/90 backdrop-blur-md border-b border-black/5 shadow-sm" : "bg-transparent",
         customization.announcementText ? "top-9" : "top-0"
       )}>
-        <div className={cn("hidden md:flex items-center gap-8 text-xs font-medium uppercase tracking-[0.15em]", scrolled ? "" : "text-white drop-shadow")}>
+ <div className={cn("hidden md:flex items-center gap-8 text-xs font-medium tracking-[0.15em]", scrolled ?"":"text-white drop-shadow")}>
           <button onClick={() => scrollToSection('about')} className="opacity-80 hover:opacity-100">{t('public.ourStory')}</button>
           <button onClick={() => scrollToSection('menu')} className="opacity-80 hover:opacity-100">{t('public.menu')}</button>
         </div>
@@ -252,7 +276,7 @@ export default function GardenLayout({ slug, initialRestaurant, initialView, men
           {restaurant.name}
         </div>
 
-        <div className={cn("hidden md:flex items-center gap-6 text-xs font-medium uppercase tracking-[0.15em]", scrolled ? "" : "text-white drop-shadow")}>
+ <div className={cn("hidden md:flex items-center gap-6 text-xs font-medium tracking-[0.15em]", scrolled ?"":"text-white drop-shadow")}>
           <LanguageSwitcher />
           <button onClick={() => scrollToSection('contact')} className="opacity-80 hover:opacity-100">{t('public.contact')}</button>
           <button onClick={() => scrollToSection('reservations')} className="rounded-full bg-[var(--accent)] px-5 py-2 text-white hover:bg-[var(--accent-hover)] transition-colors">
@@ -269,7 +293,7 @@ export default function GardenLayout({ slug, initialRestaurant, initialView, men
       </nav>
       )}
 
-      {!menuOnly && isMobileMenuOpen && (
+      {!menuOnly && !bookingOnly && isMobileMenuOpen && (
         <div className="fixed inset-0 z-30 bg-[#fdfaf3]/97 backdrop-blur-md flex flex-col items-center justify-center space-y-8 animate-in fade-in duration-300 md:hidden">
           <button onClick={() => { setIsMobileMenuOpen(false); scrollToSection('about'); }} className="text-2xl font-serif">{t('public.ourStory')}</button>
           <button onClick={() => { setIsMobileMenuOpen(false); scrollToSection('menu'); }} className="text-2xl font-serif">{t('public.menu')}</button>
@@ -278,7 +302,7 @@ export default function GardenLayout({ slug, initialRestaurant, initialView, men
         </div>
       )}
 
-      {!menuOnly && (
+      {!menuOnly && !bookingOnly && (
       <>
       {/* Hero */}
       <section className="relative h-screen w-full flex items-center justify-center overflow-hidden">
@@ -288,7 +312,7 @@ export default function GardenLayout({ slug, initialRestaurant, initialView, men
         </div>
 
         <div className="relative z-20 flex flex-col items-center px-6 text-center animate-in fade-in slide-in-from-bottom-4 duration-700">
-          <span className="mb-5 flex items-center gap-2 rounded-full bg-white/15 px-4 py-1.5 text-xs font-medium uppercase tracking-[0.2em] text-white backdrop-blur-md">
+          <span className="mb-5 flex items-center gap-2 rounded-full bg-white/15 px-4 py-1.5 text-xs font-medium tracking-[0.2em] text-white backdrop-blur-md">
             <Leaf className="h-3.5 w-3.5" /> {t('public.aCulinaryJourney')}
           </span>
           <h1 className="mb-6 text-5xl font-serif leading-none tracking-tight text-white md:text-7xl lg:text-8xl">
@@ -297,7 +321,7 @@ export default function GardenLayout({ slug, initialRestaurant, initialView, men
           <p className="mb-8 max-w-md text-base font-light text-white/85">
             Seasonal plates, warm hospitality, and a table that always feels like home.
           </p>
-          <button onClick={() => scrollToSection('reservations')} className="rounded-full bg-[var(--accent)] px-8 py-3.5 text-sm font-semibold uppercase tracking-widest text-white shadow-lg transition-all hover:scale-[1.03] hover:bg-[var(--accent-hover)]">
+          <button onClick={() => scrollToSection('reservations')} className="rounded-full bg-[var(--accent)] px-8 py-3.5 text-sm font-semibold text-white shadow-lg transition-all hover:scale-[1.03] hover:bg-[var(--accent-hover)]">
             {t('public.bookATable')}
           </button>
         </div>
@@ -310,7 +334,7 @@ export default function GardenLayout({ slug, initialRestaurant, initialView, men
       {/* About */}
       <section id="about" className="mx-auto grid max-w-6xl grid-cols-1 items-center gap-16 px-6 py-24 md:grid-cols-2 md:px-12 md:py-32">
         <div>
-          <span className="mb-4 flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.2em] text-[var(--accent)]">
+          <span className="mb-4 flex items-center gap-2 text-xs font-semibold tracking-[0.2em] text-[var(--accent)]">
             <Leaf className="h-3.5 w-3.5" /> {t('public.ourStory')}
           </span>
           <h2 className="mb-6 font-serif text-4xl leading-tight md:text-5xl">Rooted in Season, Grown with Care</h2>
@@ -330,7 +354,7 @@ export default function GardenLayout({ slug, initialRestaurant, initialView, men
       <section className="px-6 py-20 md:px-12" style={{ backgroundColor: accentColor + '0f' }}>
         <div className="mx-auto max-w-6xl">
           <div className="mb-14 text-center">
-            <span className="mb-3 block text-xs font-semibold uppercase tracking-[0.2em] text-[var(--accent)]">Gallery</span>
+            <span className="mb-3 block text-xs font-semibold tracking-[0.2em] text-[var(--accent)]">Gallery</span>
             <h2 className="font-serif text-3xl md:text-5xl">From Our Table</h2>
           </div>
           <div className="grid grid-cols-1 gap-6 sm:grid-cols-3">
@@ -345,10 +369,12 @@ export default function GardenLayout({ slug, initialRestaurant, initialView, men
       </>
       )}
 
+      {/* Menu — hidden on a booking-only standalone page, mirroring how menuOnly hides Reservations */}
+      {!bookingOnly && (
       <section id="menu" className={cn("px-6 md:px-12", menuOnly ? "pt-28 pb-24" : "py-20 md:py-28")}>
         <div className="mx-auto max-w-5xl">
           <div className="mb-16 text-center">
-            <span className="mb-3 block text-xs font-semibold uppercase tracking-[0.2em] text-[var(--accent)]">Gastronomy</span>
+            <span className="mb-3 block text-xs font-semibold tracking-[0.2em] text-[var(--accent)]">Gastronomy</span>
             <h2 className="font-serif text-4xl md:text-6xl">{t('public.menu')}</h2>
           </div>
 
@@ -392,6 +418,7 @@ export default function GardenLayout({ slug, initialRestaurant, initialView, men
           )}
         </div>
       </section>
+      )}
 
       {menuOnly && (
         <footer className="border-t border-black/5 px-6 py-14 text-center md:px-12">
@@ -402,14 +429,14 @@ export default function GardenLayout({ slug, initialRestaurant, initialView, men
               {restaurant.contactEmail && <a href={`mailto:${restaurant.contactEmail}`} className="hover:text-[var(--accent)]">{restaurant.contactEmail}</a>}
             </div>
           )}
-          <Button nativeButton={false} className="mt-8 rounded-full bg-[var(--accent)] px-6 py-2 text-xs font-semibold uppercase tracking-widest text-white hover:bg-[var(--accent-hover)]" render={<Link href={`/r/${slug}?view=booking`} />}>
+          <Button nativeButton={false} className="mt-8 rounded-full bg-[var(--accent)] px-6 py-2 text-xs font-semibold text-white hover:bg-[var(--accent-hover)]" render={<Link href={`/r/${slug}?view=booking`} />}>
             {t('public.bookATable')}
           </Button>
           <p className="mt-8 text-xs opacity-40">© {new Date().getFullYear()} {restaurant.name}</p>
         </footer>
       )}
 
-      {!menuOnly && (
+      {!menuOnly && !bookingOnly && (
       <>
       {/* Contact / Footer */}
       <section id="contact" className="mx-auto max-w-4xl border-t border-black/5 px-6 py-20 text-center md:px-12">
@@ -422,18 +449,22 @@ export default function GardenLayout({ slug, initialRestaurant, initialView, men
         )}
         {customization.showLegal && customization.legalText && (
           <div className="mx-auto mt-20 max-w-2xl border-t border-black/5 pt-10 text-left text-xs leading-relaxed opacity-50">
-            <h4 className="mb-2 text-center text-xs font-semibold uppercase tracking-widest opacity-80">Legal Terms</h4>
+            <h4 className="mb-2 text-center text-xs font-semibold opacity-80">Legal Terms</h4>
             <div className="whitespace-pre-wrap">{customization.legalText}</div>
           </div>
         )}
         <p className="mt-14 text-xs opacity-40">© {new Date().getFullYear()} {restaurant.name}</p>
       </section>
+      </>
+      )}
 
-      {/* Reservations */}
+      {/* Reservations — shown in full mode and on the bookingOnly standalone page */}
+      {!menuOnly && (
+      <>
       <section id="reservations" className="px-6 py-24 md:px-12" style={{ backgroundColor: accentColor + '0f' }}>
         <div className="mx-auto max-w-3xl">
           <div className="mb-14 text-center">
-            <span className="mb-3 block text-xs font-semibold uppercase tracking-[0.2em] text-[var(--accent)]">Reservations</span>
+            <span className="mb-3 block text-xs font-semibold tracking-[0.2em] text-[var(--accent)]">Reservations</span>
             <h2 className="font-serif text-4xl md:text-5xl">{t('public.bookATable')}</h2>
           </div>
 
@@ -442,17 +473,18 @@ export default function GardenLayout({ slug, initialRestaurant, initialView, men
               <CheckCircle2 className="mx-auto mb-6 h-16 w-16 text-emerald-500" />
               <h3 className="mb-3 font-serif text-2xl">{isPossiblyFullyBooked ? 'Request Received' : 'Reservation Confirmed'}</h3>
               <p className="text-base opacity-60">We look forward to welcoming you.</p>
+              {confirmationCode && (
+                <div className="mx-auto mt-8 flex max-w-xs flex-col items-center rounded-2xl border border-black/5 bg-[#fdfaf3] px-6 py-4">
+                  <span className="text-[10px] font-semibold tracking-[0.2em] opacity-50">{t('public.confirmationCodeLabel')}</span>
+                  <span className="mt-1 text-2xl font-semibold tracking-[0.2em]" style={{ color: 'var(--accent)' }}>{confirmationCode}</span>
+                  <span className="mt-2 text-[10px] opacity-50">{t('public.confirmationCodeHint')}</span>
+                </div>
+              )}
               {isPossiblyFullyBooked && (
                 <div className="mx-auto mt-8 max-w-md rounded-2xl border border-amber-200 bg-amber-50 p-4 text-left text-sm text-amber-800">
                   Heads up — we may be fully booked around this time, so your table hasn&apos;t been assigned yet. Our team will confirm by phone shortly.
                 </div>
               )}
-            </div>
-          ) : isWaitlistSuccess ? (
-            <div className="rounded-[2rem] border border-black/5 bg-white p-12 text-center animate-in zoom-in">
-              <CheckCircle2 className="mx-auto mb-6 h-16 w-16 text-emerald-500" />
-              <h3 className="mb-3 font-serif text-2xl">Waitlist Joined</h3>
-              <p className="text-base opacity-60">We will notify you if a table becomes available.</p>
             </div>
           ) : (
             <form onSubmit={handleBooking} className="space-y-8 rounded-[2rem] border border-black/5 bg-white p-6 shadow-sm sm:p-10">
@@ -466,14 +498,14 @@ export default function GardenLayout({ slug, initialRestaurant, initialView, men
               )}
 
               <div className="space-y-5">
-                <Label className="text-xs font-semibold uppercase tracking-widest opacity-60">Date</Label>
+                <Label className="text-xs font-semibold opacity-60">Date</Label>
                 <div className="rounded-2xl border border-black/10 bg-[#fdfaf3] p-4">
                   <ReservationCalendar value={selectedDate} onChange={setSelectedDate} tz={tz} accent="var(--accent)" />
                 </div>
               </div>
 
               <div className="space-y-4">
-                <Label className="text-xs font-semibold uppercase tracking-widest opacity-60">Time</Label>
+                <Label className="text-xs font-semibold opacity-60">Time</Label>
                 <div className="grid grid-cols-4 gap-2">
                   {[...times.lunch, ...times.dinner].map(tm => (
                     <button key={tm} type="button" onClick={() => setSelectedTime(tm)} className={cn("h-11 rounded-xl border text-sm font-medium transition-all", selectedTime === tm ? "border-[var(--accent)] bg-[var(--accent)] text-white" : "border-black/10 bg-[#fdfaf3] hover:border-[var(--accent)]/40")}>{tm}</button>
@@ -489,16 +521,16 @@ export default function GardenLayout({ slug, initialRestaurant, initialView, men
                 <div className="rounded-2xl border-l-4 border-amber-500 bg-amber-50 p-5 text-sm text-amber-800 flex items-start gap-3">
                   <Clock className="h-5 w-5 shrink-0 text-amber-500" />
                   <div>
-                    <span className="mb-1 block text-xs font-semibold uppercase tracking-widest text-amber-600">{selectedDateLabel}</span>
-                    <strong className="mb-1 block text-base">Fully Booked (Waitlist Open)</strong>
-                    We are fully booked for reservations on this day, but you can join our waitlist.
+                    <span className="mb-1 block text-xs font-semibold text-amber-600">{selectedDateLabel}</span>
+                    <strong className="mb-1 block text-base">Fully Booked</strong>
+                    We are fully booked for reservations on this day. Please choose another date, or call us directly.
                   </div>
                 </div>
               ) : dayStatus?.daySetting?.isReservationEnabled === false ? (
                 <div className="rounded-2xl border-l-4 border-red-500 bg-red-50 p-5 text-sm text-red-800 flex items-start gap-3">
                   <X className="h-5 w-5 shrink-0 text-red-500" />
                   <div>
-                    <span className="mb-1 block text-xs font-semibold uppercase tracking-widest text-red-600">{selectedDateLabel}</span>
+                    <span className="mb-1 block text-xs font-semibold text-red-600">{selectedDateLabel}</span>
                     <strong className="mb-1 block text-base">Reservations Closed</strong>
                     Unfortunately, we&apos;re not accepting reservations for this day.
                   </div>
@@ -507,7 +539,7 @@ export default function GardenLayout({ slug, initialRestaurant, initialView, men
                 <div className="rounded-2xl border-l-4 border-emerald-500 bg-emerald-50 p-5 text-sm text-emerald-800 flex items-start gap-3">
                   <CheckCircle2 className="h-5 w-5 shrink-0 text-emerald-500" />
                   <div>
-                    <span className="mb-1 block text-xs font-semibold uppercase tracking-widest text-emerald-600">{selectedDateLabel}</span>
+                    <span className="mb-1 block text-xs font-semibold text-emerald-600">{selectedDateLabel}</span>
                     <strong className="mb-1 block text-base">Immediate Booking</strong>
                     Your reservation will be confirmed automatically.
                   </div>
@@ -516,16 +548,26 @@ export default function GardenLayout({ slug, initialRestaurant, initialView, men
                 <div className="rounded-2xl border-l-4 border-blue-500 bg-blue-50 p-5 text-sm text-blue-800 flex items-start gap-3">
                   <CalendarIcon className="h-5 w-5 shrink-0 text-blue-500" />
                   <div>
-                    <span className="mb-1 block text-xs font-semibold uppercase tracking-widest text-blue-600">{selectedDateLabel}</span>
+                    <span className="mb-1 block text-xs font-semibold text-blue-600">{selectedDateLabel}</span>
                     <strong className="mb-1 block text-base">Confirmation Queue</strong>
                     This date requires manual staff review. You&apos;ll receive a notification.
                   </div>
                 </div>
               ) : null}
 
+              {dayStatus?.daySetting?.isCapacityFull && (
+                <div className="rounded-2xl border-l-4 border-amber-500 bg-amber-50 p-4 text-sm text-amber-800 flex items-start gap-3">
+                  <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5 text-amber-500" />
+                  <div>
+                    <p className="mb-0.5 font-semibold text-amber-600">{t('public.capacityFullTitle')}</p>
+                    <p>{t('public.capacityFullDesc')}</p>
+                  </div>
+                </div>
+              )}
+
               <div className="space-y-6 border-t border-black/5 pt-8">
                 <div className="space-y-2">
-                  <Label className="text-xs font-semibold uppercase tracking-widest opacity-60">Guests</Label>
+                  <Label className="text-xs font-semibold opacity-60">Guests</Label>
                   <div className="flex flex-wrap gap-2">
                     {Array.from({ length: maxPartySize }, (_, i) => i + 1).map(n => (
                       <button key={n} type="button" onClick={() => setResForm({...resForm, guestCount: String(n)})} className={cn("h-12 w-12 rounded-full border text-base font-semibold transition-all", resForm.guestCount === String(n) ? "border-[var(--accent)] bg-[var(--accent)] text-white scale-105" : "border-black/10 bg-[#fdfaf3] hover:border-[var(--accent)]/40")}>{n}</button>
@@ -534,29 +576,55 @@ export default function GardenLayout({ slug, initialRestaurant, initialView, men
                 </div>
                 <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
                   <div className="space-y-2">
-                    <Label className="text-xs font-semibold uppercase tracking-widest opacity-60">Name</Label>
+                    <Label className="text-xs font-semibold opacity-60">Name</Label>
                     <Input required value={resForm.customerName} onChange={e => setResForm({...resForm, customerName: e.target.value})} className="h-14 rounded-2xl border-black/10 bg-[#fdfaf3] px-5 text-base font-medium focus-visible:ring-4 focus-visible:ring-[var(--accent)]/10" />
                   </div>
                   <div className="space-y-2">
-                    <Label className="text-xs font-semibold uppercase tracking-widest opacity-60">Phone</Label>
+                    <Label className="text-xs font-semibold opacity-60">Phone</Label>
                     <Input required type="tel" value={resForm.customerPhone} onChange={e => setResForm({...resForm, customerPhone: e.target.value})} className="h-14 rounded-2xl border-black/10 bg-[#fdfaf3] px-5 text-base font-medium focus-visible:ring-4 focus-visible:ring-[var(--accent)]/10" />
                   </div>
                 </div>
               </div>
 
+              <ConsentFields
+                slug={slug}
+                consentAccepted={resForm.consentAccepted}
+                onConsentAcceptedChange={(v) => setResForm({ ...resForm, consentAccepted: v })}
+                marketingConsent={resForm.marketingConsent}
+                onMarketingConsentChange={(v) => setResForm({ ...resForm, marketingConsent: v })}
+                className="mt-2 space-y-3 text-sm opacity-80"
+              />
+
               <Button
                 type="submit"
-                disabled={checkingDay || dayStatus?.daySetting?.isReservationEnabled === false}
-                className="h-16 w-full rounded-2xl bg-[var(--accent)] text-base font-semibold uppercase tracking-widest text-white hover:bg-[var(--accent-hover)] disabled:opacity-50"
+                disabled={checkingDay || dayStatus?.daySetting?.isFullyBooked || (dayStatus?.daySetting?.isReservationEnabled === false && !dayStatus?.daySetting?.isFullyBooked)}
+                className="h-16 w-full rounded-2xl bg-[var(--accent)] text-base font-semibold text-white hover:bg-[var(--accent-hover)] disabled:opacity-50"
               >
-                {dayStatus?.daySetting?.isFullyBooked ? 'Join Waitlist' : 'Request Table'}
+                {dayStatus?.daySetting?.isFullyBooked ? 'Fully Booked' : 'Request Table'}
               </Button>
             </form>
           )}
         </div>
       </section>
+
+      {bookingOnly && (
+        <footer className="border-t border-black/5 px-6 py-14 text-center md:px-12">
+          <h2 className="mb-4 font-serif text-2xl">{restaurant.name}</h2>
+          {hasContactInfo && (
+            <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-sm opacity-70">
+              {restaurant.contactPhone && <a href={`tel:${restaurant.contactPhone}`} className="hover:text-[var(--accent)]">{restaurant.contactPhone}</a>}
+              {restaurant.contactEmail && <a href={`mailto:${restaurant.contactEmail}`} className="hover:text-[var(--accent)]">{restaurant.contactEmail}</a>}
+            </div>
+          )}
+          <Button nativeButton={false} className="mt-8 rounded-full bg-[var(--accent)] px-6 py-2 text-xs font-semibold text-white hover:bg-[var(--accent-hover)]" render={<Link href={`/r/${slug}/menu`} />}>
+            {t('public.menu')}
+          </Button>
+          <p className="mt-8 text-xs opacity-40">© {new Date().getFullYear()} {restaurant.name}</p>
+        </footer>
+      )}
       </>
       )}
+      <OrderOnlineFab slug={slug} restaurant={restaurant} />
     </div>
   );
 }

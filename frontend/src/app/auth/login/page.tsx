@@ -7,8 +7,10 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { useAuthStore } from '@/store/useAuthStore';
 import api from '@/lib/api';
+import { getApiErrorMessage } from '@/lib/apiError';
 import { QRCodeSVG } from 'qrcode.react';
-import { ShieldCheck } from 'lucide-react';
+import { ShieldCheck, Loader2 } from 'lucide-react';
+import { useTranslation } from '@/i18n/provider';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -17,15 +19,19 @@ import {
   FormField,
   FormItem,
   FormLabel,
-  FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { PasswordInput } from '@/components/auth/PasswordInput';
+import { LanguageSwitcher } from '@/components/LanguageSwitcher';
+import { BrandLogo, BrandMark } from '@/components/BrandLogo';
 
+// Login only requires a non-empty password — the account may predate the current
+// password policy (legacy/weak passwords are still valid and must sign in). The
+// policy is enforced only when a password is *set* (setup/reset/change).
 const formSchema = z.object({
-  email: z.string().email('Invalid email address'),
-  password: z.string().min(6, 'Password must be at least 6 characters'),
+  email: z.string().email('auth.emailInvalid'),
+  password: z.string().min(1, 'auth.passwordRequired'),
 });
 
 interface OtpChallenge {
@@ -35,18 +41,43 @@ interface OtpChallenge {
   otpSecret?: string;
 }
 
+// HOST staff work the host stand, not the back-office dashboard — land them
+// there directly instead of /dashboard (which they don't have view_analytics
+// for anyway, so AdminLayout's route guard would just bounce them elsewhere).
+// KITCHEN staff go even further outside the dashboard entirely: the order
+// station is a separate full-screen route that doesn't use AdminLayout chrome
+// at all (unlike /dashboard/host, which stays inside it).
+const defaultRouteForRole = (role: string): string => {
+  if (role === 'SUPER_ADMIN') return '/system-admin/tenants';
+  if (role === 'HOST') return '/dashboard/host';
+  if (role === 'KITCHEN') return '/order-station';
+  return '/dashboard';
+};
+
+// Brand colors for the pre-auth surfaces. There's no tenant yet, so these are
+// the default (classic blue) skin's values from globals.css, not variables.
+const NAVY = '#222d32';
+const BLUE = '#1f6fb2';
+
 export default function LoginPage() {
   const router = useRouter();
+  const { t } = useTranslation();
   const login = useAuthStore((state) => state.login);
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
   const currentUser = useAuthStore((state) => state.user);
   const [error, setError] = useState('');
+  // Covers the gap between a successful login and the route actually changing:
+  // react-hook-form's isSubmitting flips back to false the moment onSubmit
+  // returns, but the navigation to /dashboard hasn't painted yet — without this
+  // the button would go idle for ~1–2s and the user is left wondering if it
+  // worked. A full-screen overlay makes the transition unmistakably "in progress".
+  const [redirecting, setRedirecting] = useState(false);
 
   // Server-side proxy no longer bounces logged-in users off /auth/login (token
   // is in localStorage, not a readable cookie) — do it on the client instead.
   useEffect(() => {
     if (isAuthenticated && currentUser) {
-      router.replace(currentUser.role === 'SUPER_ADMIN' ? '/system-admin/tenants' : '/dashboard');
+      router.replace(defaultRouteForRole(currentUser.role));
     }
   }, [isAuthenticated, currentUser, router]);
 
@@ -60,10 +91,10 @@ export default function LoginPage() {
     defaultValues: { email: '', password: '' },
   });
 
-  const finishLogin = (token: string, user: any) => {
-    login(token, user);
-    if (user.role === 'SUPER_ADMIN') router.push('/system-admin/tenants');
-    else router.push('/dashboard');
+  const finishLogin = (user: any) => {
+    setRedirecting(true);
+    login(user);
+    router.push(defaultRouteForRole(user.role));
   };
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
@@ -81,10 +112,10 @@ export default function LoginPage() {
           });
           return;
         }
-        finishLogin(data.token, data.user);
+        finishLogin(data.user);
       }
     } catch (err: any) {
-      setError(err.response?.data?.error || 'An error occurred during login');
+      setError(getApiErrorMessage(err, t('auth.loginError')));
     }
   }
 
@@ -95,97 +126,219 @@ export default function LoginPage() {
       setError('');
       setOtpBusy(true);
       const res = await api.post('/auth/login/otp', { otpToken: challenge.otpToken, code: otpCode });
-      finishLogin(res.data.data.token, res.data.data.user);
+      finishLogin(res.data.data.user);
     } catch (err: any) {
-      setError(err.response?.data?.message || err.response?.data?.error || 'Invalid or expired code');
+      setError(getApiErrorMessage(err, t('auth.invalidCode')));
     } finally {
       setOtpBusy(false);
     }
   }
 
+  const primaryButton = 'h-11 w-full rounded-[4px] bg-[#1f6fb2] text-sm font-bold text-white hover:bg-[#195a91]';
+
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gray-50">
-      <Card className="w-full max-w-md">
-        {!challenge ? (
-          <>
-            <CardHeader className="space-y-1 text-center">
-              <CardTitle className="text-2xl font-bold">Sign in</CardTitle>
-              <CardDescription>Enter your email and password to access your dashboard</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Form {...form}>
-                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-                  <FormField control={form.control} name="email" render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Email</FormLabel>
-                      <FormControl><Input placeholder="admin@restaurant.com" {...field} /></FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )} />
-                  <FormField control={form.control} name="password" render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Password</FormLabel>
-                      <FormControl><Input type="password" placeholder="••••••••" {...field} /></FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )} />
-                  {error && <p className="text-sm text-red-500 text-center font-medium">{error}</p>}
-                  <Button type="submit" className="w-full">Sign In</Button>
-                </form>
-              </Form>
-            </CardContent>
-          </>
-        ) : (
-          <>
-            <CardHeader className="space-y-1 text-center">
-              <div className="mx-auto mb-1 flex h-11 w-11 items-center justify-center rounded-full bg-emerald-100 text-emerald-600">
-                <ShieldCheck className="h-6 w-6" />
-              </div>
-              <CardTitle className="text-2xl font-bold">Two-Factor Verification</CardTitle>
-              <CardDescription>
-                {challenge.setupRequired
-                  ? 'Your administrator requires 2FA. Scan the QR code with an authenticator app, then enter the 6-digit code.'
-                  : 'Enter the 6-digit code from your authenticator app.'}
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <form onSubmit={submitOtp} className="space-y-4">
-                {challenge.setupRequired && challenge.otpauthUrl && (
-                  <div className="flex flex-col items-center gap-3">
-                    <div className="p-3 bg-white border border-slate-200 rounded-lg shadow-sm">
-                      <QRCodeSVG value={challenge.otpauthUrl} size={160} />
-                    </div>
-                    {challenge.otpSecret && (
-                      <div className="w-full text-center">
-                        <Label className="text-[10px] font-black uppercase tracking-wider text-slate-400">Manual key</Label>
-                        <code className="block text-xs font-mono bg-slate-50 border border-slate-200 rounded px-3 py-2 mt-1 break-all">{challenge.otpSecret}</code>
+    <div className="min-h-screen w-full lg:grid lg:grid-cols-[1.05fr_1fr] bg-[#ecf0f5]">
+      {/* Post-login transition veil — keeps a clear "signing you in…" state on
+          screen until the dashboard route paints, so the wait never looks frozen. */}
+      {redirecting && (
+        <div className="fixed inset-0 z-50 flex flex-col items-center justify-center gap-4 bg-[#ecf0f5]/95">
+          <BrandMark size={56} tile={BLUE} />
+          <p className="flex items-center gap-2 text-sm font-bold text-[#1f2d3d]">
+            <Loader2 className="h-4 w-4 animate-spin" />
+            {t('auth.signingIn')}
+          </p>
+        </div>
+      )}
+
+      {/* Brand panel — AdminLTE navy with the skin-blue top rule. Hidden on small screens. */}
+      <aside
+        className="relative hidden lg:flex flex-col justify-between overflow-hidden border-t-4 p-12 text-white"
+        style={{ backgroundColor: NAVY, borderTopColor: BLUE }}
+      >
+        {/* Oversized watermark of the mark — structure, not a gradient blob. */}
+        <BrandMark size={460} tile="rgba(255,255,255,0.035)" glyph="rgba(255,255,255,0.05)" className="pointer-events-none absolute -bottom-24 -right-24" />
+        <BrandLogo size={44} tile={BLUE} textClassName="text-[26px] text-white" className="relative" />
+        <div className="relative max-w-md">
+          <h1 className="text-4xl font-bold leading-tight tracking-tight">
+            {t('auth.signInTitle')}
+          </h1>
+          <p className="mt-4 text-base leading-relaxed text-[#b8c7ce]">
+            {t('auth.brandTagline')}
+          </p>
+        </div>
+        <div className="relative text-xs font-medium text-[#8aa4af]">
+          © {new Date().getFullYear()} Rezervelik
+        </div>
+      </aside>
+
+      {/* Form panel */}
+      <main className="relative flex min-h-screen flex-col items-center justify-center px-5 py-10 sm:px-8">
+        <div className="absolute right-4 top-4">
+          <LanguageSwitcher />
+        </div>
+
+        <div className="w-full max-w-sm">
+          {/* Brand mark for mobile (brand panel is hidden there). */}
+          <div className="mb-6 flex justify-center lg:hidden">
+            <BrandLogo size={40} tile={BLUE} textClassName="text-2xl text-[#1f2d3d]" />
+          </div>
+
+          {/* AdminLTE login box: white panel, visible border, primary top rule. */}
+          <div className="rounded-[4px] border border-[#9ca8b7] border-t-[3px] border-t-[#1f6fb2] bg-white p-6 shadow-[0_1px_3px_rgba(0,0,0,0.1)] sm:p-7">
+            {!challenge ? (
+              <>
+                <div className="mb-6 space-y-1">
+                  <h2 className="text-2xl font-bold tracking-tight text-[#1f2d3d]">{t('auth.signInTitle')}</h2>
+                  <p className="text-sm text-[#5b6b7b]">{t('auth.signInSubtitle')}</p>
+                </div>
+
+                <Form {...form}>
+                  <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4" noValidate>
+                    <FormField
+                      control={form.control}
+                      name="email"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="font-semibold text-[#1f2d3d]">{t('auth.emailLabel')}</FormLabel>
+                          <FormControl>
+                            <Input
+                              {...field}
+                              type="email"
+                              inputMode="email"
+                              autoComplete="email"
+                              autoCapitalize="none"
+                              autoCorrect="off"
+                              spellCheck={false}
+                              autoFocus
+                              placeholder={t('auth.emailPlaceholder')}
+                              className="h-11"
+                            />
+                          </FormControl>
+                          {form.formState.errors.email?.message && (
+                            <p className="text-sm font-medium text-destructive">
+                              {t(form.formState.errors.email.message)}
+                            </p>
+                          )}
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="password"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="font-semibold text-[#1f2d3d]">{t('auth.passwordLabel')}</FormLabel>
+                          <FormControl>
+                            <PasswordInput
+                              {...field}
+                              autoComplete="current-password"
+                              placeholder="••••••••"
+                              className="h-11"
+                              showLabel={t('auth.showPassword')}
+                              hideLabel={t('auth.hidePassword')}
+                            />
+                          </FormControl>
+                          {form.formState.errors.password?.message && (
+                            <p className="text-sm font-medium text-destructive">
+                              {t(form.formState.errors.password.message)}
+                            </p>
+                          )}
+                        </FormItem>
+                      )}
+                    />
+
+                    {error && (
+                      <div className="rounded-[4px] border border-red-300 border-l-4 border-l-red-600 bg-red-50 px-3 py-2.5 text-sm font-medium text-red-800">
+                        {error}
                       </div>
                     )}
+
+                    <Button
+                      type="submit"
+                      disabled={form.formState.isSubmitting || redirecting}
+                      className={primaryButton}
+                    >
+                      {(form.formState.isSubmitting || redirecting) && (
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      )}
+                      {form.formState.isSubmitting || redirecting ? t('auth.signingIn') : t('auth.signInButton')}
+                    </Button>
+                  </form>
+                </Form>
+              </>
+            ) : (
+              <>
+                <div className="mb-6 text-center">
+                  <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-[#00875a] text-white">
+                    <ShieldCheck className="h-6 w-6" />
                   </div>
-                )}
-                <div className="space-y-2">
-                  <Label className="text-xs font-bold text-slate-700 uppercase">Verification Code</Label>
-                  <Input
-                    value={otpCode}
-                    onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                    inputMode="numeric"
-                    autoFocus
-                    placeholder="123456"
-                    className="h-12 text-xl font-black tracking-[0.4em] text-center"
-                  />
+                  <h2 className="text-2xl font-bold tracking-tight text-[#1f2d3d]">{t('auth.twoFactorTitle')}</h2>
+                  <p className="mt-1 text-sm text-[#5b6b7b]">
+                    {challenge.setupRequired ? t('auth.twoFactorSetupDesc') : t('auth.twoFactorDesc')}
+                  </p>
                 </div>
-                {error && <p className="text-sm text-red-500 text-center font-medium">{error}</p>}
-                <Button type="submit" disabled={otpBusy || otpCode.length !== 6} className="w-full">
-                  {otpBusy ? 'Verifying…' : 'Verify & Sign In'}
-                </Button>
-                <Button type="button" variant="ghost" onClick={() => { setChallenge(null); setOtpCode(''); setError(''); }} className="w-full text-xs text-slate-500">
-                  Back to sign in
-                </Button>
-              </form>
-            </CardContent>
-          </>
-        )}
-      </Card>
+
+                <form onSubmit={submitOtp} className="space-y-4">
+                  {challenge.setupRequired && challenge.otpauthUrl && (
+                    <div className="flex flex-col items-center gap-3">
+                      <div className="rounded-[4px] border border-[#9ca8b7] bg-white p-3">
+                        <QRCodeSVG value={challenge.otpauthUrl} size={160} />
+                      </div>
+                      {challenge.otpSecret && (
+                        <div className="w-full text-center">
+                          <Label className="text-[10px] font-black uppercase tracking-wider text-[#5b6b7b]">
+                            {t('auth.manualKey')}
+                          </Label>
+                          <code className="mt-1 block break-all rounded-[4px] border border-[#9ca8b7] bg-[#f4f6f9] px-3 py-2 font-mono text-xs">
+                            {challenge.otpSecret}
+                          </code>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                  <div className="space-y-2">
+                    <Label className="text-xs font-bold uppercase text-[#1f2d3d]">{t('auth.verificationCode')}</Label>
+                    <Input
+                      value={otpCode}
+                      onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                      inputMode="numeric"
+                      autoComplete="one-time-code"
+                      autoFocus
+                      placeholder="123456"
+                      className="h-12 text-center text-xl font-black tracking-[0.4em]"
+                    />
+                  </div>
+                  {error && (
+                    <div className="rounded-[4px] border border-red-300 border-l-4 border-l-red-600 bg-red-50 px-3 py-2.5 text-sm font-medium text-red-800">
+                      {error}
+                    </div>
+                  )}
+                  <Button
+                    type="submit"
+                    disabled={otpBusy || redirecting || otpCode.length !== 6}
+                    className={primaryButton}
+                  >
+                    {(otpBusy || redirecting) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    {otpBusy || redirecting ? t('auth.verifying') : t('auth.verifyAndSignIn')}
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    onClick={() => {
+                      setChallenge(null);
+                      setOtpCode('');
+                      setError('');
+                    }}
+                    className="w-full text-xs text-[#5b6b7b]"
+                  >
+                    {t('auth.backToSignIn')}
+                  </Button>
+                </form>
+              </>
+            )}
+          </div>
+        </div>
+      </main>
     </div>
   );
 }
