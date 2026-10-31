@@ -437,7 +437,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
                   <vIcon.brand className="w-5 h-5 text-white" />
                 </div>
                 <span className="font-black text-sm tracking-tight text-white uppercase whitespace-nowrap">
-                  Reserve<span className="text-blue-500">Pro</span>
+                  Rezerve<span className="text-blue-500">lik</span>
                 </span>
               </div>
               <button

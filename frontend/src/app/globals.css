@@ -263,3 +263,70 @@
 .admin-surface-system .text-emerald-700 { color: var(--admin-accent-hover) !important; }
 .admin-surface-system .border-emerald-200 { border-color: var(--admin-accent-tint-3) !important; }
 .admin-surface-system .border-emerald-100 { border-color: var(--admin-accent-tint-2) !important; }
+
+/* =====================================================================
+   Admin dashboard legibility
+   ---------------------------------------------------------------------
+   Pages use slate-100/200 borders and slate-300/400 text directly, which
+   nearly vanish on the light dashboard background, so controls and cards
+   did not read as separate from the page. As with the theme remap above,
+   this is fixed centrally instead of editing every page.
+   Scoped to `main` and portaled overlays so the dark sidebar and public
+   tenant pages are untouched; dark surfaces inside `main` are excluded
+   from the text rules. `:has` is what reaches portals, which render
+   outside the data-admin-theme element.
+   ===================================================================== */
+
+html:not(.dark) body:has([data-admin-theme]) {
+  --border: #c2ccd9;
+  --input: #94a3b8;
+  --muted-foreground: #526077;
+}
+
+/* Dividers stay lighter than the container borders around them. */
+html:not(.dark) body:has([data-admin-theme]) :is(main, [role="dialog"], [role="alertdialog"], [role="listbox"], [role="menu"]) :is(
+  .border-slate-50, .border-slate-100, .border-slate-100\/30, .border-slate-100\/50, .border-y-slate-100, .divide-slate-50 > *, .divide-slate-100 > *
+) { border-color: #d8dfe8 !important; }
+
+html:not(.dark) body:has([data-admin-theme]) :is(main, [role="dialog"], [role="alertdialog"], [role="listbox"], [role="menu"]) :is(
+  .border-slate-200, .border-slate-200\/50, .border-slate-200\/60
+) { border-color: #c2ccd9 !important; }
+
+html:not(.dark) body:has([data-admin-theme]) [data-slot="card"] { --tw-ring-color: #c2ccd9; }
+
+/* Text */
+html:not(.dark) body:has([data-admin-theme]) :is(main, [role="dialog"], [role="alertdialog"], [role="listbox"], [role="menu"]) :is(.text-slate-300, .text-slate-400):not(:is(.bg-slate-800, .bg-slate-900, .bg-blue-600) *, :is(.bg-slate-800, .bg-slate-900, .bg-blue-600)) { color: #64748b !important; }
+html:not(.dark) body:has([data-admin-theme]) :is(main, [role="dialog"], [role="alertdialog"], [role="listbox"], [role="menu"]) .text-slate-500:not(:is(.bg-slate-800, .bg-slate-900, .bg-blue-600) *) { color: #526077 !important; }
+
+/* Form fields */
+html:not(.dark) body:has([data-admin-theme]) :is(main, [role="dialog"], [role="alertdialog"]) :is(input:not([type="checkbox"], [type="radio"], [type="file"]), textarea, select, [role="combobox"]) { border-color: #94a3b8 !important; }
+html:not(.dark) body:has([data-admin-theme]) :is(main, [role="dialog"], [role="alertdialog"]) :is(input:not([type="checkbox"], [type="radio"], [type="file"]), textarea, select, [role="combobox"]):hover:not(:disabled) { border-color: #64748b !important; }
+
+/* Interactive elements */
+body:has([data-admin-theme]) :is(button, a[href], [role="tab"], [role="switch"], [role="option"], [role="menuitem"], [role="combobox"], label[for]):not(:disabled, [aria-disabled="true"]) { cursor: pointer; }
+
+html:not(.dark) body:has([data-admin-theme]) :is(main, [role="dialog"], [role="alertdialog"]) button:is(.border-border, [class*="border-slate-"], .bg-white, .h-6.w-6, .h-7.w-7, .h-8.w-8, .h-9.w-9, .size-6, .size-7, .size-8, .size-9):not(:disabled, [role="tab"], [class*="bg-blue"], [class*="bg-slate-9"], [class*="bg-emerald"], [class*="bg-red"], [class*="bg-amber"]) {
+  border-color: #94a3b8 !important;
+}
+html:not(.dark) body:has([data-admin-theme]) :is(main, [role="dialog"], [role="alertdialog"]) button:is(.border-border, [class*="border-slate-"], .bg-white, .h-6.w-6, .h-7.w-7, .h-8.w-8, .h-9.w-9, .size-6, .size-7, .size-8, .size-9):not(:disabled, [role="tab"], [class*="bg-blue"], [class*="bg-slate-9"], [class*="bg-emerald"], [class*="bg-red"], [class*="bg-amber"]):hover {
+  border-color: var(--admin-accent, #2563eb) !important;
+  background-color: #eef2f7;
+}
+
+/* Segmented controls built from ghost buttons mark the active item with bg-white + shadow-sm. */
+html:not(.dark) body:has([data-admin-theme]) main button.rounded-sm.bg-white.shadow-sm { border-color: var(--admin-accent, #2563eb) !important; color: var(--admin-accent, #2563eb) !important; }
+
+html:not(.dark) body:has([data-admin-theme]) main [role="tablist"] { background-color: #e6ebf2; }
+html:not(.dark) body:has([data-admin-theme]) main [role="tab"]:not([data-active]) { color: #475569 !important; background-color: transparent; border-color: transparent !important; }
+html:not(.dark) body:has([data-admin-theme]) main [role="tab"]:not([data-active]):hover { color: #0f172a !important; background-color: #f4f6f9; }
+html:not(.dark) body:has([data-admin-theme]) main [role="tab"][data-active] {
+  color: var(--admin-accent, #2563eb) !important;
+  background-color: #ffffff !important;
+  border-color: var(--admin-accent, #2563eb) !important;
+  box-shadow: 0 1px 2px rgb(15 23 42 / 0.12);
+}
+
+body:has([data-admin-theme]) :is(main, [role="dialog"], [role="alertdialog"]) :is(button, a[href], [role="tab"]):focus-visible {
+  outline: 2px solid var(--admin-accent, #2563eb);
+  outline-offset: 2px;
+}
