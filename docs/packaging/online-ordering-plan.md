@@ -1,9 +1,19 @@
 # Online Ordering ("Sipariş") — Phased Implementation Plan
 
-Status: **APPROVED — open questions resolved 2026-08-28, ready to start Phase 0.** Companion to
+Status: **Phase 0 + Phase 1 SHIPPED** (2026-08-28), then extended by **Online Ordering v2**
+(2026-08-29, branch `agent/ordering-v2`) — see `online-ordering-v2-plan.md` for what v2 changed
+and `PROJECT_LOGIC.md` §15 / `API_DOCS.md` §5 for the shipped behaviour. **Phase 2 (online card
+via marketplace sub-merchant) and Phase 3 (fast-follows) are still open.** Companion to
 `online-ordering-spec.md` (the decided-details brief). This grounds the spec in the actual
 codebase and sequences the work. See the resolved Open Questions (§ bottom) for the decisions
-locked before implementation starts.
+locked before implementation started.
+
+**Superseded by v2 (2026-08-29):** §1a's `MenuItem.isOrderableOnline` flag is no longer the
+source of truth for what sells online — the curated `OrderMenuItem` catalog is (v2 decision #1);
+the legacy toggle endpoint survives only as a mirror. §1d's manual delivery-zone dropdown is now
+a fallback for tenants with no coordinates set — the primary path is map-pin resolution (v2
+decision #3). §1c's status machine moved to `src/utils/orderStatus.ts` and gained the terminal
+`NOT_PICKED_UP` (v2 decision #4).
 
 ---
 

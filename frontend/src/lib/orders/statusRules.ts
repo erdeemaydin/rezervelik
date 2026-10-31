@@ -9,26 +9,42 @@ export const FORWARD_TRANSITIONS: Record<OrderStatus, OrderStatus[]> = {
   NEW: ['ACCEPTED'],
   ACCEPTED: ['PREPARING'],
   PREPARING: ['READY'],
-  READY: ['OUT_FOR_DELIVERY', 'COMPLETED'],
-  OUT_FOR_DELIVERY: ['COMPLETED'],
+  READY: ['OUT_FOR_DELIVERY', 'COMPLETED', 'NOT_PICKED_UP'],
+  OUT_FOR_DELIVERY: ['COMPLETED', 'NOT_PICKED_UP'],
   COMPLETED: [],
   CANCELLED: [],
   REJECTED: [],
+  NOT_PICKED_UP: [],
 };
 
-export const TERMINAL_STATUSES: OrderStatus[] = ['COMPLETED', 'CANCELLED', 'REJECTED'];
+export const TERMINAL_STATUSES: OrderStatus[] = ['COMPLETED', 'CANCELLED', 'REJECTED', 'NOT_PICKED_UP'];
 
 /** The single one-tap "advance" target for an order, or null if it's already
  *  terminal. READY branches on fulfillment type — a delivery order must pass
  *  through OUT_FOR_DELIVERY, a pickup order goes straight to COMPLETED — same
- *  branch orderController.updateOrderStatus enforces server-side. */
+ *  branch orderController.updateOrderStatus enforces server-side.
+ *
+ *  NOT_PICKED_UP is deliberately never returned: it is a legal transition from
+ *  READY/OUT_FOR_DELIVERY but it is a *failure*, not the happy path, so it
+ *  gets its own explicit button (see canMarkNotPickedUp) rather than ever
+ *  being what a one-tap "advance" does by accident. */
 export function nextStatusFor(order: StaffOrder): OrderStatus | null {
   const options = FORWARD_TRANSITIONS[order.status] || [];
   if (options.length === 0) return null;
   if (order.status === 'READY') {
     return order.fulfillmentType === 'DELIVERY' ? 'OUT_FOR_DELIVERY' : 'COMPLETED';
   }
+  if (order.status === 'OUT_FOR_DELIVERY') return 'COMPLETED';
   return options[0];
+}
+
+/** Whether "the customer never came for it" is a legal outcome from here.
+ *  Only once the food actually exists and is waiting — READY (pickup or
+ *  delivery) or OUT_FOR_DELIVERY — which is exactly the backend's
+ *  FORWARD_TRANSITIONS reachable set for NOT_PICKED_UP. Marking it increments
+ *  Customer.noShowCount server-side, so it must never be offered earlier. */
+export function canMarkNotPickedUp(order: StaffOrder): boolean {
+  return order.status === 'READY' || order.status === 'OUT_FOR_DELIVERY';
 }
 
 /** Whether this order can still be rejected/cancelled at all (any

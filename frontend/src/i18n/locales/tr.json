@@ -1052,14 +1052,12 @@
       "dishInfo": "Yemek Bilgisi",
       "tagsSpecs": "Etiketler / Özellikler",
       "price": "Fiyat",
-      "onlineOrdering": "Online Sipariş",
       "actions": "İşlemler",
       "noItems": "Bu kategoride ürün bulunmamaktadır."
     },
     "onlineOrdering": {
-      "prepTimePlaceholder": "Hazırlık (dk)",
-      "updated": "Online sipariş ayarı kaydedildi",
-      "updateFailed": "Online sipariş ayarı kaydedilemedi"
+      "movedNote": "Online sipariş ürünleri, fiyatları ve fotoğrafları artık Sipariş Menüsü penceresinden yönetiliyor.",
+      "openOrderMenu": "Sipariş Menüsü"
     },
     "buttons": {
       "addDish": "Kategoriye Yemek Ekle",
@@ -1868,7 +1866,9 @@
       "rejectBtn": "Reddet",
       "cancelBtn": "İptal Et",
       "minutesAgo": "{minutes} dk önce",
-      "justNow": "Az önce"
+      "justNow": "Az önce",
+      "acceptBtn": "Kabul et",
+      "notPickedUpBtn": "Teslim alınmadı"
     },
     "print": {
       "kitchenTicket": "Mutfak fişi",
@@ -1903,15 +1903,22 @@
       "paidLabel": "Ödendi",
       "unpaidLabel": "Ödenmedi",
       "thankYou": "Siparişiniz için teşekkür ederiz!"
+    },
+    "notPickedUpDialog": {
+      "title": "#{number} numaralı sipariş teslim alınmadı mı?",
+      "description": "Sipariş kapatılır ve bu müşterinin gelmeme sayısı bir artar. Bu işlem geri alınamaz.",
+      "confirmBtn": "Teslim alınmadı"
     }
   },
   "orders": {
     "title": "Siparişler",
     "subtitle": "Online sipariş geçmişi ve müşteri dizini",
     "settingsBtn": "Sipariş Ayarları",
+    "orderMenuBtn": "Sipariş Menüsü",
     "tabs": {
       "history": "Sipariş Geçmişi",
-      "customers": "Müşteriler"
+      "customers": "Müşteriler",
+      "active": "Aktif"
     },
     "filters": {
       "today": "Bugün",
@@ -1943,7 +1950,8 @@
       "OUT_FOR_DELIVERY": "Yolda",
       "COMPLETED": "Tamamlandı",
       "CANCELLED": "İptal Edildi",
-      "REJECTED": "Reddedildi"
+      "REJECTED": "Reddedildi",
+      "NOT_PICKED_UP": "Teslim alınmadı"
     },
     "fulfillment": {
       "DELIVERY": "Paket Servis",
@@ -2001,12 +2009,118 @@
       "noAddresses": "Kayıtlı adres yok",
       "orderHistory": "Sipariş Geçmişi",
       "noOrders": "Henüz sipariş yok",
-      "close": "Kapat"
+      "close": "Kapat",
+      "banStatus": "Yasak durumu",
+      "bannedState": "Yasaklı",
+      "notBannedState": "Yasaklı değil",
+      "noShowCount": "Gelmeme sayısı",
+      "banHistory": "Yasak geçmişi"
     },
     "errors": {
       "loadFailed": "Siparişler yüklenemedi",
       "loadCustomersFailed": "Müşteriler yüklenemedi",
       "loadCustomerDetailFailed": "Müşteri bilgileri yüklenemedi"
+    },
+    "orderMenu": {
+      "title": "Sipariş Menüsü",
+      "subtitle": "Online satılacak ürünleri seçin, online'a özel değerler tanımlayın",
+      "addItemsBtn": "Ürün Ekle",
+      "manageCategoriesBtn": "Kategoriler",
+      "loading": "Sipariş menüsü yükleniyor…",
+      "loadFailed": "Sipariş menüsü yüklenemedi",
+      "retry": "Tekrar dene",
+      "close": "Kapat",
+      "toggleFailed": "Değişiklik kaydedilemedi",
+      "empty": {
+        "title": "Henüz online satılan ürün yok",
+        "desc": "Online sipariş sayfasında yayınlamak için menünüzden ürün seçin. Buraya eklediğiniz her ürüne online'a özel fiyat, ad, fotoğraf veya hazırlık süresi verebilirsiniz.",
+        "cta": "Ürün ekle"
+      },
+      "sections": {
+        "fromMenu": "Menü kategorilerinden",
+        "uncategorized": "Kategorisiz",
+        "orderOnlyBadge": "Siparişe özel",
+        "itemsSuffix": "ürün",
+        "emptySection": "Bu kategoride henüz ürün yok"
+      },
+      "addDialog": {
+        "title": "Sipariş menüsüne ürün ekle",
+        "desc": "Aktif menünüzdeki tüm ürünler, kategorilerine göre.",
+        "searchPlaceholder": "Ürün veya kategori ara",
+        "inCatalog": "Menüde",
+        "addBtn": "Ekle",
+        "added": "Ürün sipariş menüsüne eklendi",
+        "addFailed": "Ürün eklenemedi",
+        "noItems": "Eklenecek menü ürünü yok",
+        "noResults": "Aramayla eşleşen ürün yok"
+      },
+      "row": {
+        "listed": "Yayında",
+        "available": "Stokta",
+        "overridden": "Değiştirildi",
+        "menuUnavailable": "Menüde kapalı",
+        "dragHandle": "Sıralamak için sürükleyin",
+        "edit": "Online değerleri düzenle",
+        "remove": "Sipariş menüsünden çıkar"
+      },
+      "pause": {
+        "trigger": "Durdur",
+        "title": "Siparişi durdur",
+        "oneHour": "1 saat durdur",
+        "twoHours": "2 saat durdur",
+        "untilTomorrow": "Yarına kadar durdur",
+        "indefinite": "Süresiz durdur",
+        "resume": "Devam ettir",
+        "badge": "Durduruldu",
+        "resumesAt": "dönüş",
+        "paused": "Ürün durduruldu",
+        "resumed": "Ürün yeniden sipariş edilebilir",
+        "failed": "Durdurma durumu değiştirilemedi"
+      },
+      "edit": {
+        "title": "Online değerler",
+        "name": "Ad",
+        "description": "Açıklama",
+        "descriptionHint": "Menüdeki açıklamayı kullanmak için boş bırakın",
+        "price": "Fiyat",
+        "prepTime": "Hazırlık süresi (dk)",
+        "imageUrl": "Fotoğraf bağlantısı",
+        "imageUrlHint": "Menüdeki fotoğrafı kullanmak için boş bırakın",
+        "category": "Sipariş menüsü kategorisi",
+        "fromMenuCategory": "(menü kategorisinden)",
+        "noCategoriesHint": "Ürünleri online'da farklı gruplamak için siparişe özel bir kategori oluşturun.",
+        "menuDefault": "Menü değeri",
+        "effective": "Şu an",
+        "reset": "Sıfırla",
+        "save": "Kaydet",
+        "saved": "Online değerler kaydedildi",
+        "saveFailed": "Online değerler kaydedilemedi"
+      },
+      "categories": {
+        "title": "Siparişe özel kategoriler",
+        "desc": "Ürünleri online'da farklı gruplayın. Buraya atamadığınız ürünler menü kategorilerine göre gruplanmaya devam eder.",
+        "nameLabel": "Kategori",
+        "namePlaceholder": "örn. Paket Fırsatları",
+        "addBtn": "Ekle",
+        "rename": "Yeniden adlandır",
+        "empty": "Henüz siparişe özel kategori yok",
+        "created": "Kategori oluşturuldu",
+        "updated": "Kategori yeniden adlandırıldı",
+        "deleted": "Kategori silindi",
+        "saveFailed": "Kategori kaydedilemedi",
+        "deleteFailed": "Kategori silinemedi",
+        "confirmDeleteTitle": "Bu siparişe özel kategori silinsin mi?",
+        "confirmDeleteDesc": "İçindeki ürünler sipariş menüsünde kalır ve yeniden menü kategorilerine göre gruplanır."
+      },
+      "reorder": {
+        "failed": "Yeni sıralama kaydedilemedi"
+      },
+      "remove": {
+        "confirmTitle": "Bu ürün sipariş menüsünden çıkarılsın mı?",
+        "confirmDesc": "Ürün online satıştan kalkar ve online'a özel değerleri silinir. Ürünün kendisi menünüzde kalır.",
+        "removed": "Ürün sipariş menüsünden çıkarıldı",
+        "failed": "Ürün çıkarılamadı"
+      }
     },
     "settings": {
       "title": "Sipariş Ayarları",
@@ -2047,7 +2161,10 @@
         "maxConcurrent": "Maksimum Eşzamanlı Sipariş",
         "maxConcurrentHint": "Sınırsız için boş bırakın",
         "prepTime": "Varsayılan Hazırlık Süresi (dakika)",
-        "prepTimeHint": "Bir menü ürününün kendi hazırlık süresi yoksa kullanılır"
+        "prepTimeHint": "Bir menü ürününün kendi hazırlık süresi yoksa kullanılır",
+        "enforcedHint": "Ödeme adımında uygulanır — müşteriler bu sınırın üzerinde sipariş veremez.",
+        "noShowThreshold": "Teslim alınmayan sipariş uyarı eşiği",
+        "noShowThresholdHint": "Bu kadar siparişini teslim almamış müşterilerde uyarı gösterilir."
       },
       "hours": {
         "title": "Sipariş Saatleri",
@@ -2063,7 +2180,8 @@
           "fri": "Cuma",
           "sat": "Cumartesi",
           "sun": "Pazar"
-        }
+        },
+        "enforcedHint": "Ödeme adımında uygulanır — bu saatlerin dışında sipariş sayfası kapalıdır."
       },
       "zones": {
         "title": "Teslimat Bölgeleri",
@@ -2105,7 +2223,96 @@
           "deleteFailed": "Teslimat bölgesi silinemedi",
           "loadFailed": "Teslimat bölgeleri yüklenemedi"
         }
+      },
+      "autoConfirm": {
+        "title": "Yeni siparişleri otomatik kabul et",
+        "desc": "Kapalıyken her sipariş, mutfak başlamadan önce bir çalışanın onayını bekler."
+      },
+      "delivery": {
+        "title": "Teslimat mesafesi",
+        "desc": "Restoranınızdan ölçülen teslimat menziliniz.",
+        "maxDistance": "Azami teslimat mesafesi (km)",
+        "maxDistancePlaceholder": "Sınırsız",
+        "maxDistanceHint": "Mesafe sınırı olmaması için boş bırakın — yalnızca teslimat bölgeleriniz belirler.",
+        "location": "Restoran konumu",
+        "locationHint": "Müşterilerin teslimat adresleri bu noktadan ölçülür.",
+        "searchPlaceholder": "Adresinizi arayın",
+        "clearSearch": "Aramayı temizle",
+        "noResults": "Aramayla eşleşen yer bulunamadı",
+        "dragHint": "Konumu ayarlamak için haritaya tıklayın veya iğneyi sürükleyin.",
+        "addressText": "Adres satırı",
+        "addressTextPlaceholder": "Sokak, numara, semt",
+        "pinNotSet": "İğne konmadı",
+        "clearPin": "İğneyi kaldır",
+        "locationSaveFailed": "Restoran konumu kaydedilemedi"
       }
+    },
+    "active": {
+      "heading": "Aktif siparişler",
+      "awaitingSuffix": "onay bekliyor",
+      "liveConnected": "Canlı",
+      "reconnecting": "Yeniden bağlanıyor…",
+      "refreshBtn": "Yenile",
+      "ageColumn": "Süre",
+      "empty": "Şu anda aktif sipariş yok",
+      "needsConfirmation": "Onay bekliyor",
+      "confirmBtn": "Onayla",
+      "rejectBtn": "Reddet",
+      "cancelBtn": "İptal et",
+      "notPickedUpBtn": "Teslim alınmadı",
+      "noShowsSuffix": "kez gelmedi",
+      "bannedBadge": "Yasaklı",
+      "statusUpdated": "#{number} numaralı sipariş → {status}",
+      "statusUpdateFailed": "Sipariş güncellenemedi",
+      "conflict": "Bu siparişi başka biri değiştirdi — liste yenilendi",
+      "justNow": "Az önce",
+      "minutesAgo": "{minutes} dk önce",
+      "hoursAgo": "{hours} sa {minutes} dk önce",
+      "advanceTo": {
+        "ACCEPTED": "Onayla",
+        "PREPARING": "Hazırlamaya başla",
+        "READY": "Hazır işaretle",
+        "OUT_FOR_DELIVERY": "Yola çıkar",
+        "COMPLETED": "Tamamla"
+      },
+      "rejectDialog": {
+        "title": "#{number} numaralı sipariş reddedilsin mi?",
+        "description": "Bu işlem geri alınamaz. Sebep siparişin denetim kaydına işlenir.",
+        "reasonLabel": "Sebep (isteğe bağlı)",
+        "reasonPlaceholder": "örn. Stok yok, müşteri talep etti",
+        "confirmBtn": "Onayla",
+        "closeBtn": "Vazgeç"
+      },
+      "cancelDialog": {
+        "title": "#{number} numaralı sipariş iptal edilsin mi?"
+      },
+      "notPickedUpDialog": {
+        "title": "#{number} numaralı sipariş teslim alınmadı olarak işaretlensin mi?",
+        "description": "Sipariş kapatılır ve bu müşterinin gelmeme sayısı bir artar. Bu işlem geri alınamaz.",
+        "confirmBtn": "Teslim alınmadı"
+      }
+    },
+    "bans": {
+      "banCustomerBtn": "Bu müşteriyi yasakla",
+      "banBtn": "Yasakla",
+      "liftBtn": "Yasağı kaldır",
+      "dialogTitle": "Bu telefon numarasını yasakla",
+      "dialogDesc": "Yasaklı bir numara yeni online sipariş veremez. Yasak telefon numarasına bağlıdır; müşteri yeni hesap açsa bile geçerli kalır.",
+      "reasonLabel": "Sebep (isteğe bağlı)",
+      "reasonPlaceholder": "örn. Siparişlerini tekrar tekrar teslim almadı",
+      "banned": "Müşteri yasaklandı",
+      "banFailed": "Müşteri yasaklanamadı",
+      "alreadyBanned": "Bu telefon numarası zaten yasaklı",
+      "lifted": "Yasak kaldırıldı",
+      "liftFailed": "Yasak kaldırılamadı",
+      "liftConfirmTitle": "Yasak kaldırılsın mı?",
+      "liftConfirmDesc": "Bu numara yeniden online sipariş verebilecek.",
+      "activeBadge": "Aktif",
+      "liftedBadge": "Kaldırıldı",
+      "noReason": "Sebep belirtilmemiş",
+      "bannedBy": "Yasaklayan:",
+      "liftedBy": "kaldıran:",
+      "unknownStaff": "eski bir çalışan"
     }
   },
   "publicOrder": {
@@ -2126,13 +2333,15 @@
         "identify": "Telefon Doğrulama",
         "payment": "Ödeme",
         "placed": "Sipariş Alındı"
-      }
+      },
+      "close": "Kapat"
     },
     "menu": {
       "empty": "Şu anda online siparişe açık ürün bulunmuyor.",
       "itemsSuffix": "ürün",
       "viewCart": "Sepeti Gör",
-      "addedToast": "Sepete eklendi"
+      "addedToast": "Sepete eklendi",
+      "categoriesLabel": "Menü kategorileri"
     },
     "item": {
       "required": "Zorunlu",
@@ -2140,17 +2349,41 @@
       "quantity": "Adet",
       "decrease": "Adedi azalt",
       "increase": "Adedi artır",
-      "addToCart": "Sepete Ekle"
+      "addToCart": "Sepete Ekle",
+      "temporarilyUnavailable": "Geçici olarak mevcut değil",
+      "outOfStock": "Şu anda mevcut değil",
+      "popular": "Popüler",
+      "backAround": "Yaklaşık {{time}} civarı tekrar",
+      "addFor": "Sepete ekle · {{price}}",
+      "noteLabel": "Sipariş notu (isteğe bağlı)",
+      "notePlaceholder": "örn. Soğansız olsun",
+      "chooseOne": "1 seçim yapın",
+      "chooseUpTo": "En fazla {{max}} seçin",
+      "chooseAtLeast": "En az {{min}} seçin",
+      "chooseBetween": "{{min}}–{{max}} arası seçin",
+      "calories": "{{n}} kcal",
+      "allergensPrefix": "İçerir:",
+      "spice": {
+        "1": "Az acı",
+        "2": "Orta acı",
+        "3": "Çok acı"
+      }
     },
     "cart": {
       "title": "Siparişiniz",
-      "remove": "Kaldır"
+      "remove": "Kaldır",
+      "empty": "Sepetiniz boş.",
+      "itemCount": "{{n}} ürün",
+      "feesAtCheckout": "Teslimat ücreti bir sonraki adımda hesaplanır.",
+      "checkoutButton": "Siparişi Tamamla"
     },
     "fulfillment": {
       "title": "Paket Servis mi, Gel-Al mı?",
       "delivery": "Paket Servis",
       "pickup": "Gel-Al",
-      "onlyOneAvailable": "Şu anda yalnızca bir sipariş türü kullanılabilir."
+      "onlyOneAvailable": "Şu anda yalnızca bir sipariş türü kullanılabilir.",
+      "deliveryCaption": "Kapınıza getirelim",
+      "pickupCaption": "Siz gelip alın"
     },
     "address": {
       "zoneLabel": "Teslimat Bölgesi",
@@ -2162,7 +2395,22 @@
       "neighborhoodLabel": "Mahalle",
       "neighborhoodPlaceholder": "örn. Kadıköy",
       "noteLabel": "Kurye için not",
-      "notePlaceholder": "örn. Zili iki kez çalın"
+      "notePlaceholder": "örn. Zili iki kez çalın",
+      "mapLabel": "Nereye teslim edelim?",
+      "searchLabel": "Adresinizi arayın",
+      "searchPlaceholder": "Sokak, mahalle, şehir…",
+      "clearSearch": "Aramayı temizle",
+      "noResults": "Eşleşen adres yok. Bunun yerine haritadan iğneyi bırakın.",
+      "dragHint": "İğneyi tam konumunuza sürükleyin.",
+      "useMyLocation": "Konumumu kullan",
+      "pinRequired": "Adresinizi arayın veya haritaya dokunarak iğneyi bırakın.",
+      "checking": "Buraya teslimat yapabiliyor muyuz, kontrol ediliyor…",
+      "deliversHere": "Bu adrese teslimat yapıyoruz",
+      "outOfRangeTitle": "Teslimat bölgemizin dışında",
+      "outOfRangeDescription": "Bu kadar uzağa teslimat yapamıyoruz. Başka bir adres deneyin veya gel-al seçeneğine geçin.",
+      "distanceAway": "~{{km}} km uzaklıkta",
+      "buildingLabel": "Bina / kat / kapı no",
+      "buildingPlaceholder": "örn. No 12, kat 3, daire 7"
     },
     "quote": {
       "calculating": "Toplam hesaplanıyor…",
@@ -2171,7 +2419,9 @@
       "total": "Toplam",
       "belowMinimum": "Bu bölge için minimum sipariş tutarı:",
       "waiting": "Toplamı görmek için sepete ürün ekleyin.",
-      "failed": "Toplam hesaplanamadı. Lütfen tekrar deneyin."
+      "failed": "Toplam hesaplanamadı. Lütfen tekrar deneyin.",
+      "outOfRange": "Bu adres teslimat bölgemizin dışında.",
+      "closedNow": "Şu anda kapalıyız — lütfen çalışma saatlerimize göz atın."
     },
     "identify": {
       "title": "Telefon Numaranızı Doğrulayın",
@@ -2190,7 +2440,11 @@
       "nameLabel": "Adınız",
       "namePlaceholder": "Ad Soyad",
       "requestFailed": "Kod gönderilemedi. Lütfen tekrar deneyin.",
-      "verifyFailed": "Kod doğrulanamadı. Lütfen tekrar deneyin."
+      "verifyFailed": "Kod doğrulanamadı. Lütfen tekrar deneyin.",
+      "subtitle": "Sizi doğrulamak için telefonunuza bir kod göndereceğiz.",
+      "codeTitle": "Kodu girin",
+      "nameTitle": "Son bir adım",
+      "whyPhone": "Numaranız yalnızca siparişinizi doğrulamak ve restoranın size ulaşabilmesi için kullanılır."
     },
     "payment": {
       "title": "Ödeme Yöntemi",
@@ -2198,7 +2452,10 @@
       "onlineCard": "Online Kart ile Öde",
       "noneAvailable": "Şu anda kullanılabilir ödeme yöntemi yok.",
       "noteLabel": "Mutfak için not (isteğe bağlı)",
-      "notePlaceholder": "örn. Soğansız olsun lütfen"
+      "notePlaceholder": "örn. Soğansız olsun lütfen",
+      "cashOnDeliveryHint": "Siparişiniz geldiğinde kuryeye ödeyin.",
+      "cashOnPickupHint": "Siparişinizi teslim alırken kasada ödeyin.",
+      "comingSoon": "Çok yakında"
     },
     "confirm": {
       "summaryTitle": "Sipariş Özeti",
@@ -2213,7 +2470,29 @@
       "statusLabel": "Durum",
       "readyByPrefix": "Tahmini hazır olma saati:",
       "viewHistoryButton": "Siparişlerim",
-      "orderAgainButton": "Tekrar Sipariş Ver"
+      "orderAgainButton": "Tekrar Sipariş Ver",
+      "pendingTitle": "Siparişiniz iletildi",
+      "pendingBanner": "Siparişiniz {{restaurant}} tarafından onaylanmayı bekliyor",
+      "pendingDescription": "Restoran siparişinizi onayladığı anda bu sayfa güncellenecek — genellikle birkaç dakika sürer.",
+      "timelineTitle": "Sipariş durumu",
+      "currentStep": "Şu anda",
+      "etaPrefix": "Tahmini teslimat",
+      "trackingLive": "Bu sayfa otomatik olarak güncellenir.",
+      "trackingStopped": "Bu sipariş kapandı.",
+      "terminal": {
+        "REJECTED": {
+          "title": "Siparişiniz kabul edilmedi",
+          "description": "Restoran şu anda bu siparişi alamadı. Herhangi bir ücret tahsil edilmedi; dilerseniz daha sonra tekrar deneyebilirsiniz."
+        },
+        "CANCELLED": {
+          "title": "Sipariş iptal edildi",
+          "description": "Bu sipariş iptal edildi. Sorularınız için restoranla iletişime geçebilirsiniz."
+        },
+        "NOT_PICKED_UP": {
+          "title": "Sipariş teslim alınmadı",
+          "description": "Bu sipariş teslim alınmadığı için kapatıldı. Bir yanlışlık olduğunu düşünüyorsanız restoranla iletişime geçin."
+        }
+      }
     },
     "history": {
       "title": "Siparişlerim",
@@ -2227,7 +2506,24 @@
       "OUT_FOR_DELIVERY": "Yolda",
       "COMPLETED": "Tamamlandı",
       "CANCELLED": "İptal Edildi",
-      "REJECTED": "Reddedildi"
+      "REJECTED": "Reddedildi",
+      "NOT_PICKED_UP": "Teslim alınmadı"
+    },
+    "hero": {
+      "prepWindow": "{{min}}–{{max}} dk",
+      "distance": "{{km}} km uzakta",
+      "minOrder": "Min. {{amount}}"
+    },
+    "closedHours": {
+      "title": "Şu anda kapalıyız"
+    },
+    "checkout": {
+      "editCart": "Düzenle"
+    },
+    "pickup": {
+      "title": "Şuradan teslim alın",
+      "addressUnknown": "Tam adres için restoranla iletişime geçebilirsiniz.",
+      "readyIn": "Yaklaşık {{minutes}} dk içinde hazır"
     }
   }
 }

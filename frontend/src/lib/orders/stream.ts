@@ -4,6 +4,9 @@ import { useEffect, useRef } from 'react';
 import { readAuth } from '@/lib/authStorage';
 import { StaffOrder } from './types';
 
+// Shared live-order SSE consumer — used by /order-station's board and by the
+// dashboard "Active Orders" table.
+//
 // GET /api/orders/stream is mounted behind tenantMiddleware (requires the
 // X-Restaurant-ID header, no query-string fallback — src/middlewares/tenant.ts
 // is deliberately not being touched for this route) + authMiddleware (httpOnly
@@ -63,7 +66,7 @@ export function useOrderStream(onEvent: (evt: OrderStreamEvent) => void, enabled
         const order = JSON.parse(dataLines.join('\n')) as StaffOrder;
         onEventRef.current({ type: eventType, order });
       } catch (err) {
-        console.error('[order-station] failed to parse SSE event payload:', err);
+        console.error('[orders] failed to parse SSE event payload:', err);
       }
     };
 
@@ -115,7 +118,7 @@ export function useOrderStream(onEvent: (evt: OrderStreamEvent) => void, enabled
         }
       } catch (err) {
         if (!cancelled) {
-          console.error('[order-station] SSE stream dropped, will reconnect:', err);
+          console.error('[orders] SSE stream dropped, will reconnect:', err);
         }
       }
       if (!cancelled) scheduleReconnect();

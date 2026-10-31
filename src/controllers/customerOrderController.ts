@@ -4,10 +4,22 @@ import { successResponse, errorResponse } from '../utils/response';
 import { AppError } from '../utils/AppError';
 import * as otpService from '../services/otpService';
 import { computeOrderQuote, CartLineInput } from '../services/orderPricingService';
+import { resolveDeliveryZone } from '../services/geoService';
 import { generateCustomerToken } from '../utils/jwt';
 import { setCustomerSessionCookie, issueTrustedDevice } from '../middlewares/customerAuth';
 import { publishOrderEvent } from '../services/orderEvents';
 import { isValidPhone } from '../utils/phone';
+import { isPhoneBanned } from '../services/customerBanService';
+import { ACTIVE_ORDER_STATUSES } from '../utils/orderStatus';
+import { isWithinOrderHours } from '../utils/orderHours';
+import {
+  effectiveName,
+  effectiveDescription,
+  effectiveImageUrl,
+  effectivePrice,
+  effectivePrepTime,
+  unavailableReason,
+} from '../utils/orderMenu';
 
 // Public, customer-facing endpoints for online ordering — /api/public/order/*.
 // Mounted behind tenantMiddleware (like the guest reservation-create path in
@@ -18,6 +30,23 @@ import { isValidPhone } from '../utils/phone';
 
 const clientIp = (req: Request): string =>
   ((req.headers['x-forwarded-for'] as string)?.split(',')[0] || req.socket.remoteAddress || 'unknown').trim();
+
+// Read an optional { lat, lng } map pin off a request body (or a nested
+// address object). Both must be present, finite, and in range for the pin to
+// count — a half-supplied or out-of-range pin is treated as no pin at all, so
+// the caller falls back to the manual zone path rather than measuring a
+// distance from garbage.
+const readPin = (source: any): { lat?: number; lng?: number } => {
+  if (!source || typeof source !== 'object') return {};
+  // Guard null/'' explicitly before Number() — Number(null) and Number('')
+  // are both 0, which would silently place the pin at (0, 0).
+  if (source.lat == null || source.lat === '' || source.lng == null || source.lng === '') return {};
+  const lat = Number(source.lat);
+  const lng = Number(source.lng);
+  if (!Number.isFinite(lat) || !Number.isFinite(lng)) return {};
+  if (lat < -90 || lat > 90 || lng < -180 || lng > 180) return {};
+  return { lat, lng };
+};
 
 // ---------------------------------------------------------------------------
 // OTP
@@ -31,6 +60,12 @@ export const requestOtp = async (req: Request, res: Response) => {
   }
 
   try {
+    // Refuse at the very first step rather than letting a banned number burn
+    // SMS credits and reach the code screen only to be rejected at checkout.
+    if (await isPhoneBanned(restaurantId, phone)) {
+      return errorResponse(res, 'errors.order_customer_banned', 403);
+    }
+
     const { expiresAt } = await otpService.requestOtp({ restaurantId, phone, ip: clientIp(req) });
     return successResponse(res, { expiresAt });
   } catch (error) {
@@ -52,6 +87,13 @@ export const verifyOtp = async (req: Request, res: Response) => {
   }
 
   try {
+    // Re-checked here, not just in requestOtp: a ban placed between the two
+    // calls (or a code obtained before the ban) must not still yield a
+    // session.
+    if (await isPhoneBanned(restaurantId, phone)) {
+      return errorResponse(res, 'errors.order_customer_banned', 403);
+    }
+
     // Validate the code before looking at any phone-specific state (whether
     // a Customer already exists) — checking existence first and branching
     // the error message on it would let anyone probe which phone numbers
@@ -106,27 +148,138 @@ export const verifyOtp = async (req: Request, res: Response) => {
 // Menu
 // ---------------------------------------------------------------------------
 
+// The curated online catalog (OrderMenuItem layered over MenuItem), grouped
+// into the sections the customer app renders.
+//
+// Deliberately returns items that are paused or out of stock rather than
+// hiding them (plan requirement #2). A dish that silently vanishes reads as
+// "this restaurant doesn't do that any more"; a greyed-out card saying
+// "temporarily unavailable — back at 20:00" reads as "come back later", which
+// is the truth. `available` / `unavailableReason` / `resumesAt` carry that
+// state; the pricing service independently refuses these items at checkout, so
+// showing them can't turn into selling them.
 export const getOrderableMenu = async (req: Request, res: Response) => {
   try {
     const restaurantId = req.restaurantId!;
+    const now = new Date();
 
-    const categories = await prisma.menuCategory.findMany({
-      where: { menu: { restaurantId, isActive: true } },
-      orderBy: { order: 'asc' },
-      include: {
-        items: {
-          where: { isOrderableOnline: true, isAvailable: true },
-          orderBy: { order: 'asc' },
-          include: { modifiers: { include: { options: true } } },
+    const [rows, settings] = await Promise.all([
+      prisma.orderMenuItem.findMany({
+        where: {
+          restaurantId,
+          isListed: true,
+          // Second scoping path on purpose: it keeps items whose source dish
+          // now lives in an archived/replaced menu out of the online catalog,
+          // matching what the old isOrderableOnline query did.
+          menuItem: { category: { menu: { restaurantId, isActive: true } } },
         },
-      },
-    });
+        include: {
+          orderCategory: { select: { id: true, name: true, sortOrder: true } },
+          menuItem: {
+            select: {
+              id: true,
+              name: true,
+              description: true,
+              imageUrl: true,
+              price: true,
+              isAvailable: true,
+              prepTimeMinutes: true,
+              order: true,
+              // Merchandising attributes the customer menu/item sheet renders
+              // (popular ribbon, dietary/allergen chips, spice level, calories).
+              // They live on the source MenuItem and have no OrderMenuItem
+              // override, so they pass straight through.
+              isHighlight: true,
+              dietaryTags: true,
+              allergens: true,
+              spiceLevel: true,
+              calories: true,
+              category: { select: { id: true, name: true, order: true } },
+              modifiers: {
+                select: {
+                  id: true,
+                  name: true,
+                  isRequired: true,
+                  minChoices: true,
+                  maxChoices: true,
+                  options: { select: { id: true, name: true, priceAdjust: true, isAvailable: true } },
+                },
+              },
+            },
+          },
+        },
+      }),
+      prisma.orderSettings.findUnique({ where: { restaurantId }, select: { prepTimeMinutes: true } }),
+    ]);
 
-    // Drop empty categories so the customer never sees a section with
-    // nothing orderable in it.
-    const nonEmpty = categories.filter((c) => c.items.length > 0);
+    const defaultPrepTime = settings?.prepTimeMinutes ?? 20;
 
-    return successResponse(res, { categories: nonEmpty });
+    interface Group {
+      id: string;
+      name: string;
+      sortOrder: number;
+      isOrderOnlyCategory: boolean;
+      items: any[];
+    }
+    const groups = new Map<string, Group>();
+
+    for (const row of rows) {
+      const { menuItem } = row;
+
+      // An item filed under an order-only category goes there; otherwise it
+      // falls back to the section it already sits in on the printed menu, so a
+      // tenant that never builds custom categories still gets a sensible menu.
+      const groupKey = row.orderCategory ? `order:${row.orderCategory.id}` : `menu:${menuItem.category.id}`;
+      if (!groups.has(groupKey)) {
+        groups.set(groupKey, row.orderCategory
+          ? { id: row.orderCategory.id, name: row.orderCategory.name, sortOrder: row.orderCategory.sortOrder, isOrderOnlyCategory: true, items: [] }
+          : { id: menuItem.category.id, name: menuItem.category.name, sortOrder: menuItem.category.order, isOrderOnlyCategory: false, items: [] });
+      }
+
+      const reason = unavailableReason(row, menuItem, now);
+
+      groups.get(groupKey)!.items.push({
+        menuItemId: menuItem.id,
+        name: effectiveName(row, menuItem),
+        description: effectiveDescription(row, menuItem),
+        imageUrl: effectiveImageUrl(row, menuItem),
+        price: effectivePrice(row, menuItem),
+        prepTimeMinutes: effectivePrepTime(row, menuItem, defaultPrepTime),
+        available: reason === null,
+        unavailableReason: reason,
+        // Only meaningful for a *timed* pause — an indefinite pause has no
+        // known end, and the client must not invent one.
+        resumesAt: reason === 'PAUSED' && !row.pausedIndefinitely ? row.pausedUntil : null,
+        isHighlight: menuItem.isHighlight,
+        dietaryTags: menuItem.dietaryTags,
+        allergens: menuItem.allergens,
+        spiceLevel: menuItem.spiceLevel,
+        calories: menuItem.calories,
+        modifiers: menuItem.modifiers,
+        // Internal sort keys, stripped before the response goes out.
+        _sortOrder: row.sortOrder,
+        _itemOrder: menuItem.order,
+      });
+    }
+
+    const categories = [...groups.values()]
+      // Order-only categories first (they're the tenant's deliberate online
+      // merchandising), then the untouched source sections in menu order.
+      .sort((a, b) => {
+        if (a.isOrderOnlyCategory !== b.isOrderOnlyCategory) return a.isOrderOnlyCategory ? -1 : 1;
+        if (a.sortOrder !== b.sortOrder) return a.sortOrder - b.sortOrder;
+        return a.name.localeCompare(b.name);
+      })
+      .map((group) => ({
+        ...group,
+        items: group.items
+          .sort((a, b) => (a._sortOrder !== b._sortOrder ? a._sortOrder - b._sortOrder : a._itemOrder - b._itemOrder))
+          .map(({ _sortOrder, _itemOrder, ...item }) => item),
+      }));
+
+    // Groups can't be empty by construction (they're created from an item),
+    // so there's nothing to filter out here.
+    return successResponse(res, { categories });
   } catch (error) {
     console.error('[CustomerOrder] getOrderableMenu error:', error);
     return errorResponse(res, 'errors.internal_error', 500);
@@ -158,19 +311,37 @@ export const getPublicOrderSettings = async (req: Request, res: Response) => {
         cashOnDeliveryEnabled: true,
         onlineCardEnabled: true,
         prepTimeMinutes: true,
+        orderHours: true,
       },
     });
 
     // No row yet = tenant never configured it; mirror the schema defaults
     // (see requireOnlineOrderingOpen's comment for the same fallback logic)
     // rather than telling the customer UI everything is disabled.
-    return successResponse(res, settings ?? {
-      onlineOrderingOpen: true,
-      deliveryEnabled: true,
-      pickupEnabled: true,
-      cashOnDeliveryEnabled: true,
-      onlineCardEnabled: false,
-      prepTimeMinutes: 20,
+    if (!settings) {
+      return successResponse(res, {
+        onlineOrderingOpen: true,
+        deliveryEnabled: true,
+        pickupEnabled: true,
+        cashOnDeliveryEnabled: true,
+        onlineCardEnabled: false,
+        prepTimeMinutes: 20,
+        orderHours: null,
+        withinOrderHours: true,
+      });
+    }
+
+    // placeOrder enforces the weekly schedule; surfacing the verdict (and the
+    // schedule itself) here is what lets the customer UI say "we open at
+    // 18:00" up front instead of letting someone build a whole cart and only
+    // discover it at checkout.
+    const tzSettings = settings.orderHours
+      ? await prisma.restaurantSettings.findUnique({ where: { restaurantId }, select: { timezone: true } })
+      : null;
+
+    return successResponse(res, {
+      ...settings,
+      withinOrderHours: isWithinOrderHours(settings.orderHours, new Date(), tzSettings?.timezone),
     });
   } catch (error) {
     console.error('[CustomerOrder] getPublicOrderSettings error:', error);
@@ -179,10 +350,10 @@ export const getPublicOrderSettings = async (req: Request, res: Response) => {
 };
 
 // ---------------------------------------------------------------------------
-// Delivery zones (anonymous, read-only) — orderPricingService resolves a
-// quote from an already-chosen zoneId rather than doing geo/radius matching
-// itself (see its file comment), so the customer flow needs to know which
-// zones exist and what they cost before the address step can offer a picker.
+// Delivery zones (anonymous, read-only). The primary flow now auto-resolves
+// the zone from the customer's map pin (see /check-address), but this stays:
+// it backs the manual picker for tenants that haven't set their own
+// coordinates yet, and lets the customer see the fee tiers up front.
 // Only active zones, only the fields a customer needs to choose one.
 // ---------------------------------------------------------------------------
 
@@ -212,16 +383,71 @@ export const quoteOrder = async (req: Request, res: Response) => {
     const items: CartLineInput[] = Array.isArray(req.body?.items) ? req.body.items : [];
     const fulfillmentType = req.body?.fulfillmentType;
     const zoneId = typeof req.body?.zoneId === 'string' ? req.body.zoneId : undefined;
+    // Map pin (optional). When present and the tenant has its own coordinates
+    // set, computeOrderQuote resolves the zone/fee from it and ignores zoneId.
+    const { lat, lng } = readPin(req.body);
 
     if (fulfillmentType !== 'DELIVERY' && fulfillmentType !== 'PICKUP') {
       return errorResponse(res, 'errors.validation_error', 400, { message: 'fulfillmentType must be DELIVERY or PICKUP' });
     }
 
-    const quote = await computeOrderQuote({ restaurantId, items, fulfillmentType, zoneId });
+    const quote = await computeOrderQuote({ restaurantId, items, fulfillmentType, zoneId, lat, lng });
     return successResponse(res, quote);
   } catch (error) {
     if (error instanceof AppError) return errorResponse(res, error.code, error.status, error.details);
     console.error('[CustomerOrder] quoteOrder error:', error);
+    return errorResponse(res, 'errors.internal_error', 500);
+  }
+};
+
+// ---------------------------------------------------------------------------
+// Check a map pin against the tenant's delivery range (anonymous). Lets the
+// address step show "we deliver here, fee X" / "outside our delivery area"
+// before there's a cart to quote. Deliberately does NOT throw on out-of-range
+// — it's a verdict endpoint, not a checkout gate; /quote and order placement
+// are what actually block. `needsManualZone` tells the client to fall back to
+// the old zone dropdown because this tenant hasn't set its own coordinates
+// yet (nothing to measure distance from).
+// ---------------------------------------------------------------------------
+
+export const checkAddress = async (req: Request, res: Response) => {
+  try {
+    const restaurantId = req.restaurantId!;
+    const { lat, lng } = readPin(req.body);
+
+    if (lat === undefined || lng === undefined) {
+      return errorResponse(res, 'errors.validation_error', 400, { message: 'lat and lng are required' });
+    }
+
+    const result = await resolveDeliveryZone({ restaurantId, lat, lng });
+
+    if (result.zone) {
+      return successResponse(res, {
+        inRange: true,
+        distanceMeters: result.distanceMeters,
+        needsManualZone: false,
+        zone: {
+          id: result.zone.id,
+          name: result.zone.name,
+          deliveryFee: result.zone.deliveryFee,
+          minOrderAmount: result.zone.minOrderAmount,
+        },
+      });
+    }
+
+    const needsManualZone = result.reason === 'NO_RESTAURANT_LOCATION';
+    return successResponse(res, {
+      // A tenant with no location can't be judged out of range — the customer
+      // just has to pick a zone by hand, so don't show them a rejection.
+      inRange: needsManualZone,
+      distanceMeters: result.distanceMeters,
+      needsManualZone,
+      zone: null,
+      maxDeliveryMeters: result.maxDeliveryMeters ?? null,
+    });
+  } catch (error) {
+    if (error instanceof AppError) return errorResponse(res, error.code, error.status, error.details);
+    console.error('[CustomerOrder] checkAddress error:', error);
     return errorResponse(res, 'errors.internal_error', 500);
   }
 };
@@ -237,6 +463,13 @@ export const placeOrder = async (req: Request, res: Response) => {
   try {
     const restaurantId = req.restaurantId!;
     const customer = req.customer!;
+
+    // Defense in depth: the OTP gate already refuses a banned number, but a
+    // trusted-device session minted before the ban skips OTP entirely, so the
+    // ban has to be re-asserted at the point of sale too.
+    if (await isPhoneBanned(restaurantId, customer.phone)) {
+      return errorResponse(res, 'errors.order_customer_banned', 403);
+    }
 
     // Per-customer throttle, on top of the route-level per-IP rateLimitOrNoop
     // — spec §4: "rate-limit order creation per customer/phone/IP".
@@ -270,8 +503,40 @@ export const placeOrder = async (req: Request, res: Response) => {
       return errorResponse(res, 'errors.order_payment_method_disabled', 400);
     }
 
+    // Weekly opening hours. requireOnlineOrderingOpen (the route-level gate)
+    // only covers the manual kill-switch; this is the scheduled counterpart,
+    // evaluated in the tenant's own timezone. isWithinOrderHours is permissive
+    // for an unconfigured/malformed schedule, so a tenant that never touched
+    // the hours editor is unaffected.
+    if (orderSettings?.orderHours) {
+      const tzSettings = await prisma.restaurantSettings.findUnique({
+        where: { restaurantId },
+        select: { timezone: true },
+      });
+      if (!isWithinOrderHours(orderSettings.orderHours, new Date(), tzSettings?.timezone)) {
+        return errorResponse(res, 'errors.online_ordering_closed', 403);
+      }
+    }
+
+    // Kitchen capacity throttle. Counts orders still in flight (anything not
+    // terminal) rather than orders created today — the cap is about how much
+    // work is queued right now, and a completed order frees a slot.
+    if (orderSettings?.maxConcurrentOrders != null && orderSettings.maxConcurrentOrders > 0) {
+      const inFlight = await prisma.order.count({
+        where: { restaurantId, status: { in: ACTIVE_ORDER_STATUSES as any } },
+      });
+      if (inFlight >= orderSettings.maxConcurrentOrders) {
+        return errorResponse(res, 'errors.order_capacity_full', 429);
+      }
+    }
+
     let addressSnapshot: Record<string, unknown> | null = null;
     let zoneId: string | undefined;
+    // The pin may arrive at the top level of the body or on the inline address
+    // object; either is accepted, top level wins. For a saved address the
+    // stored coordinates are the pin.
+    let pin = readPin(req.body);
+    let savedAddressId: string | undefined;
 
     if (fulfillmentType === 'DELIVERY') {
       if (addressId) {
@@ -282,6 +547,8 @@ export const placeOrder = async (req: Request, res: Response) => {
           return errorResponse(res, 'errors.order_address_not_found', 400);
         }
         zoneId = address.zoneId || undefined;
+        if (pin.lat === undefined) pin = readPin({ lat: address.lat, lng: address.lng });
+        savedAddressId = address.id;
         addressSnapshot = {
           label: address.label,
           neighborhood: address.neighborhood,
@@ -292,42 +559,75 @@ export const placeOrder = async (req: Request, res: Response) => {
         };
       } else if (inlineAddress?.fullAddress) {
         zoneId = typeof inlineAddress.zoneId === 'string' ? inlineAddress.zoneId : undefined;
+        if (pin.lat === undefined) pin = readPin(inlineAddress);
         addressSnapshot = {
           label: inlineAddress.label ?? null,
           neighborhood: inlineAddress.neighborhood ?? null,
           fullAddress: inlineAddress.fullAddress,
-          lat: typeof inlineAddress.lat === 'number' ? inlineAddress.lat : null,
-          lng: typeof inlineAddress.lng === 'number' ? inlineAddress.lng : null,
+          lat: pin.lat ?? null,
+          lng: pin.lng ?? null,
           note: inlineAddress.note ?? null,
         };
-        if (inlineAddress.save) {
-          const saved = await prisma.customerAddress.create({
-            data: {
-              customerId: customer.id,
-              restaurantId,
-              label: inlineAddress.label ?? null,
-              neighborhood: inlineAddress.neighborhood ?? null,
-              fullAddress: inlineAddress.fullAddress,
-              lat: typeof inlineAddress.lat === 'number' ? inlineAddress.lat : null,
-              lng: typeof inlineAddress.lng === 'number' ? inlineAddress.lng : null,
-              zoneId: zoneId ?? null,
-              note: inlineAddress.note ?? null,
-            },
-          });
-          addressSnapshot.addressId = saved.id;
-        }
       } else {
         return errorResponse(res, 'errors.order_address_required', 400);
       }
     }
 
-    // Recompute everything server-side — the whole point of this call.
-    const quote = await computeOrderQuote({ restaurantId, items, fulfillmentType, zoneId });
+    // Recompute everything server-side — the whole point of this call. When a
+    // pin is present and the tenant has coordinates, this also re-resolves the
+    // zone/fee from that pin and can reject the address as out of range.
+    const quote = await computeOrderQuote({
+      restaurantId,
+      items,
+      fulfillmentType,
+      zoneId,
+      lat: pin.lat,
+      lng: pin.lng,
+    });
     if (fulfillmentType === 'DELIVERY' && !quote.meetsMinimum) {
       return errorResponse(res, 'errors.order_below_minimum', 400, { minOrderAmount: quote.minOrderAmount, subtotal: quote.subtotal });
     }
 
+    // Persist a new address only after the quote succeeded — an out-of-range
+    // or below-minimum attempt shouldn't leave a saved address behind — and
+    // stamp it with the server-resolved zone rather than whatever the client
+    // guessed, so the saved-address fast path stays correct next time.
+    if (fulfillmentType === 'DELIVERY' && !addressId && inlineAddress?.save && addressSnapshot) {
+      const saved = await prisma.customerAddress.create({
+        data: {
+          customerId: customer.id,
+          restaurantId,
+          label: inlineAddress.label ?? null,
+          neighborhood: inlineAddress.neighborhood ?? null,
+          fullAddress: inlineAddress.fullAddress,
+          lat: pin.lat ?? null,
+          lng: pin.lng ?? null,
+          zoneId: quote.zoneId ?? null,
+          note: inlineAddress.note ?? null,
+        },
+      });
+      savedAddressId = saved.id;
+      addressSnapshot.addressId = saved.id;
+    }
+
+    // Keep an existing saved address's zone in sync with what the pin actually
+    // resolves to now (zones/fees change; the stored zoneId can go stale).
+    if (fulfillmentType === 'DELIVERY' && addressId && savedAddressId && quote.zoneId && quote.zoneId !== zoneId) {
+      await prisma.customerAddress.update({
+        where: { id: savedAddressId },
+        data: { zoneId: quote.zoneId },
+      });
+    }
+
     const readyBy = new Date(Date.now() + quote.prepTimeMinutes * 60_000);
+
+    // Auto-confirm (plan "Also in scope"): off — the default — leaves the
+    // order in NEW, which the customer's tracking screen renders as "waiting
+    // for the restaurant to confirm" and staff resolve with confirm/reject.
+    // On, the order skips straight to ACCEPTED; it is still subject to the
+    // hours/capacity gates above, so "auto-confirm" never means "accept
+    // anything".
+    const initialStatus = orderSettings?.autoConfirmOrders === true ? 'ACCEPTED' : 'NEW';
 
     const order = await prisma.$transaction(async (tx) => {
       // Race-safe per-tenant order number — see the OrderCounter comment in
@@ -342,6 +642,7 @@ export const placeOrder = async (req: Request, res: Response) => {
           customerId: customer.id,
           orderNumber,
           fulfillmentType,
+          status: initialStatus,
           paymentMethod,
           addressSnapshot: (addressSnapshot ?? undefined) as any,
           zoneId: quote.zoneId ?? null,

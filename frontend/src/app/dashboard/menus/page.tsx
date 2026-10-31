@@ -16,7 +16,6 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import api from '@/lib/api';
@@ -44,11 +43,6 @@ interface MenuItem {
   containsAlcohol?: boolean;
   containsPork?: boolean;
   categoryId: string;
-  // Online-ordering add-on fields (see docs/packaging/online-ordering-plan.md
-  // §1a) — surfaced here rather than duplicated in a separate list, per the
-  // dashboard/orders/settings task brief.
-  isOrderableOnline?: boolean;
-  prepTimeMinutes?: number | null;
 }
 
 interface MenuCategory {
@@ -80,12 +74,13 @@ export default function MenuManagementPage() {
   const [activeMenuId, setActiveMenuId] = useState<string | null>(null);
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
 
-  // Online-ordering "orderable" toggle (see docs/packaging/online-ordering-plan.md)
-  // is only shown when the tenant has the add-on AND the current user actually
-  // holds manage_orders — PATCH /orders/menu/:id/orderable lives behind that
-  // permission (src/routes/orderRoutes.ts), which manage_menu alone does not
-  // grant by default (the MANAGER preset role doesn't include manage_orders).
-  // Showing the control to someone who can't use it would just 403 silently.
+  // Which items sell online — and their online-only price/name/photo overrides,
+  // order-only categories and temporary pauses — is no longer edited here. It
+  // all lives in the dedicated Order Menu window
+  // (docs/packaging/online-ordering-v2-plan.md decision #1); this page only
+  // points at it, and only for someone who can actually open it: the
+  // /orders/order-menu routes sit behind manage_orders (src/routes/
+  // orderRoutes.ts), which manage_menu alone doesn't grant.
   const currentUser = useAuthStore((s) => s.user);
   const [hasOnlineOrdering, setHasOnlineOrdering] = useState(false);
   useEffect(() => {
@@ -93,45 +88,7 @@ export default function MenuManagementPage() {
   }, []);
   const canManageOrders = currentUser?.role === 'ADMIN' || currentUser?.role === 'SUPER_ADMIN'
     || (currentUser?.permissions?.includes('manage_orders') ?? false);
-  const showOnlineOrderingColumn = hasOnlineOrdering && canManageOrders;
-
-  const [savingOrderableId, setSavingOrderableId] = useState<string | null>(null);
-  const handleToggleOrderable = async (item: MenuItem, isOrderableOnline: boolean) => {
-    setSavingOrderableId(item.id);
-    // Optimistic local update so the switch responds immediately; reconciled
-    // by fetchMenus() below regardless of outcome.
-    setMenus((prev) => prev.map((m) => ({
-      ...m,
-      categories: m.categories.map((c) => ({
-        ...c,
-        items: c.items.map((i) => (i.id === item.id ? { ...i, isOrderableOnline } : i)),
-        children: c.children?.map((sc) => ({
-          ...sc,
-          items: sc.items.map((i) => (i.id === item.id ? { ...i, isOrderableOnline } : i)),
-        })),
-      })),
-    })));
-    try {
-      await api.patch(`/orders/menu/${item.id}/orderable`, { isOrderableOnline });
-      toast.success(t('menus.onlineOrdering.updated'));
-    } catch (err) {
-      toast.error(t('menus.onlineOrdering.updateFailed'));
-      fetchMenus();
-    } finally {
-      setSavingOrderableId(null);
-    }
-  };
-  const handlePrepTimeBlur = async (item: MenuItem, raw: string) => {
-    const prepTimeMinutes = raw === '' ? null : Math.max(0, parseInt(raw, 10) || 0);
-    if (prepTimeMinutes === (item.prepTimeMinutes ?? null)) return;
-    try {
-      await api.patch(`/orders/menu/${item.id}/orderable`, { prepTimeMinutes });
-      toast.success(t('menus.onlineOrdering.updated'));
-      fetchMenus();
-    } catch (err) {
-      toast.error(t('menus.onlineOrdering.updateFailed'));
-    }
-  };
+  const showOrderMenuHint = hasOnlineOrdering && canManageOrders;
 
   // Dialog States
   const [isMenuDialogOpen, setIsMenuDialogOpen] = useState(false);
@@ -380,15 +337,12 @@ export default function MenuManagementPage() {
               <TableHead className="text-[9px] font-black text-slate-400 uppercase tracking-widest px-4">{t('menus.table.dishInfo')}</TableHead>
               <TableHead className="text-[9px] font-black text-slate-400 uppercase tracking-widest text-center">{t('menus.table.tagsSpecs')}</TableHead>
               <TableHead className="text-[9px] font-black text-slate-400 uppercase tracking-widest text-right">{t('menus.table.price')}</TableHead>
-              {showOnlineOrderingColumn && (
-                <TableHead className="text-[9px] font-black text-slate-400 uppercase tracking-widest text-center">{t('menus.table.onlineOrdering')}</TableHead>
-              )}
               <TableHead className="text-[9px] font-black text-slate-400 uppercase tracking-widest text-right px-4">{t('menus.table.actions')}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {items.length === 0 ? (
-                <TableRow><TableCell colSpan={showOnlineOrderingColumn ? 5 : 4} className="h-16 text-center text-xs text-slate-400 font-bold italic">{t('menus.table.noItems')}</TableCell></TableRow>
+                <TableRow><TableCell colSpan={4} className="h-16 text-center text-xs text-slate-400 font-bold italic">{t('menus.table.noItems')}</TableCell></TableRow>
             ) : items.map(item => (
               <TableRow key={item.id} className="h-12 hover:bg-slate-50/50 border-b border-slate-50 transition-colors">
                 <TableCell className="px-4 py-2">
@@ -420,27 +374,6 @@ export default function MenuManagementPage() {
                 <TableCell className="text-right py-2">
                     <span className="font-black text-blue-700 text-sm">{formatPrice(item.price)}</span>
                 </TableCell>
-                {showOnlineOrderingColumn && (
-                  <TableCell className="py-2 text-center" onClick={(e) => e.stopPropagation()}>
-                    <div className="flex flex-col items-center gap-1.5">
-                      <Switch
-                        checked={!!item.isOrderableOnline}
-                        disabled={savingOrderableId === item.id}
-                        onCheckedChange={(c) => handleToggleOrderable(item, c)}
-                      />
-                      {item.isOrderableOnline && (
-                        <Input
-                          type="number"
-                          min="0"
-                          defaultValue={item.prepTimeMinutes ?? ''}
-                          placeholder={t('menus.onlineOrdering.prepTimePlaceholder')}
-                          onBlur={(e) => handlePrepTimeBlur(item, e.target.value)}
-                          className="h-6 w-20 text-[10px] font-bold text-center border-slate-200 rounded-sm px-1"
-                        />
-                      )}
-                    </div>
-                  </TableCell>
-                )}
                 <TableCell className="px-4 py-2 text-right">
                     <div className="flex justify-end gap-1">
                         <Button variant="ghost" size="icon" className="h-7 w-7 text-slate-400 hover:text-blue-600 transition-colors" onClick={(e) => { e.stopPropagation(); handleOpenItem(categoryId, item); }}><Edit2 className="w-3.5 h-3.5" /></Button>
@@ -541,6 +474,17 @@ export default function MenuManagementPage() {
             </Button>
           </div>
         </div>
+
+        {showOrderMenuHint && (
+          <div className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-blue-100 bg-blue-50/50 px-4 py-2.5">
+            <span className="text-[11px] font-bold text-slate-600">{t('menus.onlineOrdering.movedNote')}</span>
+            <Link href="/dashboard/orders/menu">
+              <Button size="sm" variant="outline" className="h-8 px-3 text-[10px] font-black uppercase border-blue-200 text-blue-700 bg-white hover:bg-blue-50">
+                <ListChecks className="w-3.5 h-3.5 mr-1.5" /> {t('menus.onlineOrdering.openOrderMenu')}
+              </Button>
+            </Link>
+          </div>
+        )}
 
         <Dialog open={isQRDialogOpen} onOpenChange={setIsQRDialogOpen}>
             <DialogContent className="sm:max-w-[425px]">

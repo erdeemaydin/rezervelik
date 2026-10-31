@@ -37,9 +37,11 @@
     "order_item_not_found": "Sepetinizdeki ürünlerden biri bulunamadı.",
     "order_item_not_orderable": "Sepetinizdeki ürünlerden biri online siparişe açık değil.",
     "order_item_unavailable": "Sepetinizdeki ürünlerden biri şu anda mevcut değil.",
+    "order_item_paused": "Bu ürün şu anda siparişe kapalı.",
     "order_modifier_invalid": "Seçilen seçeneklerden biri geçersiz.",
     "order_zone_required": "Lütfen bir teslimat bölgesi seçin.",
     "order_zone_not_found": "Seçilen teslimat bölgesi kullanılamıyor.",
+    "order_out_of_delivery_range": "Bu adres teslimat bölgemizin dışında.",
     "order_fulfillment_disabled": "Bu sipariş türü şu anda kullanılamıyor.",
     "order_payment_method_disabled": "Bu ödeme yöntemi şu anda kullanılamıyor.",
     "order_address_required": "Lütfen bir teslimat adresi girin.",
@@ -48,7 +50,9 @@
     "order_rate_limited": "Kısa süre içinde çok fazla sipariş verildi. Lütfen biraz bekleyip tekrar deneyin.",
     "order_not_found": "Sipariş bulunamadı.",
     "order_invalid_transition": "Bu sipariş durumu değişikliğine izin verilmiyor.",
-    "order_status_conflict": "Bu siparişin durumu az önce başka biri tarafından değiştirildi. Sayfayı yenileyip tekrar deneyin."
+    "order_status_conflict": "Bu siparişin durumu az önce başka biri tarafından değiştirildi. Sayfayı yenileyip tekrar deneyin.",
+    "order_customer_banned": "Bu telefon numarası bu restorandan sipariş veremez.",
+    "order_capacity_full": "Mutfak şu anda kapasitesini doldurdu. Lütfen biraz sonra tekrar deneyin."
   },
   "messages": {
     "reservation_created": "Rezervasyon başarıyla oluşturuldu",

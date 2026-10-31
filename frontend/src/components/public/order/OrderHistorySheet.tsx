@@ -59,7 +59,7 @@ export default function OrderHistorySheet({
 
         <div className="flex-1 overflow-y-auto px-4 pb-4">
           {!authed ? (
-            <PhoneIdentify restaurantId={restaurantId} theme={theme} onIdentified={onIdentified} />
+            <PhoneIdentify restaurantId={restaurantId} theme={theme} onIdentified={onIdentified} compact />
           ) : loading ? (
             <div className="flex items-center justify-center py-12">
               <Loader2 className="h-5 w-5 animate-spin" style={{ color: theme.muted }} />
@@ -72,15 +72,15 @@ export default function OrderHistorySheet({
           ) : (
             <div className="space-y-2.5">
               {orders.map((order) => (
-                <div key={order.id} className="rounded-xl border p-3" style={{ borderColor: theme.border, backgroundColor: theme.surface }}>
+                <div key={order.id} className="rounded-2xl p-3.5" style={{ backgroundColor: theme.surface, boxShadow: theme.shadow }}>
                   <div className="flex items-center justify-between">
-                    <span className="text-sm font-bold" style={{ color: theme.text }}>#{order.orderNumber}</span>
-                    <span className="rounded-full px-2 py-0.5 text-[11px] font-bold" style={{ backgroundColor: `${theme.primary}14`, color: theme.primary }}>
+                    <span className="text-sm font-black" style={{ color: theme.text }}>#{order.orderNumber}</span>
+                    <span className="rounded-full px-2 py-0.5 text-[11px] font-bold" style={{ backgroundColor: theme.primaryTint, color: theme.primary }}>
                       {t(`publicOrder.status.${order.status}`)}
                     </span>
                   </div>
                   <p className="mt-1 text-xs" style={{ color: theme.muted }}>
-                    {new Date(order.createdAt).toLocaleString('tr-TR', { dateStyle: 'medium', timeStyle: 'short' })}
+                    {new Date(order.createdAt).toLocaleString(locale === 'tr' ? 'tr-TR' : 'en-US', { dateStyle: 'medium', timeStyle: 'short' })}
                   </p>
                   <p className="mt-1 text-xs" style={{ color: theme.muted }}>
                     {order.items.map((it) => `${it.quantity}× ${it.nameSnapshot}`).join(', ')}
