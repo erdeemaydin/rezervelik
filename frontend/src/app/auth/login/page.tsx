@@ -167,7 +167,7 @@ export default function LoginPage() {
           </p>
         </div>
         <div className="relative text-xs font-medium text-amber-100/60">
-          © {new Date().getFullYear()} ReservePro
+          © {new Date().getFullYear()} Rezervelik
         </div>
       </aside>
 

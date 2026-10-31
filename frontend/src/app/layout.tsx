@@ -26,7 +26,7 @@ const playfair = Playfair_Display({
 });
 
 export const metadata: Metadata = {
-  title: "ReservePro - Restaurant Management",
+  title: "Rezervelik - Restaurant Management",
   description: "Modern Restaurant Management System",
 };
 
