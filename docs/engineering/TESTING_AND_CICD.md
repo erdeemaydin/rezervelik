@@ -88,12 +88,16 @@ scaffold can be added later behind an optional job.
 Triggered on PRs and pushes to `main`. Two parallel jobs, each running against a Postgres service
 container where needed (see §3):
 
-- **backend**: `npm ci` → `npm audit --audit-level=moderate` (blocking) → `prisma generate` →
+- **backend**: `npm ci` → `npm audit --omit=dev --audit-level=high` (blocking) → `prisma generate` →
   `npm run test:setup-db` → `npm test` → `npm run typecheck` → `npm run build`.
-- **frontend**: `npm ci` (in `frontend/`) → `npm audit --audit-level=moderate` (blocking) →
+- **frontend**: `npm ci` (in `frontend/`) → `npm audit --omit=dev --audit-level=high` (blocking) →
   `npm run lint` → `npm run typecheck` → `npm test` → `npm run build`.
 
 A merge is only allowed when both are green. This is the "before it can reach production" gate.
+The gate covers packages that ship to production, at high and critical severity.
+Moderate advisories in build and lint tooling often have no published fix, so they
+would keep CI red without reducing real risk; Dependabot still surfaces them.
+
 The `npm audit` steps are dependency-CVE scanning, a separate failure mode from the
 application-logic tests above — see `docs/planning/PRODUCTION_ROADMAP.md` §11 and `.github/dependabot.yml` for
 the ongoing-scanning story. Both apps are 0 known vulnerabilities at every severity as of the

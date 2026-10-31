@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { api } from '../helpers/app';
 import { resetDb, prisma } from '../helpers/seed';
 
@@ -17,8 +17,12 @@ describe('setup-super-admin bootstrap is audit-logged', () => {
     });
     expect(res.status).toBe(201);
 
-    const log = await prisma.auditLog.findFirst({ where: { action: 'SUPER_ADMIN_BOOTSTRAPPED' } });
-    expect(log).toBeTruthy();
+    // logAudit is fire-and-forget, so the row can land just after the response.
+    const log = await vi.waitFor(async () => {
+      const row = await prisma.auditLog.findFirst({ where: { action: 'SUPER_ADMIN_BOOTSTRAPPED' } });
+      expect(row).toBeTruthy();
+      return row;
+    });
     expect(log!.category).toBe('SYSTEM');
     expect(log!.targetLabel).toBe('root@test.dev');
   });
