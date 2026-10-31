@@ -59,7 +59,7 @@
     "@types/js-cookie": "^3.0.6",
     "@types/leaflet": "^1.9.22",
     "@types/negotiator": "^0.6.4",
-    "@types/node": "^20",
+    "@types/node": "^26",
     "@types/qrcode.react": "^1.0.5",
     "@types/react": "^19",
     "@types/react-dom": "^19",
