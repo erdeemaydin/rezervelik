@@ -19,6 +19,12 @@ updates:
       # minor/patch version bumps are batched so they don't flood the PR list.
       backend-minor-patch:
         update-types: ["minor", "patch"]
+    ignore:
+      # Major upgrades are done deliberately, not by automated PRs: next and
+      # its eslint config move together, and prisma, typescript and vitest
+      # majors need code changes. Minor and patch releases still surface.
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
 
   - package-ecosystem: "npm"
     directory: "/frontend"
@@ -31,14 +37,10 @@ updates:
       frontend-minor-patch:
         update-types: ["minor", "patch"]
     ignore:
-      # next.js is upgraded deliberately, not automatically — see
-      # frontend/AGENTS.md ("this is NOT the Next.js you know", breaking
-      # changes vs. training-data assumptions) and docs/planning/PRODUCTION_ROADMAP.md §11.
-      # A Dependabot PR still opens for it (major/minor/patch all excluded
-      # here would hide even patch releases); this only blocks *major* auto-PRs
-      # so 16.x patch releases (which may carry security fixes, e.g. the
-      # postcss/sharp advisories currently pending) still surface normally.
-      - dependency-name: "next"
+      # Major upgrades are done deliberately, not by automated PRs: next and
+      # its eslint config move together, and prisma, typescript and vitest
+      # majors need code changes. Minor and patch releases still surface.
+      - dependency-name: "*"
         update-types: ["version-update:semver-major"]
 
   - package-ecosystem: "github-actions"
