@@ -13,7 +13,6 @@ import api from '@/lib/api';
 import { getApiErrorMessage } from '@/lib/apiError';
 import { evaluatePassword } from '@/lib/passwordPolicy';
 import { useTranslation } from '@/i18n/provider';
-import { BrandLogo } from '@/components/BrandLogo';
 
 export default function SetupAccountPage() {
   const router = useRouter();
@@ -59,12 +58,11 @@ export default function SetupAccountPage() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center gap-6 bg-[#ecf0f5] p-4">
-      <BrandLogo size={40} tile="#1f6fb2" textClassName="text-2xl text-[#1f2d3d]" />
-      <Card className="w-full max-w-md gap-0 py-0 rounded-[4px] border border-[#9ca8b7] shadow-[0_1px_3px_rgba(0,0,0,0.1)] overflow-hidden">
-        <CardHeader className="space-y-1 bg-[#222d32] border-t-[3px] border-t-[#1f6fb2] text-white p-6">
+    <div className="min-h-screen flex items-center justify-center bg-stone-50 p-4">
+      <Card className="w-full max-w-md shadow-lg border-0 overflow-hidden">
+        <CardHeader className="space-y-1 bg-gradient-to-br from-amber-700 via-orange-800 to-rose-900 text-amber-50 p-6">
           <CardTitle className="text-2xl font-bold tracking-tight text-center">{t('auth.setupTitle')}</CardTitle>
-          <CardDescription className="text-[#b8c7ce] text-center text-xs">
+          <CardDescription className="text-amber-100/80 text-center text-xs">
             {t('auth.setupSubtitle')}
           </CardDescription>
         </CardHeader>

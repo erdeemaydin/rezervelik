@@ -26,8 +26,8 @@ const playfair = Playfair_Display({
 });
 
 export const metadata: Metadata = {
-  title: "Rezervelik - Reservation Management",
-  description: "Modern reservation management platform",
+  title: "Rezervelik - Restaurant Management",
+  description: "Modern Restaurant Management System",
 };
 
 export default function RootLayout({

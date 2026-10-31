@@ -3,16 +3,45 @@
 import { ReactNode, useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { SquaresFour, Users, GridFour, Gear, SignOut, Calendar, ForkKnife, ChartBar, Chat, CreditCard, CaretRight, Clock, DeviceTablet, Confetti, Handshake, Scissors, Sparkle, Trophy, ClipboardText, Buildings, DoorOpen, Stethoscope, Heartbeat, Package, Armchair, Scroll, ShoppingBag, List, House } from '@phosphor-icons/react';
+import { 
+  LayoutDashboard, 
+  Users, 
+  Grid, 
+  Settings, 
+  LogOut, 
+  Calendar,
+  UtensilsCrossed,
+  BarChart3,
+  MessageSquare,
+  CreditCard,
+  ChevronLeft,
+  ChevronRight,
+  Clock,
+  Tablet,
+  PartyPopper,
+  Handshake,
+  Scissors,
+  Sparkles,
+  Trophy,
+  ClipboardList,
+  Building2,
+  DoorOpen,
+  Stethoscope,
+  HeartPulse,
+  Package,
+  Armchair,
+  ScrollText,
+  ShoppingBag
+} from 'lucide-react';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useFormatStore } from '@/store/useFormatStore';
 import { useTenantStore } from '@/store/useTenantStore';
 import { useAdminThemeStore } from '@/store/useAdminThemeStore';
 import { useTerms } from '@/hooks/useTerms';
 import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
-import { BrandLogo } from '@/components/BrandLogo';
 import { useTranslation } from '@/i18n/provider';
 import { readAuth } from '@/lib/authStorage';
 import Cookies from 'js-cookie';
@@ -60,16 +89,15 @@ interface NavSection {
 }
 
 // Per-vertical iconography so the shared dashboard chrome doesn't read as
-// restaurant-only for salons/clinics/etc. `catalog` and `resource` re-skin the
-// menu/tables nav icons to the vertical's concept. (The sidebar brand is the
-// vertical-neutral Rezervelik mark.)
-const VERTICAL_ICONS: Record<string, { catalog: any; resource: any }> = {
-  RESTAURANT: { catalog: ForkKnife, resource: GridFour },
-  SALON: { catalog: Sparkle, resource: Armchair },
-  SPORTS: { catalog: ClipboardText, resource: GridFour },
-  COWORKING: { catalog: ClipboardText, resource: DoorOpen },
-  CLINIC: { catalog: Heartbeat, resource: DoorOpen },
-  WEDDING: { catalog: Package, resource: Buildings },
+// restaurant-only for salons/clinics/etc. `brand` is the sidebar mark; `catalog`
+// and `resource` re-skin the menu/tables nav icons to the vertical's concept.
+const VERTICAL_ICONS: Record<string, { brand: any; catalog: any; resource: any }> = {
+  RESTAURANT: { brand: UtensilsCrossed, catalog: UtensilsCrossed, resource: Grid },
+  SALON: { brand: Scissors, catalog: Sparkles, resource: Armchair },
+  SPORTS: { brand: Trophy, catalog: ClipboardList, resource: Grid },
+  COWORKING: { brand: Building2, catalog: ClipboardList, resource: DoorOpen },
+  CLINIC: { brand: Stethoscope, catalog: HeartPulse, resource: DoorOpen },
+  WEDDING: { brand: PartyPopper, catalog: Package, resource: Building2 },
 };
 
 // Permission required to open each dashboard route. Enforced here so a page can't
@@ -134,13 +162,13 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
   // never flashes the (wrong-theme) dashboard first. Fails open on transient
   // errors so a backend hiccup can't trap staff on the splash.
   const [verifiedLive, setVerifiedLive] = useState(false);
-  const { t, locale, setLocale } = useTranslation();
+  const { t, setLocale } = useTranslation();
   const { term, businessType } = useTerms();
   // Only override the vertical-specific nav labels for non-restaurant tenants, so
   // existing restaurant dashboards render exactly as before.
   const isRestaurant = businessType === 'RESTAURANT';
   const vIcon = VERTICAL_ICONS[businessType] || VERTICAL_ICONS.RESTAURANT;
-  // Per-tenant dashboard skin. The shared store is the single source of
+  // Per-tenant dashboard color theme. The shared store is the single source of
   // truth (seeded from cache so it applies on first paint); it comes from
   // RestaurantSettings so all of this tenant's staff share it. Reading it from the
   // store — instead of deriving it from local state — is what lets the settings
@@ -220,14 +248,14 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
 
   const navigation: NavSection[] = [
     { section: t('systemAdmin.globalOverview') || 'Overview', items: [
-      { name: t('admin.dashboard'), href: '/dashboard', icon: SquaresFour, perm: 'view_analytics' },
-      { name: t('admin.analytics'), href: '/dashboard/analytics', icon: ChartBar, perm: 'view_analytics' },
+      { name: t('admin.dashboard'), href: '/dashboard', icon: LayoutDashboard, perm: 'view_analytics' },
+      { name: t('admin.analytics'), href: '/dashboard/analytics', icon: BarChart3, perm: 'view_analytics' },
     ]},
     { section: t('admin.sectionOperations'), items: [
       { name: isRestaurant ? t('admin.reservations') : term('bookingPlural'), href: '/dashboard/reservations', icon: Calendar, perm: 'manage_reservations' },
-      { name: t('events.navTitle'), href: '/dashboard/events', icon: Confetti, feature: 'hasEventPipeline' },
+      { name: t('events.navTitle'), href: '/dashboard/events', icon: PartyPopper, feature: 'hasEventPipeline' },
       { name: t('vendors.navTitle'), href: '/dashboard/vendors', icon: Handshake, feature: 'hasVendors' },
-      { name: t('admin.hostStand'), href: '/dashboard/host', icon: DeviceTablet, perm: 'manage_reservations' },
+      { name: t('admin.hostStand'), href: '/dashboard/host', icon: Tablet, perm: 'manage_reservations' },
       { name: t('admin.calendar'), href: '/dashboard/calendar', icon: Calendar, perm: 'manage_calendar' },
       { name: isRestaurant ? t('admin.tablesAndFloor') : term('resourcePlural'), href: '/dashboard/tables', icon: vIcon.resource, perm: 'manage_tables' },
       { name: isRestaurant ? t('admin.menuManagement') : term('catalog'), href: '/dashboard/menus', icon: vIcon.catalog, perm: 'manage_menu', feature: 'hasMenuFeature' },
@@ -244,12 +272,12 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
     ]},
     { section: t('admin.sectionBusiness'), items: [
       { name: t('admin.payments'), href: '/dashboard/payments', icon: CreditCard, feature: 'hasPaymentFeature', perm: 'view_payments' },
-      { name: t('admin.reviews'), href: '/dashboard/reviews', icon: Chat, perm: 'view_reviews' },
-      { name: t('admin.customization'), href: '/dashboard/customization', icon: Gear, perm: 'manage_settings' },
-      { name: t('admin.settings'), href: '/dashboard/settings', icon: Gear, perm: 'manage_settings' },
+      { name: t('admin.reviews'), href: '/dashboard/reviews', icon: MessageSquare, perm: 'view_reviews' },
+      { name: t('admin.customization'), href: '/dashboard/customization', icon: Settings, perm: 'manage_settings' },
+      { name: t('admin.settings'), href: '/dashboard/settings', icon: Settings, perm: 'manage_settings' },
     ]},
     { section: t('admin.sectionCompliance'), items: [
-      { name: t('admin.auditLog'), href: '/dashboard/audit', icon: Scroll, perm: 'manage_settings', feature: 'showAuditLogToTenant', adminOnly: true },
+      { name: t('admin.auditLog'), href: '/dashboard/audit', icon: ScrollText, perm: 'manage_settings', feature: 'showAuditLogToTenant', adminOnly: true },
     ]}
   ];
 
@@ -338,18 +366,14 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
   if (!isMounted) return null; // Avoid hydration mismatch
   if (!isAuthenticated) return null; // Wait for redirect
 
-  // Hold the dashboard behind a neutral, skinned splash until we've confirmed the
+  // Hold the dashboard behind a neutral, themed splash until we've confirmed the
   // platform is live (see verifiedLive). This is what stops the wrong-theme /
   // maintenance flash on a hard refresh: nothing tenant-facing renders until the
   // live /settings request resolves (success → dashboard; maintenance → redirect).
   if (!verifiedLive) {
     return (
-      <div data-admin-theme={theme} lang={locale} className="flex min-h-dvh flex-col items-center justify-center gap-6 bg-background" role="status" aria-live="polite">
-        <BrandLogo size={52} tile="var(--admin-brand)" glyph="var(--admin-brand-fg)" textClassName="text-3xl text-foreground" />
-        <div className="h-1.5 w-48 overflow-hidden rounded-full bg-[var(--admin-accent-tint-2)]">
-          <div className="h-full w-1/3 rounded-full bg-[var(--admin-accent)] animate-[admin-loading_1.1s_ease-in-out_infinite]" />
-        </div>
-        <span className="sr-only">{t('common.loading')}</span>
+      <div data-admin-theme={theme} className="flex min-h-dvh items-center justify-center bg-[var(--admin-bg)]">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-slate-400" />
       </div>
     );
   }
@@ -359,8 +383,6 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
   const routeRequiredPerm = requiredPermForPath(pathname);
   const routeAuthorized = (!routeRequiredPerm || hasPermission(routeRequiredPerm)) && (!requiresAdminOnly(pathname) || user?.role === 'ADMIN');
 
-  const isItemActive = (href: string) => pathname === href || (href !== '/dashboard' && pathname.startsWith(`${href}/`));
-
   // Same section/permission/feature filtering the sidebar applies, flattened
   // into one searchable list for the command palette (Cmd/Ctrl+K).
   const paletteItems = navigation.flatMap(group =>
@@ -369,182 +391,198 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
       .map(item => ({ name: item.name, href: item.href, icon: item.icon, section: group.section }))
   );
 
-  // Breadcrumb for the top navbar: the section + item that owns this route.
-  const activeGroup = navigation.find(g => g.items.some(i => isItemActive(i.href)));
-  const activeItem = activeGroup?.items.find(i => isItemActive(i.href));
-  const crumbSection = activeGroup?.section;
-  const crumbPage = activeItem?.name ?? (pathname.startsWith('/dashboard/profile') ? t('admin.userSettings') : undefined);
-
-  const closeOnMobile = () => { if (window.innerWidth < 1024) setIsSidebarOpen(false); };
-
   return (
-    <div data-admin-theme={theme} lang={locale} className="flex min-h-dvh bg-background">
+    <div data-admin-theme={theme} className="flex min-h-dvh bg-[var(--admin-bg)]">
       <CommandPalette items={paletteItems} />
 
       {/* Mobile/tablet overlay — clicking anywhere off the sidebar closes it. */}
       {isSidebarOpen && (
         <div
-          className="fixed inset-0 bg-slate-900/50 z-40 lg:hidden"
+          className="fixed inset-0 bg-slate-900/50 z-40 lg:hidden backdrop-blur-sm"
           onClick={() => setIsSidebarOpen(false)}
         />
       )}
 
+      {/* Floating open button — only on mobile/tablet when the sidebar is hidden.
+          Bright/colored so it's obviously the way to reveal navigation. */}
+      {!isSidebarOpen && (
+        <button
+          onClick={() => setIsSidebarOpen(true)}
+          aria-label="Open navigation"
+          className="lg:hidden fixed top-3 left-3 z-40 w-11 h-11 rounded-xl bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-600/30 flex items-center justify-center active:scale-95 transition-all"
+        >
+          <ChevronRight className="w-6 h-6 stroke-[2.5]" />
+        </button>
+      )}
+
       {/* Sidebar — below lg it fully hides off-canvas and overlays when open (no
-          layout push); at lg+ it collapses to a 16-unit icon rail. */}
+          layout push); at lg+ it collapses to a 16-unit icon rail as before. */}
       <aside
         className={cn(
           // h-dvh (dynamic viewport height), not h-screen/100vh: on iOS Safari
           // 100vh extends behind the browser's bottom toolbar, hiding the sidebar
-          // footer under Safari's own buttons so they can't be tapped. dvh is the
-          // actually-visible height, keeping the footer reachable.
-          "bg-[var(--admin-sidebar)] text-[var(--admin-sidebar-fg)] transition-all duration-300 ease-in-out flex flex-col z-50 fixed lg:sticky top-0 h-dvh shrink-0 shadow-[2px_0_8px_rgba(0,0,0,0.25)]",
+          // footer (logout/language) under Safari's own buttons so they can't be
+          // tapped. dvh is the actually-visible height, keeping the footer reachable.
+          "bg-[var(--admin-sidebar)] text-slate-300 transition-all duration-300 ease-in-out flex flex-col z-50 shadow-xl fixed lg:sticky top-0 h-dvh",
           isSidebarOpen ? "w-64 translate-x-0" : "w-64 -translate-x-full lg:w-16 lg:translate-x-0"
         )}
       >
-        {/* Brand/logo bar — same height as the top navbar, in the skin's darker brand shade. */}
-        <Link
-          href="/dashboard"
-          onClick={closeOnMobile}
-          className={cn(
-            "h-14 shrink-0 flex items-center bg-[var(--admin-brand)] text-[var(--admin-brand-fg)] overflow-hidden",
-            isSidebarOpen ? "px-4" : "justify-center"
+        {/* Sidebar Header — logo + collapse/expand toggle (works on desktop too,
+            since there's no top bar anymore). */}
+        <div className="h-16 flex items-center justify-between px-3 border-b border-slate-800 bg-[#1e293b]/20">
+          {isSidebarOpen ? (
+            <>
+              <div className="flex items-center gap-3 overflow-hidden">
+                <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center shrink-0">
+                  <vIcon.brand className="w-5 h-5 text-white" />
+                </div>
+                <span className="font-black text-sm tracking-tight text-white uppercase whitespace-nowrap">
+                  Reserve<span className="text-blue-500">Pro</span>
+                </span>
+              </div>
+              <button
+                onClick={() => setIsSidebarOpen(false)}
+                aria-label="Collapse navigation"
+                className="text-slate-400 hover:text-white hover:bg-slate-800/60 rounded-md w-8 h-8 flex items-center justify-center shrink-0"
+              >
+                <ChevronLeft className="w-5 h-5" />
+              </button>
+            </>
+          ) : (
+            <button
+              onClick={() => setIsSidebarOpen(true)}
+              aria-label="Expand navigation"
+              title="Expand"
+              className="w-full flex items-center justify-center group"
+            >
+              <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center shrink-0 group-hover:hidden">
+                <vIcon.brand className="w-5 h-5 text-white" />
+              </div>
+              <ChevronRight className="w-6 h-6 text-blue-400 hidden group-hover:block" />
+            </button>
           )}
-        >
-          <BrandLogo
-            size={30}
-            tile="var(--admin-brand-fg)"
-            glyph="var(--admin-brand)"
-            showWordmark={isSidebarOpen}
-            textClassName="text-[19px]"
-          />
-        </Link>
-
-        {/* User panel */}
-        {isSidebarOpen && (
-          <Link
-            href="/dashboard/profile"
-            onClick={closeOnMobile}
-            title={t('admin.userSettings')}
-            className="flex items-center gap-3 px-4 py-3.5 hover:bg-[var(--admin-sidebar-hover)] transition-colors"
-          >
-            <Avatar className="w-10 h-10 ring-2 ring-white/20 shrink-0">
-              <AvatarImage src={`https://avatar.iran.liara.run/username?username=${user?.firstName}+${user?.lastName}`} />
-              <AvatarFallback className="bg-[var(--admin-accent)] text-white text-xs font-bold">{user?.firstName?.[0]}{user?.lastName?.[0]}</AvatarFallback>
-            </Avatar>
-            <div className="flex flex-col min-w-0">
-              <span className="text-sm font-semibold text-white truncate capitalize">{user?.firstName} {user?.lastName}</span>
-              <span className="mt-0.5 flex items-center gap-1.5 text-[11px] font-medium">
-                <span className="h-2 w-2 rounded-full bg-[#22c55e] shrink-0" />
-                {user?.role}
-              </span>
-            </div>
-          </Link>
-        )}
+        </div>
 
         {/* Sidebar Navigation */}
-        <nav className="flex-1 overflow-y-auto pb-4 scrollbar-none">
-          {navigation.map((group) => {
-            const visibleItems = group.items.filter(item => canAccessItem(item));
-            if (visibleItems.length === 0) return null;
+        <nav className="flex-1 overflow-y-auto py-6 scrollbar-none">
+          <div className="px-3 space-y-8">
+            {navigation.map((group) => {
+              const visibleItems = group.items.filter(item => canAccessItem(item));
+              if (visibleItems.length === 0) return null;
 
-            return (
-              <div key={group.section}>
-                {isSidebarOpen ? (
-                  <h3 className="bg-[var(--admin-sidebar-deep)] px-4 py-2 text-[11px] font-semibold uppercase tracking-wider text-[var(--admin-sidebar-muted)]">
-                    {group.section}
-                  </h3>
-                ) : (
-                  <div className="h-2 bg-[var(--admin-sidebar-deep)]" />
-                )}
-                <ul>
-                  {visibleItems.map((item) => {
-                    const isActive = isItemActive(item.href);
-                    return (
-                      <li key={item.name}>
-                        <Link
-                          href={item.href}
-                          onClick={closeOnMobile}
-                          title={isSidebarOpen ? undefined : item.name}
-                          aria-current={isActive ? 'page' : undefined}
-                          className={cn(
-                            "flex items-center gap-3 border-l-[3px] py-2.5 text-sm transition-colors",
-                            isSidebarOpen ? "pl-[13px] pr-4" : "justify-center",
-                            // Active row: AdminLTE's bright left edge + darker row +
-                            // white text, not just a color swap.
-                            isActive
-                              ? "border-[var(--admin-sidebar-edge)] bg-[var(--admin-sidebar-hover)] text-white font-semibold"
-                              : "border-transparent hover:bg-[var(--admin-sidebar-hover)] hover:text-white"
-                          )}
-                        >
-                          <item.icon
-                            weight={isActive ? "fill" : "regular"}
-                            className={cn("w-[18px] h-[18px] shrink-0", isActive && "text-[var(--admin-sidebar-edge)]")}
-                          />
-                          {isSidebarOpen && <span className="truncate">{item.name}</span>}
-                        </Link>
-                      </li>
-                    );
-                  })}
-                </ul>
-              </div>
-            );
-          })}
+              return (
+                <div key={group.section}>
+                  {isSidebarOpen && (
+                    <h3 className="px-3 text-[11px] font-black text-slate-400 uppercase tracking-[0.18em] mb-3">
+                      {group.section}
+                    </h3>
+                  )}
+                  <ul className="space-y-1">
+                    {visibleItems.map((item) => {
+                      const isActive = pathname === item.href || (item.href !== '/dashboard' && pathname.startsWith(`${item.href}/`));
+                      return (
+                        <li key={item.name}>
+                          <Link
+                            href={item.href}
+                            onClick={(e) => {
+                              // Below lg the sidebar is an overlay — close it after navigating.
+                              if (window.innerWidth < 1024) {
+                                setIsSidebarOpen(false);
+                              } else if (!isSidebarOpen) {
+                                e.preventDefault();
+                                setIsSidebarOpen(true);
+                              }
+                            }}
+                            className={cn(
+                              "flex items-center justify-between px-3 py-2.5 text-sm font-semibold rounded-md transition-all duration-150 group",
+                              isActive
+                                ? "bg-blue-600 text-white shadow-lg shadow-blue-600/20"
+                                : "hover:bg-slate-800/50 hover:text-white"
+                            )}
+                          >
+                            <div className="flex items-center gap-3">
+                              <item.icon className={cn(
+                                "w-[18px] h-[18px] shrink-0",
+                                isActive ? "text-white" : "text-slate-400 group-hover:text-white"
+                              )} />
+                              {isSidebarOpen && <span>{item.name}</span>}
+                            </div>
+                          </Link>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </div>
+              );
+            })}
+          </div>
         </nav>
 
-        {/* Status strip */}
-        <div className={cn("shrink-0 flex items-center gap-2 bg-[var(--admin-sidebar-deep)] py-2.5 text-[11px] font-medium text-[var(--admin-sidebar-muted)]", isSidebarOpen ? "px-4" : "justify-center")}>
-          <span className="w-2 h-2 rounded-full bg-[#22c55e] animate-pulse shrink-0" />
-          {isSidebarOpen && <span>{t('admin.systemOnline')}</span>}
+        {/* Sidebar Footer — the account area. All the old top-bar controls
+            (profile/user settings, language, logout) live here now. */}
+        <div className="border-t border-slate-800 bg-[#1e293b]/20 mt-auto">
+          {isSidebarOpen ? (
+            <div className="p-3 space-y-2">
+              <span className="block px-1 text-[9px] font-black uppercase tracking-[0.18em] text-slate-500">{t('admin.userSettings')}</span>
+              <Link
+                href="/dashboard/profile"
+                onClick={() => { if (window.innerWidth < 1024) setIsSidebarOpen(false); }}
+                title={t('admin.userSettings')}
+                className="flex items-center gap-3 p-2 rounded-md hover:bg-slate-800/60 transition-colors group"
+              >
+                <Avatar className="w-9 h-9 border border-slate-700 shrink-0">
+                  <AvatarImage src={`https://avatar.iran.liara.run/username?username=${user?.firstName}+${user?.lastName}`} />
+                  <AvatarFallback className="bg-blue-600 text-white text-[10px] font-black uppercase">{user?.firstName?.[0]}{user?.lastName?.[0]}</AvatarFallback>
+                </Avatar>
+                <div className="flex flex-col min-w-0 flex-1">
+                  <span className="text-xs font-black text-white truncate capitalize">{user?.firstName} {user?.lastName}</span>
+                  <span className="text-[9px] font-bold text-blue-400 uppercase tracking-tighter">{user?.role}</span>
+                </div>
+                <Settings className="w-4 h-4 text-slate-500 group-hover:text-white transition-colors shrink-0" />
+              </Link>
+              <div className="flex items-center justify-between gap-2 pt-2 border-t border-slate-800/60">
+                <LanguageSwitcher />
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleLogout}
+                  className="text-slate-400 hover:text-red-400 hover:bg-red-500/10 font-bold text-xs gap-2 px-2 h-9"
+                >
+                  <LogOut className="w-4 h-4" /> {t('admin.logout')}
+                </Button>
+              </div>
+            </div>
+          ) : (
+            /* Collapsed rail: icon-only profile + logout. */
+            <div className="py-3 flex flex-col items-center gap-2">
+              <Link href="/dashboard/profile" title={t('admin.userSettings')}>
+                <Avatar className="w-8 h-8 border border-slate-700">
+                  <AvatarImage src={`https://avatar.iran.liara.run/username?username=${user?.firstName}+${user?.lastName}`} />
+                  <AvatarFallback className="bg-blue-600 text-white text-[9px] font-black uppercase">{user?.firstName?.[0]}{user?.lastName?.[0]}</AvatarFallback>
+                </Avatar>
+              </Link>
+              <button
+                onClick={handleLogout}
+                title={t('admin.logout')}
+                className="text-slate-400 hover:text-red-400 hover:bg-red-500/10 w-8 h-8 flex items-center justify-center rounded-md transition-colors"
+              >
+                <LogOut className="w-4 h-4" />
+              </button>
+            </div>
+          )}
+          <div className="px-4 py-2 flex items-center gap-2 border-t border-slate-800/60 justify-center lg:justify-start">
+            <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shrink-0" />
+            {isSidebarOpen && <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">System Online</span>}
+          </div>
         </div>
       </aside>
 
-      {/* Main column: skin-colored top navbar + content */}
-      <div className="flex-1 flex flex-col min-w-0">
-        <header className="sticky top-0 z-30 h-14 shrink-0 flex items-center gap-1 bg-[var(--admin-header)] text-[var(--admin-header-fg)] px-2 sm:px-3 shadow-[0_1px_4px_rgba(0,0,0,0.2)]">
-          <button
-            onClick={() => setIsSidebarOpen(v => !v)}
-            aria-label={isSidebarOpen ? 'Collapse navigation' : 'Open navigation'}
-            aria-expanded={isSidebarOpen}
-            className="h-10 w-10 flex items-center justify-center rounded-[var(--radius)] hover:bg-black/15 transition-colors shrink-0"
-          >
-            <List weight="bold" className="h-5 w-5" />
-          </button>
-          <nav aria-label="Breadcrumb" className="min-w-0 flex items-center gap-2 px-1 text-sm">
-            <House weight="fill" className="h-4 w-4 shrink-0 opacity-85" />
-            {crumbSection && (
-              <>
-                <span className="hidden sm:inline opacity-85 whitespace-nowrap">{crumbSection}</span>
-                <CaretRight weight="bold" className="hidden sm:inline h-3 w-3 shrink-0 opacity-70" />
-              </>
-            )}
-            {crumbPage && <span className="font-semibold truncate">{crumbPage}</span>}
-          </nav>
-          <div className="ml-auto flex items-center gap-0.5 shrink-0">
-            <LanguageSwitcher triggerClassName="h-10 w-10 text-inherit hover:text-inherit hover:bg-black/15" />
-            <Link
-              href="/dashboard/profile"
-              title={t('admin.userSettings')}
-              className="h-10 flex items-center gap-2 px-2 rounded-[var(--radius)] hover:bg-black/15 transition-colors"
-            >
-              <Avatar className="w-7 h-7 ring-2 ring-white/30">
-                <AvatarImage src={`https://avatar.iran.liara.run/username?username=${user?.firstName}+${user?.lastName}`} />
-                <AvatarFallback className="bg-black/20 text-inherit text-[10px] font-bold">{user?.firstName?.[0]}{user?.lastName?.[0]}</AvatarFallback>
-              </Avatar>
-              <span className="hidden md:inline text-sm font-semibold capitalize whitespace-nowrap">{user?.firstName} {user?.lastName}</span>
-            </Link>
-            <button
-              onClick={handleLogout}
-              title={t('admin.logout')}
-              aria-label={t('admin.logout')}
-              className="h-10 flex items-center gap-2 px-2.5 rounded-[var(--radius)] hover:bg-black/15 transition-colors text-sm font-semibold"
-            >
-              <SignOut weight="bold" className="h-[18px] w-[18px]" />
-              <span className="hidden xl:inline">{t('admin.logout')}</span>
-            </button>
-          </div>
-        </header>
+      {/* Main Content Area — no top bar; all account/nav controls live in the sidebar. */}
+      <div className="flex-1 flex flex-col min-w-0 relative">
         <ImpersonationBanner />
-        <main className="flex-1 p-3 sm:p-4 lg:p-6">
+        {/* Scrollable Content. Mobile/tablet gets minimal padding (and top space for
+            the floating menu button) so the dashboard uses the full screen. */}
+        <main className="flex-1 p-3 pt-16 sm:p-4 sm:pt-16 lg:p-6 lg:pt-6">
           <div className="mx-auto max-w-full">
             {routeAuthorized ? children : (
               <div className="flex items-center justify-center h-[60vh]">

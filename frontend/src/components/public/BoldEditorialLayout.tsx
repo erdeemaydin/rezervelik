@@ -136,7 +136,7 @@ export default function BoldEditorialLayout({ slug, initialRestaurant, initialVi
     }
   }, [initialView, menuOnly, bookingOnly]);
 
-  if (!restaurant) return <div className="min-h-screen flex items-center justify-center bg-white text-black font-semibold">Experience not found.</div>;
+  if (!restaurant) return <div className="min-h-screen flex items-center justify-center bg-white text-black font-black uppercase">Experience not found.</div>;
 
   const heroImage = restaurant.logoUrl || HERO_IMAGE_FALLBACK;
   const times = getTimeSuggestions();
@@ -184,7 +184,7 @@ export default function BoldEditorialLayout({ slug, initialRestaurant, initialVi
   const renderMenuItem = (item: any, large = false) => (
     <div className={cn("h-full flex flex-col", large ? "justify-between" : "")}>
       <div className="flex items-start justify-between gap-4">
- <h4 className={cn("font-semibold tracking-tight leading-none", large ?"text-3xl md:text-4xl":"text-lg")}>{item.name}</h4>
+        <h4 className={cn("font-black uppercase tracking-tight leading-none", large ? "text-3xl md:text-4xl" : "text-lg")}>{item.name}</h4>
         <span className={cn("font-black whitespace-nowrap", large ? "text-2xl" : "text-sm")} style={{ color: 'var(--accent)', WebkitTextStroke: '1px black' }}>
           {item.price.toLocaleString('tr-TR')}₺
         </span>
@@ -192,10 +192,10 @@ export default function BoldEditorialLayout({ slug, initialRestaurant, initialVi
       {item.description && <p className={cn("mt-3 font-light leading-relaxed text-[color:var(--muted)]", large ? "text-base max-w-md" : "text-xs")}>{item.description}</p>}
       {large && item.ingredients && <p className="text-xs text-[color:var(--muted)] mt-2">{t('public.ingredients')}: {item.ingredients}</p>}
       <div className="flex flex-wrap items-center gap-1.5 mt-3">
-        {item.containsAlcohol && <span className="text-[9px] font-bold bg-black text-white px-1.5 py-0.5">{t('public.containsAlcohol')}</span>}
-        {item.containsPork && <span className="text-[9px] font-bold bg-black text-white px-1.5 py-0.5">{t('public.containsPork')}</span>}
+        {item.containsAlcohol && <span className="text-[9px] font-bold uppercase tracking-wide bg-black text-white px-1.5 py-0.5">{t('public.containsAlcohol')}</span>}
+        {item.containsPork && <span className="text-[9px] font-bold uppercase tracking-wide bg-black text-white px-1.5 py-0.5">{t('public.containsPork')}</span>}
         {item.dietaryTags && item.dietaryTags.split(',').slice(0, large ? 5 : 2).map((tag: string, i: number) => (
-          <span key={i} className="text-[9px] font-bold px-1.5 py-0.5" style={{ background: 'var(--accent)' }}>{tag.trim()}</span>
+          <span key={i} className="text-[9px] font-bold uppercase tracking-wide px-1.5 py-0.5" style={{ background: 'var(--accent)' }}>{tag.trim()}</span>
         ))}
       </div>
     </div>
@@ -205,44 +205,44 @@ export default function BoldEditorialLayout({ slug, initialRestaurant, initialVi
     <div className={cn("min-h-screen selection:bg-[color:var(--accent)] selection:text-black", fontClass)} style={rootStyle}>
 
       {customization.announcementText && (
-        <div className="w-full text-center py-2.5 px-4 text-xs font-semibold" style={{ background: 'var(--text)', color: 'var(--bg)' }}>
+        <div className="w-full text-center py-2.5 px-4 text-xs font-black uppercase tracking-widest" style={{ background: 'var(--text)', color: 'var(--bg)' }}>
           {customization.announcementText}
         </div>
       )}
 
       {menuOnly ? (
         <nav className="w-full flex justify-between items-center px-6 md:px-12 py-6 border-b-4" style={{ borderColor: 'var(--line)' }}>
-          <Link href={`/r/${slug}`} className="inline-flex items-center gap-2 text-sm font-semibold tracking-tight hover:opacity-60 transition-opacity">
+          <Link href={`/r/${slug}`} className="inline-flex items-center gap-2 text-sm font-black uppercase tracking-tight hover:opacity-60 transition-opacity">
             <ArrowLeft className="h-4 w-4" /> {restaurant.name}
           </Link>
           <div className="flex items-center gap-4">
             <LanguageSwitcher />
-            <Link href={`/r/${slug}?view=booking`} className="px-5 py-2 text-xs font-semibold" style={{ background: 'var(--accent)', color: '#000' }}>
+            <Link href={`/r/${slug}?view=booking`} className="px-5 py-2 text-xs font-black uppercase tracking-widest" style={{ background: 'var(--accent)', color: '#000' }}>
               {t('public.bookATable')}
             </Link>
           </div>
         </nav>
       ) : bookingOnly ? (
         <nav className="w-full flex justify-between items-center px-6 md:px-12 py-6 border-b-4" style={{ borderColor: 'var(--line)' }}>
-          <Link href={`/r/${slug}`} className="inline-flex items-center gap-2 text-sm font-semibold tracking-tight hover:opacity-60 transition-opacity">
+          <Link href={`/r/${slug}`} className="inline-flex items-center gap-2 text-sm font-black uppercase tracking-tight hover:opacity-60 transition-opacity">
             <ArrowLeft className="h-4 w-4" /> {restaurant.name}
           </Link>
           <div className="flex items-center gap-4">
             <LanguageSwitcher />
-            <Link href={`/r/${slug}/menu`} className="px-5 py-2 text-xs font-semibold" style={{ background: 'var(--accent)', color: '#000' }}>
+            <Link href={`/r/${slug}/menu`} className="px-5 py-2 text-xs font-black uppercase tracking-widest" style={{ background: 'var(--accent)', color: '#000' }}>
               {t('public.menu')}
             </Link>
           </div>
         </nav>
       ) : (
         <nav className="w-full flex items-center px-6 md:px-12 py-6 border-b-4 relative" style={{ borderColor: 'var(--line)' }}>
-          <div className="hidden md:flex items-center gap-8 text-xs font-semibold">
+          <div className="hidden md:flex items-center gap-8 text-xs font-black uppercase tracking-widest">
             <button onClick={() => scrollToSection('about')} className="hover:opacity-60 transition-opacity">{t('public.ourStory')}</button>
             <button onClick={() => scrollToSection('menu')} className="hover:opacity-60 transition-opacity">{t('public.menu')}</button>
           </div>
-          <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-2xl font-semibold tracking-tighter whitespace-nowrap">{restaurant.name}</div>
+          <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-2xl font-black uppercase tracking-tighter whitespace-nowrap">{restaurant.name}</div>
           <div className="ml-auto flex items-center gap-6">
-            <div className="hidden md:flex items-center gap-6 text-xs font-semibold">
+            <div className="hidden md:flex items-center gap-6 text-xs font-black uppercase tracking-widest">
               <LanguageSwitcher />
               <button onClick={() => scrollToSection('contact')} className="hover:opacity-60 transition-opacity">{t('public.contact')}</button>
               <button onClick={() => scrollToSection('reservations')} className="px-5 py-2 transition-transform hover:scale-105" style={{ background: 'var(--accent)', color: '#000' }}>{t('public.reservations')}</button>
@@ -257,10 +257,10 @@ export default function BoldEditorialLayout({ slug, initialRestaurant, initialVi
 
       {!menuOnly && !bookingOnly && isMobileMenuOpen && (
         <div className="fixed inset-0 z-30 bg-white flex flex-col items-center justify-center space-y-8 animate-in fade-in duration-300 md:hidden">
-          <button onClick={() => { setIsMobileMenuOpen(false); scrollToSection('about'); }} className="text-3xl font-semibold">{t('public.ourStory')}</button>
-          <button onClick={() => { setIsMobileMenuOpen(false); scrollToSection('menu'); }} className="text-3xl font-semibold">{t('public.menu')}</button>
-          <button onClick={() => { setIsMobileMenuOpen(false); scrollToSection('contact'); }} className="text-3xl font-semibold">{t('public.contact')}</button>
-          <button onClick={() => { setIsMobileMenuOpen(false); scrollToSection('reservations'); }} className="mt-6 text-3xl font-semibold px-4" style={{ background: 'var(--accent)' }}>{t('public.reservations')}</button>
+          <button onClick={() => { setIsMobileMenuOpen(false); scrollToSection('about'); }} className="text-3xl font-black uppercase">{t('public.ourStory')}</button>
+          <button onClick={() => { setIsMobileMenuOpen(false); scrollToSection('menu'); }} className="text-3xl font-black uppercase">{t('public.menu')}</button>
+          <button onClick={() => { setIsMobileMenuOpen(false); scrollToSection('contact'); }} className="text-3xl font-black uppercase">{t('public.contact')}</button>
+          <button onClick={() => { setIsMobileMenuOpen(false); scrollToSection('reservations'); }} className="mt-6 text-3xl font-black uppercase px-4" style={{ background: 'var(--accent)' }}>{t('public.reservations')}</button>
           <button onClick={() => setIsMobileMenuOpen(false)} className="absolute top-8 right-6 p-2"><X className="w-6 h-6" /></button>
         </div>
       )}
@@ -270,11 +270,11 @@ export default function BoldEditorialLayout({ slug, initialRestaurant, initialVi
           {/* Hero — asymmetric magazine cover: giant type dominates, photo is a small tucked-in tile, not full-bleed */}
           <section className="grid grid-cols-1 md:grid-cols-5 min-h-[90vh]">
             <div className="md:col-span-3 flex flex-col justify-center px-6 md:px-16 py-20 border-b-4 md:border-b-0 md:border-r-4" style={{ borderColor: 'var(--line)' }}>
-              <span className="text-xs font-semibold tracking-[0.3em] mb-6" style={{ color: 'var(--muted)' }}>The Table Issue</span>
-              <h1 className="text-6xl md:text-8xl lg:text-9xl font-semibold leading-[0.85] tracking-tighter">
+              <span className="text-xs font-black uppercase tracking-[0.3em] mb-6" style={{ color: 'var(--muted)' }}>The Table Issue</span>
+              <h1 className="text-6xl md:text-8xl lg:text-9xl font-black uppercase leading-[0.85] tracking-tighter">
                 {restaurant.name}
               </h1>
-              <button onClick={() => scrollToSection('reservations')} className="mt-12 self-start px-9 py-4 text-sm font-semibold transition-transform hover:scale-105" style={{ background: 'var(--accent)', color: '#000' }}>
+              <button onClick={() => scrollToSection('reservations')} className="mt-12 self-start px-9 py-4 text-sm font-black uppercase tracking-widest transition-transform hover:scale-105" style={{ background: 'var(--accent)', color: '#000' }}>
                 {t('public.bookATable')} →
               </button>
             </div>
@@ -290,7 +290,7 @@ export default function BoldEditorialLayout({ slug, initialRestaurant, initialVi
                 <img src={ABOUT_IMAGE} alt={`Inside ${restaurant.name}`} className="absolute inset-0 w-full h-full object-cover grayscale contrast-125" />
               </div>
               <div className="md:col-span-3 flex flex-col justify-center px-6 md:px-16 py-20 order-1 md:order-2">
-                <span className="text-xs font-semibold tracking-[0.3em] mb-6" style={{ color: 'var(--muted)' }}>{t('public.ourStory')}</span>
+                <span className="text-xs font-black uppercase tracking-[0.3em] mb-6" style={{ color: 'var(--muted)' }}>{t('public.ourStory')}</span>
                 <p className="text-2xl md:text-4xl font-light leading-tight tracking-tight whitespace-pre-wrap">
                   {customization.aboutUsText || 'Welcome to our restaurant. We are passionate about delivering exceptional culinary experiences.'}
                 </p>
@@ -305,8 +305,8 @@ export default function BoldEditorialLayout({ slug, initialRestaurant, initialVi
       <section id="menu" className={cn("px-6 md:px-12 border-t-4", menuOnly ? "pt-16 pb-28" : "py-28")} style={{ borderColor: 'var(--line)' }}>
         <div className="max-w-6xl mx-auto">
           <div className="mb-16 flex items-end justify-between flex-wrap gap-4">
-            <h2 className="text-5xl md:text-7xl font-semibold tracking-tighter">Menu</h2>
-            <span className="text-xs font-semibold" style={{ color: 'var(--muted)' }}>Issue №{new Date().getFullYear()}</span>
+            <h2 className="text-5xl md:text-7xl font-black uppercase tracking-tighter">Menu</h2>
+            <span className="text-xs font-black uppercase tracking-widest" style={{ color: 'var(--muted)' }}>Issue №{new Date().getFullYear()}</span>
           </div>
 
           {!restaurant.menus?.[0] ? (
@@ -315,7 +315,7 @@ export default function BoldEditorialLayout({ slug, initialRestaurant, initialVi
             <div className="space-y-16">
               {restaurant.menus[0].categories.map((cat: any) => (
                 <div key={cat.id}>
-                  <h3 className="text-xl font-semibold mb-6 pb-3 border-b-4" style={{ borderColor: 'var(--line)' }}>{cat.name}</h3>
+                  <h3 className="text-xl font-black uppercase tracking-widest mb-6 pb-3 border-b-4" style={{ borderColor: 'var(--line)' }}>{cat.name}</h3>
                   <div className="grid grid-cols-1 md:grid-cols-3 auto-rows-[minmax(120px,auto)] gap-4">
                     {cat.items?.map((item: any, i: number) => (
                       <div key={item.id} className={cn("p-6 border-2 border-black", tileSpan(i), i % 5 === 0 ? "bg-black text-white" : "")}
@@ -328,7 +328,7 @@ export default function BoldEditorialLayout({ slug, initialRestaurant, initialVi
                     <div className="mt-8 space-y-8">
                       {cat.children.map((sub: any) => (
                         <div key={sub.id}>
-                          <h4 className="text-sm font-semibold mb-4" style={{ color: 'var(--muted)' }}>{sub.name}</h4>
+                          <h4 className="text-sm font-black uppercase tracking-widest mb-4" style={{ color: 'var(--muted)' }}>{sub.name}</h4>
                           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                             {sub.items?.map((item: any) => (
                               <div key={item.id} className="p-6 border-2 border-black">{renderMenuItem(item)}</div>
@@ -343,7 +343,7 @@ export default function BoldEditorialLayout({ slug, initialRestaurant, initialVi
             </div>
           )}
           {restaurant.menus?.[0]?.updatedAt && (
-            <div className="mt-16 text-xs font-bold text-[color:var(--muted)]">
+            <div className="mt-16 text-xs font-bold text-[color:var(--muted)] uppercase tracking-widest">
               Son Fiyat Güncelleme Tarihi: {new Date(restaurant.menus[0].updatedAt).toLocaleDateString('tr-TR')}
             </div>
           )}
@@ -353,14 +353,14 @@ export default function BoldEditorialLayout({ slug, initialRestaurant, initialVi
 
       {menuOnly && (
         <footer className="border-t-4 px-6 py-16 text-center md:px-12" style={{ borderColor: 'var(--line)' }}>
-          <h2 className="mb-6 text-3xl font-semibold tracking-tighter">{restaurant.name}</h2>
+          <h2 className="mb-6 text-3xl font-black uppercase tracking-tighter">{restaurant.name}</h2>
           {hasContactInfo && (
             <div className="flex flex-wrap items-center justify-center gap-x-8 gap-y-2 text-sm font-light text-[color:var(--muted)]">
               {restaurant.contactPhone && <a href={`tel:${restaurant.contactPhone}`} className="hover:opacity-60">{restaurant.contactPhone}</a>}
               {restaurant.contactEmail && <a href={`mailto:${restaurant.contactEmail}`} className="hover:opacity-60">{restaurant.contactEmail}</a>}
             </div>
           )}
-          <Link href={`/r/${slug}?view=booking`} className="inline-block mt-8 px-6 py-2.5 text-xs font-semibold" style={{ background: 'var(--accent)', color: '#000' }}>
+          <Link href={`/r/${slug}?view=booking`} className="inline-block mt-8 px-6 py-2.5 text-xs font-black uppercase tracking-widest" style={{ background: 'var(--accent)', color: '#000' }}>
             {t('public.bookATable')}
           </Link>
           <p className="mt-10 text-xs text-[color:var(--muted)]">© {new Date().getFullYear()} {restaurant.name}</p>
@@ -370,7 +370,7 @@ export default function BoldEditorialLayout({ slug, initialRestaurant, initialVi
       {!menuOnly && !bookingOnly && (
         <>
           <section id="contact" className="py-28 px-6 md:px-12 text-center max-w-4xl mx-auto border-t-4" style={{ borderColor: 'var(--line)' }}>
-            <h2 className="text-4xl font-semibold tracking-tighter mb-12">{restaurant.name}</h2>
+            <h2 className="text-4xl font-black uppercase tracking-tighter mb-12">{restaurant.name}</h2>
             {hasContactInfo && (
               <div className="flex flex-wrap items-center justify-center gap-x-10 gap-y-4 text-sm font-light text-[color:var(--muted)]">
                 {restaurant.contactPhone && <a href={`tel:${restaurant.contactPhone}`} className="hover:opacity-60">{restaurant.contactPhone}</a>}
@@ -379,7 +379,7 @@ export default function BoldEditorialLayout({ slug, initialRestaurant, initialVi
             )}
             {customization.showLegal && customization.legalText && (
               <div className="mt-20 pt-10 border-t-4 text-xs text-[color:var(--muted)] font-light text-left max-w-2xl mx-auto space-y-4" style={{ borderColor: 'var(--line)' }}>
-                <h4 className="text-xs font-semibold mb-2 text-center">Legal Terms</h4>
+                <h4 className="text-xs font-black uppercase tracking-widest mb-2 text-center">Legal Terms</h4>
                 <div className="whitespace-pre-wrap">{customization.legalText}</div>
               </div>
             )}
@@ -394,17 +394,17 @@ export default function BoldEditorialLayout({ slug, initialRestaurant, initialVi
           <section id="reservations" className="py-28 px-6 md:px-12 border-t-4" style={{ borderColor: 'var(--line)', background: 'var(--text)', color: 'var(--bg)' }}>
             <div className="max-w-2xl mx-auto">
               <div className="mb-16">
-                <h2 className="text-5xl md:text-6xl font-semibold tracking-tighter">Book It</h2>
+                <h2 className="text-5xl md:text-6xl font-black uppercase tracking-tighter">Book It</h2>
               </div>
 
               {isBookingSuccess ? (
                 <div className="py-14 animate-in zoom-in border-2 p-10" style={{ borderColor: 'var(--accent)' }}>
                   <CheckCircle2 className="w-14 h-14 mb-6" style={{ color: 'var(--accent)' }} />
-                  <h3 className="text-3xl font-semibold mb-4">{isPossiblyFullyBooked ? 'Request Received' : 'Table Locked In'}</h3>
+                  <h3 className="text-3xl font-black uppercase mb-4">{isPossiblyFullyBooked ? 'Request Received' : 'Table Locked In'}</h3>
                   <p className="font-light text-base opacity-80">See you soon.</p>
                   {confirmationCode && (
                     <div className="mt-8 flex max-w-xs flex-col items-start border-2 px-6 py-4" style={{ borderColor: 'var(--accent)' }}>
-                      <span className="text-[10px] font-semibold tracking-[0.25em] opacity-60">{t('public.confirmationCodeLabel')}</span>
+                      <span className="text-[10px] font-black uppercase tracking-[0.25em] opacity-60">{t('public.confirmationCodeLabel')}</span>
                       <span className="mt-1 text-3xl font-black tracking-[0.15em]" style={{ color: 'var(--accent)' }}>{confirmationCode}</span>
                       <span className="mt-2 text-[10px] font-light opacity-60">{t('public.confirmationCodeHint')}</span>
                     </div>
@@ -425,14 +425,14 @@ export default function BoldEditorialLayout({ slug, initialRestaurant, initialVi
                   )}
 
                   <div className="space-y-4">
-                    <Label className="text-xs font-semibold" style={{ color: 'var(--accent)' }}>Date</Label>
+                    <Label className="text-xs font-black uppercase tracking-widest" style={{ color: 'var(--accent)' }}>Date</Label>
                     <div className="border-2 p-4" style={{ borderColor: 'rgba(255,255,255,0.15)' }}>
                       <ReservationCalendar value={selectedDate} onChange={setSelectedDate} tz={tz} accent="var(--accent)" accentText="#000000" />
                     </div>
                   </div>
 
                   <div className="space-y-4">
-                    <Label className="text-xs font-semibold" style={{ color: 'var(--accent)' }}>Time</Label>
+                    <Label className="text-xs font-black uppercase tracking-widest" style={{ color: 'var(--accent)' }}>Time</Label>
                     <div className="grid grid-cols-4 gap-2">
                       {[...times.lunch, ...times.dinner].map(tm => (
                         <button key={tm} type="button" onClick={() => setSelectedTime(tm)} className={cn("h-11 border-2 text-sm font-bold transition-all", selectedTime === tm ? "text-black" : "hover:opacity-70")}
@@ -451,8 +451,8 @@ export default function BoldEditorialLayout({ slug, initialRestaurant, initialVi
                     <div className="border-l-4 border-amber-400 bg-amber-400/10 p-6 text-base font-light text-amber-200 flex items-start gap-4">
                       <Clock className="w-5 h-5 shrink-0 mt-0.5 text-amber-300" />
                       <div>
-                        <span className="mb-1 block text-xs font-semibold text-amber-300">{selectedDateLabel}</span>
-                        <strong className="block mb-2 font-semibold text-lg text-amber-200">Fully Booked</strong>
+                        <span className="mb-1 block text-xs font-black uppercase tracking-widest text-amber-300">{selectedDateLabel}</span>
+                        <strong className="block mb-2 font-black uppercase text-lg text-amber-200">Fully Booked</strong>
                         We are fully booked for reservations on this day. Please choose another date, or call us directly.
                       </div>
                     </div>
@@ -460,8 +460,8 @@ export default function BoldEditorialLayout({ slug, initialRestaurant, initialVi
                     <div className="border-l-4 border-red-400 bg-red-400/10 p-6 text-base font-light text-red-200 flex items-start gap-4">
                       <X className="w-5 h-5 shrink-0 mt-0.5 text-red-300" />
                       <div>
-                        <span className="mb-1 block text-xs font-semibold text-red-300">{selectedDateLabel}</span>
-                        <strong className="block mb-2 font-semibold text-lg text-red-200">Reservations Closed</strong>
+                        <span className="mb-1 block text-xs font-black uppercase tracking-widest text-red-300">{selectedDateLabel}</span>
+                        <strong className="block mb-2 font-black uppercase text-lg text-red-200">Reservations Closed</strong>
                         Unfortunately, we&apos;re not accepting reservations for this day.
                       </div>
                     </div>
@@ -469,8 +469,8 @@ export default function BoldEditorialLayout({ slug, initialRestaurant, initialVi
                     <div className="border-l-4 p-6 text-base font-light flex items-start gap-4" style={{ borderColor: 'var(--accent)', background: 'rgba(234,255,0,0.08)' }}>
                       <CheckCircle2 className="w-5 h-5 shrink-0 mt-0.5" style={{ color: 'var(--accent)' }} />
                       <div>
-                        <span className="mb-1 block text-xs font-semibold" style={{ color: 'var(--accent)' }}>{selectedDateLabel}</span>
-                        <strong className="block mb-2 font-semibold text-lg" style={{ color: 'var(--accent)' }}>Immediate Booking</strong>
+                        <span className="mb-1 block text-xs font-black uppercase tracking-widest" style={{ color: 'var(--accent)' }}>{selectedDateLabel}</span>
+                        <strong className="block mb-2 font-black uppercase text-lg" style={{ color: 'var(--accent)' }}>Immediate Booking</strong>
                         Your table will be confirmed automatically.
                       </div>
                     </div>
@@ -478,8 +478,8 @@ export default function BoldEditorialLayout({ slug, initialRestaurant, initialVi
                     <div className="border-l-4 border-sky-400 bg-sky-400/10 p-6 text-base font-light text-sky-200 flex items-start gap-4">
                       <CalendarIcon className="w-5 h-5 shrink-0 mt-0.5 text-sky-300" />
                       <div>
-                        <span className="mb-1 block text-xs font-semibold text-sky-300">{selectedDateLabel}</span>
-                        <strong className="block mb-2 font-semibold text-lg text-sky-200">Confirmation Queue</strong>
+                        <span className="mb-1 block text-xs font-black uppercase tracking-widest text-sky-300">{selectedDateLabel}</span>
+                        <strong className="block mb-2 font-black uppercase text-lg text-sky-200">Confirmation Queue</strong>
                         This date requires manual staff review. You&apos;ll receive a notification.
                       </div>
                     </div>
@@ -489,14 +489,14 @@ export default function BoldEditorialLayout({ slug, initialRestaurant, initialVi
                     <div className="border-l-4 border-amber-400 bg-amber-400/10 p-4 text-sm font-light text-amber-200 flex items-start gap-3">
                       <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5 text-amber-300" />
                       <div>
-                        <p className="mb-0.5 font-semibold text-amber-200">{t('public.capacityFullTitle')}</p>
+                        <p className="mb-0.5 font-black uppercase text-amber-200">{t('public.capacityFullTitle')}</p>
                         <p>{t('public.capacityFullDesc')}</p>
                       </div>
                     </div>
                   )}
 
                   <div className="space-y-4 text-center">
-                    <Label className="block text-xs font-semibold" style={{ color: 'var(--accent)' }}>Guests</Label>
+                    <Label className="block text-xs font-black uppercase tracking-widest" style={{ color: 'var(--accent)' }}>Guests</Label>
                     <div className="flex flex-wrap justify-center gap-2">
                       {Array.from({ length: maxPartySize }, (_, i) => i + 1).map(n => (
                         <button key={n} type="button" onClick={() => setResForm({ ...resForm, guestCount: String(n) })}
@@ -510,12 +510,12 @@ export default function BoldEditorialLayout({ slug, initialRestaurant, initialVi
 
                   <div className="grid grid-cols-1 gap-8 sm:grid-cols-2">
                     <div className="space-y-3">
-                      <Label className="text-xs font-semibold" style={{ color: 'var(--accent)' }}>Name</Label>
+                      <Label className="text-xs font-black uppercase tracking-widest" style={{ color: 'var(--accent)' }}>Name</Label>
                       <Input required value={resForm.customerName} onChange={e => setResForm({ ...resForm, customerName: e.target.value })}
                         className="border-2 rounded-none h-14 px-4 text-base bg-transparent text-white" style={{ borderColor: 'rgba(255,255,255,0.15)' }} />
                     </div>
                     <div className="space-y-3">
-                      <Label className="text-xs font-semibold" style={{ color: 'var(--accent)' }}>Phone</Label>
+                      <Label className="text-xs font-black uppercase tracking-widest" style={{ color: 'var(--accent)' }}>Phone</Label>
                       <Input required value={resForm.customerPhone} onChange={e => setResForm({ ...resForm, customerPhone: e.target.value })}
                         className="border-2 rounded-none h-14 px-4 text-base bg-transparent text-white" style={{ borderColor: 'rgba(255,255,255,0.15)' }} />
                     </div>
@@ -531,7 +531,7 @@ export default function BoldEditorialLayout({ slug, initialRestaurant, initialVi
                   />
 
                   <button type="submit" disabled={checkingDay || dayStatus?.daySetting?.isFullyBooked || (dayStatus?.daySetting?.isReservationEnabled === false && !dayStatus?.daySetting?.isFullyBooked)}
-                    className="w-full h-16 text-lg font-semibold mt-8 disabled:opacity-40 transition-all hover:scale-[1.01] text-black"
+                    className="w-full h-16 text-lg font-black uppercase tracking-widest mt-8 disabled:opacity-40 transition-all hover:scale-[1.01] text-black"
                     style={{ background: 'var(--accent)' }}>
                     {dayStatus?.daySetting?.isFullyBooked ? 'Fully Booked' : 'Reserve Now →'}
                   </button>
@@ -542,14 +542,14 @@ export default function BoldEditorialLayout({ slug, initialRestaurant, initialVi
 
           {bookingOnly && (
             <footer className="border-t-4 px-6 py-16 text-center md:px-12" style={{ borderColor: 'var(--line)' }}>
-              <h2 className="mb-6 text-3xl font-semibold tracking-tighter">{restaurant.name}</h2>
+              <h2 className="mb-6 text-3xl font-black uppercase tracking-tighter">{restaurant.name}</h2>
               {hasContactInfo && (
                 <div className="flex flex-wrap items-center justify-center gap-x-8 gap-y-2 text-sm font-light text-[color:var(--muted)]">
                   {restaurant.contactPhone && <a href={`tel:${restaurant.contactPhone}`} className="hover:opacity-60">{restaurant.contactPhone}</a>}
                   {restaurant.contactEmail && <a href={`mailto:${restaurant.contactEmail}`} className="hover:opacity-60">{restaurant.contactEmail}</a>}
                 </div>
               )}
-              <Link href={`/r/${slug}/menu`} className="inline-block mt-8 px-6 py-2.5 text-xs font-semibold" style={{ background: 'var(--accent)', color: '#000' }}>
+              <Link href={`/r/${slug}/menu`} className="inline-block mt-8 px-6 py-2.5 text-xs font-black uppercase tracking-widest" style={{ background: 'var(--accent)', color: '#000' }}>
                 {t('public.menu')}
               </Link>
               <p className="mt-10 text-xs text-[color:var(--muted)]">© {new Date().getFullYear()} {restaurant.name}</p>

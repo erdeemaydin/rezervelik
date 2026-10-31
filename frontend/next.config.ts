@@ -79,11 +79,6 @@ const cspDirectives = [
 const ContentSecurityPolicy = cspDirectives.join("; ");
 
 const nextConfig: NextConfig = {
-  // Dev-only: lets `next dev` be reached from another device on the LAN or by
-  // its public IP (e.g. a throwaway PM2-managed preview instance on a
-  // non-default port) without the dev server's cross-origin asset check
-  // 403-ing every _next/static chunk. Has no effect on `next build`/`next start`.
-  allowedDevOrigins: isDev ? [...(process.env.DEV_ALLOWED_ORIGIN ? [process.env.DEV_ALLOWED_ORIGIN] : []), "localhost", "127.0.0.1"] : undefined,
   async headers() {
     return [
       {

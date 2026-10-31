@@ -5,8 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { ChartBar, TrendUp, Users, UsersThree, CalendarDots, CurrencyDollar, CircleNotch, TrendDown, Star, Clock, Prohibit, UserMinus, UserPlus, Repeat, Crown } from '@phosphor-icons/react';
-import { SmallBox, InfoBox } from '@/components/dashboard/StatBoxes';
+import { BarChart3, TrendingUp, Users, CalendarDays, DollarSign, Loader2, TrendingDown, Star, Clock, Ban, UserX, UserPlus, Repeat, Crown } from 'lucide-react';
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell, Legend, BarChart, Bar
@@ -88,24 +87,16 @@ export default function AnalyticsPage() {
 
   const renderTrend = (value: number) => {
     if (value > 0) {
-      return <div className="flex items-center text-xs text-emerald-600 dark:text-emerald-400 font-bold gap-1 mt-2"><TrendUp className="w-3 h-3" /> +{value}% {t("analytics.vsPrev")}</div>;
+      return <div className="flex items-center text-xs text-emerald-600 font-bold gap-1 mt-2"><TrendingUp className="w-3 h-3" /> +{value}% {t("analytics.vsPrev")}</div>;
     }
     if (value < 0) {
-      return <div className="flex items-center text-xs text-rose-600 dark:text-rose-400 font-bold gap-1 mt-2"><TrendDown className="w-3 h-3" /> {value}% {t("analytics.vsPrev")}</div>;
+      return <div className="flex items-center text-xs text-rose-600 font-bold gap-1 mt-2"><TrendingDown className="w-3 h-3" /> {value}% {t("analytics.vsPrev")}</div>;
     }
-    return <div className="flex items-center text-xs text-muted-foreground font-bold gap-1 mt-2">{t("analytics.noChange")}</div>;
-  };
-
-  // Same trend, as plain text + arrow that inherits the small-box footer color
-  // (green/red trend text would be illegible on a saturated box).
-  const trendFooter = (value: number) => {
-    if (value === 0) return t("analytics.noChange");
-    const Arrow = value > 0 ? TrendUp : TrendDown;
-    return <span className="inline-flex items-center gap-1"><Arrow weight="bold" className="w-3.5 h-3.5" /> {value > 0 ? '+' : ''}{value}% {t("analytics.vsPrev")}</span>;
+    return <div className="flex items-center text-xs text-slate-400 font-bold gap-1 mt-2">{t("analytics.noChange")}</div>;
   };
 
   const getHeatmapColor = (count: number, maxCount: number) => {
-    if (count === 0) return 'bg-muted';
+    if (count === 0) return 'bg-slate-50';
     const intensity = Math.max(0.1, count / maxCount);
     // Return a solid blue with varying opacity
     return `rgba(59, 130, 246, ${intensity})`;
@@ -116,8 +107,8 @@ export default function AnalyticsPage() {
       <>
         <div className="flex h-[70vh] items-center justify-center">
           <div className="flex flex-col items-center gap-4">
-            <CircleNotch className="h-10 w-10 animate-spin text-blue-600" />
-            <p className="text-muted-foreground font-medium">{t("analytics.loading")}</p>
+            <Loader2 className="h-10 w-10 animate-spin text-blue-600" />
+            <p className="text-slate-500 font-medium">{t("analytics.loading")}</p>
           </div>
         </div>
       </>
@@ -145,13 +136,13 @@ export default function AnalyticsPage() {
         {/* Header & Period Selector */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
-            <h1 className="text-2xl font-semibold tracking-tight text-foreground font-heading">{t("analytics.title")}</h1>
-            <p className="text-sm text-muted-foreground font-medium">{t("analytics.subtitle")}</p>
+            <h1 className="text-2xl font-bold text-slate-800">{t("analytics.title")}</h1>
+            <p className="text-sm text-slate-500 font-medium">{t("analytics.subtitle")}</p>
           </div>
           <div className="flex flex-wrap items-end gap-3">
             <div className="w-40">
               <Select value={usingCustom ? '' : period} onValueChange={(v) => { if (v) { setPeriod(v); setCustomFrom(''); setCustomTo(''); } }}>
-                <SelectTrigger className="bg-card border-border shadow-sm font-semibold text-foreground">
+                <SelectTrigger className="bg-white border-slate-200 shadow-sm font-semibold text-slate-700">
                   <SelectValue placeholder={usingCustom ? t("analytics.customRange") : t("analytics.selectPeriod")} />
                 </SelectTrigger>
                 <SelectContent>
@@ -164,12 +155,12 @@ export default function AnalyticsPage() {
             </div>
             {/* Custom date range (#1.4) */}
             <div className="flex flex-col">
-              <label className="text-[10px] font-bold text-muted-foreground mb-1">{t("analytics.from")}</label>
-              <Input type="date" value={customFrom} max={customTo || undefined} onChange={(e) => setCustomFrom(e.target.value)} className="h-9 bg-card border-border shadow-sm text-sm w-40" />
+              <label className="text-[10px] font-bold uppercase text-slate-400 mb-1">{t("analytics.from")}</label>
+              <Input type="date" value={customFrom} max={customTo || undefined} onChange={(e) => setCustomFrom(e.target.value)} className="h-9 bg-white border-slate-200 shadow-sm text-sm w-40" />
             </div>
             <div className="flex flex-col">
-              <label className="text-[10px] font-bold text-muted-foreground mb-1">{t("analytics.to")}</label>
-              <Input type="date" value={customTo} min={customFrom || undefined} onChange={(e) => setCustomTo(e.target.value)} className="h-9 bg-card border-border shadow-sm text-sm w-40" />
+              <label className="text-[10px] font-bold uppercase text-slate-400 mb-1">{t("analytics.to")}</label>
+              <Input type="date" value={customTo} min={customFrom || undefined} onChange={(e) => setCustomTo(e.target.value)} className="h-9 bg-white border-slate-200 shadow-sm text-sm w-40" />
             </div>
             {usingCustom && (
               <Button variant="outline" className="h-9" onClick={() => { setCustomFrom(''); setCustomTo(''); }}>{t("analytics.clear")}</Button>
@@ -178,65 +169,112 @@ export default function AnalyticsPage() {
         </div>
 
         {/* Top Summary Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
-          <SmallBox
-            tone="aqua"
-            value={data.summary.totalReservations}
-            label={t("analytics.totalReservations")}
-            icon={CalendarDots}
-            footer={trendFooter(data.comparison.totalReservations.changePercent)}
-          />
-          <SmallBox
-            tone="green"
-            value={data.summary.totalGuests}
-            label={t("analytics.guestsSeated")}
-            icon={Users}
-            footer={trendFooter(data.comparison.totalGuests.changePercent)}
-          />
-          <SmallBox
-            tone="yellow"
-            value={data.summary.avgPartySize}
-            label={t("analytics.avgPartySize")}
-            icon={UsersThree}
-            footer={t("analytics.overallAverage")}
-          />
-          <SmallBox
-            tone="purple"
-            value={data.summary.vipCount}
-            label={t("analytics.vipVisits")}
-            icon={Star}
-            footer={t("analytics.inSelectedPeriod")}
-          />
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <Card className="border-slate-100 shadow-sm hover:shadow-md transition-shadow">
+            <CardHeader className="p-4 pb-2">
+              <CardDescription className="text-[10px] font-black uppercase text-slate-500 tracking-wider">{t("analytics.totalReservations")}</CardDescription>
+              <CardTitle className="text-2xl font-bold flex items-center justify-between">
+                {data.summary.totalReservations}
+                <CalendarDays className="w-5 h-5 text-blue-500" />
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-4 pt-0">
+              {renderTrend(data.comparison.totalReservations.changePercent)}
+            </CardContent>
+          </Card>
+
+          <Card className="border-slate-100 shadow-sm hover:shadow-md transition-shadow">
+            <CardHeader className="p-4 pb-2">
+              <CardDescription className="text-[10px] font-black uppercase text-slate-500 tracking-wider">{t("analytics.guestsSeated")}</CardDescription>
+              <CardTitle className="text-2xl font-bold flex items-center justify-between">
+                {data.summary.totalGuests}
+                <Users className="w-5 h-5 text-indigo-500" />
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-4 pt-0">
+              {renderTrend(data.comparison.totalGuests.changePercent)}
+            </CardContent>
+          </Card>
+
+          <Card className="border-slate-100 shadow-sm hover:shadow-md transition-shadow">
+            <CardHeader className="p-4 pb-2">
+              <CardDescription className="text-[10px] font-black uppercase text-slate-500 tracking-wider">{t("analytics.avgPartySize")}</CardDescription>
+              <CardTitle className="text-2xl font-bold flex items-center justify-between">
+                {data.summary.avgPartySize}
+                <Users className="w-5 h-5 text-amber-500" />
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-4 pt-0">
+              <div className="flex items-center text-xs text-slate-500 font-bold gap-1 mt-2">
+                {t("analytics.overallAverage")}
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="border-slate-100 shadow-sm hover:shadow-md transition-shadow">
+            <CardHeader className="p-4 pb-2">
+              <CardDescription className="text-[10px] font-black uppercase text-slate-500 tracking-wider">{t("analytics.vipVisits")}</CardDescription>
+              <CardTitle className="text-2xl font-bold flex items-center justify-between">
+                {data.summary.vipCount}
+                <Star className="w-5 h-5 text-emerald-500" />
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-4 pt-0">
+              <div className="flex items-center text-xs text-slate-500 font-bold gap-1 mt-2">
+                {t("analytics.inSelectedPeriod")}
+              </div>
+            </CardContent>
+          </Card>
         </div>
 
         {/* Secondary metrics: cancellation / no-show rate, lead time, customer mix */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <InfoBox tone="red" label={t("analytics.cancelRate")} value={`${data.summary.cancelRate}%`} icon={Prohibit} />
-          <InfoBox tone="yellow" label={t("analytics.noShowRate")} value={`${data.summary.noShowRate}%`} icon={UserMinus} />
-          <InfoBox
-            tone="aqua"
-            label={t("analytics.avgLeadTime")}
-            value={data.leadTime.avgDays >= 1 ? `${data.leadTime.avgDays} ${t("analytics.days")}` : `${data.leadTime.avgHours} ${t("analytics.hours")}`}
-            hint={t("analytics.leadTimeHint")}
-            icon={Clock}
-          />
-          {/* Compact so the neighboring info boxes don't stretch to its height. */}
-          <Card tone="success" className="border-border shadow-sm gap-1.5 py-2.5">
-            <CardHeader className="px-4">
-              <CardDescription className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{t("analytics.customerMix")}</CardDescription>
+          <Card className="border-slate-100 shadow-sm">
+            <CardHeader className="p-4 pb-2">
+              <CardDescription className="text-[10px] font-black uppercase text-slate-500 tracking-wider">{t("analytics.cancelRate")}</CardDescription>
+              <CardTitle className="text-2xl font-bold flex items-center justify-between">
+                {data.summary.cancelRate}%
+                <Ban className="w-5 h-5 text-rose-500" />
+              </CardTitle>
             </CardHeader>
-            <CardContent className="px-4 space-y-1">
-              <div className="flex justify-between items-center text-xs font-semibold text-muted-foreground">
-                <span className="flex items-center gap-1.5"><UserPlus className="w-3.5 h-3.5 text-emerald-500 dark:text-emerald-400" /> {t("analytics.newCustomers")}</span>
-                <span className="font-black tabular-nums text-foreground">{data.customerSegments.new}</span>
+          </Card>
+          <Card className="border-slate-100 shadow-sm">
+            <CardHeader className="p-4 pb-2">
+              <CardDescription className="text-[10px] font-black uppercase text-slate-500 tracking-wider">{t("analytics.noShowRate")}</CardDescription>
+              <CardTitle className="text-2xl font-bold flex items-center justify-between">
+                {data.summary.noShowRate}%
+                <UserX className="w-5 h-5 text-slate-500" />
+              </CardTitle>
+            </CardHeader>
+          </Card>
+          <Card className="border-slate-100 shadow-sm">
+            <CardHeader className="p-4 pb-2">
+              <CardDescription className="text-[10px] font-black uppercase text-slate-500 tracking-wider">{t("analytics.avgLeadTime")}</CardDescription>
+              <CardTitle className="text-2xl font-bold flex items-center justify-between">
+                {data.leadTime.avgDays >= 1 ? `${data.leadTime.avgDays} ${t("analytics.days")}` : `${data.leadTime.avgHours} ${t("analytics.hours")}`}
+                <Clock className="w-5 h-5 text-blue-500" />
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-4 pt-0">
+              <div className="text-xs text-slate-500 font-bold mt-2">{t("analytics.leadTimeHint")}</div>
+            </CardContent>
+          </Card>
+          <Card className="border-slate-100 shadow-sm">
+            <CardHeader className="p-4 pb-2">
+              <CardDescription className="text-[10px] font-black uppercase text-slate-500 tracking-wider">{t("analytics.customerMix")}</CardDescription>
+            </CardHeader>
+            <CardContent className="p-4 pt-0 space-y-1.5">
+              <div className="flex justify-between items-center text-xs font-semibold text-slate-600">
+                <span className="flex items-center gap-1.5"><UserPlus className="w-3.5 h-3.5 text-emerald-500" /> {t("analytics.newCustomers")}</span>
+                <span className="font-black text-slate-900">{data.customerSegments.new}</span>
               </div>
-              <div className="flex justify-between items-center text-xs font-semibold text-muted-foreground">
+              <div className="flex justify-between items-center text-xs font-semibold text-slate-600">
                 <span className="flex items-center gap-1.5"><Repeat className="w-3.5 h-3.5 text-blue-500" /> {t("analytics.returningCustomers")}</span>
-                <span className="font-black tabular-nums text-foreground">{data.customerSegments.returning}</span>
+                <span className="font-black text-slate-900">{data.customerSegments.returning}</span>
               </div>
-              <div className="flex justify-between items-center text-xs font-semibold text-muted-foreground">
-                <span className="flex items-center gap-1.5"><Crown className="w-3.5 h-3.5 text-amber-500 dark:text-amber-400" /> {t("analytics.regularCustomers")}</span>
-                <span className="font-black tabular-nums text-foreground">{data.customerSegments.regular}</span>
+              <div className="flex justify-between items-center text-xs font-semibold text-slate-600">
+                <span className="flex items-center gap-1.5"><Crown className="w-3.5 h-3.5 text-amber-500" /> {t("analytics.regularCustomers")}</span>
+                <span className="font-black text-slate-900">{data.customerSegments.regular}</span>
               </div>
             </CardContent>
           </Card>
@@ -244,9 +282,9 @@ export default function AnalyticsPage() {
 
         {/* Charts Row 1: Trend & Status */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <Card className="border-border shadow-sm bg-card lg:col-span-2">
-            <CardHeader className="border-b border-border bg-muted/50">
-              <CardTitle className="text-sm font-bold text-foreground">{t("analytics.reservationTrend")}</CardTitle>
+          <Card className="border-slate-100 shadow-sm bg-white lg:col-span-2">
+            <CardHeader className="border-b border-slate-100 bg-slate-50/50">
+              <CardTitle className="text-sm font-bold uppercase tracking-widest text-slate-700">{t("analytics.reservationTrend")}</CardTitle>
             </CardHeader>
             <CardContent className="p-6">
               <div className="h-[300px] w-full">
@@ -275,9 +313,9 @@ export default function AnalyticsPage() {
             </CardContent>
           </Card>
 
-          <Card className="border-border shadow-sm bg-card">
-            <CardHeader className="border-b border-border bg-muted/50">
-              <CardTitle className="text-sm font-bold text-foreground">{t("analytics.statusBreakdown")}</CardTitle>
+          <Card className="border-slate-100 shadow-sm bg-white">
+            <CardHeader className="border-b border-slate-100 bg-slate-50/50">
+              <CardTitle className="text-sm font-bold uppercase tracking-widest text-slate-700">{t("analytics.statusBreakdown")}</CardTitle>
             </CardHeader>
             <CardContent className="p-6">
               <div className="h-[200px] w-full">
@@ -304,12 +342,12 @@ export default function AnalyticsPage() {
               </div>
               <div className="mt-4 space-y-2">
                 {data.statusBreakdown.sort((a,b) => b.count - a.count).map(item => (
-                  <div key={item.status} className="flex justify-between items-center text-xs font-semibold text-muted-foreground">
+                  <div key={item.status} className="flex justify-between items-center text-xs font-semibold text-slate-600">
                     <div className="flex items-center gap-2">
                       <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: statusHex(item.status) || '#ccc' }}></div>
                       {t(statusStyle(item.status).labelKey)}
                     </div>
-                    <span className="text-foreground font-bold">{item.count}</span>
+                    <span className="text-slate-900 font-bold">{item.count}</span>
                   </div>
                 ))}
               </div>
@@ -321,9 +359,9 @@ export default function AnalyticsPage() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           
           {/* Peak Hours Heatmap */}
-          <Card className="border-border shadow-sm bg-card">
-            <CardHeader className="border-b border-border bg-muted/50">
-              <CardTitle className="text-sm font-bold text-foreground">{t("analytics.peakHoursHeatmap")}</CardTitle>
+          <Card className="border-slate-100 shadow-sm bg-white">
+            <CardHeader className="border-b border-slate-100 bg-slate-50/50">
+              <CardTitle className="text-sm font-bold uppercase tracking-widest text-slate-700">{t("analytics.peakHoursHeatmap")}</CardTitle>
             </CardHeader>
             <CardContent className="p-6 overflow-x-auto">
               <div style={{ minWidth: Math.max(500, heatHours.length * 34) }}>
@@ -331,20 +369,20 @@ export default function AnalyticsPage() {
                 <div className="grid gap-1" style={{ gridTemplateColumns: `auto repeat(${heatHours.length}, minmax(0, 1fr))` }}>
                   <div />
                   {heatHours.map((hour) => (
-                    <div key={`h-${hour}`} className="text-[10px] font-bold text-muted-foreground text-center pb-2">
+                    <div key={`h-${hour}`} className="text-[10px] font-bold text-slate-400 text-center pb-2">
                       {hour === openH || hour === closeH || hour === midHour ? `${String(hour).padStart(2, '0')}:00` : ''}
                     </div>
                   ))}
                   {dayLabels.map((day, dIdx) => (
                     <React.Fragment key={day + dIdx}>
-                      <div className="text-xs font-semibold text-muted-foreground flex items-center justify-end pr-3">{day}</div>
+                      <div className="text-xs font-semibold text-slate-500 flex items-center justify-end pr-3">{day}</div>
                       {heatHours.map((hour) => {
                         const cellData = data.peakHours.find(p => p.dayOfWeek === dIdx && p.hour === hour);
                         const count = cellData ? cellData.count : 0;
                         return (
                           <div
                             key={`${dIdx}-${hour}`}
-                            className="aspect-square rounded-sm border border-border/50 transition-all hover:scale-110 hover:shadow-md cursor-pointer group relative"
+                            className="aspect-square rounded-sm border border-slate-100/50 transition-all hover:scale-110 hover:shadow-md cursor-pointer group relative"
                             style={{ backgroundColor: count > 0 ? getHeatmapColor(count, maxPeakCount) : '#f8fafc' }}
                           >
                             <div className="absolute opacity-0 group-hover:opacity-100 z-10 bg-slate-800 text-white text-[10px] px-2 py-1 rounded bottom-full left-1/2 -translate-x-1/2 mb-1 whitespace-nowrap pointer-events-none">
@@ -362,9 +400,9 @@ export default function AnalyticsPage() {
 
           <div className="flex flex-col gap-6">
             {/* Zone Utilization */}
-            <Card className="border-border shadow-sm bg-card flex-1">
-              <CardHeader className="border-b border-border bg-muted/50 pb-4">
-                <CardTitle className="text-sm font-bold text-foreground">{t("analytics.zoneUtilization")}</CardTitle>
+            <Card className="border-slate-100 shadow-sm bg-white flex-1">
+              <CardHeader className="border-b border-slate-100 bg-slate-50/50 pb-4">
+                <CardTitle className="text-sm font-bold uppercase tracking-widest text-slate-700">{t("analytics.zoneUtilization")}</CardTitle>
               </CardHeader>
               <CardContent className="p-6 pt-4">
                 <div className="space-y-4">
@@ -374,40 +412,40 @@ export default function AnalyticsPage() {
                     return (
                       <div key={zone.zone}>
                         <div className="flex justify-between text-xs font-semibold mb-1">
-                          <span className="text-foreground">{zone.zone}</span>
-                          <span className="text-foreground">{zone.reservations} <span className="text-muted-foreground font-normal">{t("analytics.res")}</span></span>
+                          <span className="text-slate-700">{zone.zone}</span>
+                          <span className="text-slate-900">{zone.reservations} <span className="text-slate-400 font-normal">{t("analytics.res")}</span></span>
                         </div>
-                        <div className="w-full bg-muted rounded-full h-2">
+                        <div className="w-full bg-slate-100 rounded-full h-2">
                           <div className="bg-indigo-500 h-2 rounded-full" style={{ width: `${percent}%` }}></div>
                         </div>
                       </div>
                     );
                   })}
                   {data.zoneUtilization.length === 0 && (
-                    <div className="text-center text-sm text-muted-foreground py-4">{t("analytics.noZoneData")}</div>
+                    <div className="text-center text-sm text-slate-400 py-4">{t("analytics.noZoneData")}</div>
                   )}
                 </div>
               </CardContent>
             </Card>
 
             {/* Waitlist Metrics */}
-            <Card className="border-border shadow-sm bg-gradient-to-br from-slate-800 to-slate-900 text-white">
+            <Card className="border-slate-100 shadow-sm bg-gradient-to-br from-slate-800 to-slate-900 text-white">
               <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-bold text-slate-300">{t("analytics.waitlistPerformance")}</CardTitle>
+                <CardTitle className="text-sm font-bold uppercase tracking-widest text-slate-300">{t("analytics.waitlistPerformance")}</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-3 gap-4 text-center">
                   <div>
-                    <p className="text-[10px] text-muted-foreground font-bold mb-1">{t("analytics.avgWait")}</p>
-                    <p className="text-2xl font-black tabular-nums">{data.waitlistMetrics.avgWaitMinutes}<span className="text-sm font-normal text-muted-foreground ml-1">m</span></p>
+                    <p className="text-[10px] text-slate-400 font-bold uppercase mb-1">{t("analytics.avgWait")}</p>
+                    <p className="text-2xl font-black">{data.waitlistMetrics.avgWaitMinutes}<span className="text-sm font-normal text-slate-400 ml-1">m</span></p>
                   </div>
                   <div>
-                    <p className="text-[10px] text-muted-foreground font-bold mb-1">{t("analytics.conversion")}</p>
-                    <p className="text-2xl font-black tabular-nums text-emerald-400">{data.waitlistMetrics.conversionRate}%</p>
+                    <p className="text-[10px] text-slate-400 font-bold uppercase mb-1">{t("analytics.conversion")}</p>
+                    <p className="text-2xl font-black text-emerald-400">{data.waitlistMetrics.conversionRate}%</p>
                   </div>
                   <div>
-                    <p className="text-[10px] text-muted-foreground font-bold mb-1">{t("analytics.seated")}</p>
-                    <p className="text-2xl font-black tabular-nums">{data.waitlistMetrics.seated}<span className="text-sm font-normal text-muted-foreground ml-1">/{data.waitlistMetrics.totalJoined}</span></p>
+                    <p className="text-[10px] text-slate-400 font-bold uppercase mb-1">{t("analytics.seated")}</p>
+                    <p className="text-2xl font-black">{data.waitlistMetrics.seated}<span className="text-sm font-normal text-slate-400 ml-1">/{data.waitlistMetrics.totalJoined}</span></p>
                   </div>
                 </div>
               </CardContent>

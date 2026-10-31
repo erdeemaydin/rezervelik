@@ -2,23 +2,15 @@
 
 @plugin "tailwindcss-animate";
 
-/* There is no dark mode. This custom variant is kept deliberately: Tailwind
-   v4's default `dark:` variant follows `prefers-color-scheme`, which would
-   silently activate the `dark:*` utilities still present in many admin pages
-   for anyone whose OS is set to dark. Binding the variant to a `.dark` class
-   that nothing ever sets keeps those utilities permanently inert. */
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
-  /* Serif is still loaded for the public tenant-facing layouts only. */
   --font-serif: var(--font-playfair);
   --font-mono: var(--font-geist-mono);
   --font-outfit: var(--font-outfit);
-  /* Headings are plain bold sans — no serif accent in the admin UI. */
-  --font-heading: var(--font-geist-sans);
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -49,53 +41,65 @@
   --color-popover: var(--popover);
   --color-card-foreground: var(--card-foreground);
   --color-card: var(--card);
-  /* Proportional scale so a small admin --radius stays small at every step
-     (the old `radius - 4px` went negative/zero at AdminLTE-sized radii). */
-  --radius-sm: calc(var(--radius) * 0.6);
-  --radius-md: calc(var(--radius) * 0.8);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) * 1.5);
+  --radius-xl: calc(var(--radius) + 4px);
 }
 
 :root {
-  /* Classic AdminLTE-style neutrals: cool slate text, white surfaces. The
-     gray-blue page canvas (#ecf0f5) is applied inside the admin surfaces
-     only (see [data-admin-theme] below) so shared primitives used by the
-     public tenant site don't pick it up. */
-  --background: #ffffff;
-  --foreground: #1f2d3d;
+  --background: #f8fafc;
+  --foreground: #0f172a;
   --card: #ffffff;
-  --card-foreground: #1f2d3d;
+  --card-foreground: #0f172a;
   --popover: #ffffff;
-  --popover-foreground: #1f2d3d;
-  --primary: #1f6fb2;
+  --popover-foreground: #0f172a;
+  --primary: #2563eb;
   --primary-foreground: #ffffff;
-  --secondary: #f4f6f9;
-  --secondary-foreground: #1f2d3d;
-  --muted: #f4f6f9;
-  --muted-foreground: #5b6b7b;
-  --accent: #eef2f7;
-  --accent-foreground: #1f2d3d;
-  --destructive: #c7301f;
+  --secondary: #f1f5f9;
+  --secondary-foreground: #0f172a;
+  --muted: #f1f5f9;
+  --muted-foreground: #64748b;
+  --accent: #f1f5f9;
+  --accent-foreground: #0f172a;
+  --destructive: #ef4444;
   --destructive-foreground: #ffffff;
-  /* Borders must read clearly — hard-won lesson from the minimalist pass.
-     #9ca8b7 is ~2.4:1 against white and ~2.1:1 against the #ecf0f5 canvas:
-     every box, input, select, menu and table divider is visible at a glance. */
-  --border: #9ca8b7;
-  --input: #8d99a8;
-  --ring: #3c8dbc;
-  --radius: 0.375rem;
-
-  /* Sidebar tokens mirror the default (blue) skin; the layouts read the
-     per-skin --admin-sidebar-* variables directly. */
-  --sidebar: #222d32;
-  --sidebar-foreground: #b8c7ce;
-  --sidebar-primary: #1f6fb2;
+  --border: #e2e8f0;
+  --input: #e2e8f0;
+  --ring: #3b82f6;
+  --radius: 0.5rem;
+  
+  /* Sidebar */
+  --sidebar: #0f172a;
+  --sidebar-foreground: #f8fafc;
+  --sidebar-primary: #3b82f6;
   --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: #1e282c;
-  --sidebar-accent-foreground: #ffffff;
-  --sidebar-border: #1a2226;
-  --sidebar-ring: #3c8dbc;
+  --sidebar-accent: #1e293b;
+  --sidebar-accent-foreground: #f8fafc;
+  --sidebar-border: #1e293b;
+  --sidebar-ring: #3b82f6;
+}
+
+.dark {
+  --background: #020617;
+  --foreground: #f8fafc;
+  --card: #0f172a;
+  --card-foreground: #f8fafc;
+  --popover: #0f172a;
+  --popover-foreground: #f8fafc;
+  --primary: #3b82f6;
+  --primary-foreground: #ffffff;
+  --secondary: #1e293b;
+  --secondary-foreground: #f8fafc;
+  --muted: #1e293b;
+  --muted-foreground: #94a3b8;
+  --accent: #1e293b;
+  --accent-foreground: #f8fafc;
+  --destructive: #ef4444;
+  --destructive-foreground: #ffffff;
+  --border: #1e293b;
+  --input: #1e293b;
+  --ring: #3b82f6;
 }
 
 @layer base {
@@ -107,165 +111,88 @@
   }
 }
 
+@layer components {
+  /* Clean, single-level cards without nested boxes */
+  .card {
+    @apply rounded-xl border border-slate-200/60 bg-white shadow-sm transition-all;
+  }
+}
+
 /* =====================================================================
-   Admin dashboard skins (AdminLTE-style)
+   Admin dashboard color themes
    ---------------------------------------------------------------------
    Applied by setting `data-admin-theme="<id>"` on the layout root. Each
-   skin is a structural, clearly visible identity — sidebar, brand/logo
-   area and top navbar colors — not just a small accent tint. The block
-   further down remaps every hardcoded `blue-*` utility the dashboard uses
-   to --admin-accent*, so switching the attribute reskins all pages
-   without editing them. Ids must match frontend/src/lib/themes.ts + the
-   backend whitelist. These rules are intentionally unlayered so they win
-   over Tailwind's layered utilities.
-
-   Variables per skin:
-     --admin-accent / -hover / -strong / -mid   buttons, links, focus (white
-                                                text on --admin-accent >= 4.5:1)
-     --admin-sidebar / -deep / -hover            sidebar surface, section-header
-                                                strip, hovered/active row
-     --admin-sidebar-fg / -muted                 row text / section-header text
-     --admin-sidebar-edge                        active row's left edge (bright)
-     --admin-brand / -brand-fg                   logo area above the sidebar
-     --admin-header / -header-fg                 top navbar
+   theme defines an accent ramp + sidebar/background; the block below then
+   remaps every hardcoded `blue-*` utility the dashboard uses to those
+   variables, so switching the attribute reskins all pages without editing
+   them. `default` maps back to the original blue, so it is a visual no-op.
+   Ids here must match frontend/src/lib/themes.ts + the backend whitelist.
+   These rules are intentionally unlayered so they win over Tailwind's
+   layered utilities.
    ===================================================================== */
 
 [data-admin-theme] {
-  /* Admin surface base: gray-blue canvas, tighter corners, primary follows
-     the skin accent. */
-  --background: #ecf0f5;
-  --radius: 0.25rem;
-  --primary: var(--admin-accent);
-  --ring: var(--admin-accent-mid);
-
-  /* Fallback = classic blue (skin-blue): navy sidebar, blue navbar. */
-  --admin-accent: #1f6fb2;
-  --admin-accent-hover: #195a91;
-  --admin-accent-strong: #134670;
-  --admin-accent-mid: #3c8dbc;
-  --admin-sidebar: #222d32;
-  --admin-sidebar-deep: #1a2226;
-  --admin-sidebar-hover: #1e282c;
-  --admin-sidebar-fg: #b8c7ce;
-  --admin-sidebar-muted: #8aa4af;
-  --admin-sidebar-edge: #3c8dbc;
-  --admin-brand: #195a91;
-  --admin-brand-fg: #ffffff;
-  --admin-header: #1f6fb2;
-  --admin-header-fg: #ffffff;
-
-  --admin-accent-tint: color-mix(in oklab, var(--admin-accent) 10%, #ffffff);
-  --admin-accent-tint-2: color-mix(in oklab, var(--admin-accent) 20%, #ffffff);
-  --admin-accent-tint-3: color-mix(in oklab, var(--admin-accent) 38%, #ffffff);
+  /* Fallback = original blue, so an unknown value never breaks the accent. */
+  --admin-accent: #2563eb;
+  --admin-accent-hover: #1d4ed8;
+  --admin-accent-strong: #1e40af;
+  --admin-accent-mid: #3b82f6;
+  --admin-accent-tint: #eff6ff;
+  --admin-accent-tint-2: #dbeafe;
+  --admin-accent-tint-3: #bfdbfe;
+  --admin-sidebar: #0f172a;
+  --admin-bg: #f8fafc;
 }
 
-/* Terracotta — warm charcoal sidebar under a burnt-orange navbar. */
 [data-admin-theme="terracotta"] {
   --admin-accent: #c2410c;
   --admin-accent-hover: #9a3412;
   --admin-accent-strong: #7c2d12;
   --admin-accent-mid: #ea580c;
-  --admin-sidebar: #2a211e;
-  --admin-sidebar-deep: #201917;
-  --admin-sidebar-hover: #1c1614;
-  --admin-sidebar-fg: #d6c4bc;
-  --admin-sidebar-muted: #a89088;
-  --admin-sidebar-edge: #ea6a3a;
-  --admin-brand: #9a3412;
-  --admin-brand-fg: #ffffff;
-  --admin-header: #c2410c;
-  --admin-header-fg: #ffffff;
+  --admin-accent-tint: #fff7ed;
+  --admin-accent-tint-2: #ffedd5;
+  --admin-accent-tint-3: #fed7aa;
+  --admin-sidebar: #292524;
+  --admin-bg: #faf7f2;
 }
 
-/* Forest — solid deep-green sidebar, green navbar (skin-green). */
 [data-admin-theme="forest"] {
-  --admin-accent: #047857;
-  --admin-accent-hover: #065f46;
-  --admin-accent-strong: #064e3b;
-  --admin-accent-mid: #10b981;
-  --admin-sidebar: #0f3b2a;
-  --admin-sidebar-deep: #0a2e20;
-  --admin-sidebar-hover: #0b3222;
-  --admin-sidebar-fg: #b9d6c8;
-  --admin-sidebar-muted: #8fbfa8;
-  --admin-sidebar-edge: #34d399;
-  --admin-brand: #065f46;
-  --admin-brand-fg: #ffffff;
-  --admin-header: #047857;
-  --admin-header-fg: #ffffff;
+  --admin-accent: #15803d;
+  --admin-accent-hover: #166534;
+  --admin-accent-strong: #14532d;
+  --admin-accent-mid: #16a34a;
+  --admin-accent-tint: #f0fdf4;
+  --admin-accent-tint-2: #dcfce7;
+  --admin-accent-tint-3: #bbf7d0;
+  --admin-sidebar: #1c1917;
+  --admin-bg: #f5f5f4;
 }
 
-/* Burgundy — solid burgundy sidebar, crimson navbar. */
 [data-admin-theme="burgundy"] {
-  --admin-accent: #be123c;
-  --admin-accent-hover: #9f1239;
+  --admin-accent: #9f1239;
+  --admin-accent-hover: #881337;
   --admin-accent-strong: #881337;
-  --admin-accent-mid: #e11d48;
-  --admin-sidebar: #4c0d24;
-  --admin-sidebar-deep: #3a0a1b;
-  --admin-sidebar-hover: #3f0b1e;
-  --admin-sidebar-fg: #eac6d1;
-  --admin-sidebar-muted: #c48fa1;
-  --admin-sidebar-edge: #fb7185;
-  --admin-brand: #7a0e2c;
-  --admin-brand-fg: #ffffff;
-  --admin-header: #9f1239;
-  --admin-header-fg: #ffffff;
+  --admin-accent-mid: #be123c;
+  --admin-accent-tint: #fff1f2;
+  --admin-accent-tint-2: #ffe4e6;
+  --admin-accent-tint-3: #fecdd3;
+  --admin-sidebar: #1c1917;
+  --admin-bg: #f7f5f4;
 }
 
-/* Amber — near-black sidebar under a bright amber navbar (skin-yellow).
-   Amber is too light for white text, so the navbar/logo use dark text and
-   buttons use a deeper amber-brown that does carry white text. */
 [data-admin-theme="amber"] {
   --admin-accent: #b45309;
   --admin-accent-hover: #92400e;
   --admin-accent-strong: #78350f;
   --admin-accent-mid: #d97706;
-  --admin-sidebar: #1f1d1a;
-  --admin-sidebar-deep: #171512;
-  --admin-sidebar-hover: #141210;
-  --admin-sidebar-fg: #d8cfc0;
-  --admin-sidebar-muted: #a89a82;
-  --admin-sidebar-edge: #f59e0b;
-  --admin-brand: #d68910;
-  --admin-brand-fg: #201400;
-  --admin-header: #f39c12;
-  --admin-header-fg: #201400;
+  --admin-accent-tint: #fffbeb;
+  --admin-accent-tint-2: #fef3c7;
+  --admin-accent-tint-3: #fde68a;
+  --admin-sidebar: #1c1917;
+  --admin-bg: #faf9f7;
 }
 
-/* Indeterminate progress bar on the dashboard splash (AdminLayout). */
-@keyframes admin-loading {
-  0% { transform: translateX(-110%); }
-  100% { transform: translateX(310%); }
-}
-
-/* AdminLTE corners: the handful of large-radius utilities pages hardcode
-   would otherwise read as soft/bubbly next to the squared boxes. */
-[data-admin-theme] .rounded-2xl,
-[data-admin-theme] .rounded-3xl { border-radius: calc(var(--radius) * 2) !important; }
-
-/* AdminLTE box convention: a colored top border on specific boxes
-   (`<Card tone="primary|success|warning|danger|info">`). Card is also
-   used on the public site, where it keeps the plain treatment since it
-   never passes a tone. */
-[data-slot="card"][data-tone] { border-top-width: 3px; }
-[data-slot="card"][data-tone="primary"] { border-top-color: var(--admin-accent, #1f6fb2); }
-[data-slot="card"][data-tone="info"] { border-top-color: #00a7d0; }
-[data-slot="card"][data-tone="success"] { border-top-color: #00a65a; }
-[data-slot="card"][data-tone="warning"] { border-top-color: #f39c12; }
-[data-slot="card"][data-tone="danger"] { border-top-color: #dd4b39; }
-
-/* AdminLTE box-header sits flush against the top of its box. Many pages give
-   the first CardHeader a `border-b` (often with a gray band), which left a
-   white strip of the Card's own py-5 above it. Unlayered so it beats that
-   utility; the header's fallback top padding is layered so any explicit
-   padding utility on the header itself still wins. */
-[data-slot="card"]:has(> [data-slot="card-header"].border-b:first-child) { padding-top: 0; }
-@layer components {
-  [data-slot="card"] > [data-slot="card-header"].border-b:first-child { padding-top: 0.875rem; }
-}
-
-/* --- Remap hardcoded blue utilities to the active skin accent --- */
+/* --- Remap hardcoded blue utilities to the active theme accent --- */
 
 /* Backgrounds */
 [data-admin-theme] .bg-blue-600 { background-color: var(--admin-accent) !important; }
@@ -316,37 +243,12 @@
 [data-admin-theme] .shadow-blue-600\/20 { --tw-shadow-color: color-mix(in oklab, var(--admin-accent) 20%, transparent) !important; }
 [data-admin-theme] .shadow-blue-600\/30 { --tw-shadow-color: color-mix(in oklab, var(--admin-accent) 30%, transparent) !important; }
 
-/* Tabs: the default segmented list (bg-muted) nearly vanished against the gray
-   canvas and its active tab was only a faint shadow. Give the list a visible
-   well + border and the active tab a white face with a skin-accent underline.
-   No admin page overrides tab active styles, so this is safe unlayered. */
-[data-admin-theme] [data-slot="tabs-list"][data-variant="default"] {
-  background-color: #dde3ea;
-  border: 1px solid var(--border);
-}
-[data-admin-theme] [data-slot="tabs-list"][data-variant="default"] > [data-slot="tabs-trigger"] { color: #3d4b5c; }
-[data-admin-theme] [data-slot="tabs-list"][data-variant="default"] > [data-slot="tabs-trigger"]:hover { color: var(--foreground); }
-[data-admin-theme] [data-slot="tabs-list"][data-variant="default"] > [data-slot="tabs-trigger"][data-active] {
-  background-color: #ffffff;
-  color: var(--admin-accent-strong);
-  font-weight: 600;
-  box-shadow: inset 0 -2px 0 var(--admin-accent), 0 1px 2px rgba(0, 0, 0, 0.1);
-}
-
-/* Editorial leftovers: several page subtitles/labels use very wide tracking
-   (0.2–0.4em) that reads as spaced-out and hard to scan in this dense admin
-   style. Pull them back to a light, AdminLTE-like label spacing. */
-[data-admin-theme] .tracking-\[0\.15em\],
-[data-admin-theme] .tracking-\[0\.2em\],
-[data-admin-theme] .tracking-\[0\.3em\],
-[data-admin-theme] .tracking-\[0\.4em\] { letter-spacing: 0.04em !important; }
-
-/* Readability: bump the smallest micro-label sizes a step. */
+/* Readability: bump the smallest micro-label sizes a step (safe on light+dark). */
 [data-admin-theme] .text-\[9px\] { font-size: 10px !important; }
 [data-admin-theme] .text-\[10px\] { font-size: 11px !important; }
 
 /* --- System-admin surface: its accent is emerald, not blue. Remap emerald to
-   the skin accent, scoped to `.admin-surface-system` ONLY, so the tenant
+   the theme accent, scoped to `.admin-surface-system` ONLY, so the tenant
    dashboard's emerald "success" states (confirmed, online dot) stay green. --- */
 .admin-surface-system .bg-emerald-600 { background-color: var(--admin-accent) !important; }
 .admin-surface-system .hover\:bg-emerald-700:hover { background-color: var(--admin-accent-hover) !important; }
@@ -361,4 +263,3 @@
 .admin-surface-system .text-emerald-700 { color: var(--admin-accent-hover) !important; }
 .admin-surface-system .border-emerald-200 { border-color: var(--admin-accent-tint-3) !important; }
 .admin-surface-system .border-emerald-100 { border-color: var(--admin-accent-tint-2) !important; }
-.admin-surface-system .shadow-emerald-600\/20 { --tw-shadow-color: color-mix(in oklab, var(--admin-accent) 20%, transparent) !important; }

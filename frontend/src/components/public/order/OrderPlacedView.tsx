@@ -58,7 +58,7 @@ export default function OrderPlacedView({
 
       <div className="mt-6 w-full max-w-sm rounded-xl border p-4 text-left" style={{ borderColor: theme.border, backgroundColor: theme.surface }}>
         <div className="flex items-center justify-between">
-          <span className="text-xs font-bold" style={{ color: theme.muted }}>{t('publicOrder.placed.statusLabel')}</span>
+          <span className="text-xs font-bold uppercase tracking-wide" style={{ color: theme.muted }}>{t('publicOrder.placed.statusLabel')}</span>
           <span className="rounded-full px-2.5 py-1 text-xs font-bold" style={{ backgroundColor: `${theme.primary}14`, color: theme.primary }}>
             {statusLabel}
           </span>

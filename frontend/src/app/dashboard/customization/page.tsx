@@ -12,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import api from '@/lib/api';
 import { toast } from 'sonner';
-import { FloppyDisk, Palette, Megaphone, FileText, DeviceMobile, Camera, ShareNetwork, Globe, ArrowClockwise, ArrowSquareOut } from '@phosphor-icons/react';
+import { Save, Palette, Megaphone, FileText, Smartphone, Camera, Share2, Globe, RefreshCw, ExternalLink } from 'lucide-react';
 
 interface SocialLinks {
     instagram: string;
@@ -208,33 +208,33 @@ export default function CustomizationPage() {
             <div className="flex flex-col gap-6 max-w-5xl mx-auto pb-12">
                 <div className="flex items-center justify-between">
                     <div>
-                        <h1 className="text-3xl font-semibold tracking-tight text-foreground font-heading">{t("customization.pageTitle")}</h1>
-                        <p className="text-xs text-muted-foreground font-semibold tracking-[0.2em] mt-2">{t("customization.pageSubtitle")}</p>
+                        <h1 className="text-3xl font-black text-slate-800 tracking-tight">{t("customization.pageTitle")}</h1>
+                        <p className="text-xs text-slate-500 font-black uppercase tracking-[0.2em] mt-2">{t("customization.pageSubtitle")}</p>
                     </div>
-                    <Button onClick={handleSave} disabled={loading} className="bg-slate-900 hover:bg-black text-white font-semibold text-xs px-8 h-12 rounded-lg shadow-md transition-all active:scale-95">
-                        {loading ? t("customization.saving") : <><FloppyDisk className="w-5 h-5 mr-3" /> {t("customization.publishChanges")}</>}
+                    <Button onClick={handleSave} disabled={loading} className="bg-slate-900 hover:bg-black text-white font-black uppercase text-xs px-8 h-12 rounded-lg shadow-md transition-all active:scale-95">
+                        {loading ? t("customization.saving") : <><Save className="w-5 h-5 mr-3" /> {t("customization.publishChanges")}</>}
                     </Button>
                 </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
                     <div className="lg:col-span-2">
                         <Tabs defaultValue="theming" className="w-full">
-                            <TabsList className="grid w-full grid-cols-4 bg-muted rounded-sm p-1">
-                                <TabsTrigger value="theming" className="text-xs font-bold"><Palette className="w-3 h-3 mr-2" /> {t("customization.tabs.theming")}</TabsTrigger>
-                                <TabsTrigger value="announcements" className="text-xs font-bold"><Megaphone className="w-3 h-3 mr-2" /> {t("customization.tabs.banner")}</TabsTrigger>
-                                <TabsTrigger value="pages" className="text-xs font-bold"><FileText className="w-3 h-3 mr-2" /> {t("customization.tabs.staticPages")}</TabsTrigger>
-                                <TabsTrigger value="reservation" className="text-xs font-bold"><FileText className="w-3 h-3 mr-2" /> {t("customization.tabs.bookingRules")}</TabsTrigger>
+                            <TabsList className="grid w-full grid-cols-4 bg-slate-100 rounded-sm p-1">
+                                <TabsTrigger value="theming" className="text-xs font-bold uppercase"><Palette className="w-3 h-3 mr-2" /> {t("customization.tabs.theming")}</TabsTrigger>
+                                <TabsTrigger value="announcements" className="text-xs font-bold uppercase"><Megaphone className="w-3 h-3 mr-2" /> {t("customization.tabs.banner")}</TabsTrigger>
+                                <TabsTrigger value="pages" className="text-xs font-bold uppercase"><FileText className="w-3 h-3 mr-2" /> {t("customization.tabs.staticPages")}</TabsTrigger>
+                                <TabsTrigger value="reservation" className="text-xs font-bold uppercase"><FileText className="w-3 h-3 mr-2" /> {t("customization.tabs.bookingRules")}</TabsTrigger>
                             </TabsList>
                             
                             <TabsContent value="theming" className="mt-6">
-                                <Card className="rounded-xl border-border shadow-sm bg-card">
-                                    <CardHeader className="p-8 border-b border-border">
-                                        <CardTitle className="text-lg font-semibold tracking-tight">{t("customization.theming.title")}</CardTitle>
+                                <Card className="rounded-xl border-slate-200 shadow-sm bg-white">
+                                    <CardHeader className="p-8 border-b border-slate-100">
+                                        <CardTitle className="text-lg font-black uppercase tracking-tight">{t("customization.theming.title")}</CardTitle>
                                         <CardDescription className="text-sm mt-1">{t("customization.theming.desc")}</CardDescription>
                                     </CardHeader>
                                     <CardContent className="p-8 space-y-8">
                                         <div className="space-y-4">
-                                            <Label className="text-xs font-semibold text-muted-foreground">{t("customization.theming.typography")}</Label>
+                                            <Label className="text-xs font-black uppercase tracking-wider text-slate-500">{t("customization.theming.typography")}</Label>
                                             <Select 
                                                 value={customization.typography} 
                                                 onValueChange={(v) => { if (v) setCustomization({...customization, typography: v}); }}
@@ -250,8 +250,8 @@ export default function CustomizationPage() {
                                             </Select>
                                         </div>
 
-                                        <div className="space-y-3 pt-4 border-t border-border">
-                                            <Label className="text-[10px] font-semibold text-muted-foreground">{t("customization.theming.colorPalette")}</Label>
+                                        <div className="space-y-3 pt-4 border-t border-slate-100">
+                                            <Label className="text-[10px] font-black uppercase text-slate-400">{t("customization.theming.colorPalette")}</Label>
                                             <Select 
                                                 value={customization.colorPalette} 
                                                 onValueChange={(v) => { if (v) setCustomization({...customization, colorPalette: v}); }}
@@ -268,8 +268,8 @@ export default function CustomizationPage() {
                                             </Select>
                                         </div>
 
-                                        <div className="space-y-3 pt-4 border-t border-border">
-                                            <Label className="text-[10px] font-semibold text-muted-foreground">{t("customization.theming.primaryColor")}</Label>
+                                        <div className="space-y-3 pt-4 border-t border-slate-100">
+                                            <Label className="text-[10px] font-black uppercase text-slate-400">{t("customization.theming.primaryColor")}</Label>
                                             <div className="flex gap-4">
                                                 <Input 
                                                     type="color" 
@@ -281,7 +281,7 @@ export default function CustomizationPage() {
                                                     type="text" 
                                                     value={customization.primaryColor} 
                                                     onChange={(e) => setCustomization({...customization, primaryColor: e.target.value})}
-                                                    className="flex-1 h-12 font-bold" 
+                                                    className="flex-1 h-12 font-bold uppercase" 
                                                 />
                                             </div>
                                         </div>
@@ -290,31 +290,31 @@ export default function CustomizationPage() {
                             </TabsContent>
 
                             <TabsContent value="announcements" className="mt-4">
-                                <Card className="rounded-sm border-border shadow-sm bg-card">
-                                    <CardHeader className="p-6 border-b border-border">
-                                        <CardTitle className="text-sm font-semibold tracking-tight">{t("customization.banner.title")}</CardTitle>
+                                <Card className="rounded-sm border-slate-200 shadow-sm bg-white">
+                                    <CardHeader className="p-6 border-b border-slate-100">
+                                        <CardTitle className="text-sm font-black uppercase tracking-tight">{t("customization.banner.title")}</CardTitle>
                                         <CardDescription className="text-xs">{t("customization.banner.desc")}</CardDescription>
                                     </CardHeader>
                                     <CardContent className="p-6 space-y-4">
                                         <div className="space-y-3">
-                                            <Label className="text-[10px] font-semibold text-muted-foreground">{t("customization.banner.textLabel")}</Label>
+                                            <Label className="text-[10px] font-black uppercase text-slate-400">{t("customization.banner.textLabel")}</Label>
                                             <Textarea 
                                                 placeholder={t("customization.banner.placeholder")} 
                                                 value={customization.announcementText} 
                                                 onChange={(e) => setCustomization({...customization, announcementText: e.target.value})}
                                                 className="min-h-[100px] text-sm" 
                                             />
-                                            <p className="text-[10px] text-muted-foreground">{t("customization.banner.hint")}</p>
+                                            <p className="text-[10px] text-slate-400">{t("customization.banner.hint")}</p>
                                         </div>
                                     </CardContent>
                                 </Card>
                             </TabsContent>
 
                             <TabsContent value="pages" className="mt-4 space-y-6">
-                                <Card className="rounded-sm border-border shadow-sm bg-card">
-                                    <CardHeader className="p-4 border-b border-border flex flex-row items-center justify-between">
+                                <Card className="rounded-sm border-slate-200 shadow-sm bg-white">
+                                    <CardHeader className="p-4 border-b border-slate-100 flex flex-row items-center justify-between">
                                         <div>
-                                            <CardTitle className="text-sm font-semibold tracking-tight">{t("customization.pages.aboutUs.title")}</CardTitle>
+                                            <CardTitle className="text-sm font-black uppercase tracking-tight">{t("customization.pages.aboutUs.title")}</CardTitle>
                                             <CardDescription className="text-[10px]">{t("customization.pages.aboutUs.desc")}</CardDescription>
                                         </div>
                                         <Switch checked={customization.showAboutUs} onCheckedChange={(c) => setCustomization({...customization, showAboutUs: c})} />
@@ -331,10 +331,10 @@ export default function CustomizationPage() {
                                     )}
                                 </Card>
 
-                                <Card className="rounded-sm border-border shadow-sm bg-card">
-                                    <CardHeader className="p-4 border-b border-border flex flex-row items-center justify-between">
+                                <Card className="rounded-sm border-slate-200 shadow-sm bg-white">
+                                    <CardHeader className="p-4 border-b border-slate-100 flex flex-row items-center justify-between">
                                         <div>
-                                            <CardTitle className="text-sm font-semibold tracking-tight">{t("customization.pages.legal.title")}</CardTitle>
+                                            <CardTitle className="text-sm font-black uppercase tracking-tight">{t("customization.pages.legal.title")}</CardTitle>
                                             <CardDescription className="text-[10px]">{t("customization.pages.legal.desc")}</CardDescription>
                                         </div>
                                         <Switch checked={customization.showLegal} onCheckedChange={(c) => setCustomization({...customization, showLegal: c})} />
@@ -351,9 +351,9 @@ export default function CustomizationPage() {
                                     )}
                                 </Card>
 
-                                <Card className="rounded-sm border-border shadow-sm bg-card">
-                                    <CardHeader className="p-4 border-b border-border">
-                                        <CardTitle className="text-sm font-semibold tracking-tight">{t("customization.pages.privacyNotice.title")}</CardTitle>
+                                <Card className="rounded-sm border-slate-200 shadow-sm bg-white">
+                                    <CardHeader className="p-4 border-b border-slate-100">
+                                        <CardTitle className="text-sm font-black uppercase tracking-tight">{t("customization.pages.privacyNotice.title")}</CardTitle>
                                         <CardDescription className="text-[10px]">{t("customization.pages.privacyNotice.desc")}</CardDescription>
                                     </CardHeader>
                                     <CardContent className="p-6">
@@ -363,18 +363,18 @@ export default function CustomizationPage() {
                                             onChange={(e) => setCustomization({...customization, privacyNoticeText: e.target.value})}
                                             className="min-h-[150px] text-sm"
                                         />
-                                        <p className="text-[10px] text-muted-foreground mt-2">{t("customization.pages.privacyNotice.hint")}</p>
+                                        <p className="text-[10px] text-slate-500 mt-2">{t("customization.pages.privacyNotice.hint")}</p>
                                     </CardContent>
                                 </Card>
 
-                                <Card className="rounded-sm border-border shadow-sm bg-card">
-                                    <CardHeader className="p-4 border-b border-border">
-                                        <CardTitle className="text-sm font-semibold tracking-tight">{t("customization.pages.social.title")}</CardTitle>
+                                <Card className="rounded-sm border-slate-200 shadow-sm bg-white">
+                                    <CardHeader className="p-4 border-b border-slate-100">
+                                        <CardTitle className="text-sm font-black uppercase tracking-tight">{t("customization.pages.social.title")}</CardTitle>
                                         <CardDescription className="text-[10px]">{t("customization.pages.social.desc")}</CardDescription>
                                     </CardHeader>
                                     <CardContent className="p-6 space-y-4">
                                         <div className="space-y-2">
-                                            <Label className="text-[10px] font-semibold text-muted-foreground flex items-center gap-1.5"><Camera className="w-3 h-3" /> Instagram</Label>
+                                            <Label className="text-[10px] font-black uppercase text-slate-400 flex items-center gap-1.5"><Camera className="w-3 h-3" /> Instagram</Label>
                                             <Input
                                                 type="url"
                                                 placeholder="https://instagram.com/your-restaurant"
@@ -384,7 +384,7 @@ export default function CustomizationPage() {
                                             />
                                         </div>
                                         <div className="space-y-2">
-                                            <Label className="text-[10px] font-semibold text-muted-foreground flex items-center gap-1.5"><ShareNetwork className="w-3 h-3" /> Facebook</Label>
+                                            <Label className="text-[10px] font-black uppercase text-slate-400 flex items-center gap-1.5"><Share2 className="w-3 h-3" /> Facebook</Label>
                                             <Input
                                                 type="url"
                                                 placeholder="https://facebook.com/your-restaurant"
@@ -394,7 +394,7 @@ export default function CustomizationPage() {
                                             />
                                         </div>
                                         <div className="space-y-2">
-                                            <Label className="text-[10px] font-semibold text-muted-foreground flex items-center gap-1.5"><Globe className="w-3 h-3" /> {t("customization.pages.social.website")}</Label>
+                                            <Label className="text-[10px] font-black uppercase text-slate-400 flex items-center gap-1.5"><Globe className="w-3 h-3" /> {t("customization.pages.social.website")}</Label>
                                             <Input
                                                 type="url"
                                                 placeholder="https://your-restaurant.com"
@@ -403,38 +403,38 @@ export default function CustomizationPage() {
                                                 className="h-10 text-sm"
                                             />
                                         </div>
-                                        <p className="text-[10px] text-muted-foreground">{t("customization.pages.social.hint")}</p>
+                                        <p className="text-[10px] text-slate-500">{t("customization.pages.social.hint")}</p>
                                     </CardContent>
                                 </Card>
                             </TabsContent>
 
                             <TabsContent value="reservation" className="mt-4 space-y-6">
-                                <Card className="rounded-sm border-border shadow-sm bg-card">
-                                    <CardHeader className="p-6 border-b border-border">
-                                        <CardTitle className="text-sm font-semibold tracking-tight">{t("customization.rules.title")}</CardTitle>
+                                <Card className="rounded-sm border-slate-200 shadow-sm bg-white">
+                                    <CardHeader className="p-6 border-b border-slate-100">
+                                        <CardTitle className="text-sm font-black uppercase tracking-tight">{t("customization.rules.title")}</CardTitle>
                                         <CardDescription className="text-xs">{t("customization.rules.desc")}</CardDescription>
                                     </CardHeader>
                                     <CardContent className="p-6 space-y-6">
                                         <div className="space-y-3">
-                                            <Label className="text-[10px] font-semibold text-muted-foreground">{t("customization.rules.infoLabel")}</Label>
+                                            <Label className="text-[10px] font-black uppercase text-slate-400">{t("customization.rules.infoLabel")}</Label>
                                             <Textarea 
                                                 placeholder={t("customization.rules.infoPlaceholder")} 
                                                 value={customization.reservationInfoText} 
                                                 onChange={(e) => setCustomization({...customization, reservationInfoText: e.target.value})}
-                                                className="min-h-[120px] text-sm font-mono bg-muted" 
+                                                className="min-h-[120px] text-sm font-mono bg-slate-50" 
                                             />
-                                            <p className="text-[10px] text-muted-foreground">{t("customization.rules.infoHint")}</p>
+                                            <p className="text-[10px] text-slate-500">{t("customization.rules.infoHint")}</p>
                                         </div>
 
-                                        <div className="space-y-3 pt-4 border-t border-border">
-                                            <Label className="text-[10px] font-semibold text-muted-foreground">{t("customization.rules.warningLabel")}</Label>
+                                        <div className="space-y-3 pt-4 border-t border-slate-100">
+                                            <Label className="text-[10px] font-black uppercase text-slate-400">{t("customization.rules.warningLabel")}</Label>
                                             <Textarea 
                                                 placeholder={t("customization.rules.warningPlaceholder")} 
                                                 value={customization.reservationWarningText} 
                                                 onChange={(e) => setCustomization({...customization, reservationWarningText: e.target.value})}
-                                                className="min-h-[120px] text-sm font-mono bg-muted" 
+                                                className="min-h-[120px] text-sm font-mono bg-slate-50" 
                                             />
-                                            <p className="text-[10px] text-muted-foreground">{t("customization.rules.warningHint")}</p>
+                                            <p className="text-[10px] text-slate-500">{t("customization.rules.warningHint")}</p>
                                         </div>
                                     </CardContent>
                                 </Card>
@@ -444,19 +444,19 @@ export default function CustomizationPage() {
 
                     {/* Preview / Instructions */}
                     <div className="lg:col-span-1">
-                        <Card className="rounded-sm border-border shadow-sm bg-muted sticky top-6 overflow-hidden">
-                            <CardHeader className="p-6 border-b border-border flex flex-row items-center justify-between gap-2 space-y-0">
-                                <CardTitle className="text-sm font-semibold tracking-tight flex items-center gap-2">
-                                    <DeviceMobile className="w-4 h-4" /> {t("customization.preview.title")}
+                        <Card className="rounded-sm border-slate-200 shadow-sm bg-slate-50 sticky top-6 overflow-hidden">
+                            <CardHeader className="p-6 border-b border-slate-200 flex flex-row items-center justify-between gap-2 space-y-0">
+                                <CardTitle className="text-sm font-black uppercase tracking-tight flex items-center gap-2">
+                                    <Smartphone className="w-4 h-4" /> {t("customization.preview.title")}
                                 </CardTitle>
                                 <div className="flex items-center gap-1 shrink-0">
                                     <button
                                         type="button"
                                         onClick={reloadPreview}
                                         title={t("customization.preview.refresh")}
-                                        className="h-7 w-7 flex items-center justify-center rounded-md hover:bg-accent text-muted-foreground transition-colors"
+                                        className="h-7 w-7 flex items-center justify-center rounded-md hover:bg-slate-200 text-slate-500 transition-colors"
                                     >
-                                        <ArrowClockwise className="w-3.5 h-3.5" />
+                                        <RefreshCw className="w-3.5 h-3.5" />
                                     </button>
                                     {slug && (
                                         <a
@@ -464,19 +464,19 @@ export default function CustomizationPage() {
                                             target="_blank"
                                             rel="noopener noreferrer"
                                             title={t("customization.preview.openNewTab")}
-                                            className="h-7 w-7 flex items-center justify-center rounded-md hover:bg-accent text-muted-foreground transition-colors"
+                                            className="h-7 w-7 flex items-center justify-center rounded-md hover:bg-slate-200 text-slate-500 transition-colors"
                                         >
-                                            <ArrowSquareOut className="w-3.5 h-3.5" />
+                                            <ExternalLink className="w-3.5 h-3.5" />
                                         </a>
                                     )}
                                 </div>
                             </CardHeader>
                             <CardContent className="p-0">
-                                <div className="text-xs text-muted-foreground px-6 py-4 leading-relaxed border-b border-border bg-card">
+                                <div className="text-xs text-slate-500 px-6 py-4 leading-relaxed border-b border-slate-200 bg-white">
                                     {t("customization.preview.desc")}
                                 </div>
                                 {slug ? (
-                                    <div ref={previewContainerRef} className="relative w-full bg-card" style={{ height: PREVIEW_VISIBLE_HEIGHT, overflow: 'hidden' }}>
+                                    <div ref={previewContainerRef} className="relative w-full bg-white" style={{ height: PREVIEW_VISIBLE_HEIGHT, overflow: 'hidden' }}>
                                         <iframe
                                             key={previewKey}
                                             ref={previewFrameRef}
@@ -494,7 +494,7 @@ export default function CustomizationPage() {
                                         />
                                     </div>
                                 ) : (
-                                    <div className="p-6 text-xs text-muted-foreground italic">{t("customization.preview.unavailable")}</div>
+                                    <div className="p-6 text-xs text-slate-400 italic">{t("customization.preview.unavailable")}</div>
                                 )}
                             </CardContent>
                         </Card>
