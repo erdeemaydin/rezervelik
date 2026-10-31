@@ -1,7 +1,9 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
+import dynamic from 'next/dynamic';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -16,12 +18,20 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { useConfirm } from '@/components/ui/confirm-dialog';
 import {
   ArrowLeft, Save, Power, Truck, ShoppingBag, Wallet, CreditCard, Gauge, Clock3,
-  MapPinned, Plus, Edit2, Trash2,
+  MapPinned, Plus, Edit2, Trash2, BadgeCheck, Ruler, Search, Loader2, MapPin, X, ListChecks,
 } from 'lucide-react';
 import api from '@/lib/api';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { useTranslation } from '@/i18n/provider';
+import type { LatLngValue } from '@/components/maps/LeafletMap';
+
+// Leaflet touches `document` at import time — it can never be part of a server
+// render, hence ssr:false (same contract as the customer-side AddressPicker).
+const LeafletMap = dynamic(() => import('@/components/maps/LeafletMap'), {
+  ssr: false,
+  loading: () => <div className="h-64 w-full animate-pulse rounded-xl bg-slate-100" />,
+});
 
 // --- Weekly hours (shared shape for OrderSettings.orderHours and
 // DeliveryZone.openHours — both are untyped Json? columns; no existing
@@ -79,15 +89,113 @@ function WeeklyHoursEditor({ value, onChange }: { value: WeekHours; onChange: (v
   );
 }
 
+// --- Restaurant location search (Nominatim / OpenStreetMap) ---
+// A dashboard-styled sibling of components/maps/AddressPicker: same key-less
+// geocoder and the same etiquette (debounced, one language hint per call), but
+// it can't reuse that component because AddressPicker is themed with an
+// `OrderTheme` from the customer ordering flow, which the dashboard has no
+// equivalent of.
+const NOMINATIM = 'https://nominatim.openstreetmap.org';
+const SEARCH_DEBOUNCE_MS = 600;
+const MIN_QUERY_LENGTH = 3;
+
+interface NominatimPlace { place_id: number; lat: string; lon: string; display_name: string }
+
+function LocationSearch({ locale, onPick }: { locale: string; onPick: (v: LatLngValue & { label: string }) => void }) {
+  const { t } = useTranslation();
+  const [query, setQuery] = useState('');
+  const [results, setResults] = useState<NominatimPlace[]>([]);
+  const [searching, setSearching] = useState(false);
+  const [searched, setSearched] = useState(false);
+
+  useEffect(() => {
+    const q = query.trim();
+    if (q.length < MIN_QUERY_LENGTH) {
+      setResults([]); setSearched(false); setSearching(false);
+      return;
+    }
+    const controller = new AbortController();
+    setSearching(true);
+    const timer = setTimeout(async () => {
+      try {
+        const url = `${NOMINATIM}/search?format=json&addressdetails=1&limit=5`
+          + `&accept-language=${encodeURIComponent(locale)}&q=${encodeURIComponent(q)}`;
+        const res = await fetch(url, { signal: controller.signal, headers: { Accept: 'application/json' } });
+        if (!res.ok) throw new Error('search failed');
+        const data = (await res.json()) as NominatimPlace[];
+        setResults(Array.isArray(data) ? data : []);
+        setSearched(true);
+      } catch {
+        // Geocoding is a convenience — the pin can always be dropped by hand.
+        if (!controller.signal.aborted) { setResults([]); setSearched(true); }
+      } finally {
+        if (!controller.signal.aborted) setSearching(false);
+      }
+    }, SEARCH_DEBOUNCE_MS);
+    return () => { controller.abort(); clearTimeout(timer); };
+  }, [query, locale]);
+
+  const handlePick = (place: NominatimPlace) => {
+    const lat = Number(place.lat);
+    const lng = Number(place.lon);
+    if (!Number.isFinite(lat) || !Number.isFinite(lng)) return;
+    setResults([]); setSearched(false); setQuery('');
+    onPick({ lat, lng, label: place.display_name });
+  };
+
+  return (
+    <div className="relative">
+      <Search className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+      <Input
+        value={query}
+        onChange={(e) => setQuery(e.target.value)}
+        placeholder={t('orders.settings.delivery.searchPlaceholder')}
+        className="h-10 pl-10 pr-9 text-sm font-bold border-slate-200 rounded-sm"
+      />
+      {(searching || query) && (
+        <span className="absolute right-3 top-1/2 -translate-y-1/2">
+          {searching
+            ? <Loader2 className="w-4 h-4 animate-spin text-slate-400" />
+            : <button type="button" onClick={() => setQuery('')} aria-label={t('orders.settings.delivery.clearSearch')} className="text-slate-400 hover:text-slate-600"><X className="w-4 h-4" /></button>}
+        </span>
+      )}
+      {results.length > 0 && (
+        <ul className="absolute inset-x-0 top-full z-[1100] mt-1 max-h-60 overflow-y-auto rounded-md border border-slate-200 bg-white shadow-lg">
+          {results.map((place) => (
+            <li key={place.place_id}>
+              <button type="button" onClick={() => handlePick(place)} className="flex w-full items-start gap-2 px-3 py-2.5 text-left text-xs font-medium text-slate-700 hover:bg-slate-50">
+                <MapPin className="mt-0.5 w-3.5 h-3.5 shrink-0 text-blue-500" />
+                <span className="min-w-0">{place.display_name}</span>
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+      {searched && !searching && results.length === 0 && query.trim().length >= MIN_QUERY_LENGTH && (
+        <p className="mt-1 text-[10px] font-bold text-slate-400">{t('orders.settings.delivery.noResults')}</p>
+      )}
+    </div>
+  );
+}
+
 interface OrderSettingsForm {
   onlineOrderingOpen: boolean;
+  autoConfirmOrders: boolean;
   deliveryEnabled: boolean;
   pickupEnabled: boolean;
   cashOnDeliveryEnabled: boolean;
   onlineCardEnabled: boolean;
   maxConcurrentOrders: string; // '' = unlimited
+  noShowWarnThreshold: string;
+  maxDeliveryKm: string; // '' = no cap; stored as maxDeliveryMeters
   prepTimeMinutes: string;
   orderHours: WeekHours;
+}
+
+interface RestaurantLocationForm {
+  latitude: number | null;
+  longitude: number | null;
+  addressText: string;
 }
 
 interface DeliveryZone {
@@ -103,7 +211,7 @@ interface DeliveryZone {
 
 export default function OrderSettingsPage() {
   const router = useRouter();
-  const { t } = useTranslation();
+  const { t, locale } = useTranslation();
   const confirm = useConfirm();
 
   // --- General order settings ---
@@ -111,14 +219,24 @@ export default function OrderSettingsPage() {
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState<OrderSettingsForm>({
     onlineOrderingOpen: true,
+    autoConfirmOrders: false,
     deliveryEnabled: true,
     pickupEnabled: true,
     cashOnDeliveryEnabled: true,
     onlineCardEnabled: false,
     maxConcurrentOrders: '',
+    noShowWarnThreshold: '2',
+    maxDeliveryKm: '',
     prepTimeMinutes: '20',
     orderHours: defaultWeekHours(),
   });
+
+  // The restaurant pin lives on Restaurant, not OrderSettings, so it saves
+  // through its own endpoint — kept in a separate state slice (plus the
+  // last-loaded snapshot) so the save can skip that second request entirely
+  // when the tenant only touched the settings form.
+  const [location, setLocation] = useState<RestaurantLocationForm>({ latitude: null, longitude: null, addressText: '' });
+  const [loadedLocation, setLoadedLocation] = useState<RestaurantLocationForm>({ latitude: null, longitude: null, addressText: '' });
 
   const fetchSettings = useCallback(async () => {
     try {
@@ -127,14 +245,27 @@ export default function OrderSettingsPage() {
       const s = res.data.data;
       setForm({
         onlineOrderingOpen: s.onlineOrderingOpen ?? true,
+        autoConfirmOrders: s.autoConfirmOrders ?? false,
         deliveryEnabled: s.deliveryEnabled ?? true,
         pickupEnabled: s.pickupEnabled ?? true,
         cashOnDeliveryEnabled: s.cashOnDeliveryEnabled ?? true,
         onlineCardEnabled: s.onlineCardEnabled ?? false,
         maxConcurrentOrders: s.maxConcurrentOrders != null ? String(s.maxConcurrentOrders) : '',
+        noShowWarnThreshold: s.noShowWarnThreshold != null ? String(s.noShowWarnThreshold) : '2',
+        // Stored in metres, edited in kilometres — the unit a restaurant
+        // actually thinks about its delivery radius in.
+        maxDeliveryKm: s.maxDeliveryMeters != null ? String(s.maxDeliveryMeters / 1000) : '',
         prepTimeMinutes: s.prepTimeMinutes != null ? String(s.prepTimeMinutes) : '20',
         orderHours: parseWeekHours(s.orderHours),
       });
+      const loc = s.restaurantLocation || {};
+      const next: RestaurantLocationForm = {
+        latitude: typeof loc.latitude === 'number' ? loc.latitude : null,
+        longitude: typeof loc.longitude === 'number' ? loc.longitude : null,
+        addressText: loc.addressText ?? '',
+      };
+      setLocation(next);
+      setLoadedLocation(next);
     } catch (err) {
       toast.error(t('orders.settings.loadFailed'));
     } finally {
@@ -143,6 +274,16 @@ export default function OrderSettingsPage() {
   }, [t]);
 
   useEffect(() => { fetchSettings(); }, [fetchSettings]);
+
+  const pin = useMemo<LatLngValue | null>(
+    () => (location.latitude != null && location.longitude != null ? { lat: location.latitude, lng: location.longitude } : null),
+    [location.latitude, location.longitude]
+  );
+
+  const locationChanged =
+    location.latitude !== loadedLocation.latitude
+    || location.longitude !== loadedLocation.longitude
+    || location.addressText.trim() !== (loadedLocation.addressText || '').trim();
 
   const handleSaveSettings = async () => {
     try {
@@ -154,22 +295,52 @@ export default function OrderSettingsPage() {
       // untouched (undefined fields are no-ops in orderController.updateOrderSettings).
       await api.put('/orders/order-settings', {
         onlineOrderingOpen: form.onlineOrderingOpen,
+        // Always the real boolean from the form: an omitted field is a no-op
+        // server-side, which would make "turn auto-confirm off" unsaveable.
+        autoConfirmOrders: form.autoConfirmOrders,
         deliveryEnabled: form.deliveryEnabled,
         pickupEnabled: form.pickupEnabled,
         cashOnDeliveryEnabled: form.cashOnDeliveryEnabled,
         maxConcurrentOrders: form.maxConcurrentOrders === '' ? null : Number(form.maxConcurrentOrders),
+        noShowWarnThreshold: form.noShowWarnThreshold !== '' && !Number.isNaN(Number(form.noShowWarnThreshold)) ? Number(form.noShowWarnThreshold) : 2,
+        // Empty ⇒ null ⇒ no distance cap at all (zones alone decide).
+        maxDeliveryMeters: form.maxDeliveryKm !== '' && !Number.isNaN(Number(form.maxDeliveryKm))
+          ? Math.round(Number(form.maxDeliveryKm) * 1000)
+          : null,
         // `|| 20` would silently discard a legitimate 0 (the field allows
         // min="0" to disable the buffer) since 0 is falsy — only fall back
         // to 20 when the field is genuinely empty/non-numeric.
         prepTimeMinutes: form.prepTimeMinutes !== '' && !Number.isNaN(Number(form.prepTimeMinutes)) ? Number(form.prepTimeMinutes) : 20,
         orderHours: form.orderHours,
       });
-      toast.success(t('orders.settings.saved'));
     } catch (err) {
       toast.error(t('orders.settings.saveFailed'));
-    } finally {
       setSaving(false);
+      return;
     }
+
+    // Second request, only when the pin/address actually moved. Sequential
+    // rather than parallel so a failure here is unambiguous — the settings
+    // above are already committed at this point.
+    if (locationChanged) {
+      try {
+        // latitude and longitude must travel together (a half-set pin is a 400);
+        // clearing the pin sends both as null.
+        await api.put('/orders/restaurant-location', {
+          latitude: location.latitude,
+          longitude: location.longitude,
+          addressText: location.addressText.trim() || null,
+        });
+        setLoadedLocation({ ...location });
+      } catch (err) {
+        toast.error(t('orders.settings.delivery.locationSaveFailed'));
+        setSaving(false);
+        return;
+      }
+    }
+
+    toast.success(t('orders.settings.saved'));
+    setSaving(false);
   };
 
   // --- Delivery zones ---
@@ -278,14 +449,21 @@ export default function OrderSettingsPage() {
 
   return (
     <div className="flex flex-col gap-4 max-w-4xl">
-      <div className="flex items-center gap-4">
-        <Button variant="ghost" size="icon" onClick={() => router.push('/dashboard/orders')} className="rounded-full">
-          <ArrowLeft className="w-5 h-5" />
-        </Button>
-        <div>
-          <h1 className="text-2xl font-black text-slate-800 tracking-tight">{t('orders.settings.title')}</h1>
-          <p className="text-[10px] text-slate-400 font-black uppercase tracking-[0.2em] mt-1 italic">{t('orders.settings.subtitle')}</p>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex items-center gap-4">
+          <Button variant="ghost" size="icon" onClick={() => router.push('/dashboard/orders')} className="rounded-full">
+            <ArrowLeft className="w-5 h-5" />
+          </Button>
+          <div>
+            <h1 className="text-2xl font-black text-slate-800 tracking-tight">{t('orders.settings.title')}</h1>
+            <p className="text-[10px] text-slate-400 font-black uppercase tracking-[0.2em] mt-1 italic">{t('orders.settings.subtitle')}</p>
+          </div>
         </div>
+        <Link href="/dashboard/orders/menu">
+          <Button variant="outline" size="sm" className="h-9 px-4 text-[10px] font-black uppercase border-slate-200 text-slate-600 shadow-sm bg-white">
+            <ListChecks className="w-3.5 h-3.5 mr-1.5" /> {t('orders.orderMenuBtn')}
+          </Button>
+        </Link>
       </div>
 
       <Tabs defaultValue="general" className="w-full">
@@ -318,6 +496,21 @@ export default function OrderSettingsPage() {
                 </div>
               </div>
               <Switch checked={form.onlineOrderingOpen} onCheckedChange={(c) => setForm((f) => ({ ...f, onlineOrderingOpen: c }))} className="scale-125" />
+            </CardContent>
+          </Card>
+
+          {/* Auto-confirm sits directly under the kill switch: together they are
+              the two "how do new orders behave right now" controls. */}
+          <Card className="rounded-md border-slate-200 shadow-sm bg-white">
+            <CardContent className="p-4 flex items-center justify-between gap-4">
+              <div className="flex items-center gap-3">
+                <BadgeCheck className={cn('w-4 h-4', form.autoConfirmOrders ? 'text-emerald-500' : 'text-slate-400')} />
+                <div>
+                  <div className="text-xs font-black text-slate-700">{t('orders.settings.autoConfirm.title')}</div>
+                  <div className="text-[10px] text-slate-400 font-bold max-w-lg mt-0.5">{t('orders.settings.autoConfirm.desc')}</div>
+                </div>
+              </div>
+              <Switch checked={form.autoConfirmOrders} onCheckedChange={(c) => setForm((f) => ({ ...f, autoConfirmOrders: c }))} />
             </CardContent>
           </Card>
 
@@ -398,11 +591,17 @@ export default function OrderSettingsPage() {
               <div className="grid gap-1.5">
                 <Label className="text-[10px] font-black uppercase text-slate-400">{t('orders.settings.capacity.maxConcurrent')}</Label>
                 <Input type="number" min="0" placeholder={t('orders.settings.capacity.maxConcurrentHint')} value={form.maxConcurrentOrders} onChange={(e) => setForm((f) => ({ ...f, maxConcurrentOrders: e.target.value }))} className="h-10 text-sm font-bold border-slate-200 rounded-sm" />
+                <span className="text-[9px] text-slate-400 font-bold">{t('orders.settings.capacity.enforcedHint')}</span>
               </div>
               <div className="grid gap-1.5">
                 <Label className="text-[10px] font-black uppercase text-slate-400">{t('orders.settings.capacity.prepTime')}</Label>
                 <Input type="number" min="0" value={form.prepTimeMinutes} onChange={(e) => setForm((f) => ({ ...f, prepTimeMinutes: e.target.value }))} className="h-10 text-sm font-bold border-slate-200 rounded-sm" />
                 <span className="text-[9px] text-slate-400 font-bold">{t('orders.settings.capacity.prepTimeHint')}</span>
+              </div>
+              <div className="grid gap-1.5">
+                <Label className="text-[10px] font-black uppercase text-slate-400">{t('orders.settings.capacity.noShowThreshold')}</Label>
+                <Input type="number" min="1" value={form.noShowWarnThreshold} onChange={(e) => setForm((f) => ({ ...f, noShowWarnThreshold: e.target.value }))} className="h-10 text-sm font-bold border-slate-200 rounded-sm" />
+                <span className="text-[9px] text-slate-400 font-bold">{t('orders.settings.capacity.noShowThresholdHint')}</span>
               </div>
             </CardContent>
           </Card>
@@ -411,9 +610,86 @@ export default function OrderSettingsPage() {
             <CardHeader className="p-4 border-b border-slate-100">
               <span className="text-xs font-black uppercase tracking-widest text-slate-700 flex items-center gap-2"><Clock3 className="w-4 h-4 text-blue-500" /> {t('orders.settings.hours.title')}</span>
               <p className="text-[10px] text-slate-400 font-bold mt-1">{t('orders.settings.hours.desc')}</p>
+              <p className="text-[10px] text-slate-400 font-bold mt-1">{t('orders.settings.hours.enforcedHint')}</p>
             </CardHeader>
             <CardContent className="p-4">
               <WeeklyHoursEditor value={form.orderHours} onChange={(v) => setForm((f) => ({ ...f, orderHours: v }))} />
+            </CardContent>
+          </Card>
+
+          {/* ---- DELIVERY RANGE ---- */}
+          <Card className="rounded-md border-slate-200 shadow-sm bg-white">
+            <CardHeader className="p-4 border-b border-slate-100">
+              <span className="text-xs font-black uppercase tracking-widest text-slate-700 flex items-center gap-2"><Ruler className="w-4 h-4 text-blue-500" /> {t('orders.settings.delivery.title')}</span>
+              <p className="text-[10px] text-slate-400 font-bold mt-1">{t('orders.settings.delivery.desc')}</p>
+            </CardHeader>
+            <CardContent className="p-4 space-y-4">
+              <div className="grid gap-1.5 max-w-xs">
+                <Label className="text-[10px] font-black uppercase text-slate-400">{t('orders.settings.delivery.maxDistance')}</Label>
+                <Input
+                  type="number" min="0" step="0.1"
+                  placeholder={t('orders.settings.delivery.maxDistancePlaceholder')}
+                  value={form.maxDeliveryKm}
+                  onChange={(e) => setForm((f) => ({ ...f, maxDeliveryKm: e.target.value }))}
+                  className="h-10 text-sm font-bold border-slate-200 rounded-sm font-mono"
+                />
+                <span className="text-[9px] text-slate-400 font-bold">{t('orders.settings.delivery.maxDistanceHint')}</span>
+              </div>
+
+              <div className="pt-3 border-t border-slate-100 space-y-2">
+                <div className="flex items-center justify-between gap-2">
+                  <Label className="text-[10px] font-black uppercase text-slate-400">{t('orders.settings.delivery.location')}</Label>
+                  {pin ? (
+                    <div className="flex items-center gap-2">
+                      <Badge variant="outline" className="text-[9px] font-mono font-black border-emerald-200 bg-emerald-50 text-emerald-700">
+                        {pin.lat.toFixed(5)}, {pin.lng.toFixed(5)}
+                      </Badge>
+                      <button
+                        type="button"
+                        onClick={() => setLocation((l) => ({ ...l, latitude: null, longitude: null }))}
+                        className="text-[9px] font-black uppercase text-slate-400 hover:text-red-600"
+                      >
+                        {t('orders.settings.delivery.clearPin')}
+                      </button>
+                    </div>
+                  ) : (
+                    <Badge variant="outline" className="text-[9px] font-black uppercase border-amber-200 bg-amber-50 text-amber-700">
+                      {t('orders.settings.delivery.pinNotSet')}
+                    </Badge>
+                  )}
+                </div>
+                <p className="text-[10px] text-slate-400 font-bold">{t('orders.settings.delivery.locationHint')}</p>
+
+                <LocationSearch
+                  locale={locale}
+                  onPick={(v) => setLocation((l) => ({
+                    ...l,
+                    latitude: v.lat,
+                    longitude: v.lng,
+                    // Only prefill the address line while it is still empty —
+                    // a hand-written address must survive a re-search.
+                    addressText: l.addressText.trim() ? l.addressText : v.label,
+                  }))}
+                />
+
+                <LeafletMap
+                  value={pin}
+                  onChange={(v) => setLocation((l) => ({ ...l, latitude: v.lat, longitude: v.lng }))}
+                  heightClass="h-64"
+                />
+                <p className="text-[9px] text-slate-400 font-bold">{t('orders.settings.delivery.dragHint')}</p>
+
+                <div className="grid gap-1.5 pt-1">
+                  <Label className="text-[10px] font-black uppercase text-slate-400">{t('orders.settings.delivery.addressText')}</Label>
+                  <Input
+                    maxLength={500}
+                    value={location.addressText}
+                    onChange={(e) => setLocation((l) => ({ ...l, addressText: e.target.value }))}
+                    placeholder={t('orders.settings.delivery.addressTextPlaceholder')}
+                    className="h-10 text-sm font-medium border-slate-200 rounded-sm"
+                  />
+                </div>
+              </div>
             </CardContent>
           </Card>
 

@@ -15,9 +15,9 @@ import { cn } from '@/lib/utils';
 import { playOrderChime, ensureAudioContext } from '@/lib/orderChime';
 import OrderCard from '@/components/orders/OrderCard';
 import OrderPrintPortal, { PrintJob, PrintTemplateKind } from '@/components/orders/print/OrderPrintPortal';
-import { useOrderStream } from './useOrderStream';
-import { BOARD_STATUSES, OrderStatus, StaffOrder } from './types';
-import { nextStatusFor, cancelStatusFor } from './statusRules';
+import { useOrderStream } from '@/lib/orders/stream';
+import { BOARD_STATUSES, OrderStatus, StaffOrder } from '@/lib/orders/types';
+import { nextStatusFor, cancelStatusFor } from '@/lib/orders/statusRules';
 
 // Full-screen standalone route for KITCHEN staff — outside AdminLayout/
 // dashboard chrome (docs/packaging/online-ordering-plan.md §1e). Replaces the
@@ -41,6 +41,11 @@ export default function OrderStationPage() {
   const [cancelTarget, setCancelTarget] = useState<StaffOrder | null>(null);
   const [cancelReason, setCancelReason] = useState('');
   const [cancelSubmitting, setCancelSubmitting] = useState(false);
+  const [notPickedUpTarget, setNotPickedUpTarget] = useState<StaffOrder | null>(null);
+  const [notPickedUpSubmitting, setNotPickedUpSubmitting] = useState(false);
+  // Only used for the ⚠ no-show badge threshold; a failed fetch just means no
+  // badges, never a broken board.
+  const [noShowWarnThreshold, setNoShowWarnThreshold] = useState<number>(0);
 
   const mutedRef = useRef(muted);
   mutedRef.current = muted;
@@ -108,6 +113,10 @@ export default function OrderStationPage() {
   useEffect(() => {
     if (!isMounted || !isAuthenticated) return;
     fetchBoard();
+    api
+      .get('/orders/order-settings')
+      .then((res) => setNoShowWarnThreshold(Number(res.data?.data?.noShowWarnThreshold) || 0))
+      .catch(() => {});
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isMounted, isAuthenticated]);
 
@@ -122,7 +131,7 @@ export default function OrderStationPage() {
 
   const columns = useMemo(() => {
     const grouped: Record<OrderStatus, StaffOrder[]> = {
-      NEW: [], ACCEPTED: [], PREPARING: [], READY: [], OUT_FOR_DELIVERY: [], COMPLETED: [], CANCELLED: [], REJECTED: [],
+      NEW: [], ACCEPTED: [], PREPARING: [], READY: [], OUT_FOR_DELIVERY: [], COMPLETED: [], CANCELLED: [], REJECTED: [], NOT_PICKED_UP: [],
     };
     for (const order of orders) {
       if ((BOARD_STATUSES as OrderStatus[]).includes(order.status)) {
@@ -179,6 +188,23 @@ export default function OrderStationPage() {
       toast.error(err.response?.data?.error || t('orderStation.statusUpdateFailed'));
     } finally {
       setCancelSubmitting(false);
+    }
+  };
+
+  // "The customer never came for it." Terminal, and it bumps the customer's
+  // noShowCount server-side, so it goes through a confirm step — but no reason
+  // is asked for: the status itself is the reason.
+  const submitNotPickedUp = async () => {
+    if (!notPickedUpTarget) return;
+    setNotPickedUpSubmitting(true);
+    try {
+      const res = await api.patch(`/orders/${notPickedUpTarget.id}/status`, { status: 'NOT_PICKED_UP' });
+      mergeOrder(res.data.data as StaffOrder);
+      setNotPickedUpTarget(null);
+    } catch (err: any) {
+      toast.error(err.response?.data?.error || t('orderStation.statusUpdateFailed'));
+    } finally {
+      setNotPickedUpSubmitting(false);
     }
   };
 
@@ -281,8 +307,10 @@ export default function OrderStationPage() {
                       key={order.id}
                       order={order}
                       tick={tick}
+                      noShowWarnThreshold={noShowWarnThreshold}
                       onAdvance={handleAdvance}
                       onCancel={openCancelDialog}
+                      onNotPickedUp={setNotPickedUpTarget}
                       onPrint={handlePrint}
                     />
                   ))
@@ -326,6 +354,31 @@ export default function OrderStationPage() {
               className="bg-rose-600 text-white hover:bg-rose-700"
             >
               {t('orderStation.cancelDialog.confirmBtn')}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Not-picked-up confirmation (no reason field — see submitNotPickedUp) */}
+      <Dialog open={!!notPickedUpTarget} onOpenChange={(open) => !open && setNotPickedUpTarget(null)}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>
+              {notPickedUpTarget &&
+                t('orderStation.notPickedUpDialog.title').replace('{number}', String(notPickedUpTarget.orderNumber))}
+            </DialogTitle>
+            <DialogDescription>{t('orderStation.notPickedUpDialog.description')}</DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setNotPickedUpTarget(null)}>
+              {t('orderStation.cancelDialog.closeBtn')}
+            </Button>
+            <Button
+              onClick={submitNotPickedUp}
+              disabled={notPickedUpSubmitting}
+              className="bg-amber-600 text-white hover:bg-amber-700"
+            >
+              {t('orderStation.notPickedUpDialog.confirmBtn')}
             </Button>
           </DialogFooter>
         </DialogContent>

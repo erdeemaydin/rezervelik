@@ -27,6 +27,19 @@ export interface OrderTheme {
   muted: string;
   primary: string;
   primaryContrast: string;
+  /** Flat tints of `primary`, for selected cards / icon bubbles / chips.
+   *  Pre-computed here so components stop hand-rolling `${theme.primary}0d`
+   *  string concatenation at every call site (and so the alpha steps stay
+   *  consistent across the flow). */
+  primaryTint: string;
+  primarySoft: string;
+  /** Card elevation. The delivery-app look leans on soft shadows rather than
+   *  1px borders, but the value still has to read on each palette's bg. */
+  shadow: string;
+  shadowLg: string;
+  /** Cover art for the restaurant header when the tenant has no image of its
+   *  own — a brand-derived gradient, never a stock photo. */
+  heroGradient: string;
   cssVars: CSSProperties;
 }
 
@@ -74,6 +87,11 @@ export function getOrderTheme(customization?: CustomizationLike | null): OrderTh
     muted: base.muted,
     primary,
     primaryContrast: '#ffffff',
+    primaryTint: `${primary}0d`,
+    primarySoft: `${primary}1a`,
+    shadow: '0 1px 2px rgba(15, 23, 42, 0.04), 0 4px 12px rgba(15, 23, 42, 0.06)',
+    shadowLg: '0 8px 30px rgba(15, 23, 42, 0.12)',
+    heroGradient: `linear-gradient(135deg, ${primary} 0%, ${primary}cc 45%, ${primary}80 100%)`,
     cssVars: {
       '--order-primary': primary,
       '--order-primary-hover': primary + 'e6',

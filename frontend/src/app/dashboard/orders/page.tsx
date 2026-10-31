@@ -10,15 +10,22 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
-  Dialog, DialogContent, DialogHeader, DialogTitle,
+  Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
 } from '@/components/ui/dialog';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import {
-  Search, Settings2, ShoppingBag, Users, MapPin, StickyNote, Clock, Phone, BadgeCheck,
+  Search, Settings2, ShoppingBag, Users, MapPin, StickyNote, Clock, Phone, BadgeCheck, ListChecks,
+  Radio, Ban, ShieldCheck, AlertTriangle,
 } from 'lucide-react';
 import api from '@/lib/api';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { useTranslation } from '@/i18n/provider';
+import { useConfirm } from '@/components/ui/confirm-dialog';
+import ActiveOrdersTable from '@/components/orders/ActiveOrdersTable';
+import { orderStatusBadgeClass as statusBadgeClass } from '@/lib/orders/badges';
+import type { StaffOrder } from '@/lib/orders/types';
 
 // --- Types (mirrors src/controllers/orderController.ts response shapes) ---
 interface OrderModifierLine { id: string; name: string; priceAdjust: number }
@@ -50,8 +57,25 @@ interface OrderRow {
   readyBy: string | null;
   customerNote: string | null;
   createdAt: string;
-  customer: { id: string; name: string; phone: string } | null;
+  // `noShowCount`/`customerBanned` come back from GET /api/orders and the SSE
+  // stream, but not from the orders nested inside GET /api/orders/customers/:id
+  // (no customer relation is re-included there) — hence optional.
+  customer: { id: string; name: string; phone: string; noShowCount?: number } | null;
+  customerBanned?: boolean;
   items: OrderItemLine[];
+}
+/** One row of the phone-scoped CustomerBan history (GET /api/orders/bans and
+ *  the `bans` array on a customer detail). Actor UUIDs are already resolved to
+ *  display names server-side — per PROJECT_LOGIC.md §7 the ids never surface. */
+interface BanRow {
+  id: string;
+  phone: string;
+  reason: string | null;
+  bannedByName: string | null;
+  liftedByName: string | null;
+  liftedAt: string | null;
+  createdAt: string;
+  active: boolean;
 }
 interface CustomerRow {
   id: string;
@@ -60,6 +84,8 @@ interface CustomerRow {
   email?: string | null;
   phoneVerifiedAt?: string | null;
   createdAt: string;
+  banned: boolean;
+  noShowCount: number;
   _count: { orders: number };
 }
 interface CustomerAddressRow {
@@ -71,24 +97,17 @@ interface CustomerAddressRow {
 interface CustomerDetail extends CustomerRow {
   addresses: CustomerAddressRow[];
   orders: OrderRow[];
+  bans: BanRow[];
 }
 
-const ALL_STATUSES = ['NEW', 'ACCEPTED', 'PREPARING', 'READY', 'OUT_FOR_DELIVERY', 'COMPLETED', 'CANCELLED', 'REJECTED'];
-
-const statusBadgeClass = (status: string) => {
-  if (status === 'NEW') return 'bg-blue-100 text-blue-700';
-  if (status === 'ACCEPTED') return 'bg-sky-100 text-sky-700';
-  if (status === 'PREPARING') return 'bg-amber-100 text-amber-700';
-  if (status === 'READY') return 'bg-emerald-100 text-emerald-700';
-  if (status === 'OUT_FOR_DELIVERY') return 'bg-purple-100 text-purple-700';
-  if (status === 'COMPLETED') return 'bg-green-100 text-green-700';
-  return 'bg-red-100 text-red-700'; // CANCELLED / REJECTED
-};
+const ALL_STATUSES = ['NEW', 'ACCEPTED', 'PREPARING', 'READY', 'OUT_FOR_DELIVERY', 'COMPLETED', 'CANCELLED', 'REJECTED', 'NOT_PICKED_UP'];
 
 export default function OrdersPage() {
   const { t, locale } = useTranslation();
+  const confirm = useConfirm();
   const localeTag = locale === 'tr' ? 'tr-TR' : 'en-US';
 
+  const [tab, setTab] = useState('active');
   const [restaurantProfile, setRestaurantProfile] = useState<any>(null);
   const formatPrice = useMemo(() => {
     const currency = restaurantProfile?.settings?.currency || 'TRY';
@@ -103,6 +122,18 @@ export default function OrdersPage() {
 
   useEffect(() => {
     api.get('/restaurants/me').then((res) => setRestaurantProfile(res.data.data)).catch(() => {});
+  }, []);
+
+  // Two settings shape the live table: whether a Confirm button makes sense at
+  // all, and how many no-shows earn a customer a ⚠ badge. A failed load
+  // degrades to "no auto-confirm, no badges", never to a broken table.
+  const [autoConfirmOrders, setAutoConfirmOrders] = useState(false);
+  const [noShowWarnThreshold, setNoShowWarnThreshold] = useState(0);
+  useEffect(() => {
+    api.get('/orders/order-settings').then((res) => {
+      setAutoConfirmOrders(res.data?.data?.autoConfirmOrders === true);
+      setNoShowWarnThreshold(Number(res.data?.data?.noShowWarnThreshold) || 0);
+    }).catch(() => {});
   }, []);
 
   // --- Order history ---
@@ -206,6 +237,93 @@ export default function OrdersPage() {
     }
   };
 
+  /** Re-read the ban-derived state after a ban changes — `banned`, `bans[]`
+   *  and the customers table's badge are all computed server-side, none of it
+   *  is patched in locally.
+   *
+   *  The detail is only re-fetched when its dialog is already showing that
+   *  customer: banning from the *order* detail must not pop a second dialog
+   *  open on top of the one the user is looking at. */
+  const refreshCustomerViews = useCallback(async (customerId: string, refetchDetail: boolean) => {
+    if (refetchDetail) {
+      try {
+        const res = await api.get(`/orders/customers/${customerId}`);
+        setSelectedCustomer(res.data.data);
+      } catch {
+        /* the ban itself succeeded; a stale dialog isn't worth a second error toast */
+      }
+    }
+    if (customersLoaded) fetchCustomers();
+  }, [customersLoaded, fetchCustomers]);
+
+  // --- Customer bans (manual only — see plan decision #4; noShowCount never
+  // bans anyone by itself, it only raises the badge staff act on) ---
+  const [banTarget, setBanTarget] = useState<{ customerId: string; name: string; phone: string } | null>(null);
+  const [banReason, setBanReason] = useState('');
+  const [banSubmitting, setBanSubmitting] = useState(false);
+
+  const openBanDialog = (customerId: string, name: string, phone: string) => {
+    setBanReason('');
+    setBanTarget({ customerId, name, phone });
+  };
+
+  const submitBan = async () => {
+    if (!banTarget) return;
+    const { customerId } = banTarget;
+    const detailOpen = selectedCustomer?.id === customerId;
+    // The order-detail dialog stays open behind the ban dialog, so flip its
+    // banned flag too — nothing else would tell it (the ban isn't an order
+    // status change, so no SSE event follows).
+    const markOrderBanned = () =>
+      setSelectedOrder((prev) => (prev && prev.customer?.id === customerId ? { ...prev, customerBanned: true } : prev));
+    setBanSubmitting(true);
+    try {
+      await api.post('/orders/bans', { phone: banTarget.phone, reason: banReason.trim() || undefined });
+      toast.success(t('orders.bans.banned'));
+      setBanTarget(null);
+      markOrderBanned();
+      await refreshCustomerViews(customerId, detailOpen);
+    } catch (err: any) {
+      // 409 = an active ban for this number already exists (another manager got
+      // there first). That's a no-op, not a failure — say so plainly and pull
+      // the fresh state in rather than leaving a stale "not banned" dialog.
+      if (err?.response?.status === 409) {
+        toast.error(t('orders.bans.alreadyBanned'));
+        setBanTarget(null);
+        markOrderBanned();
+        await refreshCustomerViews(customerId, detailOpen);
+      } else {
+        toast.error(err?.response?.data?.message || t('orders.bans.banFailed'));
+      }
+    } finally {
+      setBanSubmitting(false);
+    }
+  };
+
+  const liftBan = async (customer: CustomerDetail) => {
+    const activeBan = customer.bans.find((b) => b.active);
+    if (!activeBan) return;
+    const ok = await confirm({
+      title: t('orders.bans.liftConfirmTitle'),
+      description: t('orders.bans.liftConfirmDesc'),
+      details: [
+        { label: t('orders.customers.table.name'), value: customer.name },
+        { label: t('orders.customers.table.phone'), value: customer.phone },
+      ],
+      confirmText: t('orders.bans.liftBtn'),
+      cancelText: t('orders.customerDetail.close'),
+    });
+    if (!ok) return;
+    try {
+      await api.patch(`/orders/bans/${activeBan.id}/lift`);
+      toast.success(t('orders.bans.lifted'));
+      setSelectedOrder((prev) => (prev && prev.customer?.id === customer.id ? { ...prev, customerBanned: false } : prev));
+      await refreshCustomerViews(customer.id, true);
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message || t('orders.bans.liftFailed'));
+    }
+  };
+
   const fmtDateTime = (iso: string) => new Date(iso).toLocaleString(localeTag, {
     day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit',
   });
@@ -217,18 +335,39 @@ export default function OrdersPage() {
           <h1 className="text-2xl font-black text-slate-800 tracking-tight">{t('orders.title')}</h1>
           <p className="text-[10px] text-slate-400 font-black uppercase tracking-[0.2em] mt-1 italic">{t('orders.subtitle')}</p>
         </div>
-        <Link href="/dashboard/orders/settings">
-          <Button variant="outline" size="sm" className="h-9 px-4 text-[10px] font-black uppercase border-slate-200 text-slate-600 shadow-sm bg-white">
-            <Settings2 className="w-3.5 h-3.5 mr-1.5" /> {t('orders.settingsBtn')}
-          </Button>
-        </Link>
+        <div className="flex items-center gap-2">
+          <Link href="/dashboard/orders/menu">
+            <Button variant="outline" size="sm" className="h-9 px-4 text-[10px] font-black uppercase border-slate-200 text-slate-600 shadow-sm bg-white">
+              <ListChecks className="w-3.5 h-3.5 mr-1.5" /> {t('orders.orderMenuBtn')}
+            </Button>
+          </Link>
+          <Link href="/dashboard/orders/settings">
+            <Button variant="outline" size="sm" className="h-9 px-4 text-[10px] font-black uppercase border-slate-200 text-slate-600 shadow-sm bg-white">
+              <Settings2 className="w-3.5 h-3.5 mr-1.5" /> {t('orders.settingsBtn')}
+            </Button>
+          </Link>
+        </div>
       </div>
 
-      <Tabs defaultValue="orders" className="w-full" onValueChange={(v) => { if (v === 'customers' && !customersLoaded) fetchCustomers(); }}>
+      {/* "active" is the default tab: the live board is what a manager opening
+          this screen mid-service actually needs; history is the lookup tool. */}
+      <Tabs value={tab} onValueChange={(v) => { setTab(v); if (v === 'customers' && !customersLoaded) fetchCustomers(); }} className="w-full">
         <TabsList className="bg-slate-100/50">
+          <TabsTrigger value="active" className="text-xs font-bold"><Radio className="w-3.5 h-3.5 mr-1.5" /> {t('orders.tabs.active')}</TabsTrigger>
           <TabsTrigger value="orders" className="text-xs font-bold"><ShoppingBag className="w-3.5 h-3.5 mr-1.5" /> {t('orders.tabs.history')}</TabsTrigger>
           <TabsTrigger value="customers" className="text-xs font-bold"><Users className="w-3.5 h-3.5 mr-1.5" /> {t('orders.tabs.customers')}</TabsTrigger>
         </TabsList>
+
+        {/* ---- ACTIVE ORDERS (live) ---- */}
+        <TabsContent value="active" className="mt-4">
+          <ActiveOrdersTable
+            active={tab === 'active'}
+            formatPrice={formatPrice}
+            autoConfirmOrders={autoConfirmOrders}
+            noShowWarnThreshold={noShowWarnThreshold}
+            onSelectOrder={(o: StaffOrder) => setSelectedOrder(o)}
+          />
+        </TabsContent>
 
         {/* ---- ORDER HISTORY ---- */}
         <TabsContent value="orders" className="mt-4">
@@ -348,7 +487,19 @@ export default function OrdersPage() {
                   ) : filteredCustomers.map((c) => (
                     <TableRow key={c.id} onClick={() => openCustomerDetail(c.id)} className="h-14 hover:bg-slate-50/50 border-b border-slate-100 transition-colors cursor-pointer">
                       <TableCell className="px-6 py-3">
-                        <span className="font-black text-slate-900 text-sm">{c.name}</span>
+                        <div className="flex flex-wrap items-center gap-1.5">
+                          <span className="font-black text-slate-900 text-sm">{c.name}</span>
+                          {c.banned && (
+                            <Badge className="border-0 bg-rose-100 px-1.5 py-0 text-[9px] font-black uppercase text-rose-700 shadow-none">
+                              <Ban className="mr-0.5 h-2.5 w-2.5" /> {t('orders.active.bannedBadge')}
+                            </Badge>
+                          )}
+                          {noShowWarnThreshold > 0 && (c.noShowCount ?? 0) >= noShowWarnThreshold && (
+                            <Badge className="border-0 bg-amber-100 px-1.5 py-0 text-[9px] font-black uppercase text-amber-700 shadow-none">
+                              <AlertTriangle className="mr-0.5 h-2.5 w-2.5" /> {String(c.noShowCount)}
+                            </Badge>
+                          )}
+                        </div>
                       </TableCell>
                       <TableCell className="text-[10px] font-mono text-slate-500">{c.phone}</TableCell>
                       <TableCell className="text-center">
@@ -385,6 +536,21 @@ export default function OrdersPage() {
                     <div className="text-[9px] font-black uppercase text-slate-400 tracking-widest">{t('orders.detail.customer')}</div>
                     <div className="font-bold text-slate-800">{selectedOrder.customer?.name || '—'}</div>
                     <div className="text-slate-500 font-mono">{selectedOrder.customer?.phone || ''}</div>
+                    {(selectedOrder.customerBanned || (noShowWarnThreshold > 0 && (selectedOrder.customer?.noShowCount ?? 0) >= noShowWarnThreshold)) && (
+                      <div className="flex flex-wrap items-center gap-1 pt-0.5">
+                        {noShowWarnThreshold > 0 && (selectedOrder.customer?.noShowCount ?? 0) >= noShowWarnThreshold && (
+                          <Badge className="border-0 bg-amber-100 px-1.5 py-0 text-[9px] font-black uppercase text-amber-700 shadow-none">
+                            <AlertTriangle className="mr-0.5 h-2.5 w-2.5" />
+                            {String(selectedOrder.customer?.noShowCount ?? 0)} {t('orders.active.noShowsSuffix')}
+                          </Badge>
+                        )}
+                        {selectedOrder.customerBanned && (
+                          <Badge className="border-0 bg-rose-100 px-1.5 py-0 text-[9px] font-black uppercase text-rose-700 shadow-none">
+                            <Ban className="mr-0.5 h-2.5 w-2.5" /> {t('orders.active.bannedBadge')}
+                          </Badge>
+                        )}
+                      </div>
+                    )}
                   </div>
                   <div className="space-y-1">
                     <div className="text-[9px] font-black uppercase text-slate-400 tracking-widest">{t('orders.detail.placedAt')}</div>
@@ -469,6 +635,22 @@ export default function OrdersPage() {
                   <div className="text-[9px] font-black uppercase text-blue-500 tracking-widest flex items-center gap-1 mb-1"><StickyNote className="w-3 h-3" /> {t('orders.detail.customerNote')}</div>
                   <div className="text-xs text-slate-700 font-medium italic">{selectedOrder.customerNote || t('orders.detail.noNote')}</div>
                 </div>
+
+                {/* Acting on a bad order shouldn't mean hunting the customer
+                    down in the Customers tab — the ban shortcut is right here.
+                    Hidden once the number is already banned. */}
+                {selectedOrder.customer && !selectedOrder.customerBanned && (
+                  <div className="flex justify-end border-t border-slate-100 pt-3">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => openBanDialog(selectedOrder.customer!.id, selectedOrder.customer!.name, selectedOrder.customer!.phone)}
+                      className="h-8 border-rose-200 bg-white px-3 text-[10px] font-black uppercase text-rose-600 shadow-none hover:bg-rose-50"
+                    >
+                      <Ban className="mr-1.5 h-3 w-3" /> {t('orders.bans.banCustomerBtn')}
+                    </Button>
+                  </div>
+                )}
               </div>
             </>
           )}
@@ -492,7 +674,7 @@ export default function OrdersPage() {
               </div>
             ) : (
               <>
-                <div className="flex items-center gap-3 text-xs">
+                <div className="flex flex-wrap items-center gap-3 text-xs">
                   <Phone className="w-3.5 h-3.5 text-slate-400" />
                   <span className="font-mono font-bold text-slate-700">{selectedCustomer.phone}</span>
                   {selectedCustomer.phoneVerifiedAt ? (
@@ -500,7 +682,83 @@ export default function OrdersPage() {
                   ) : (
                     <Badge variant="outline" className="text-[9px] font-black border-slate-200 text-slate-500">{t('orders.customerDetail.phoneNotVerified')}</Badge>
                   )}
+                  {selectedCustomer.banned && (
+                    <Badge className="bg-rose-100 text-rose-700 border-0 text-[9px] font-black uppercase"><Ban className="w-3 h-3 mr-1" /> {t('orders.active.bannedBadge')}</Badge>
+                  )}
                 </div>
+
+                {/* Ban state + the action that changes it. Bans are keyed by
+                    phone number, so this is deliberately phrased as banning
+                    the number, not the account row. */}
+                <div className={cn(
+                  'flex flex-wrap items-center justify-between gap-3 rounded-md border p-3',
+                  selectedCustomer.banned ? 'border-rose-200 bg-rose-50/50' : 'border-slate-200 bg-slate-50/50'
+                )}>
+                  <div className="space-y-0.5">
+                    <div className="text-[9px] font-black uppercase tracking-widest text-slate-400">{t('orders.customerDetail.banStatus')}</div>
+                    <div className={cn('text-xs font-black', selectedCustomer.banned ? 'text-rose-700' : 'text-slate-700')}>
+                      {t(selectedCustomer.banned ? 'orders.customerDetail.bannedState' : 'orders.customerDetail.notBannedState')}
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-4">
+                    <div className="space-y-0.5 text-right">
+                      <div className="text-[9px] font-black uppercase tracking-widest text-slate-400">{t('orders.customerDetail.noShowCount')}</div>
+                      <div className={cn(
+                        'text-sm font-black',
+                        noShowWarnThreshold > 0 && (selectedCustomer.noShowCount ?? 0) >= noShowWarnThreshold ? 'text-amber-600' : 'text-slate-700'
+                      )}>
+                        {String(selectedCustomer.noShowCount ?? 0)}
+                      </div>
+                    </div>
+                    {selectedCustomer.banned ? (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => liftBan(selectedCustomer)}
+                        className="h-8 border-emerald-200 bg-white px-3 text-[10px] font-black uppercase text-emerald-600 shadow-none hover:bg-emerald-50"
+                      >
+                        <ShieldCheck className="mr-1.5 h-3 w-3" /> {t('orders.bans.liftBtn')}
+                      </Button>
+                    ) : (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => openBanDialog(selectedCustomer.id, selectedCustomer.name, selectedCustomer.phone)}
+                        className="h-8 border-rose-200 bg-white px-3 text-[10px] font-black uppercase text-rose-600 shadow-none hover:bg-rose-50"
+                      >
+                        <Ban className="mr-1.5 h-3 w-3" /> {t('orders.bans.banBtn')}
+                      </Button>
+                    )}
+                  </div>
+                </div>
+
+                {selectedCustomer.bans?.length > 0 && (
+                  <div>
+                    <div className="text-[9px] font-black uppercase text-slate-400 tracking-widest mb-2">{t('orders.customerDetail.banHistory')}</div>
+                    <div className="rounded-md border border-slate-200 overflow-hidden">
+                      {selectedCustomer.bans.map((b) => (
+                        <div key={b.id} className="border-b border-slate-100 bg-white p-2.5 text-xs last:border-0">
+                          <div className="flex items-center justify-between gap-2">
+                            <Badge className={cn(
+                              'border-0 px-1.5 py-0 text-[9px] font-black uppercase shadow-none',
+                              b.active ? 'bg-rose-100 text-rose-700' : 'bg-slate-100 text-slate-500'
+                            )}>
+                              {t(b.active ? 'orders.bans.activeBadge' : 'orders.bans.liftedBadge')}
+                            </Badge>
+                            <span className="text-[10px] font-bold text-slate-400">{fmtDateTime(b.createdAt)}</span>
+                          </div>
+                          <div className="mt-1 italic text-slate-700">{b.reason || t('orders.bans.noReason')}</div>
+                          <div className="mt-1 text-[10px] font-bold text-slate-400">
+                            {t('orders.bans.bannedBy')} {b.bannedByName || t('orders.bans.unknownStaff')}
+                            {b.liftedAt && (
+                              <> · {t('orders.bans.liftedBy')} {b.liftedByName || t('orders.bans.unknownStaff')} · {fmtDateTime(b.liftedAt)}</>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
 
                 <div>
                   <div className="text-[9px] font-black uppercase text-slate-400 tracking-widest mb-2">{t('orders.customerDetail.addresses')}</div>
@@ -543,6 +801,37 @@ export default function OrdersPage() {
               </>
             )}
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* ---- BAN CUSTOMER DIALOG ---- */}
+      <Dialog open={!!banTarget} onOpenChange={(o) => { if (!o) setBanTarget(null); }}>
+        <DialogContent maxWidth="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-base font-black">{t('orders.bans.dialogTitle')}</DialogTitle>
+            <DialogDescription className="text-xs">{t('orders.bans.dialogDesc')}</DialogDescription>
+          </DialogHeader>
+          {banTarget && (
+            <div className="rounded-md border border-slate-200 bg-slate-50/60 p-3 text-xs">
+              <div className="font-black text-slate-800">{banTarget.name}</div>
+              <div className="font-mono text-slate-500">{banTarget.phone}</div>
+            </div>
+          )}
+          <div className="space-y-2">
+            <Label className="text-[10px] font-black uppercase tracking-wider text-slate-400">{t('orders.bans.reasonLabel')}</Label>
+            <Textarea
+              value={banReason}
+              onChange={(e) => setBanReason(e.target.value)}
+              placeholder={t('orders.bans.reasonPlaceholder')}
+              className="min-h-[80px] text-sm"
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setBanTarget(null)}>{t('orders.customerDetail.close')}</Button>
+            <Button onClick={submitBan} disabled={banSubmitting} className="bg-rose-600 text-white hover:bg-rose-700">
+              <Ban className="mr-1.5 h-3.5 w-3.5" /> {t('orders.bans.banBtn')}
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>

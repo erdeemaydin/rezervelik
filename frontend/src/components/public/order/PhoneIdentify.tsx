@@ -5,21 +5,27 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Loader2, AlertTriangle } from 'lucide-react';
+import { Loader2, AlertTriangle, ShieldCheck, MessageSquare, UserRound } from 'lucide-react';
 import { useTranslation } from '@/i18n/provider';
 import { requestOtp, verifyOtp, orderApiErrorCode, orderApiErrorMessage } from '@/lib/orderApi';
 import type { OrderTheme } from '@/lib/orderTheme';
 
 type Stage = 'phone' | 'code' | 'name';
 
+const RESEND_COOLDOWN_SECONDS = 60;
+
 export default function PhoneIdentify({
   restaurantId,
   theme,
   onIdentified,
+  /** The sheet reuses this component in a narrow panel where the big
+   *  illustrated header would crowd the list behind it. */
+  compact = false,
 }: {
   restaurantId: string;
   theme: OrderTheme;
   onIdentified: (customer: { id: string; name: string; phone: string }) => void;
+  compact?: boolean;
 }) {
   const { t } = useTranslation();
   const [stage, setStage] = useState<Stage>('phone');
@@ -45,7 +51,7 @@ export default function PhoneIdentify({
       setError(null);
       await requestOtp(restaurantId, phone.trim());
       setStage('code');
-      setResendIn(60);
+      setResendIn(RESEND_COOLDOWN_SECONDS);
     } catch (err) {
       setError(orderApiErrorMessage(err, t('publicOrder.identify.requestFailed')));
     } finally {
@@ -86,57 +92,108 @@ export default function PhoneIdentify({
     setResendIn(0);
   };
 
+  const headline =
+    stage === 'phone'
+      ? t('publicOrder.identify.title')
+      : stage === 'code'
+        ? t('publicOrder.identify.codeTitle')
+        : t('publicOrder.identify.nameTitle');
+  const subhead =
+    stage === 'phone'
+      ? t('publicOrder.identify.subtitle')
+      : stage === 'code'
+        ? `${t('publicOrder.identify.codeSentTo')} ${phone}`
+        : t('publicOrder.identify.nameSubtitle');
+  const StageIcon = stage === 'phone' ? ShieldCheck : stage === 'code' ? MessageSquare : UserRound;
+
   return (
-    <div className="space-y-4">
-      <h2 className="text-sm font-bold uppercase tracking-wide" style={{ color: theme.muted }}>{t('publicOrder.identify.title')}</h2>
+    <div className="mx-auto max-w-sm px-1 py-2">
+      <div className={compact ? 'text-left' : 'text-center'}>
+        {!compact && (
+          <div
+            className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-2xl"
+            style={{ backgroundColor: theme.primaryTint, color: theme.primary }}
+          >
+            <StageIcon className="h-7 w-7" />
+          </div>
+        )}
+        <h2 className="text-lg font-black leading-tight" style={{ color: theme.text }}>
+          {headline}
+        </h2>
+        <p className="mt-1 text-sm" style={{ color: theme.muted }}>
+          {subhead}
+        </p>
+      </div>
 
       {error && (
-        <div className="flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
-          <AlertTriangle className="h-4 w-4 shrink-0" /> {error}
+        <div className="mt-4 flex items-start gap-2 rounded-xl border border-red-200 bg-red-50 px-3 py-2.5 text-sm text-red-700">
+          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" /> {error}
         </div>
       )}
 
       {stage === 'phone' && (
-        <form onSubmit={handleRequestOtp} className="space-y-3">
+        <form onSubmit={handleRequestOtp} className="mt-5 space-y-3">
           <div className="space-y-1.5">
-            <Label className="text-xs font-bold uppercase" style={{ color: theme.muted }}>{t('publicOrder.identify.phoneLabel')}</Label>
+            <Label className="text-xs font-bold uppercase" style={{ color: theme.muted }}>
+              {t('publicOrder.identify.phoneLabel')}
+            </Label>
             <Input
               required
               type="tel"
+              inputMode="tel"
+              autoComplete="tel"
               autoFocus
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
               placeholder={t('publicOrder.identify.phonePlaceholder')}
-              className="h-11 text-base"
+              className="h-12 text-center text-base font-semibold tracking-wide"
             />
           </div>
-          <Button type="submit" disabled={submitting} className="h-11 w-full text-sm font-bold text-white" style={{ backgroundColor: theme.primary }}>
+          <Button
+            type="submit"
+            disabled={submitting}
+            className="h-12 w-full text-sm font-bold text-white"
+            style={{ backgroundColor: theme.primary }}
+          >
             {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : t('publicOrder.identify.sendCodeButton')}
           </Button>
+          <p className="text-center text-[11px] leading-snug" style={{ color: theme.muted }}>
+            {t('publicOrder.identify.whyPhone')}
+          </p>
         </form>
       )}
 
       {stage === 'code' && (
-        <form onSubmit={handleVerify} className="space-y-3">
-          <p className="text-xs" style={{ color: theme.muted }}>{t('publicOrder.identify.codeSentTo')} {phone}</p>
+        <form onSubmit={handleVerify} className="mt-5 space-y-3">
           <div className="space-y-1.5">
-            <Label className="text-xs font-bold uppercase" style={{ color: theme.muted }}>{t('publicOrder.identify.codeLabel')}</Label>
+            <Label className="text-xs font-bold uppercase" style={{ color: theme.muted }}>
+              {t('publicOrder.identify.codeLabel')}
+            </Label>
             <Input
               required
               inputMode="numeric"
+              autoComplete="one-time-code"
               autoFocus
               maxLength={6}
               value={code}
               onChange={(e) => setCode(e.target.value.replace(/\D/g, ''))}
               placeholder={t('publicOrder.identify.codePlaceholder')}
-              className="h-11 text-center text-lg tracking-[0.4em]"
+              className="h-14 text-center text-2xl font-black tracking-[0.4em]"
             />
           </div>
-          <label className="flex items-center gap-2 text-xs" style={{ color: theme.muted }}>
+          <label
+            className="flex cursor-pointer items-center gap-2.5 rounded-xl p-3 text-xs"
+            style={{ backgroundColor: theme.bg, color: theme.text }}
+          >
             <Checkbox checked={trustDevice} onCheckedChange={setTrustDevice} className="h-4 w-4" />
             {t('publicOrder.identify.trustDeviceLabel')}
           </label>
-          <Button type="submit" disabled={submitting} className="h-11 w-full text-sm font-bold text-white" style={{ backgroundColor: theme.primary }}>
+          <Button
+            type="submit"
+            disabled={submitting}
+            className="h-12 w-full text-sm font-bold text-white"
+            style={{ backgroundColor: theme.primary }}
+          >
             {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : t('publicOrder.identify.verifyButton')}
           </Button>
           <div className="flex items-center justify-between text-xs">
@@ -147,7 +204,7 @@ export default function PhoneIdentify({
               type="button"
               disabled={resendIn > 0 || submitting}
               onClick={() => handleRequestOtp()}
-              className="font-semibold disabled:opacity-40"
+              className="font-bold disabled:opacity-40"
               style={{ color: theme.primary }}
             >
               {resendIn > 0 ? `${t('publicOrder.identify.resendPrefix')} ${resendIn}s` : t('publicOrder.identify.resendButton')}
@@ -157,20 +214,27 @@ export default function PhoneIdentify({
       )}
 
       {stage === 'name' && (
-        <form onSubmit={handleVerify} className="space-y-3">
-          <p className="text-xs" style={{ color: theme.muted }}>{t('publicOrder.identify.nameSubtitle')}</p>
+        <form onSubmit={handleVerify} className="mt-5 space-y-3">
           <div className="space-y-1.5">
-            <Label className="text-xs font-bold uppercase" style={{ color: theme.muted }}>{t('publicOrder.identify.nameLabel')}</Label>
+            <Label className="text-xs font-bold uppercase" style={{ color: theme.muted }}>
+              {t('publicOrder.identify.nameLabel')}
+            </Label>
             <Input
               required
               autoFocus
+              autoComplete="name"
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder={t('publicOrder.identify.namePlaceholder')}
-              className="h-11 text-base"
+              className="h-12 text-base"
             />
           </div>
-          <Button type="submit" disabled={submitting} className="h-11 w-full text-sm font-bold text-white" style={{ backgroundColor: theme.primary }}>
+          <Button
+            type="submit"
+            disabled={submitting}
+            className="h-12 w-full text-sm font-bold text-white"
+            style={{ backgroundColor: theme.primary }}
+          >
             {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : t('publicOrder.identify.verifyButton')}
           </Button>
         </form>

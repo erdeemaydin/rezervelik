@@ -1052,14 +1052,12 @@
       "dishInfo": "Dish Information",
       "tagsSpecs": "Tags / Specs",
       "price": "Price",
-      "onlineOrdering": "Online Ordering",
       "actions": "Actions",
       "noItems": "No items in this category."
     },
     "onlineOrdering": {
-      "prepTimePlaceholder": "Prep (min)",
-      "updated": "Online-ordering setting saved",
-      "updateFailed": "Couldn't save the online-ordering setting"
+      "movedNote": "Online-ordering items, prices and photos are now managed in the Order Menu window.",
+      "openOrderMenu": "Order Menu"
     },
     "buttons": {
       "addDish": "Add Dish to Category",
@@ -1868,7 +1866,9 @@
       "rejectBtn": "Reject",
       "cancelBtn": "Cancel",
       "minutesAgo": "{minutes}m ago",
-      "justNow": "Just now"
+      "justNow": "Just now",
+      "acceptBtn": "Accept",
+      "notPickedUpBtn": "Not picked up"
     },
     "print": {
       "kitchenTicket": "Kitchen ticket",
@@ -1903,15 +1903,22 @@
       "paidLabel": "Paid",
       "unpaidLabel": "Unpaid",
       "thankYou": "Thank you for your order!"
+    },
+    "notPickedUpDialog": {
+      "title": "Order #{number} not picked up?",
+      "description": "The order is closed and this customer's no-show count goes up by one. This can't be undone.",
+      "confirmBtn": "Not picked up"
     }
   },
   "orders": {
     "title": "Orders",
     "subtitle": "Online order history and customer directory",
     "settingsBtn": "Order Settings",
+    "orderMenuBtn": "Order Menu",
     "tabs": {
       "history": "Order History",
-      "customers": "Customers"
+      "customers": "Customers",
+      "active": "Active"
     },
     "filters": {
       "today": "Today",
@@ -1943,7 +1950,8 @@
       "OUT_FOR_DELIVERY": "Out for Delivery",
       "COMPLETED": "Completed",
       "CANCELLED": "Cancelled",
-      "REJECTED": "Rejected"
+      "REJECTED": "Rejected",
+      "NOT_PICKED_UP": "Not picked up"
     },
     "fulfillment": {
       "DELIVERY": "Delivery",
@@ -2001,12 +2009,118 @@
       "noAddresses": "No saved addresses",
       "orderHistory": "Order History",
       "noOrders": "No orders yet",
-      "close": "Close"
+      "close": "Close",
+      "banStatus": "Ban status",
+      "bannedState": "Banned",
+      "notBannedState": "Not banned",
+      "noShowCount": "No-shows",
+      "banHistory": "Ban history"
     },
     "errors": {
       "loadFailed": "Couldn't load orders",
       "loadCustomersFailed": "Couldn't load customers",
       "loadCustomerDetailFailed": "Couldn't load this customer's details"
+    },
+    "orderMenu": {
+      "title": "Order Menu",
+      "subtitle": "Curate what sells online, with online-only overrides",
+      "addItemsBtn": "Add Items",
+      "manageCategoriesBtn": "Categories",
+      "loading": "Loading the order menu…",
+      "loadFailed": "Couldn't load the order menu",
+      "retry": "Try again",
+      "close": "Close",
+      "toggleFailed": "Couldn't save that change",
+      "empty": {
+        "title": "No items sell online yet",
+        "desc": "Pick dishes from your menu to publish to the online-ordering page. Anything you add here can carry an online-only price, name, photo or prep time.",
+        "cta": "Add items"
+      },
+      "sections": {
+        "fromMenu": "From menu categories",
+        "uncategorized": "Uncategorized",
+        "orderOnlyBadge": "Order only",
+        "itemsSuffix": "items",
+        "emptySection": "No items in this category yet"
+      },
+      "addDialog": {
+        "title": "Add items to the order menu",
+        "desc": "Everything on your active menu, grouped by category.",
+        "searchPlaceholder": "Search dishes or categories",
+        "inCatalog": "In catalog",
+        "addBtn": "Add",
+        "added": "Item added to the order menu",
+        "addFailed": "Couldn't add that item",
+        "noItems": "No menu items to add yet",
+        "noResults": "No dishes match that search"
+      },
+      "row": {
+        "listed": "Listed",
+        "available": "Available",
+        "overridden": "Overridden",
+        "menuUnavailable": "Off the menu",
+        "dragHandle": "Drag to reorder",
+        "edit": "Edit overrides",
+        "remove": "Remove from the order menu"
+      },
+      "pause": {
+        "trigger": "Pause",
+        "title": "Pause ordering",
+        "oneHour": "Pause 1 hour",
+        "twoHours": "Pause 2 hours",
+        "untilTomorrow": "Pause until tomorrow",
+        "indefinite": "Pause indefinitely",
+        "resume": "Resume",
+        "badge": "Paused",
+        "resumesAt": "resumes",
+        "paused": "Item paused",
+        "resumed": "Item is orderable again",
+        "failed": "Couldn't change the pause state"
+      },
+      "edit": {
+        "title": "Online overrides",
+        "name": "Name",
+        "description": "Description",
+        "descriptionHint": "Leave empty to use the menu description",
+        "price": "Price",
+        "prepTime": "Prep time (min)",
+        "imageUrl": "Photo URL",
+        "imageUrlHint": "Leave empty to use the menu photo",
+        "category": "Order menu category",
+        "fromMenuCategory": "(from menu category)",
+        "noCategoriesHint": "Create an order-only category to group items differently online.",
+        "menuDefault": "Menu default",
+        "effective": "Currently",
+        "reset": "Reset",
+        "save": "Save",
+        "saved": "Overrides saved",
+        "saveFailed": "Couldn't save the overrides"
+      },
+      "categories": {
+        "title": "Order-only categories",
+        "desc": "Group items differently online. Items you don't file here stay grouped by their menu category.",
+        "nameLabel": "Category",
+        "namePlaceholder": "e.g. Delivery Deals",
+        "addBtn": "Add",
+        "rename": "Rename",
+        "empty": "No order-only categories yet",
+        "created": "Category created",
+        "updated": "Category renamed",
+        "deleted": "Category deleted",
+        "saveFailed": "Couldn't save the category",
+        "deleteFailed": "Couldn't delete the category",
+        "confirmDeleteTitle": "Delete this order-only category?",
+        "confirmDeleteDesc": "Its items stay on the order menu and go back to being grouped by their menu category."
+      },
+      "reorder": {
+        "failed": "Couldn't save the new order"
+      },
+      "remove": {
+        "confirmTitle": "Remove this item from the order menu?",
+        "confirmDesc": "It stops selling online and its online-only overrides are deleted. The dish itself stays on your menu.",
+        "removed": "Item removed from the order menu",
+        "failed": "Couldn't remove that item"
+      }
     },
     "settings": {
       "title": "Order Settings",
@@ -2047,7 +2161,10 @@
         "maxConcurrent": "Max Concurrent Orders",
         "maxConcurrentHint": "Leave empty for unlimited",
         "prepTime": "Default Prep Time (minutes)",
-        "prepTimeHint": "Used when a menu item doesn't set its own prep time"
+        "prepTimeHint": "Used when a menu item doesn't set its own prep time",
+        "enforcedHint": "Enforced at checkout — customers can't place an order past this limit.",
+        "noShowThreshold": "No-show warning threshold",
+        "noShowThresholdHint": "Show a warning on customers with this many un-collected orders."
       },
       "hours": {
         "title": "Order Hours",
@@ -2063,7 +2180,8 @@
           "fri": "Friday",
           "sat": "Saturday",
           "sun": "Sunday"
-        }
+        },
+        "enforcedHint": "Enforced at checkout — outside these hours the ordering page is closed."
       },
       "zones": {
         "title": "Delivery Zones",
@@ -2105,7 +2223,96 @@
           "deleteFailed": "Couldn't delete the delivery zone",
           "loadFailed": "Couldn't load delivery zones"
         }
+      },
+      "autoConfirm": {
+        "title": "Automatically accept new orders",
+        "desc": "When off, every order waits for a staff member to confirm it before the kitchen starts."
+      },
+      "delivery": {
+        "title": "Delivery range",
+        "desc": "How far you deliver, measured from your restaurant.",
+        "maxDistance": "Max delivery distance (km)",
+        "maxDistancePlaceholder": "No limit",
+        "maxDistanceHint": "Leave empty for no distance cap — your delivery zones alone decide.",
+        "location": "Restaurant location",
+        "locationHint": "Customers' delivery addresses are measured from this point.",
+        "searchPlaceholder": "Search for your address",
+        "clearSearch": "Clear search",
+        "noResults": "No places match that search",
+        "dragHint": "Click the map or drag the pin to fine-tune the position.",
+        "addressText": "Address line",
+        "addressTextPlaceholder": "Street, number, district",
+        "pinNotSet": "No pin set",
+        "clearPin": "Clear pin",
+        "locationSaveFailed": "Couldn't save the restaurant location"
       }
+    },
+    "active": {
+      "heading": "Active orders",
+      "awaitingSuffix": "awaiting confirmation",
+      "liveConnected": "Live",
+      "reconnecting": "Reconnecting…",
+      "refreshBtn": "Refresh",
+      "ageColumn": "Age",
+      "empty": "No active orders right now",
+      "needsConfirmation": "Needs confirmation",
+      "confirmBtn": "Confirm",
+      "rejectBtn": "Reject",
+      "cancelBtn": "Cancel",
+      "notPickedUpBtn": "Not picked up",
+      "noShowsSuffix": "no-shows",
+      "bannedBadge": "Banned",
+      "statusUpdated": "Order #{number} → {status}",
+      "statusUpdateFailed": "Couldn't update the order",
+      "conflict": "Someone else changed this order — the list has been refreshed",
+      "justNow": "Just now",
+      "minutesAgo": "{minutes}m ago",
+      "hoursAgo": "{hours}h {minutes}m ago",
+      "advanceTo": {
+        "ACCEPTED": "Confirm",
+        "PREPARING": "Start preparing",
+        "READY": "Mark ready",
+        "OUT_FOR_DELIVERY": "Send out",
+        "COMPLETED": "Complete"
+      },
+      "rejectDialog": {
+        "title": "Reject order #{number}",
+        "description": "This can't be undone. The reason is recorded in the order's audit trail.",
+        "reasonLabel": "Reason (optional)",
+        "reasonPlaceholder": "e.g. Out of stock, customer requested",
+        "confirmBtn": "Confirm",
+        "closeBtn": "Never mind"
+      },
+      "cancelDialog": {
+        "title": "Cancel order #{number}"
+      },
+      "notPickedUpDialog": {
+        "title": "Mark order #{number} as not picked up?",
+        "description": "The order is closed and this customer's no-show count goes up by one. This can't be undone.",
+        "confirmBtn": "Not picked up"
+      }
+    },
+    "bans": {
+      "banCustomerBtn": "Ban this customer",
+      "banBtn": "Ban",
+      "liftBtn": "Lift ban",
+      "dialogTitle": "Ban this phone number",
+      "dialogDesc": "A banned number can't place new online orders. Bans follow the phone number, so they hold even if the customer makes a new account.",
+      "reasonLabel": "Reason (optional)",
+      "reasonPlaceholder": "e.g. Repeated no-shows",
+      "banned": "Customer banned",
+      "banFailed": "Couldn't ban this customer",
+      "alreadyBanned": "This phone number is already banned",
+      "lifted": "Ban lifted",
+      "liftFailed": "Couldn't lift the ban",
+      "liftConfirmTitle": "Lift this ban?",
+      "liftConfirmDesc": "This number will be able to place online orders again.",
+      "activeBadge": "Active",
+      "liftedBadge": "Lifted",
+      "noReason": "No reason recorded",
+      "bannedBy": "Banned by",
+      "liftedBy": "lifted by",
+      "unknownStaff": "a former staff member"
     }
   },
   "publicOrder": {
@@ -2126,13 +2333,15 @@
         "identify": "Verify your phone",
         "payment": "Payment",
         "placed": "Order placed"
-      }
+      },
+      "close": "Close"
     },
     "menu": {
       "empty": "Nothing available for online ordering right now.",
       "itemsSuffix": "items",
       "viewCart": "View cart",
-      "addedToast": "Added to cart"
+      "addedToast": "Added to cart",
+      "categoriesLabel": "Menu categories"
     },
     "item": {
       "required": "Required",
@@ -2140,17 +2349,41 @@
       "quantity": "Quantity",
       "decrease": "Decrease quantity",
       "increase": "Increase quantity",
-      "addToCart": "Add to cart"
+      "addToCart": "Add to cart",
+      "temporarilyUnavailable": "Temporarily unavailable",
+      "outOfStock": "Currently unavailable",
+      "popular": "Popular",
+      "backAround": "Back around {{time}}",
+      "addFor": "Add · {{price}}",
+      "noteLabel": "Special instructions (optional)",
+      "notePlaceholder": "e.g. No onions",
+      "chooseOne": "Choose 1",
+      "chooseUpTo": "Choose up to {{max}}",
+      "chooseAtLeast": "Choose at least {{min}}",
+      "chooseBetween": "Choose {{min}}–{{max}}",
+      "calories": "{{n}} kcal",
+      "allergensPrefix": "Contains:",
+      "spice": {
+        "1": "Mild",
+        "2": "Medium",
+        "3": "Hot"
+      }
     },
     "cart": {
       "title": "Your order",
-      "remove": "Remove"
+      "remove": "Remove",
+      "empty": "Your cart is empty.",
+      "itemCount": "{{n}} items",
+      "feesAtCheckout": "Delivery fee is calculated at the next step.",
+      "checkoutButton": "Go to checkout"
     },
     "fulfillment": {
       "title": "Delivery or pickup?",
       "delivery": "Delivery",
       "pickup": "Pickup",
-      "onlyOneAvailable": "Only one order type is available right now."
+      "onlyOneAvailable": "Only one order type is available right now.",
+      "deliveryCaption": "Brought to your door",
+      "pickupCaption": "Collect it yourself"
     },
     "address": {
       "zoneLabel": "Delivery area",
@@ -2162,7 +2395,22 @@
       "neighborhoodLabel": "Neighborhood",
       "neighborhoodPlaceholder": "e.g. Kadıköy",
       "noteLabel": "Note for the courier",
-      "notePlaceholder": "e.g. Ring the bell twice"
+      "notePlaceholder": "e.g. Ring the bell twice",
+      "mapLabel": "Where should we deliver?",
+      "searchLabel": "Search for your address",
+      "searchPlaceholder": "Street, neighborhood, city…",
+      "clearSearch": "Clear search",
+      "noResults": "No matching addresses. Drop the pin on the map instead.",
+      "dragHint": "Drag the pin to your exact location.",
+      "useMyLocation": "Use my location",
+      "pinRequired": "Search for your address or tap the map to drop a pin.",
+      "checking": "Checking if we deliver here…",
+      "deliversHere": "We deliver to this address",
+      "outOfRangeTitle": "Outside our delivery area",
+      "outOfRangeDescription": "We can't deliver this far. Try another address, or switch to pickup.",
+      "distanceAway": "~{{km}} km away",
+      "buildingLabel": "Building / floor / door no.",
+      "buildingPlaceholder": "e.g. No 12, floor 3, flat 7"
     },
     "quote": {
       "calculating": "Calculating your total…",
@@ -2171,7 +2419,9 @@
       "total": "Total",
       "belowMinimum": "Minimum order for this area is",
       "waiting": "Add items to see your total.",
-      "failed": "Couldn't calculate your total. Please try again."
+      "failed": "Couldn't calculate your total. Please try again.",
+      "outOfRange": "This address is outside our delivery area.",
+      "closedNow": "We're closed right now — please check our opening hours."
     },
     "identify": {
       "title": "Verify your phone number",
@@ -2190,7 +2440,11 @@
       "nameLabel": "Your name",
       "namePlaceholder": "John Doe",
       "requestFailed": "Couldn't send the code. Please try again.",
-      "verifyFailed": "That code didn't work. Please try again."
+      "verifyFailed": "That code didn't work. Please try again.",
+      "subtitle": "We'll text you a code to confirm it's really you.",
+      "codeTitle": "Enter your code",
+      "nameTitle": "One last thing",
+      "whyPhone": "Your number is only used to confirm this order and to let the restaurant reach you about it."
     },
     "payment": {
       "title": "Payment method",
@@ -2198,7 +2452,10 @@
       "onlineCard": "Pay by card online",
       "noneAvailable": "No payment methods are available right now.",
       "noteLabel": "Note for the kitchen (optional)",
-      "notePlaceholder": "e.g. No onions, please"
+      "notePlaceholder": "e.g. No onions, please",
+      "cashOnDeliveryHint": "Pay the courier when your order arrives.",
+      "cashOnPickupHint": "Pay at the counter when you collect your order.",
+      "comingSoon": "Coming soon"
     },
     "confirm": {
       "summaryTitle": "Order summary",
@@ -2213,7 +2470,29 @@
       "statusLabel": "Status",
       "readyByPrefix": "Ready by",
       "viewHistoryButton": "My orders",
-      "orderAgainButton": "Order again"
+      "orderAgainButton": "Order again",
+      "pendingTitle": "Order sent",
+      "pendingBanner": "Waiting for {{restaurant}} to confirm your order",
+      "pendingDescription": "This page updates the moment the restaurant accepts it — usually within a few minutes.",
+      "timelineTitle": "Order progress",
+      "currentStep": "Happening now",
+      "etaPrefix": "Estimated arrival",
+      "trackingLive": "This page updates automatically.",
+      "trackingStopped": "This order is closed.",
+      "terminal": {
+        "REJECTED": {
+          "title": "Order not accepted",
+          "description": "The restaurant couldn't take this order right now. Nothing was charged — feel free to try again later."
+        },
+        "CANCELLED": {
+          "title": "Order cancelled",
+          "description": "This order was cancelled. Get in touch with the restaurant if you have any questions."
+        },
+        "NOT_PICKED_UP": {
+          "title": "Order not picked up",
+          "description": "This order was closed because it wasn't collected. Contact the restaurant if you think that's a mistake."
+        }
+      }
     },
     "history": {
       "title": "My orders",
@@ -2227,7 +2506,24 @@
       "OUT_FOR_DELIVERY": "Out for delivery",
       "COMPLETED": "Completed",
       "CANCELLED": "Cancelled",
-      "REJECTED": "Rejected"
+      "REJECTED": "Rejected",
+      "NOT_PICKED_UP": "Not picked up"
+    },
+    "hero": {
+      "prepWindow": "{{min}}–{{max}} min",
+      "distance": "{{km}} km away",
+      "minOrder": "Min. {{amount}}"
+    },
+    "closedHours": {
+      "title": "Closed right now"
+    },
+    "checkout": {
+      "editCart": "Edit"
+    },
+    "pickup": {
+      "title": "Pick up from",
+      "addressUnknown": "Ask the restaurant for the exact address.",
+      "readyIn": "Ready in about {{minutes}} min"
     }
   }
 }

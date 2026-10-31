@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { StaffOrder, StaffOrderItem } from '@/app/order-station/types';
+import { StaffOrder, StaffOrderItem } from '@/lib/orders/types';
 import { KitchenTicketTemplate, CourierSlipTemplate, CustomerReceiptTemplate, formatTRY } from './templates';
 import { tryPrintViaQz } from '@/lib/qzPrint';
 

@@ -2,7 +2,7 @@
 
 import { QRCodeCanvas } from 'qrcode.react';
 import { useTranslation } from '@/i18n/provider';
-import { StaffOrder, StaffOrderAddressSnapshot, StaffOrderItem } from '@/app/order-station/types';
+import { StaffOrder, StaffOrderAddressSnapshot, StaffOrderItem } from '@/lib/orders/types';
 
 // Three separate printable templates per docs/packaging/online-ordering-plan.md
 // §1f: kitchen ticket (no prices), courier/delivery slip (delivery orders

@@ -1,5 +1,7 @@
 import prisma from '../config/prisma';
 import { AppError } from '../utils/AppError';
+import { resolveDeliveryZone } from './geoService';
+import { effectiveName, effectivePrice, effectivePrepTime, isOrderItemPaused } from '../utils/orderMenu';
 
 // Single server-side pricing authority for online ordering. Both the
 // preview endpoint (POST /api/public/order/quote) and the real
@@ -8,6 +10,18 @@ import { AppError } from '../utils/AppError';
 // trusting any client-supplied quote/total (spec §4: "recompute all totals,
 // fees, minimums, and zone eligibility server-side; never trust client-sent
 // prices/fees").
+//
+// What's sellable and at what price comes from the curated catalog
+// (OrderMenuItem, see docs/packaging/online-ordering-v2-plan.md decision #1),
+// not from MenuItem directly: a line is rejected unless a listed, unpaused,
+// available catalog row exists for it, and the unit price is the row's
+// priceOverride when set. This has to stay in lockstep with
+// customerOrderController.getOrderableMenu, which renders exactly those rules.
+//
+// Delivery zone resolution has two paths: the customer's map pin (preferred —
+// geoService.resolveDeliveryZone measures haversine distance from the
+// restaurant's own coordinates and matches a RADIUS/AREA zone), falling back
+// to an explicitly chosen zoneId when the tenant has no coordinates set.
 
 export interface CartLineInput {
   menuItemId: string;
@@ -34,11 +48,18 @@ export interface QuoteParams {
   restaurantId: string;
   items: CartLineInput[];
   fulfillmentType: 'DELIVERY' | 'PICKUP';
-  // For DELIVERY only. The zone is resolved once, at address-save time (see
-  // CustomerAddress.zoneId) or by the customer explicitly picking a named
-  // zone before logging in — this service never attempts geo/radius
-  // matching itself (DeliveryZone/Restaurant carry no canonical lat/lng to
-  // compute against; see report deviation note).
+  // For DELIVERY only, and preferred over `zoneId`: the customer's map pin.
+  // When the restaurant has its own coordinates set, the zone is resolved
+  // server-side from this pin (haversine distance -> smallest matching RADIUS
+  // zone, else a containing AREA polygon) and any client-sent `zoneId` is
+  // ignored. See geoService.resolveDeliveryZone.
+  lat?: number;
+  lng?: number;
+  // For DELIVERY only. Fallback path, still fully supported: tenants that
+  // haven't set a restaurant location yet (every tenant predating the
+  // dashboard location picker) have no origin to measure from, so the zone
+  // comes from an explicit customer choice or a saved address's
+  // CustomerAddress.zoneId.
   zoneId?: string;
 }
 
@@ -51,6 +72,9 @@ export interface OrderQuote {
   // Only set for DELIVERY — the resolved zone's minimum, so callers can
   // report "below minimum" without mislabeling subtotal as the minimum.
   minOrderAmount?: number;
+  // Only set for DELIVERY when the zone was auto-resolved from a pin — the
+  // straight-line distance from the restaurant to that pin, in meters.
+  distanceMeters?: number;
   prepTimeMinutes: number;
   lines: PricedLine[];
 }
@@ -90,31 +114,37 @@ export async function computeOrderQuote(params: QuoteParams): Promise<OrderQuote
 
   const defaultPrepTime = orderSettings?.prepTimeMinutes ?? 20;
 
+  const now = new Date();
   const menuItemIds = [...new Set(items.map((l) => l.menuItemId))];
-  const menuItems = await prisma.menuItem.findMany({
-    where: {
-      id: { in: menuItemIds },
-      // Tenant-scoped via the category -> menu -> restaurant chain — MenuItem
-      // itself carries no restaurantId column.
-      category: { menu: { restaurantId } },
-    },
-    include: { modifiers: { include: { options: true } } },
+  // The curated catalog, not the raw menu, is what decides sellability and
+  // price online — OrderMenuItem carries restaurantId itself, so this query is
+  // tenant-scoped directly (no category -> menu -> restaurant chain needed),
+  // and a row that isn't isListed simply doesn't come back.
+  const catalogRows = await prisma.orderMenuItem.findMany({
+    where: { restaurantId, menuItemId: { in: menuItemIds }, isListed: true },
+    include: { menuItem: { include: { modifiers: { include: { options: true } } } } },
   });
-  const menuItemById = new Map(menuItems.map((mi) => [mi.id, mi]));
+  const catalogByMenuItemId = new Map(catalogRows.map((row) => [row.menuItemId, row]));
 
   let subtotal = 0;
   let slowestPrepTime = 0;
   const lines: PricedLine[] = [];
 
   for (const line of items) {
-    const menuItem = menuItemById.get(line.menuItemId);
-    if (!menuItem) {
-      throw new AppError('errors.order_item_not_found', 400, { menuItemId: line.menuItemId });
-    }
-    if (!menuItem.isOrderableOnline) {
+    const catalogItem = catalogByMenuItemId.get(line.menuItemId);
+    // No catalog row (or de-listed) covers both "never sold online" and "the
+    // item disappeared from the menu since the cart was filled".
+    if (!catalogItem) {
       throw new AppError('errors.order_item_not_orderable', 400, { menuItemId: line.menuItemId });
     }
-    if (!menuItem.isAvailable) {
+    const { menuItem } = catalogItem;
+    // Paused is checked before availability so the customer gets the specific,
+    // temporary message instead of a flat "unavailable" — and the menu already
+    // showed them this item as "temporarily unavailable", so the two must agree.
+    if (isOrderItemPaused(catalogItem, now)) {
+      throw new AppError('errors.order_item_paused', 400, { menuItemId: line.menuItemId });
+    }
+    if (!catalogItem.isAvailable || !menuItem.isAvailable) {
       throw new AppError('errors.order_item_unavailable', 400, { menuItemId: line.menuItemId });
     }
 
@@ -153,14 +183,17 @@ export async function computeOrderQuote(params: QuoteParams): Promise<OrderQuote
       throw new AppError('errors.order_modifier_invalid', 400, { optionIds: [...requestedOptionIds], reason: 'unknown_option' });
     }
 
-    const unitPrice = round2(menuItem.price + modifierTotal);
+    // priceOverride is the online price when set — the whole point of the
+    // curated catalog is that delivery prices can differ from dine-in ones.
+    const unitPrice = round2(effectivePrice(catalogItem, menuItem) + modifierTotal);
     const lineTotal = round2(unitPrice * line.quantity);
     subtotal = round2(subtotal + lineTotal);
-    slowestPrepTime = Math.max(slowestPrepTime, menuItem.prepTimeMinutes ?? defaultPrepTime);
+    slowestPrepTime = Math.max(slowestPrepTime, effectivePrepTime(catalogItem, menuItem, defaultPrepTime));
 
     lines.push({
       menuItemId: menuItem.id,
-      name: menuItem.name,
+      // The name the customer actually saw, snapshotted onto the OrderItem.
+      name: effectiveName(catalogItem, menuItem),
       unitPrice,
       quantity: line.quantity,
       lineTotal,
@@ -172,21 +205,54 @@ export async function computeOrderQuote(params: QuoteParams): Promise<OrderQuote
   let meetsMinimum = true;
   let resolvedZoneId: string | undefined;
   let resolvedMinOrderAmount: number | undefined;
+  let resolvedDistanceMeters: number | undefined;
 
   if (fulfillmentType === 'DELIVERY') {
-    if (!params.zoneId) {
-      throw new AppError('errors.order_zone_required', 400);
+    const hasPin = Number.isFinite(params.lat) && Number.isFinite(params.lng);
+    let resolvedFromPin = false;
+
+    if (hasPin) {
+      const result = await resolveDeliveryZone({
+        restaurantId,
+        lat: params.lat as number,
+        lng: params.lng as number,
+      });
+
+      if (result.zone) {
+        // Auto-resolution wins outright: the client's zoneId (if any) is
+        // advisory at best and must never override a server-computed fee.
+        resolvedZoneId = result.zone.id;
+        deliveryFee = result.zone.deliveryFee;
+        resolvedMinOrderAmount = result.zone.minOrderAmount;
+        meetsMinimum = subtotal >= result.zone.minOrderAmount;
+        resolvedDistanceMeters = result.distanceMeters;
+        resolvedFromPin = true;
+      } else if (result.reason === 'OUT_OF_RANGE') {
+        throw new AppError('errors.order_out_of_delivery_range', 400, {
+          distanceMeters: result.distanceMeters,
+          maxDeliveryMeters: result.maxDeliveryMeters ?? null,
+        });
+      }
+      // reason === 'NO_RESTAURANT_LOCATION' -> the tenant never set its own
+      // coordinates, so there is nothing to measure from. Fall through to the
+      // manual zoneId path below instead of blocking the order.
     }
-    const zone = await prisma.deliveryZone.findFirst({
-      where: { id: params.zoneId, restaurantId },
-    });
-    if (!zone || !zone.isActive) {
-      throw new AppError('errors.order_zone_not_found', 400);
+
+    if (!resolvedFromPin) {
+      if (!params.zoneId) {
+        throw new AppError('errors.order_zone_required', 400);
+      }
+      const zone = await prisma.deliveryZone.findFirst({
+        where: { id: params.zoneId, restaurantId },
+      });
+      if (!zone || !zone.isActive) {
+        throw new AppError('errors.order_zone_not_found', 400);
+      }
+      resolvedZoneId = zone.id;
+      deliveryFee = zone.deliveryFee;
+      resolvedMinOrderAmount = zone.minOrderAmount;
+      meetsMinimum = subtotal >= zone.minOrderAmount;
     }
-    resolvedZoneId = zone.id;
-    deliveryFee = zone.deliveryFee;
-    resolvedMinOrderAmount = zone.minOrderAmount;
-    meetsMinimum = subtotal >= zone.minOrderAmount;
   }
 
   const total = round2(subtotal + deliveryFee);
@@ -198,6 +264,7 @@ export async function computeOrderQuote(params: QuoteParams): Promise<OrderQuote
     zoneId: resolvedZoneId,
     meetsMinimum,
     minOrderAmount: resolvedMinOrderAmount,
+    distanceMeters: resolvedDistanceMeters,
     prepTimeMinutes: slowestPrepTime || defaultPrepTime,
     lines,
   };
