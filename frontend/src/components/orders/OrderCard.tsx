@@ -52,8 +52,8 @@ export default function OrderCard({
   return (
     <div
       className={cn(
-        'rounded-lg border bg-card p-3 shadow-sm transition-all',
-        isOverdue ? 'border-rose-300 dark:border-rose-800/50 bg-rose-50/30 dark:bg-rose-950/40' : 'border-slate-200'
+        'rounded-lg border bg-white p-3 shadow-sm transition-all',
+        isOverdue ? 'border-rose-300 bg-rose-50/30' : 'border-slate-200'
       )}
     >
       <div className="flex items-start justify-between gap-2">
@@ -64,50 +64,50 @@ export default function OrderCard({
           {order.fulfillmentType === 'DELIVERY' ? (
             <Bike className="h-4 w-4 shrink-0 text-blue-600" />
           ) : (
-            <ShoppingBag className="h-4 w-4 shrink-0 text-emerald-600 dark:text-emerald-400" />
+            <ShoppingBag className="h-4 w-4 shrink-0 text-emerald-600" />
           )}
-          <span className="truncate text-xs font-bold tracking-tight text-muted-foreground">
+          <span className="truncate text-xs font-bold uppercase tracking-tight text-slate-500">
             {t(`publicOrder.fulfillment.${order.fulfillmentType === 'DELIVERY' ? 'delivery' : 'pickup'}`)}
           </span>
         </div>
         <Badge
           variant="outline"
- className={cn('shrink-0 text-[10px] font-semibold', isOverdue ?'border-rose-300 dark:border-rose-800/50 bg-rose-100 dark:bg-rose-950/40 text-rose-700 dark:text-rose-400 animate-pulse':'text-muted-foreground')}
+          className={cn('shrink-0 text-[10px] font-black uppercase', isOverdue ? 'border-rose-300 bg-rose-100 text-rose-700 animate-pulse' : 'text-slate-500')}
         >
           {elapsedLabel(order.createdAt, t)}
         </Badge>
       </div>
 
       <div className="mt-2 space-y-0.5">
-        <div className="truncate text-sm font-black text-foreground">{order.customer?.name || t('orderStation.card.unknownCustomer')}</div>
+        <div className="truncate text-sm font-black text-slate-900">{order.customer?.name || t('orderStation.card.unknownCustomer')}</div>
         {order.customer?.phone && (
-          <div className="flex items-center gap-1 text-[11px] font-bold text-muted-foreground">
+          <div className="flex items-center gap-1 text-[11px] font-bold text-slate-400">
             <Phone className="h-3 w-3 shrink-0" /> {order.customer.phone}
           </div>
         )}
       </div>
 
-      <div className="mt-2 border-t border-slate-100 pt-2 text-xs text-muted-foreground">
+      <div className="mt-2 border-t border-slate-100 pt-2 text-xs text-slate-600">
         {order.items.slice(0, 4).map((item) => (
           <div key={item.id} className="truncate">
             <span className="font-bold">{item.quantity}&times;</span> {item.nameSnapshot}
           </div>
         ))}
         {order.items.length > 4 && (
-          <div className="text-[10px] font-bold text-muted-foreground">
+          <div className="text-[10px] font-bold text-slate-400">
             +{order.items.length - 4} {t('orderStation.card.itemsSuffix')}
           </div>
         )}
       </div>
 
       {order.customerNote && (
-        <div className="mt-2 flex items-start gap-1 rounded-md bg-amber-50 dark:bg-amber-950/40 p-1.5 text-[11px] text-amber-800 dark:text-amber-400">
+        <div className="mt-2 flex items-start gap-1 rounded-md bg-amber-50 p-1.5 text-[11px] text-amber-800">
           <StickyNote className="mt-0.5 h-3 w-3 shrink-0" />
           <span className="line-clamp-2">{order.customerNote}</span>
         </div>
       )}
 
-      <div className="mt-2 flex items-center justify-between text-sm font-black text-foreground">
+      <div className="mt-2 flex items-center justify-between text-sm font-black text-slate-900">
         <span>{itemCount} {t('orderStation.card.itemsSuffix')}</span>
         <span>{formatTRY(order.total)}</span>
       </div>
@@ -116,7 +116,7 @@ export default function OrderCard({
         {next && (
           <Button
             onClick={() => onAdvance(order)}
-            className="h-10 flex-1 min-w-0 bg-emerald-600 text-[11px] font-semibold text-white hover:bg-emerald-700 active:scale-[0.97]"
+            className="h-10 flex-1 min-w-0 bg-emerald-600 text-[11px] font-black uppercase tracking-wide text-white hover:bg-emerald-700 active:scale-[0.97]"
           >
             <ArrowRight className="h-3.5 w-3.5" />
             <span className="truncate">{t('orderStation.card.advanceTo').replace('{status}', t(`publicOrder.status.${next}`))}</span>
@@ -126,7 +126,7 @@ export default function OrderCard({
           <Button
             onClick={() => onCancel(order)}
             variant="outline"
-            className="h-10 shrink-0 border-rose-200 dark:border-rose-800/50 bg-rose-50 dark:bg-rose-950/40 px-2.5 text-rose-600 dark:text-rose-400 hover:bg-rose-100"
+            className="h-10 shrink-0 border-rose-200 bg-rose-50 px-2.5 text-rose-600 hover:bg-rose-100"
             title={t(`orderStation.card.${cancelStatusFor(order) === 'REJECTED' ? 'rejectBtn' : 'cancelBtn'}`)}
           >
             <XCircle className="h-4 w-4" />
@@ -138,7 +138,7 @@ export default function OrderCard({
         <Button
           onClick={() => onPrint(order, 'kitchen')}
           variant="ghost"
-          className="h-8 flex-1 min-w-0 text-[10px] font-bold text-muted-foreground hover:bg-muted"
+          className="h-8 flex-1 min-w-0 text-[10px] font-bold uppercase text-slate-500 hover:bg-slate-100"
         >
           <Printer className="h-3 w-3" /> <span className="truncate">{t('orderStation.print.kitchenTicket')}</span>
         </Button>
@@ -146,7 +146,7 @@ export default function OrderCard({
           <Button
             onClick={() => onPrint(order, 'courier')}
             variant="ghost"
-            className="h-8 flex-1 min-w-0 text-[10px] font-bold text-muted-foreground hover:bg-muted"
+            className="h-8 flex-1 min-w-0 text-[10px] font-bold uppercase text-slate-500 hover:bg-slate-100"
           >
             <Printer className="h-3 w-3" /> <span className="truncate">{t('orderStation.print.courierSlip')}</span>
           </Button>
@@ -154,7 +154,7 @@ export default function OrderCard({
         <Button
           onClick={() => onPrint(order, 'receipt')}
           variant="ghost"
-          className="h-8 flex-1 min-w-0 text-[10px] font-bold text-muted-foreground hover:bg-muted"
+          className="h-8 flex-1 min-w-0 text-[10px] font-bold uppercase text-slate-500 hover:bg-slate-100"
         >
           <Printer className="h-3 w-3" /> <span className="truncate">{t('orderStation.print.receipt')}</span>
         </Button>

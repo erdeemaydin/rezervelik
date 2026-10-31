@@ -34,7 +34,7 @@ function TicketHeader({ heading, order }: { heading: string; order: StaffOrder }
   const { t } = useTranslation();
   return (
     <div className="mb-2 border-b border-dashed border-black pb-2 text-center">
-      <div className="text-sm font-semibold">{heading}</div>
+      <div className="text-sm font-black uppercase tracking-wide">{heading}</div>
       <div className="mt-1 text-lg font-black">
         {t('orderStation.ticket.orderLabel')} #{order.orderNumber}
       </div>
@@ -71,7 +71,7 @@ export function KitchenTicketTemplate({ order }: { order: StaffOrder }) {
       </div>
       {order.customerNote && (
         <div className="mt-3 border-t border-dashed border-black pt-2 text-[12px]">
-          <span className="font-semibold">{t('orderStation.ticket.noteLabel')}: </span>
+          <span className="font-black uppercase">{t('orderStation.ticket.noteLabel')}: </span>
           {order.customerNote}
         </div>
       )}
@@ -90,16 +90,16 @@ export function CourierSlipTemplate({ order }: { order: StaffOrder }) {
 
       <div className="space-y-1 text-[12px]">
         <div>
-          <span className="font-semibold">{t('orderStation.ticket.customerLabel')}: </span>
+          <span className="font-black uppercase">{t('orderStation.ticket.customerLabel')}: </span>
           {order.customer?.name || '—'}
         </div>
         <div>
-          <span className="font-semibold">{t('orderStation.ticket.phoneLabel')}: </span>
+          <span className="font-black uppercase">{t('orderStation.ticket.phoneLabel')}: </span>
           {order.customer?.phone || '—'}
         </div>
         {addr && (
           <div>
-            <span className="font-semibold">{t('orderStation.ticket.addressLabel')}: </span>
+            <span className="font-black uppercase">{t('orderStation.ticket.addressLabel')}: </span>
             {[addr.label, addr.neighborhood, addr.fullAddress].filter(Boolean).join(' — ')}
             {addr.note && <div className="pl-3 italic">{addr.note}</div>}
           </div>
@@ -108,11 +108,11 @@ export function CourierSlipTemplate({ order }: { order: StaffOrder }) {
 
       {codDue ? (
         <div className="mt-3 border-2 border-black p-2 text-center">
-          <div className="text-[10px] font-semibold">{t('orderStation.ticket.codLabel')}</div>
+          <div className="text-[10px] font-black uppercase">{t('orderStation.ticket.codLabel')}</div>
           <div className="text-2xl font-black">{formatTRY(order.total)}</div>
         </div>
       ) : (
-        <div className="mt-3 border border-black p-2 text-center text-[11px] font-semibold">
+        <div className="mt-3 border border-black p-2 text-center text-[11px] font-black uppercase">
           {t('publicOrder.payment.onlineCard')} — {order.paymentStatus === 'PAID' ? t('orderStation.ticket.paidLabel') : t('orderStation.ticket.unpaidLabel')}
         </div>
       )}
@@ -120,7 +120,7 @@ export function CourierSlipTemplate({ order }: { order: StaffOrder }) {
       {addr && (
         <div className="mt-3 flex flex-col items-center gap-1">
           <QRCodeCanvas value={mapsUrlFor(addr)} size={140} level="M" includeMargin />
-          <div className="text-[10px] font-bold">{t('orderStation.ticket.mapCaption')}</div>
+          <div className="text-[10px] font-bold uppercase">{t('orderStation.ticket.mapCaption')}</div>
         </div>
       )}
     </div>
@@ -168,7 +168,7 @@ export function CustomerReceiptTemplate({ order }: { order: StaffOrder }) {
           <span>{t('orderStation.ticket.totalLabel')}</span>
           <span>{formatTRY(order.total)}</span>
         </div>
-        <div className="flex justify-between text-[10px]">
+        <div className="flex justify-between text-[10px] uppercase">
           <span>{t('orderStation.ticket.paymentMethodLabel')}</span>
           <span>{t(`publicOrder.payment.${order.paymentMethod === 'CASH_ON_DELIVERY' ? 'cashOnDelivery' : 'onlineCard'}`)}</span>
         </div>

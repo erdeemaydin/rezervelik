@@ -1,12 +1,11 @@
-// Admin dashboard skins (AdminLTE-style).
+// Admin dashboard color themes.
 //
-// Each skin is applied by setting `data-admin-theme="<id>"` on the layout root
+// Each theme is applied by setting `data-admin-theme="<id>"` on the layout root
 // (AdminLayout / SystemAdminLayout). The actual CSS custom properties and the
-// remap of the app's hardcoded `blue-*` utility classes to the skin accent live
+// remap of the app's hardcoded `blue-*` utility classes to the theme accent live
 // in `frontend/src/app/globals.css`, keyed by that attribute. This file only
-// holds the picker metadata (label + preview colors) so the settings UIs can
-// render a miniature layout preview without duplicating the whole palette.
-// Keep the preview colors in sync with the matching globals.css block.
+// holds the picker metadata (label + swatches) so the settings UIs can render a
+// preview without duplicating the whole palette.
 //
 // IMPORTANT: the set of ids here must stay in sync with:
 //   - the `[data-admin-theme="…"]` blocks in globals.css
@@ -17,11 +16,9 @@ export interface AdminTheme {
   id: string;
   /** i18n key for the human-readable name, under `themes.*`. */
   labelKey: string;
-  /** Preview colors for the picker's miniature layout. */
+  /** Preview swatches for the picker card. */
   swatch: {
     sidebar: string;
-    brand: string;
-    header: string;
     accent: string;
     bg: string;
   };
@@ -31,27 +28,27 @@ export const ADMIN_THEMES: AdminTheme[] = [
   {
     id: 'default',
     labelKey: 'themes.default',
-    swatch: { sidebar: '#222d32', brand: '#195a91', header: '#1f6fb2', accent: '#3c8dbc', bg: '#ecf0f5' },
+    swatch: { sidebar: '#0f172a', accent: '#2563eb', bg: '#f8fafc' },
   },
   {
     id: 'terracotta',
     labelKey: 'themes.terracotta',
-    swatch: { sidebar: '#2a211e', brand: '#9a3412', header: '#c2410c', accent: '#ea6a3a', bg: '#ecf0f5' },
+    swatch: { sidebar: '#292524', accent: '#c2410c', bg: '#faf7f2' },
   },
   {
     id: 'forest',
     labelKey: 'themes.forest',
-    swatch: { sidebar: '#0f3b2a', brand: '#065f46', header: '#047857', accent: '#34d399', bg: '#ecf0f5' },
+    swatch: { sidebar: '#1c1917', accent: '#15803d', bg: '#f5f5f4' },
   },
   {
     id: 'burgundy',
     labelKey: 'themes.burgundy',
-    swatch: { sidebar: '#4c0d24', brand: '#7a0e2c', header: '#9f1239', accent: '#fb7185', bg: '#ecf0f5' },
+    swatch: { sidebar: '#1c1917', accent: '#9f1239', bg: '#f7f5f4' },
   },
   {
     id: 'amber',
     labelKey: 'themes.amber',
-    swatch: { sidebar: '#1f1d1a', brand: '#d68910', header: '#f39c12', accent: '#f59e0b', bg: '#ecf0f5' },
+    swatch: { sidebar: '#1c1917', accent: '#b45309', bg: '#faf9f7' },
   },
 ];
 

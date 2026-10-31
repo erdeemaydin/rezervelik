@@ -77,7 +77,7 @@ export default function ReservationCalendar({
 
       <div className="grid grid-cols-7 gap-1 mb-1">
         {weekdays.map((w, i) => (
-          <div key={i} className="h-7 flex items-center justify-center text-[10px] font-bold opacity-50">
+          <div key={i} className="h-7 flex items-center justify-center text-[10px] font-bold uppercase tracking-wide opacity-50">
             {w}
           </div>
         ))}

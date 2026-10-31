@@ -58,11 +58,11 @@ export function PasswordConfirmDialog({
       <DialogContent className="sm:max-w-[425px]">
         <form onSubmit={handleSubmit}>
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-foreground">
-              {isDangerous ? <AlertTriangle className="w-5 h-5 text-rose-500 dark:text-rose-400" /> : <Lock className="w-5 h-5 text-blue-500" />}
+            <DialogTitle className="flex items-center gap-2 text-slate-800">
+              {isDangerous ? <AlertTriangle className="w-5 h-5 text-rose-500" /> : <Lock className="w-5 h-5 text-blue-500" />}
               {title}
             </DialogTitle>
-            <DialogDescription className="text-sm text-muted-foreground">
+            <DialogDescription className="text-sm text-slate-500">
               {description}
             </DialogDescription>
           </DialogHeader>
