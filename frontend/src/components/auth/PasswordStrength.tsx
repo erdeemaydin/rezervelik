@@ -52,7 +52,7 @@ export function PasswordStrength({ password, hideWhenEmpty = true, className }: 
         </div>
         <span
           className={cn(
-'text-[11px] font-bold',
+            'text-[11px] font-bold uppercase tracking-wide',
             tone === 'weak' && 'text-red-600',
             tone === 'medium' && 'text-amber-600',
             tone === 'strong' && 'text-emerald-600'

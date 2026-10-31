@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Plus, Trash, PencilSimple, MagnifyingGlass, GridFour, ListBullets, Stack, ArrowsOutCardinal, ShieldCheck, Square } from '@phosphor-icons/react';
+import { Plus, Trash2, Edit2, Search, LayoutGrid, List, Layers, Move, ShieldCheck, Square } from 'lucide-react';
 import { 
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter 
 } from '@/components/ui/dialog';
@@ -462,8 +462,8 @@ export default function TablesPage() {
       <div className="flex flex-col gap-4 h-full">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="min-w-0">
-            <h1 className="text-2xl font-semibold tracking-tight text-foreground font-heading">{isRestaurant ? t("tables.pageTitle") : term('resourcePlural')}</h1>
-            <p className="text-[10px] text-muted-foreground tracking-[0.2em] font-semibold">{t("tables.pageSubtitle")}</p>
+            <h1 className="text-xl font-bold text-slate-800">{isRestaurant ? t("tables.pageTitle") : term('resourcePlural')}</h1>
+            <p className="text-[10px] text-slate-400 uppercase tracking-[0.2em] font-black">{t("tables.pageSubtitle")}</p>
             {reservationLogic && (
               <Link href="/dashboard/settings" className="inline-flex items-center gap-1 mt-1 text-[10px] font-bold text-blue-600 hover:text-blue-700 hover:underline">
                 {t("admin.bookingMode")}: {
@@ -479,8 +479,8 @@ export default function TablesPage() {
               zone/add-table/add-box buttons alongside the toggle. */}
           <div className="flex flex-wrap items-center gap-2 sm:gap-4">
             {hasEditPermission && (
-              <div className="flex items-center gap-2 bg-muted border border-border px-3 py-1.5 rounded-md">
-                 <Label htmlFor="edit-mode" className="text-xs font-bold text-foreground cursor-pointer flex items-center gap-1">
+              <div className="flex items-center gap-2 bg-slate-50 border border-slate-200 px-3 py-1.5 rounded-md">
+                 <Label htmlFor="edit-mode" className="text-xs font-bold text-slate-700 cursor-pointer flex items-center gap-1">
                     <ShieldCheck className="w-3.5 h-3.5 text-blue-500" /> {t("tables.enableLayoutEditing")}
                  </Label>
                  <Switch id="edit-mode" checked={isFloorPlanEditMode} onCheckedChange={setIsFloorPlanEditMode} />
@@ -491,25 +491,25 @@ export default function TablesPage() {
               <>
                 <Dialog open={isZoneDialogOpen} onOpenChange={setIsZoneDialogOpen}>
                   <DialogTrigger render={
-                    <Button size="sm" variant="outline" className="h-8 text-[10px] font-semibold border-border">{t("tables.manageZones")}</Button>
+                    <Button size="sm" variant="outline" className="h-8 text-[10px] font-black uppercase border-slate-200">{t("tables.manageZones")}</Button>
                   } />
                   <DialogContent className="sm:max-w-xl">
                     <form onSubmit={handleZoneSubmit}>
                       <DialogHeader><DialogTitle className="text-2xl">{t("tables.manageZones")}</DialogTitle></DialogHeader>
-                      <div className="space-y-6 py-6 border-b border-border">
+                      <div className="space-y-6 py-6 border-b border-slate-50">
                         <div className="grid gap-4">
                             <div className="grid gap-2">
-                                <Label className="text-[10px] font-semibold text-muted-foreground">{t("tables.zoneName")}</Label>
+                                <Label className="text-[10px] font-black uppercase text-slate-400">{t("tables.zoneName")}</Label>
                                 <Input required value={zoneForm.name} onChange={e => setZoneForm({...zoneForm, name: e.target.value})} placeholder={t("tables.zoneNamePlaceholder")} className="h-10 rounded-sm font-bold" />
                             </div>
                             <div className="grid gap-2">
-                                <Label className="text-[10px] font-semibold text-muted-foreground">{t("tables.description")}</Label>
+                                <Label className="text-[10px] font-black uppercase text-slate-400">{t("tables.description")}</Label>
                                 <Input value={zoneForm.description} onChange={e => setZoneForm({...zoneForm, description: e.target.value})} className="h-10 rounded-sm font-bold" />
                             </div>
                             <div className="grid gap-2">
-                                <Label className="text-[10px] font-semibold text-muted-foreground">{t("tables.parentZone")}</Label>
+                                <Label className="text-[10px] font-black uppercase text-slate-400">{t("tables.parentZone")}</Label>
                                 <Select value={zoneForm.parentId} onValueChange={(v) => setZoneForm({...zoneForm, parentId: v === 'none' ? '' : (v || '')})}>
-                                    <SelectTrigger className="h-10 text-sm font-bold rounded-sm border-border">
+                                    <SelectTrigger className="h-10 text-sm font-bold rounded-sm border-slate-200">
                                         <SelectValue placeholder={t("tables.noParent")} />
                                     </SelectTrigger>
                                     <SelectContent>
@@ -518,20 +518,20 @@ export default function TablesPage() {
                                     </SelectContent>
                                 </Select>
                             </div>
-                            <Button type="submit" className="bg-blue-600 h-10 text-[10px] font-semibold">{t("tables.createZoneBtn")}</Button>
+                            <Button type="submit" className="bg-blue-600 h-10 text-[10px] font-black uppercase">{t("tables.createZoneBtn")}</Button>
                         </div>
 
                         <div className="mt-6">
-                            <Label className="text-[10px] font-semibold text-muted-foreground">{t("tables.existingZones")}</Label>
+                            <Label className="text-[10px] font-black uppercase text-slate-400">{t("tables.existingZones")}</Label>
                             <div className="mt-2 grid gap-2 max-h-64 overflow-y-auto pr-2">
                                 {tableTypes.map(zoneItem => (
-                                    <div key={zoneItem.id} className="flex items-center justify-between p-3 bg-muted rounded-sm border border-border/50">
+                                    <div key={zoneItem.id} className="flex items-center justify-between p-3 bg-slate-50 rounded-sm border border-slate-200/50">
                                         <div>
-                                            <div className="text-xs font-semibold">{getFullZoneName(zoneItem.id)}</div>
-                                            <div className="text-[10px] text-muted-foreground font-medium">{zoneItem.description || t("tables.noDescription")}</div>
+                                            <div className="text-xs font-black uppercase">{getFullZoneName(zoneItem.id)}</div>
+                                            <div className="text-[10px] text-slate-400 font-medium">{zoneItem.description || t("tables.noDescription")}</div>
                                         </div>
-                                        <Button type="button" variant="ghost" size="icon" onClick={() => handleDeleteZone(zoneItem.id)} className="h-7 w-7 text-slate-300 hover:text-red-600 dark:text-red-400">
-                                            <Trash className="w-3.5 h-3.5" />
+                                        <Button type="button" variant="ghost" size="icon" onClick={() => handleDeleteZone(zoneItem.id)} className="h-7 w-7 text-slate-300 hover:text-red-600">
+                                            <Trash2 className="w-3.5 h-3.5" />
                                         </Button>
                                     </div>
                                 ))}
@@ -543,10 +543,10 @@ export default function TablesPage() {
                   </DialogContent>
                 </Dialog>
 
-                <Button size="sm" onClick={handleOpenCreateTable} className="bg-blue-600 hover:bg-blue-700 h-8 text-[10px] font-semibold">
+                <Button size="sm" onClick={handleOpenCreateTable} className="bg-blue-600 hover:bg-blue-700 h-8 text-[10px] font-black uppercase">
                     <Plus className="w-3.5 h-3.5 mr-1" /> {t("tables.addTable")}
                 </Button>
-                <Button size="sm" onClick={handleOpenCreateElement} variant="secondary" className="h-8 text-[10px] font-semibold">
+                <Button size="sm" onClick={handleOpenCreateElement} variant="secondary" className="h-8 text-[10px] font-black uppercase">
                     <Square className="w-3.5 h-3.5 mr-1" /> {t("tables.addBox")}
                 </Button>
               </>
@@ -560,15 +560,15 @@ export default function TablesPage() {
             tracks the actually-visible viewport. */}
         <Tabs defaultValue="floor-plan" className="flex-1 flex flex-col h-[calc(100dvh-150px)]">
             <div className="flex items-center justify-between mb-2">
-                <TabsList className="bg-muted/50">
-                    <TabsTrigger value="floor-plan" className="text-xs font-bold"><GridFour className="w-4 h-4 mr-2" /> {t("tables.floorPlan")}</TabsTrigger>
-                    <TabsTrigger value="list-view" className="text-xs font-bold"><ListBullets className="w-4 h-4 mr-2" /> {t("tables.listView")}</TabsTrigger>
+                <TabsList className="bg-slate-100/50">
+                    <TabsTrigger value="floor-plan" className="text-xs font-bold"><LayoutGrid className="w-4 h-4 mr-2" /> {t("tables.floorPlan")}</TabsTrigger>
+                    <TabsTrigger value="list-view" className="text-xs font-bold"><List className="w-4 h-4 mr-2" /> {t("tables.listView")}</TabsTrigger>
                 </TabsList>
                 
                 {isFloorPlanEditMode && (
-                  <div className="flex items-center gap-4 text-[10px] font-semibold text-muted-foreground">
-                    <div className="flex items-center gap-1"><ArrowsOutCardinal className="w-3 h-3" /> {t("tables.dragToMove")}</div>
-                    <div className="flex items-center gap-1"><PencilSimple className="w-3 h-3" /> {t("tables.clickPencilToEdit")}</div>
+                  <div className="flex items-center gap-4 text-[10px] font-black uppercase tracking-widest text-slate-400">
+                    <div className="flex items-center gap-1"><Move className="w-3 h-3" /> {t("tables.dragToMove")}</div>
+                    <div className="flex items-center gap-1"><Edit2 className="w-3 h-3" /> {t("tables.clickPencilToEdit")}</div>
                   </div>
                 )}
             </div>
@@ -583,8 +583,8 @@ export default function TablesPage() {
                         variant="outline" 
                         onClick={() => setSelectedZoneId(zone.id)}
                         className={cn(
-"cursor-pointer text-[10px] font-semibold px-3 py-1.5 rounded-sm transition-colors",
-                          selectedZoneId === zone.id ? "bg-slate-800 text-white border-slate-800" : "bg-card text-muted-foreground border-border hover:bg-muted"
+                          "cursor-pointer text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-sm transition-colors",
+                          selectedZoneId === zone.id ? "bg-slate-800 text-white border-slate-800" : "bg-white text-slate-500 border-slate-200 hover:bg-slate-50"
                         )}
                       >
                         {getFullZoneName(zone.id)}
@@ -593,7 +593,7 @@ export default function TablesPage() {
                   </div>
                 )}
 
-                <div ref={outerRef} className="flex-1 min-h-[420px] border border-border rounded-lg bg-muted relative overflow-hidden flex items-center justify-center">
+                <div ref={outerRef} className="flex-1 min-h-[420px] border border-slate-200 rounded-lg bg-slate-50 relative overflow-hidden flex items-center justify-center">
                     {/* Sizer: its box occupies the scaled footprint so the transformed
                         canvas has no dead layout space and stays centered. */}
                     <div style={{ width: CANVAS_WIDTH * scale, height: CANVAS_HEIGHT * scale }} className="relative">
@@ -628,7 +628,7 @@ export default function TablesPage() {
                                 onPointerUp={handlePointerUp}
                                 onPointerCancel={handlePointerUp}
                             >
-                                {el.label && <span className="absolute top-2 left-2 font-semibold text-muted-foreground/80 pointer-events-none px-2">{el.label}</span>}
+                                {el.label && <span className="absolute top-2 left-2 font-black text-slate-400/80 uppercase tracking-widest pointer-events-none px-2">{el.label}</span>}
                                 
                                 {isFloorPlanEditMode && (
                                     <>
@@ -639,7 +639,7 @@ export default function TablesPage() {
                                         onClick={(e) => { e.stopPropagation(); handleOpenEditElement(el); }}
                                         onPointerDown={(e) => e.stopPropagation()}
                                         >
-                                            <PencilSimple className="w-3.5 h-3.5" />
+                                            <Edit2 className="w-3.5 h-3.5" />
                                         </div>
                                         <div
                                         className="absolute -bottom-1.5 -right-1.5 w-6 h-6 bg-slate-500/70 border-2 border-white cursor-nwse-resize z-50 rounded-full shadow-md touch-none"
@@ -650,8 +650,8 @@ export default function TablesPage() {
                             </div>
                         ))}
                         {zoneTables.length === 0 ? (
-                            <div className="absolute inset-0 flex flex-col items-center justify-center text-muted-foreground pointer-events-none">
-                                <Stack className="w-12 h-12 mb-4 text-slate-200" />
+                            <div className="absolute inset-0 flex flex-col items-center justify-center text-slate-400 pointer-events-none">
+                                <Layers className="w-12 h-12 mb-4 text-slate-200" />
                                 <p className="text-sm font-bold">{t("tables.zoneEmpty")}</p>
                                 {isFloorPlanEditMode && <p className="text-xs mt-1">{t("tables.clickAddTableToStart")}</p>}
                             </div>
@@ -663,7 +663,7 @@ export default function TablesPage() {
                                         "absolute flex flex-col items-center justify-center border-2 shadow-sm transition-colors group select-none z-10",
                                         table.shape === 'circle' ? 'rounded-full' : 'rounded-md',
                                         isFloorPlanEditMode ? "cursor-grab active:cursor-grabbing" : "cursor-default",
-                                        dragInfo.current.dragId === table.id ? 'z-50 shadow-xl border-blue-500 bg-blue-50' : 'border-border bg-card hover:border-ring'
+                                        dragInfo.current.dragId === table.id ? 'z-50 shadow-xl border-blue-500 bg-blue-50' : 'border-slate-300 bg-white hover:border-slate-400'
                                     )}
                                     style={{
                                         width: `${table.width || 60}px`,
@@ -677,8 +677,8 @@ export default function TablesPage() {
                                     onPointerUp={handlePointerUp}
                                     onPointerCancel={handlePointerUp}
                                 >
-                                    <span className="font-black text-foreground pointer-events-none">{table.identifier}</span>
-                                    <span className="text-[9px] text-muted-foreground font-bold pointer-events-none">{table.capacity} {t("tables.pax")}</span>
+                                    <span className="font-black text-slate-800 pointer-events-none">{table.identifier}</span>
+                                    <span className="text-[9px] text-slate-500 font-bold pointer-events-none">{table.capacity} {t("tables.pax")}</span>
 
                                     {/* Status Indicator */}
                                     <div className={cn(
@@ -698,7 +698,7 @@ export default function TablesPage() {
                                           onClick={(e) => { e.stopPropagation(); handleOpenEditTable(table); }}
                                           onPointerDown={(e) => e.stopPropagation()} // Prevent drag start
                                         >
-                                          <PencilSimple className="w-3.5 h-3.5" />
+                                          <Edit2 className="w-3.5 h-3.5" />
                                         </div>
                                         <div
                                           className="absolute -bottom-1.5 -right-1.5 w-6 h-6 bg-slate-500/80 border-2 border-white cursor-nwse-resize z-50 rounded-full shadow-md touch-none"
@@ -715,53 +715,53 @@ export default function TablesPage() {
             </TabsContent>
 
             <TabsContent value="list-view" className="mt-0 flex-1 overflow-auto">
-                <Card className="rounded-md border-border shadow-sm overflow-hidden bg-card">
-                <CardHeader className="p-3 bg-muted/50 border-b border-border">
+                <Card className="rounded-md border-slate-200 shadow-sm overflow-hidden bg-white">
+                <CardHeader className="p-3 bg-slate-50/50 border-b border-slate-200">
                     <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
-                            <Stack className="w-4 h-4 text-blue-500" />
-                            <span className="text-xs font-bold text-foreground">{t("tables.physicalInventory")}</span>
+                            <Layers className="w-4 h-4 text-blue-500" />
+                            <span className="text-xs font-bold text-slate-700">{t("tables.physicalInventory")}</span>
                         </div>
                         <div className="relative w-64">
-                            <MagnifyingGlass className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
-                            <Input placeholder={t("tables.searchIdentifier")} className="pl-8 h-8 text-xs bg-card border-border rounded-md" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
+                            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
+                            <Input placeholder={t("tables.searchIdentifier")} className="pl-8 h-8 text-xs bg-white border-slate-200 rounded-md" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
                         </div>
                     </div>
                 </CardHeader>
                 <CardContent className="p-0">
                     <Table>
-                    <TableHeader className="bg-muted/80">
+                    <TableHeader className="bg-slate-50/80">
                         <TableRow className="h-9 hover:bg-transparent">
-                        <TableHead className="text-[9px] font-semibold text-muted-foreground px-4">{t("tables.identifierHeader")}</TableHead>
-                        <TableHead className="text-[9px] font-semibold text-muted-foreground">{t("tables.zoneAreaHeader")}</TableHead>
-                        <TableHead className="text-[9px] font-semibold text-muted-foreground text-center">{t("tables.capacityHeader")}</TableHead>
-                        <TableHead className="text-[9px] font-semibold text-muted-foreground">{t("tables.liveStatusHeader")}</TableHead>
-                        <TableHead className="text-[9px] font-semibold text-muted-foreground text-right px-4">{t("tables.actionsHeader")}</TableHead>
+                        <TableHead className="text-[9px] font-black text-slate-400 uppercase tracking-widest px-4">{t("tables.identifierHeader")}</TableHead>
+                        <TableHead className="text-[9px] font-black text-slate-400 uppercase tracking-widest">{t("tables.zoneAreaHeader")}</TableHead>
+                        <TableHead className="text-[9px] font-black text-slate-400 uppercase tracking-widest text-center">{t("tables.capacityHeader")}</TableHead>
+                        <TableHead className="text-[9px] font-black text-slate-400 uppercase tracking-widest">{t("tables.liveStatusHeader")}</TableHead>
+                        <TableHead className="text-[9px] font-black text-slate-400 uppercase tracking-widest text-right px-4">{t("tables.actionsHeader")}</TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody>
                         {loading ? (
-                            <TableRow><TableCell colSpan={5} className="h-32 text-center text-xs text-muted-foreground font-bold">{t("tables.refreshing")}</TableCell></TableRow>
+                            <TableRow><TableCell colSpan={5} className="h-32 text-center text-xs text-slate-400 font-bold uppercase tracking-widest">{t("tables.refreshing")}</TableCell></TableRow>
                         ) : filteredTables.length === 0 ? (
-                            <TableRow><TableCell colSpan={5} className="h-32 text-center text-xs text-muted-foreground font-bold">{t("tables.noTablesFound")}</TableCell></TableRow>
+                            <TableRow><TableCell colSpan={5} className="h-32 text-center text-xs text-slate-400 font-bold uppercase tracking-widest">{t("tables.noTablesFound")}</TableCell></TableRow>
                         ) : filteredTables.map((table) => (
-                        <TableRow key={table.id} className="h-12 hover:bg-muted/50 border-b border-border transition-colors">
+                        <TableRow key={table.id} className="h-12 hover:bg-slate-50/50 border-b border-slate-100 transition-colors">
                             <TableCell className="px-4">
-                            <div className="font-semibold text-foreground text-sm tracking-tight">{table.identifier}</div>
+                            <div className="font-black text-slate-900 uppercase text-sm tracking-tight">{table.identifier}</div>
                             </TableCell>
                             <TableCell>
-                            <Badge variant="outline" className="bg-card text-muted-foreground border-border text-[9px] font-semibold px-1.5 py-0 rounded-sm">{table.tableType?.id ? getFullZoneName(table.tableType.id) : t("tables.standard")}</Badge>
+                            <Badge variant="outline" className="bg-white text-slate-500 border-slate-200 text-[9px] font-black uppercase px-1.5 py-0 rounded-sm">{table.tableType?.id ? getFullZoneName(table.tableType.id) : t("tables.standard")}</Badge>
                             </TableCell>
-                            <TableCell className="text-center font-bold text-foreground text-xs">
+                            <TableCell className="text-center font-bold text-slate-700 text-xs">
                                 {table.capacity} {t("tables.pax")}
                             </TableCell>
                             <TableCell>
                                 {table.isAvailable ? (
-                                    <div className="flex items-center gap-1.5 text-green-600 dark:text-green-400 text-[10px] font-semibold tracking-tighter">
+                                    <div className="flex items-center gap-1.5 text-green-600 text-[10px] font-black uppercase tracking-tighter">
                                         <div className="w-1.5 h-1.5 rounded-full bg-green-500 shadow-sm" /> {t("tables.available")}
                                     </div>
                                 ) : (
-                                    <div className="flex items-center gap-1.5 text-red-600 dark:text-red-400 text-[10px] font-semibold tracking-tighter">
+                                    <div className="flex items-center gap-1.5 text-red-600 text-[10px] font-black uppercase tracking-tighter">
                                         <div className="w-1.5 h-1.5 rounded-full bg-red-500 shadow-sm animate-pulse" /> {t("tables.occupied")}
                                     </div>
                                 )}
@@ -770,8 +770,8 @@ export default function TablesPage() {
                             {/* Edit/Delete are always available in the list view — only
                                 dragging tables on the floor plan is gated by edit mode (#4.2) */}
                             <div className="flex justify-end gap-1">
-                                <Button variant="ghost" size="icon" onClick={() => handleOpenEditTable(table)} className="h-7 w-7 text-muted-foreground hover:text-blue-600 transition-colors"><PencilSimple className="w-3.5 h-3.5" /></Button>
-                                <Button variant="ghost" size="icon" onClick={() => handleDeleteTable(table.id)} className="h-7 w-7 text-muted-foreground hover:text-red-600 dark:text-red-400 transition-colors"><Trash className="w-3.5 h-3.5" /></Button>
+                                <Button variant="ghost" size="icon" onClick={() => handleOpenEditTable(table)} className="h-7 w-7 text-slate-400 hover:text-blue-600 transition-colors"><Edit2 className="w-3.5 h-3.5" /></Button>
+                                <Button variant="ghost" size="icon" onClick={() => handleDeleteTable(table.id)} className="h-7 w-7 text-slate-400 hover:text-red-600 transition-colors"><Trash2 className="w-3.5 h-3.5" /></Button>
                             </div>
                             </TableCell>
                         </TableRow>
@@ -789,24 +789,24 @@ export default function TablesPage() {
             <form onSubmit={handleTableSubmit}>
                 <div className="bg-slate-900 p-4 text-white">
                     <DialogHeader>
-                        <DialogTitle className="text-lg font-bold tracking-tight">{isEditMode ? t("tables.editTable") : t("tables.addPhysicalTable")}</DialogTitle>
+                        <DialogTitle className="text-lg font-bold uppercase tracking-tight">{isEditMode ? t("tables.editTable") : t("tables.addPhysicalTable")}</DialogTitle>
                     </DialogHeader>
                 </div>
-                <div className="p-6 space-y-5 bg-card">
+                <div className="p-6 space-y-5 bg-white">
                     <div className="grid gap-1.5">
-                        <Label className="text-[10px] font-semibold text-muted-foreground">{t("tables.identifier")}</Label>
-                        <Input required value={tableForm.identifier} onChange={e => setTableForm({...tableForm, identifier: e.target.value})} placeholder={t("tables.identifierPlaceholder")} className="h-10 text-sm font-bold rounded-sm border-border" />
+                        <Label className="text-[10px] font-black uppercase text-slate-400">{t("tables.identifier")}</Label>
+                        <Input required value={tableForm.identifier} onChange={e => setTableForm({...tableForm, identifier: e.target.value})} placeholder={t("tables.identifierPlaceholder")} className="h-10 text-sm font-bold rounded-sm border-slate-200" />
                     </div>
                     
                     <div className="grid grid-cols-2 gap-4">
                         <div className="grid gap-1.5">
-                            <Label className="text-[10px] font-semibold text-muted-foreground">{t("tables.capacityPax")}</Label>
-                            <Input type="number" min="1" required value={tableForm.capacity} onChange={e => setTableForm({...tableForm, capacity: e.target.value})} className="h-10 text-sm font-bold rounded-sm border-border" />
+                            <Label className="text-[10px] font-black uppercase text-slate-400">{t("tables.capacityPax")}</Label>
+                            <Input type="number" min="1" required value={tableForm.capacity} onChange={e => setTableForm({...tableForm, capacity: e.target.value})} className="h-10 text-sm font-bold rounded-sm border-slate-200" />
                         </div>
                         <div className="grid gap-1.5">
-                            <Label className="text-[10px] font-semibold text-muted-foreground">{t("tables.assignZone")}</Label>
+                            <Label className="text-[10px] font-black uppercase text-slate-400">{t("tables.assignZone")}</Label>
                             <Select value={tableForm.tableTypeId} onValueChange={(v) => setTableForm({...tableForm, tableTypeId: v || ''})}>
-                                <SelectTrigger className="h-10 text-sm font-bold rounded-sm border-border">
+                                <SelectTrigger className="h-10 text-sm font-bold rounded-sm border-slate-200">
                                     <SelectValue placeholder={t("tables.selectZone")}>
                                         {tableForm.tableTypeId ? getFullZoneName(tableForm.tableTypeId) : t("tables.selectZone")}
                                     </SelectValue>
@@ -818,13 +818,13 @@ export default function TablesPage() {
                         </div>
                     </div>
 
-                    <div className="border-t border-border pt-5">
-                        <Label className="text-xs font-semibold tracking-tight text-foreground mb-3 block">{t("tables.visualSettings")}</Label>
+                    <div className="border-t border-slate-100 pt-5">
+                        <Label className="text-xs font-black uppercase tracking-tight text-slate-800 mb-3 block">{t("tables.visualSettings")}</Label>
                         <div className="grid grid-cols-2 gap-4 mb-4">
                             <div className="grid gap-1.5">
-                                <Label className="text-[10px] font-semibold text-muted-foreground">{t("tables.shape")}</Label>
+                                <Label className="text-[10px] font-black uppercase text-slate-400">{t("tables.shape")}</Label>
                                 <Select value={tableForm.shape} onValueChange={(v) => setTableForm({...tableForm, shape: v || 'rectangle'})}>
-                                    <SelectTrigger className="h-10 text-sm font-bold rounded-sm border-border">
+                                    <SelectTrigger className="h-10 text-sm font-bold rounded-sm border-slate-200">
                                         <SelectValue placeholder={t("tables.shapePlaceholder")} />
                                     </SelectTrigger>
                                     <SelectContent>
@@ -834,37 +834,37 @@ export default function TablesPage() {
                                 </Select>
                             </div>
                             <div className="grid gap-1.5">
-                                <Label className="text-[10px] font-semibold text-muted-foreground">{t("tables.backgroundColor")}</Label>
-                                <Input type="color" value={tableForm.color} onChange={e => setTableForm({...tableForm, color: e.target.value})} className="h-10 w-full p-1 rounded-sm border-border" />
+                                <Label className="text-[10px] font-black uppercase text-slate-400">{t("tables.backgroundColor")}</Label>
+                                <Input type="color" value={tableForm.color} onChange={e => setTableForm({...tableForm, color: e.target.value})} className="h-10 w-full p-1 rounded-sm border-slate-200" />
                             </div>
                         </div>
                         <div className="grid grid-cols-2 gap-4">
                             <div className="grid gap-1.5">
-                                <Label className="text-[10px] font-semibold text-muted-foreground">{t("tables.widthPx")}</Label>
-                                <Input type="number" min="40" max="300" required value={tableForm.width} onChange={e => setTableForm({...tableForm, width: e.target.value})} className="h-10 text-sm font-bold rounded-sm border-border" />
+                                <Label className="text-[10px] font-black uppercase text-slate-400">{t("tables.widthPx")}</Label>
+                                <Input type="number" min="40" max="300" required value={tableForm.width} onChange={e => setTableForm({...tableForm, width: e.target.value})} className="h-10 text-sm font-bold rounded-sm border-slate-200" />
                             </div>
                             <div className="grid gap-1.5">
-                                <Label className="text-[10px] font-semibold text-muted-foreground">{t("tables.heightPx")}</Label>
-                                <Input type="number" min="40" max="300" required value={tableForm.height} onChange={e => setTableForm({...tableForm, height: e.target.value})} className="h-10 text-sm font-bold rounded-sm border-border" />
+                                <Label className="text-[10px] font-black uppercase text-slate-400">{t("tables.heightPx")}</Label>
+                                <Input type="number" min="40" max="300" required value={tableForm.height} onChange={e => setTableForm({...tableForm, height: e.target.value})} className="h-10 text-sm font-bold rounded-sm border-slate-200" />
                             </div>
                         </div>
-                        <p className="text-[10px] text-muted-foreground font-medium mt-3">{t("tables.dragResizeHint")}</p>
+                        <p className="text-[10px] text-slate-400 font-medium mt-3">{t("tables.dragResizeHint")}</p>
                     </div>
 
                     {isEditMode && (
                         <div className="pt-2">
-                             <Button type="button" variant="destructive" className="w-full text-xs font-bold" onClick={() => {
+                             <Button type="button" variant="destructive" className="w-full text-xs font-bold uppercase tracking-widest" onClick={() => {
                                  setIsTableDialogOpen(false);
                                  handleDeleteTable(selectedId!);
                              }}>
-                                <Trash className="w-4 h-4 mr-2" /> {t("tables.deleteTableBtn")}
+                                <Trash2 className="w-4 h-4 mr-2" /> {t("tables.deleteTableBtn")}
                              </Button>
                         </div>
                     )}
                 </div>
-                <div className="p-4 bg-muted border-t border-border flex justify-end gap-2">
-                    <Button type="button" variant="ghost" onClick={() => setIsTableDialogOpen(false)} className="h-9 text-xs font-bold text-muted-foreground">{t("tables.cancelBtn")}</Button>
-                    <Button type="submit" className="h-9 bg-blue-600 hover:bg-blue-700 text-xs font-semibold px-6 rounded-sm">{t("tables.savePhysicalTableBtn")}</Button>
+                <div className="p-4 bg-slate-50 border-t border-slate-100 flex justify-end gap-2">
+                    <Button type="button" variant="ghost" onClick={() => setIsTableDialogOpen(false)} className="h-9 text-xs font-bold text-slate-400">{t("tables.cancelBtn")}</Button>
+                    <Button type="submit" className="h-9 bg-blue-600 hover:bg-blue-700 text-xs font-black uppercase px-6 rounded-sm">{t("tables.savePhysicalTableBtn")}</Button>
                 </div>
             </form>
           </DialogContent>
@@ -876,20 +876,20 @@ export default function TablesPage() {
             <form onSubmit={handleElementSubmit}>
                 <div className="bg-slate-900 p-4 text-white">
                     <DialogHeader>
-                        <DialogTitle className="text-lg font-bold tracking-tight">{isEditMode ? t("tables.editVisualBox") : t("tables.addVisualBox")}</DialogTitle>
+                        <DialogTitle className="text-lg font-bold uppercase tracking-tight">{isEditMode ? t("tables.editVisualBox") : t("tables.addVisualBox")}</DialogTitle>
                     </DialogHeader>
                 </div>
-                <div className="p-6 space-y-5 bg-card">
+                <div className="p-6 space-y-5 bg-white">
                     <div className="grid gap-1.5">
-                        <Label className="text-[10px] font-semibold text-muted-foreground">{t("tables.labelOptional")}</Label>
-                        <Input value={elementForm.label} onChange={e => setElementForm({...elementForm, label: e.target.value})} placeholder={t("tables.labelPlaceholder")} className="h-10 text-sm font-bold rounded-sm border-border" />
+                        <Label className="text-[10px] font-black uppercase text-slate-400">{t("tables.labelOptional")}</Label>
+                        <Input value={elementForm.label} onChange={e => setElementForm({...elementForm, label: e.target.value})} placeholder={t("tables.labelPlaceholder")} className="h-10 text-sm font-bold rounded-sm border-slate-200" />
                     </div>
                     
                     <div className="grid grid-cols-2 gap-4">
                         <div className="grid gap-1.5">
-                            <Label className="text-[10px] font-semibold text-muted-foreground">{t("tables.assignZone")}</Label>
+                            <Label className="text-[10px] font-black uppercase text-slate-400">{t("tables.assignZone")}</Label>
                             <Select value={elementForm.tableTypeId} onValueChange={(v) => setElementForm({...elementForm, tableTypeId: v || ''})}>
-                                <SelectTrigger className="h-10 text-sm font-bold rounded-sm border-border">
+                                <SelectTrigger className="h-10 text-sm font-bold rounded-sm border-slate-200">
                                     <SelectValue placeholder={t("tables.selectZone")}>
                                         {elementForm.tableTypeId ? getFullZoneName(elementForm.tableTypeId) : t("tables.selectZone")}
                                     </SelectValue>
@@ -900,36 +900,36 @@ export default function TablesPage() {
                             </Select>
                         </div>
                         <div className="grid gap-1.5">
-                            <Label className="text-[10px] font-semibold text-muted-foreground">{t("tables.backgroundColor")}</Label>
-                            <Input type="color" value={elementForm.color} onChange={e => setElementForm({...elementForm, color: e.target.value})} className="h-10 w-full p-1 rounded-sm border-border" />
+                            <Label className="text-[10px] font-black uppercase text-slate-400">{t("tables.backgroundColor")}</Label>
+                            <Input type="color" value={elementForm.color} onChange={e => setElementForm({...elementForm, color: e.target.value})} className="h-10 w-full p-1 rounded-sm border-slate-200" />
                         </div>
                     </div>
 
                     <div className="grid grid-cols-2 gap-4">
                         <div className="grid gap-1.5">
-                            <Label className="text-[10px] font-semibold text-muted-foreground">{t("tables.widthPx")}</Label>
-                            <Input type="number" min="50" max="1000" required value={elementForm.width} onChange={e => setElementForm({...elementForm, width: e.target.value})} className="h-10 text-sm font-bold rounded-sm border-border" />
+                            <Label className="text-[10px] font-black uppercase text-slate-400">{t("tables.widthPx")}</Label>
+                            <Input type="number" min="50" max="1000" required value={elementForm.width} onChange={e => setElementForm({...elementForm, width: e.target.value})} className="h-10 text-sm font-bold rounded-sm border-slate-200" />
                         </div>
                         <div className="grid gap-1.5">
-                            <Label className="text-[10px] font-semibold text-muted-foreground">{t("tables.heightPx")}</Label>
-                            <Input type="number" min="50" max="1000" required value={elementForm.height} onChange={e => setElementForm({...elementForm, height: e.target.value})} className="h-10 text-sm font-bold rounded-sm border-border" />
+                            <Label className="text-[10px] font-black uppercase text-slate-400">{t("tables.heightPx")}</Label>
+                            <Input type="number" min="50" max="1000" required value={elementForm.height} onChange={e => setElementForm({...elementForm, height: e.target.value})} className="h-10 text-sm font-bold rounded-sm border-slate-200" />
                         </div>
                     </div>
 
                     {isEditMode && (
                         <div className="pt-2">
-                             <Button type="button" variant="destructive" className="w-full text-xs font-bold" onClick={() => {
+                             <Button type="button" variant="destructive" className="w-full text-xs font-bold uppercase tracking-widest" onClick={() => {
                                  setIsElementDialogOpen(false);
                                  handleDeleteElement(selectedId!);
                              }}>
-                                <Trash className="w-4 h-4 mr-2" /> {t("tables.deleteBoxBtn")}
+                                <Trash2 className="w-4 h-4 mr-2" /> {t("tables.deleteBoxBtn")}
                              </Button>
                         </div>
                     )}
                 </div>
-                <div className="p-4 bg-muted border-t border-border flex justify-end gap-2">
-                    <Button type="button" variant="ghost" onClick={() => setIsElementDialogOpen(false)} className="h-9 text-xs font-bold text-muted-foreground">{t("tables.cancelBtn")}</Button>
-                    <Button type="submit" className="h-9 bg-blue-600 hover:bg-blue-700 text-xs font-semibold px-6 rounded-sm">{t("tables.saveBoxBtn")}</Button>
+                <div className="p-4 bg-slate-50 border-t border-slate-100 flex justify-end gap-2">
+                    <Button type="button" variant="ghost" onClick={() => setIsElementDialogOpen(false)} className="h-9 text-xs font-bold text-slate-400">{t("tables.cancelBtn")}</Button>
+                    <Button type="submit" className="h-9 bg-blue-600 hover:bg-blue-700 text-xs font-black uppercase px-6 rounded-sm">{t("tables.saveBoxBtn")}</Button>
                 </div>
             </form>
           </DialogContent>

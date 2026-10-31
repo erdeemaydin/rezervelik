@@ -6,7 +6,6 @@ import { Button } from '@/components/ui/button';
 import { useTranslation } from '@/i18n/provider';
 import { clearAuth } from '@/lib/authStorage';
 import api from '@/lib/api';
-import { BrandLogo } from '@/components/BrandLogo';
 
 // Shown when the platform is in maintenance mode. The API returns 503 with code
 // `errors.maintenance`; the axios interceptor (lib/api.ts) redirects tenant/public
@@ -20,18 +19,17 @@ export default function MaintenancePage() {
   const [retrying, setRetrying] = useState(false);
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center gap-6 bg-[#ecf0f5] px-6">
-      <BrandLogo size={40} tile="#1f6fb2" textClassName="text-2xl text-[#1f2d3d]" />
-      <div className="w-full max-w-md rounded-[4px] border border-[#9ca8b7] border-t-[3px] border-t-[#f39c12] bg-white p-8 text-center shadow-[0_1px_3px_rgba(0,0,0,0.1)]">
-        <div className="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-full bg-[#f39c12] text-[#201400]">
-          <Wrench className="h-7 w-7" />
+    <div className="min-h-screen flex items-center justify-center bg-stone-50 px-6">
+      <div className="max-w-md text-center">
+        <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-amber-600 to-rose-800 text-white shadow-lg">
+          <Wrench className="h-8 w-8" />
         </div>
-        <h1 className="text-2xl font-bold tracking-tight text-[#1f2d3d]">{t('maintenance.title')}</h1>
-        <p className="mt-3 text-sm leading-relaxed text-[#5b6b7b]">{t('maintenance.message')}</p>
+        <h1 className="text-2xl font-black tracking-tight text-stone-900">{t('maintenance.title')}</h1>
+        <p className="mt-3 text-sm leading-relaxed text-stone-500">{t('maintenance.message')}</p>
         <Button
           onClick={() => { setRetrying(true); window.location.href = '/'; }}
           disabled={retrying}
-          className="mt-6 h-11 rounded-[4px] bg-[#1f6fb2] px-8 font-bold text-white hover:bg-[#195a91]"
+          className="mt-6 h-11 bg-stone-900 px-8 font-bold hover:bg-stone-800"
         >
           {t('maintenance.retry')}
         </Button>

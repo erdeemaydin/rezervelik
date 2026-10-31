@@ -13,7 +13,7 @@ import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import api from '@/lib/api';
 import { toast } from 'sonner';
-import { FloppyDisk, Hourglass, Users, ArrowLeft, Plus, CheckCircle, ChatCircle, XCircle, Calendar as CalendarIcon, GearSix } from '@phosphor-icons/react';
+import { Save, Hourglass, Users, ArrowLeft, Plus, CheckCircle2, MessageCircle, XCircle, Calendar as CalendarIcon, Settings2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { useTranslation } from "@/i18n/provider";
@@ -180,16 +180,16 @@ export default function WaitlistPage() {
                             <ArrowLeft className="w-5 h-5" />
                         </Button>
                         <div>
-                            <h1 className="text-2xl font-semibold tracking-tight text-foreground font-heading">{t("waitTime.title")}</h1>
-                            <p className="text-[10px] text-muted-foreground font-semibold tracking-[0.2em] mt-1">{t("waitTime.subtitle")}</p>
+                            <h1 className="text-2xl font-black text-slate-800 tracking-tight">{t("waitTime.title")}</h1>
+                            <p className="text-[10px] text-slate-400 font-black uppercase tracking-[0.2em] mt-1">{t("waitTime.subtitle")}</p>
                         </div>
                     </div>
                     <div className="flex items-center gap-3">
- <Badge className={cn("text-[9px] font-semibold px-2.5 py-1 border-0", config.isWaitlistOpen ?"bg-emerald-100 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400":"bg-muted text-muted-foreground")}>
+                        <Badge className={cn("text-[9px] font-black uppercase px-2.5 py-1 border-0", config.isWaitlistOpen ? "bg-emerald-100 text-emerald-700" : "bg-slate-200 text-slate-600")}>
                             {config.isWaitlistOpen ? t("waitTime.config.statusOpen") : t("waitTime.config.statusClosed")}
                         </Badge>
                         <Button variant="outline" size="sm" onClick={() => setIsConfigModalOpen(true)} className="h-10 text-xs font-bold px-4 rounded-lg">
-                            <GearSix className="w-4 h-4 mr-2" /> {t("waitTime.config.title")}
+                            <Settings2 className="w-4 h-4 mr-2" /> {t("waitTime.config.title")}
                         </Button>
                     </div>
                 </div>
@@ -199,29 +199,29 @@ export default function WaitlistPage() {
                         (rarely touched) lives in the dialog above instead of a
                         permanent side column. */}
                     <div>
-                        <Card className="rounded-xl border-border shadow-sm overflow-hidden bg-card h-full">
-                            <CardHeader className="p-6 bg-muted/50 border-b border-border flex flex-row items-center justify-between">
-                                <div className="text-sm font-semibold text-foreground">{t("waitTime.tabs.walkins")}</div>
+                        <Card className="rounded-xl border-slate-200 shadow-sm overflow-hidden bg-white h-full">
+                            <CardHeader className="p-6 bg-slate-50/50 border-b border-slate-200 flex flex-row items-center justify-between">
+                                <div className="text-sm font-black uppercase tracking-widest text-slate-700">{t("waitTime.tabs.walkins")}</div>
                                 <Button onClick={() => setIsAddModalOpen(true)} className="bg-blue-600 hover:bg-blue-700 h-10 text-sm font-bold px-4 rounded-lg">
                                     <Plus className="w-5 h-5 mr-2" /> {t("waitTime.tabs.addWalkIn")}
                                 </Button>
                             </CardHeader>
                             <CardContent className="p-0">
                                 {queue.length === 0 ? (
-                                    <div className="flex flex-col items-center justify-center py-16 text-muted-foreground">
+                                    <div className="flex flex-col items-center justify-center py-16 text-slate-400">
                                         <Hourglass className="w-12 h-12 mb-4 text-slate-200" />
                                         <p className="text-sm font-bold">{t("waitTime.empty.queueTitle")}</p>
                                         <p className="text-xs">{t("waitTime.empty.queueDesc")}</p>
                                     </div>
                                 ) : (
                                     <Table>
-                                    <TableHeader className="bg-muted">
+                                    <TableHeader className="bg-slate-50">
                                         <TableRow>
-                                            <TableHead className="text-[9px] font-semibold text-muted-foreground">{t("waitTime.table.guest")}</TableHead>
-                                            <TableHead className="text-[9px] font-semibold text-muted-foreground">{t("waitTime.table.party")}</TableHead>
-                                            <TableHead className="text-[9px] font-semibold text-muted-foreground">{t("waitTime.table.waitTime")}</TableHead>
-                                            <TableHead className="text-[9px] font-semibold text-muted-foreground">{t("waitTime.table.status")}</TableHead>
-                                            <TableHead className="text-right text-[9px] font-semibold text-muted-foreground">{t("waitTime.table.actions")}</TableHead>
+                                            <TableHead className="text-[9px] font-black uppercase tracking-widest text-slate-500">{t("waitTime.table.guest")}</TableHead>
+                                            <TableHead className="text-[9px] font-black uppercase tracking-widest text-slate-500">{t("waitTime.table.party")}</TableHead>
+                                            <TableHead className="text-[9px] font-black uppercase tracking-widest text-slate-500">{t("waitTime.table.waitTime")}</TableHead>
+                                            <TableHead className="text-[9px] font-black uppercase tracking-widest text-slate-500">{t("waitTime.table.status")}</TableHead>
+                                            <TableHead className="text-right text-[9px] font-black uppercase tracking-widest text-slate-500">{t("waitTime.table.actions")}</TableHead>
                                         </TableRow>
                                     </TableHeader>
                                     <TableBody>
@@ -236,32 +236,32 @@ export default function WaitlistPage() {
                                             const isLegacyDateEntry = !!entry.targetDate;
 
                                             return (
-                                                <TableRow key={entry.id} className="hover:bg-muted/50">
+                                                <TableRow key={entry.id} className="hover:bg-slate-50/50">
                                                     <TableCell>
-                                                        <div className="font-bold text-foreground text-xs">{entry.customerName}</div>
-                                                        <div className="text-[9px] text-muted-foreground font-mono">{entry.customerPhone}</div>
+                                                        <div className="font-bold text-slate-800 text-xs">{entry.customerName}</div>
+                                                        <div className="text-[9px] text-slate-400 font-mono">{entry.customerPhone}</div>
                                                     </TableCell>
-                                                    <TableCell className="font-bold text-foreground">{entry.partySize}</TableCell>
+                                                    <TableCell className="font-bold text-slate-700">{entry.partySize}</TableCell>
                                                     <TableCell>
                                                         {isLegacyDateEntry ? (
                                                             <div className="flex items-center gap-1.5">
-                                                                <CalendarIcon className="w-3 h-3 text-amber-500 dark:text-amber-400" />
-                                                                <span className="font-bold text-xs text-amber-700 dark:text-amber-400">{entry.targetDate}</span>
+                                                                <CalendarIcon className="w-3 h-3 text-amber-500" />
+                                                                <span className="font-bold text-xs text-amber-700">{entry.targetDate}</span>
                                                             </div>
                                                         ) : (
                                                             <div className="flex flex-col">
-                                                                <span className={cn("font-bold text-xs", elapsed > (entry.quotedWaitTime || 0) ? "text-red-500 dark:text-red-400" : "text-emerald-600 dark:text-emerald-400")}>
+                                                                <span className={cn("font-bold text-xs", elapsed > (entry.quotedWaitTime || 0) ? "text-red-500" : "text-emerald-600")}>
                                                                     {elapsed} {t("waitTime.table.mElapsed")}
                                                                 </span>
-                                                                {entry.quotedWaitTime && <span className="text-[9px] text-muted-foreground">{t("waitTime.table.quoted")}: {entry.quotedWaitTime}m</span>}
+                                                                {entry.quotedWaitTime && <span className="text-[9px] text-slate-400">{t("waitTime.table.quoted")}: {entry.quotedWaitTime}m</span>}
                                                             </div>
                                                         )}
                                                     </TableCell>
                                                     <TableCell>
                                                         {entry.status === 'WAITING' ? (
-                                                            <Badge className="bg-amber-100 dark:bg-amber-950/40 text-amber-800 dark:text-amber-400 border-0 hover:bg-amber-100 text-[9px] font-black">{t("waitTime.status.waiting")}</Badge>
+                                                            <Badge className="bg-amber-100 text-amber-800 border-0 hover:bg-amber-100 text-[9px] font-black">{t("waitTime.status.waiting")}</Badge>
                                                         ) : entry.status === 'OFFERED' ? (
-                                                            <Badge className="bg-purple-100 dark:bg-purple-950/40 text-purple-800 dark:text-purple-400 border-0 hover:bg-purple-100 text-[9px] font-black">{t("waitTime.status.offerSent")}</Badge>
+                                                            <Badge className="bg-purple-100 text-purple-800 border-0 hover:bg-purple-100 text-[9px] font-black">{t("waitTime.status.offerSent")}</Badge>
                                                         ) : (
                                                             <Badge className="bg-blue-100 text-blue-800 border-0 hover:bg-blue-100 text-[9px] font-black">{t("waitTime.status.notified")}</Badge>
                                                         )}
@@ -272,21 +272,21 @@ export default function WaitlistPage() {
                                                                 <Button variant="outline" size="sm" onClick={() => {
                                                                     setOfferForm(prev => ({...prev, entryId: entry.id}));
                                                                     setIsOfferModalOpen(true);
-                                                                }} className="h-7 text-[10px] font-bold border-purple-200 dark:border-purple-800/50 text-purple-700 dark:text-purple-400 hover:bg-purple-50 dark:bg-purple-950/40">
-                                                                    <ChatCircle className="w-3 h-3 mr-1" /> {t("waitTime.action.sendOffer")}
+                                                                }} className="h-7 text-[10px] font-bold border-purple-200 text-purple-700 hover:bg-purple-50">
+                                                                    <MessageCircle className="w-3 h-3 mr-1" /> {t("waitTime.action.sendOffer")}
                                                                 </Button>
                                                             ) : (
                                                                 <Button variant="outline" size="sm" onClick={() => updateStatus(entry.id, 'NOTIFIED')} className="h-7 text-[10px] font-bold border-blue-200 text-blue-700 hover:bg-blue-50">
-                                                                    <ChatCircle className="w-3 h-3 mr-1" /> {t("waitTime.action.notify")}
+                                                                    <MessageCircle className="w-3 h-3 mr-1" /> {t("waitTime.action.notify")}
                                                                 </Button>
                                                             )
                                                         )}
                                                         {!isLegacyDateEntry && (
-                                                            <Button variant="outline" size="sm" onClick={() => updateStatus(entry.id, 'SEATED')} className="h-7 text-[10px] font-bold border-emerald-200 dark:border-emerald-800/50 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-50 dark:bg-emerald-950/40">
-                                                                <CheckCircle className="w-3 h-3 mr-1" /> {t("waitTime.action.seat")}
+                                                            <Button variant="outline" size="sm" onClick={() => updateStatus(entry.id, 'SEATED')} className="h-7 text-[10px] font-bold border-emerald-200 text-emerald-700 hover:bg-emerald-50">
+                                                                <CheckCircle2 className="w-3 h-3 mr-1" /> {t("waitTime.action.seat")}
                                                             </Button>
                                                         )}
-                                                        <Button variant="ghost" size="icon" onClick={() => updateStatus(entry.id, 'CANCELED')} className="h-7 w-7 text-muted-foreground hover:text-red-600 dark:text-red-400 hover:bg-red-50 dark:bg-red-950/40">
+                                                        <Button variant="ghost" size="icon" onClick={() => updateStatus(entry.id, 'CANCELED')} className="h-7 w-7 text-slate-400 hover:text-red-600 hover:bg-red-50">
                                                             <XCircle className="w-4 h-4" />
                                                         </Button>
                                                     </TableCell>
@@ -306,31 +306,31 @@ export default function WaitlistPage() {
                     <DialogContent className="sm:max-w-md p-0 border-0 overflow-hidden">
                         <div className="bg-slate-900 p-4 text-white">
                             <DialogHeader>
-                                <DialogTitle className="text-sm font-semibold">{t("waitTime.modal.addWalkInTitle")}</DialogTitle>
+                                <DialogTitle className="text-sm font-black uppercase tracking-widest">{t("waitTime.modal.addWalkInTitle")}</DialogTitle>
                             </DialogHeader>
                         </div>
-                        <form onSubmit={handleAddWalkIn} className="p-6 space-y-4 bg-card">
+                        <form onSubmit={handleAddWalkIn} className="p-6 space-y-4 bg-white">
                             <div className="grid gap-1.5">
-                                <Label className="text-[10px] font-semibold text-muted-foreground">{t("waitTime.modal.guestName")}</Label>
+                                <Label className="text-[10px] font-black uppercase text-slate-400">{t("waitTime.modal.guestName")}</Label>
                                 <Input required value={addForm.customerName} onChange={e => setAddForm({...addForm, customerName: e.target.value})} className="h-9 text-sm font-bold" />
                             </div>
                             <div className="grid gap-1.5">
-                                <Label className="text-[10px] font-semibold text-muted-foreground">{t("waitTime.modal.phone")}</Label>
+                                <Label className="text-[10px] font-black uppercase text-slate-400">{t("waitTime.modal.phone")}</Label>
                                 <Input required type="tel" value={addForm.customerPhone} onChange={e => setAddForm({...addForm, customerPhone: e.target.value})} className="h-9 text-sm font-bold" placeholder={t("waitTime.modal.phonePlaceholder")} />
                             </div>
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="grid gap-1.5">
-                                    <Label className="text-[10px] font-semibold text-muted-foreground">{t("waitTime.modal.partySize")}</Label>
+                                    <Label className="text-[10px] font-black uppercase text-slate-400">{t("waitTime.modal.partySize")}</Label>
                                     <Input required type="number" min="1" value={addForm.partySize} onChange={e => setAddForm({...addForm, partySize: e.target.value})} className="h-9 text-sm font-bold" />
                                 </div>
                                 <div className="grid gap-1.5">
-                                    <Label className="text-[10px] font-semibold text-muted-foreground">{t("waitTime.modal.quotedWait")}</Label>
+                                    <Label className="text-[10px] font-black uppercase text-slate-400">{t("waitTime.modal.quotedWait")}</Label>
                                     <Input type="number" value={addForm.quotedWaitTime} onChange={e => setAddForm({...addForm, quotedWaitTime: e.target.value})} className="h-9 text-sm font-bold" placeholder={t("waitTime.modal.optional")} />
                                 </div>
                             </div>
                             <div className="pt-4 flex justify-end gap-2">
                                 <Button type="button" variant="ghost" onClick={() => setIsAddModalOpen(false)} className="h-9 text-xs font-bold">{t("waitTime.modal.cancel")}</Button>
-                                <Button type="submit" className="h-9 bg-blue-600 hover:bg-blue-700 text-xs font-semibold">{t("waitTime.modal.addToQueue")}</Button>
+                                <Button type="submit" className="h-9 bg-blue-600 hover:bg-blue-700 text-xs font-black uppercase">{t("waitTime.modal.addToQueue")}</Button>
                             </div>
                         </form>
                     </DialogContent>
@@ -343,26 +343,26 @@ export default function WaitlistPage() {
                 <DialogContent className="sm:max-w-md p-0 border-0 overflow-hidden">
                     <div className="bg-purple-900 p-4 text-white">
                         <DialogHeader>
-                            <DialogTitle className="text-sm font-semibold">{t("waitTime.modal.sendOfferTitle")}</DialogTitle>
+                            <DialogTitle className="text-sm font-black uppercase tracking-widest">{t("waitTime.modal.sendOfferTitle")}</DialogTitle>
                         </DialogHeader>
                     </div>
-                    <form onSubmit={handleSendOffer} className="p-6 space-y-4 bg-card">
+                    <form onSubmit={handleSendOffer} className="p-6 space-y-4 bg-white">
                         <div className="grid grid-cols-2 gap-4">
                             <div className="grid gap-1.5">
-                                <Label className="text-[10px] font-semibold text-muted-foreground">{t("waitTime.modal.offerTime")}</Label>
+                                <Label className="text-[10px] font-black uppercase text-slate-400">{t("waitTime.modal.offerTime")}</Label>
                                 <TimeSelect value={offerForm.offeredTime} onChange={v => setOfferForm({...offerForm, offeredTime: v})} className="w-full h-9 text-sm font-bold" />
                             </div>
                             <div className="grid gap-1.5">
-                                <Label className="text-[10px] font-semibold text-muted-foreground">{t("waitTime.modal.expiresIn")}</Label>
+                                <Label className="text-[10px] font-black uppercase text-slate-400">{t("waitTime.modal.expiresIn")}</Label>
                                 <Input type="number" required min="1" max="72" value={offerForm.expiresInHours} onChange={e => setOfferForm({...offerForm, expiresInHours: e.target.value})} className="h-9 text-sm font-bold" />
                             </div>
                         </div>
-                        <p className="text-xs text-muted-foreground leading-relaxed">
+                        <p className="text-xs text-slate-500 leading-relaxed">
                             {t("waitTime.modal.offerDesc")}
                         </p>
                         <div className="pt-4 flex justify-end gap-2">
                             <Button type="button" variant="ghost" onClick={() => setIsOfferModalOpen(false)} className="h-9 text-xs font-bold">{t("waitTime.modal.cancel")}</Button>
-                            <Button type="submit" className="h-9 bg-purple-600 hover:bg-purple-700 text-xs font-semibold text-white">{t("waitTime.modal.sendOfferBtn")}</Button>
+                            <Button type="submit" className="h-9 bg-purple-600 hover:bg-purple-700 text-xs font-black uppercase text-white">{t("waitTime.modal.sendOfferBtn")}</Button>
                         </div>
                     </form>
                 </DialogContent>
@@ -373,23 +373,23 @@ export default function WaitlistPage() {
                 <DialogContent className="sm:max-w-lg p-0 border-0 overflow-hidden max-h-[85vh] overflow-y-auto">
                     <div className="bg-slate-900 p-4 text-white sticky top-0 z-10">
                         <DialogHeader>
-                            <DialogTitle className="text-sm font-semibold flex items-center gap-2">
+                            <DialogTitle className="text-sm font-black uppercase tracking-widest flex items-center gap-2">
                                 <Hourglass className="w-4 h-4" /> {t("waitTime.config.title")}
                             </DialogTitle>
                         </DialogHeader>
                     </div>
-                    <div className="p-6 space-y-6 bg-card">
-                        <div className="flex items-center justify-between bg-muted p-4 rounded-xl border border-border">
+                    <div className="p-6 space-y-6 bg-white">
+                        <div className="flex items-center justify-between bg-slate-50 p-4 rounded-xl border border-slate-100">
                             <div className="space-y-1">
-                                <Label className="text-sm font-bold text-foreground">{t("waitTime.config.acceptPublic")}</Label>
-                                <p className="text-xs text-muted-foreground">{t("waitTime.config.acceptPublicDesc")}</p>
+                                <Label className="text-sm font-bold text-slate-800">{t("waitTime.config.acceptPublic")}</Label>
+                                <p className="text-xs text-slate-500">{t("waitTime.config.acceptPublicDesc")}</p>
                             </div>
                             <Switch checked={config.isWaitlistOpen} onCheckedChange={(v: boolean) => setConfig(prev => ({...prev, isWaitlistOpen: v}))} className="scale-125" />
                         </div>
-                        <div className="flex items-center justify-between bg-muted p-4 rounded-xl border border-border">
+                        <div className="flex items-center justify-between bg-slate-50 p-4 rounded-xl border border-slate-100">
                             <div className="space-y-1">
-                                <Label className="text-sm font-bold text-foreground">{t("waitTime.config.displayEstimatedTime")}</Label>
-                                <p className="text-xs text-muted-foreground">{t("waitTime.config.displayEstimatedTimeDesc")}</p>
+                                <Label className="text-sm font-bold text-slate-800">{t("waitTime.config.displayEstimatedTime")}</Label>
+                                <p className="text-xs text-slate-500">{t("waitTime.config.displayEstimatedTimeDesc")}</p>
                             </div>
                             <Switch checked={config.isWaitTimeEnabled} onCheckedChange={(v: boolean) => setConfig(prev => ({...prev, isWaitTimeEnabled: v}))} className="scale-125" />
                         </div>
@@ -397,19 +397,19 @@ export default function WaitlistPage() {
                             <>
                                 <div className="bg-blue-50 border border-blue-100 p-4 rounded-xl mb-4 flex items-center justify-between">
                                     <div className="space-y-2">
-                                        <div className="text-xs font-semibold text-blue-600">{t("waitTime.config.publicUrl")}</div>
-                                        <div className="text-sm font-mono text-foreground select-all truncate max-w-[200px]">
+                                        <div className="text-xs font-black uppercase text-blue-600">{t("waitTime.config.publicUrl")}</div>
+                                        <div className="text-sm font-mono text-slate-700 select-all truncate max-w-[200px]">
                                             {typeof window !== 'undefined' ? `${window.location.origin}/r/your-slug/waitlist` : t("waitTime.loading")}
                                         </div>
                                     </div>
-                                    <Button variant="outline" size="sm" className="h-9 text-xs bg-card text-blue-700" onClick={() => {
+                                    <Button variant="outline" size="sm" className="h-9 text-xs bg-white text-blue-700" onClick={() => {
                                         toast.info(t("waitTime.info.qrGeneration"));
                                     }}>
                                         {t("waitTime.config.getQr")}
                                     </Button>
                                 </div>
                                 <div className="grid gap-2 pt-2">
-                                    <Label className="text-xs font-semibold text-muted-foreground">{t("waitTime.config.mode")}</Label>
+                                    <Label className="text-xs font-black uppercase tracking-wider text-slate-500">{t("waitTime.config.mode")}</Label>
                                     <Select value={config.isWaitTimeCalculated ? 'CALCULATED' : 'MANUAL'} onValueChange={(v: string | null) => setConfig(prev => ({...prev, isWaitTimeCalculated: v === 'CALCULATED'}))}>
                                         <SelectTrigger className="h-12 text-sm font-bold rounded-lg px-4">
                                             <SelectValue placeholder={t("waitTime.config.selectMode")} />
@@ -424,33 +424,33 @@ export default function WaitlistPage() {
                                 {!config.isWaitTimeCalculated ? (
                                     <div className="grid grid-cols-2 gap-4 pt-2">
                                         <div className="grid gap-2">
-                                            <Label className="text-xs font-semibold text-muted-foreground">{t("waitTime.config.minMins")}</Label>
+                                            <Label className="text-xs font-black uppercase tracking-wider text-slate-500">{t("waitTime.config.minMins")}</Label>
                                             <Input type="number" value={config.manualWaitTimeLower || ''} onChange={(e) => setConfig({...config, manualWaitTimeLower: e.target.value ? parseInt(e.target.value) : null})} className="h-12 text-base font-bold rounded-lg px-4" placeholder="30" />
                                         </div>
                                         <div className="grid gap-2">
-                                            <Label className="text-xs font-semibold text-muted-foreground">{t("waitTime.config.maxMins")}</Label>
+                                            <Label className="text-xs font-black uppercase tracking-wider text-slate-500">{t("waitTime.config.maxMins")}</Label>
                                             <Input type="number" value={config.manualWaitTimeUpper || ''} onChange={(e) => setConfig({...config, manualWaitTimeUpper: e.target.value ? parseInt(e.target.value) : null})} className="h-12 text-base font-bold rounded-lg px-4" placeholder="40" />
                                         </div>
                                     </div>
                                 ) : (
                                     <div className="grid grid-cols-2 gap-4 pt-2">
                                         <div className="grid gap-2 col-span-2">
-                                            <Label className="text-xs font-semibold text-muted-foreground">{t("waitTime.config.peopleWaiting")}</Label>
+                                            <Label className="text-xs font-black uppercase tracking-wider text-slate-500">{t("waitTime.config.peopleWaiting")}</Label>
                                             <Input type="number" value={config.peopleWaiting} onChange={(e) => setConfig({...config, peopleWaiting: parseInt(e.target.value) || 0})} className="h-12 text-base font-bold rounded-lg px-4" />
                                         </div>
                                         <div className="grid gap-2">
-                                            <Label className="text-xs font-semibold text-muted-foreground">{t("waitTime.config.minPerPerson")}</Label>
+                                            <Label className="text-xs font-black uppercase tracking-wider text-slate-500">{t("waitTime.config.minPerPerson")}</Label>
                                             <Input type="number" value={config.waitTimePerPersonLower} onChange={(e) => setConfig({...config, waitTimePerPersonLower: parseInt(e.target.value) || 0})} className="h-12 text-base font-bold rounded-lg px-4" />
                                         </div>
                                         <div className="grid gap-2">
-                                            <Label className="text-xs font-semibold text-muted-foreground">{t("waitTime.config.maxPerPerson")}</Label>
+                                            <Label className="text-xs font-black uppercase tracking-wider text-slate-500">{t("waitTime.config.maxPerPerson")}</Label>
                                             <Input type="number" value={config.waitTimePerPersonUpper} onChange={(e) => setConfig({...config, waitTimePerPersonUpper: parseInt(e.target.value) || 0})} className="h-12 text-base font-bold rounded-lg px-4" />
                                         </div>
                                     </div>
                                 )}
                             </>
                         )}
-                        <Button onClick={async () => { await handleSaveConfig(); setIsConfigModalOpen(false); }} disabled={loading} className="w-full bg-slate-900 text-white font-semibold text-xs h-12 rounded-lg mt-4">
+                        <Button onClick={async () => { await handleSaveConfig(); setIsConfigModalOpen(false); }} disabled={loading} className="w-full bg-slate-900 text-white font-black uppercase text-xs h-12 rounded-lg mt-4">
                             {loading ? t("waitTime.saving") : t("waitTime.config.save")}
                         </Button>
                     </div>
