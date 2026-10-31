@@ -277,7 +277,7 @@ Branching and release rules are in [Git workflow](docs/engineering/GIT_WORKFLOW.
 
 ## Getting started
 
-**Requirements:** Node.js 20+, and PostgreSQL 16 or Podman/Docker for the test database.
+**Requirements:** Node.js 22+, and PostgreSQL 16 or Podman/Docker for the test database.
 
 ```bash
 # Backend (repo root, port 3000)
