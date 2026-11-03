@@ -46,6 +46,18 @@ interface OtpChallenge {
 // KITCHEN staff go even further outside the dashboard entirely: the order
 // station is a separate full-screen route that doesn't use AdminLayout chrome
 // at all (unlike /dashboard/host, which stays inside it).
+// Public showcase tenant (backend: src/config/demo.ts, scripts/demo-tenant.ts).
+// Only rendered when the build sets NEXT_PUBLIC_DEMO_LOGIN=true, so a regular
+// deployment never advertises these. The credentials are public by design;
+// the backend's demoGuard keeps them from being locked or hijacked.
+const DEMO_LOGIN_ENABLED = process.env.NEXT_PUBLIC_DEMO_LOGIN === 'true';
+const DEMO_PASSWORD = 'demo1234';
+const DEMO_LOGINS = [
+  { key: 'admin', email: 'admin@demo.example.com' },
+  { key: 'manager', email: 'manager@demo.example.com' },
+  { key: 'host', email: 'host@demo.example.com' },
+] as const;
+
 const defaultRouteForRole = (role: string): string => {
   if (role === 'SUPER_ADMIN') return '/system-admin/tenants';
   if (role === 'HOST') return '/dashboard/host';
@@ -268,6 +280,31 @@ export default function LoginPage() {
                   </Button>
                 </form>
               </Form>
+
+              {DEMO_LOGIN_ENABLED && (
+                <div className="mt-6 rounded-lg border border-stone-200 bg-white p-4">
+                  <p className="text-sm font-bold text-stone-800">{t('auth.demoTitle')}</p>
+                  <p className="mt-1 text-xs leading-relaxed text-stone-500">{t('auth.demoHint')}</p>
+                  <div className="mt-3 grid grid-cols-3 gap-2">
+                    {DEMO_LOGINS.map((d) => (
+                      <Button
+                        key={d.key}
+                        type="button"
+                        variant="outline"
+                        className="h-9 text-xs font-bold"
+                        disabled={form.formState.isSubmitting || redirecting}
+                        onClick={() => {
+                          form.setValue('email', d.email);
+                          form.setValue('password', DEMO_PASSWORD);
+                          form.handleSubmit(onSubmit)();
+                        }}
+                      >
+                        {t(`auth.demoRole.${d.key}`)}
+                      </Button>
+                    ))}
+                  </div>
+                </div>
+              )}
             </>
           ) : (
             <>
