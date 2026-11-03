@@ -55,7 +55,7 @@ export default function RestaurantRouterPage() {
     const handleMessage = (event: MessageEvent) => {
       if (event.origin !== window.location.origin) return;
       const msg = event.data;
-      if (!msg || msg.source !== 'reservepro-preview' || !msg.customization) return;
+      if (!msg || msg.source !== 'rezervelik-preview' || !msg.customization) return;
       previewPatchRef.current = msg.customization;
       setRestaurant((prev: any) => prev ? { ...prev, customization: { ...prev.customization, ...msg.customization } } : prev);
     };

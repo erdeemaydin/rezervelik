@@ -114,7 +114,7 @@ export default function CustomizationPage() {
         if (!previewLoadedRef.current) return;
         previewFrameRef.current?.contentWindow?.postMessage(
             {
-                source: 'reservepro-preview',
+                source: 'rezervelik-preview',
                 customization: { ...draft, socialLinks: serializeSocialLinks(draft.socialLinks) },
             },
             window.location.origin

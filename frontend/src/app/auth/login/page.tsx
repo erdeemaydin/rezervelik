@@ -155,7 +155,7 @@ export default function LoginPage() {
             <UtensilsCrossed className="h-6 w-6" />
           </div>
           <span className="text-xl font-black tracking-tight">
-            Reserve<span className="text-amber-300">Pro</span>
+            Rezerve<span className="text-amber-300">lik</span>
           </span>
         </div>
         <div className="relative max-w-md">
@@ -184,7 +184,7 @@ export default function LoginPage() {
               <UtensilsCrossed className="h-5 w-5" />
             </div>
             <span className="text-lg font-black tracking-tight text-stone-800">
-              Reserve<span className="text-amber-700">Pro</span>
+              Rezerve<span className="text-amber-700">lik</span>
             </span>
           </div>
 

@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- Rezervelik mark: a calendar tile whose "R" leg ends in a confirmation tick. -->
+  <rect x="4" y="8" width="56" height="52" rx="12" fill="#1e3a8a"/>
+  <rect x="4" y="8" width="56" height="14" rx="12" fill="#2563eb"/>
+  <rect x="4" y="16" width="56" height="6" fill="#2563eb"/>
+  <rect x="18" y="3" width="6" height="12" rx="3" fill="#bfdbfe"/>
+  <rect x="40" y="3" width="6" height="12" rx="3" fill="#bfdbfe"/>
+  <path d="M22 52V28h11a7 7 0 0 1 0 14h-11" fill="none" stroke="#fff" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M31 43l5 6 10-12" fill="none" stroke="#4ade80" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
