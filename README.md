@@ -15,16 +15,33 @@
 
 | | |
 |---|---|
-| **Live demo** | [ayd-dine.duckdns.org](https://ayd-dine.duckdns.org) |
-| **Built** | April – September 2026 · ~330 commits · 18 integration merges |
+| **Live demo** | [ayd-dine.duckdns.org](https://ayd-dine.duckdns.org/auth/login) — one-click demo logins, see [Try it](#try-it) |
+| **Built** | April – November 2026 · ~360 commits · 18 integration merges |
 | **Status** | Deployed to a production VPS (Nginx · pm2 · PostgreSQL · daily backups) |
-| **Scope** | 27 controllers · 40+ Prisma models · 14 migrations · 60+ API integration test suites |
+| **Scope** | 28 controllers · 45 Prisma models · 15 migrations · 65 API integration test suites (300+ tests) |
 | **Languages** | Turkish and English, end to end (dashboard, public pages, API error messages) |
+
+---
+
+## Try it
+
+The live demo runs a fictional London brasserie, **Harbour & Vine**, with three months of English mock data (about 2,600 reservations, a live waitlist, floor plan, menus, staff rota, timesheets and deposits). Sign in at [ayd-dine.duckdns.org/auth/login](https://ayd-dine.duckdns.org/auth/login) with one of the demo buttons, or:
+
+| Role | Email | Password | Lands on |
+|---|---|---|---|
+| Owner (ADMIN) | `admin@demo.example.com` | `demo1234` | Dashboard, analytics, everything |
+| Manager | `manager@demo.example.com` | `demo1234` | Reservations, tables, menu, staff |
+| Host | `host@demo.example.com` | `demo1234` | Host console & walk-in waitlist |
+
+Guest-facing booking page: [/r/harbour-and-vine](https://ayd-dine.duckdns.org/r/harbour-and-vine).
+
+The demo is built to be safe to share. Everyday operations (booking, seating, editing tables, menus and shifts) work normally, but a [guard](src/middlewares/demoGuard.ts) blocks the actions that would lock out the next visitor or touch the server: password and 2FA changes, staff accounts, tenant settings, branding, uploads and refunds. [`scripts/demo-tenant.ts`](scripts/demo-tenant.ts) rebuilds the tenant every night. Phone numbers come from Ofcom's ranges reserved for fiction, and emails use `example.com`, so no message can ever reach a real person.
 
 ---
 
 ## Contents
 
+- [Try it](#try-it)
 - [What it does](#what-it-does)
 - [Architecture](#architecture)
 - [Key engineering decisions](#key-engineering-decisions)
@@ -74,7 +91,7 @@ flowchart LR
 
     subgraph Backend["Express · TypeScript"]
         MW[Middleware chain<br/>maintenance → tenant → auth → role → permission → feature flag]
-        C[Controllers<br/>27 domain modules]
+        C[Controllers<br/>28 domain modules]
         SV[Services<br/>payments · storage · messaging · audit · OTP]
         W[In-process workers<br/>price updater · KVKK retention]
     end
@@ -296,6 +313,7 @@ npm run dev
 
 Open <http://localhost:3001/r/gourmet-bistro> for the public page, or log in at `/auth/login` with `admin@gourmetbistro.com` / `password123`.
 To fill a day with realistic data: `npm run demo -- --restaurant gourmet-bistro --date 2026-09-01`.
+To build the full English showcase tenant from [Try it](#try-it): `npm run demo:tenant` (rerun it to reset; `-- --wipe` removes it). Set `NEXT_PUBLIC_DEMO_LOGIN=true` in `frontend/.env` to show the one-click demo logins.
 
 ```bash
 # Tests
