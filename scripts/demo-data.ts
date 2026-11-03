@@ -19,7 +19,7 @@
  * for future days — so the staff, scheduling, and worked-hours dashboards fill up.
  *
  * And a MENU: if the restaurant has no active menu, a small demo menu (4
- * categories, 12 items, Turkish dishes) is created once so the digital menu
+ * categories, 12 items, English mock data) is created once so the digital menu
  * pages have content. Skipped on reruns if an active menu already exists.
  *
  * Demo rows are safely identifiable: reservations are tagged (internalNote starts
@@ -66,12 +66,13 @@ function weighted<T>(pairs: [T, number][]): T {
   return pairs[pairs.length - 1][0];
 }
 
-const FIRST_NAMES = ['Ayşe', 'Mehmet', 'Elif', 'Mustafa', 'Zeynep', 'Ahmet', 'Fatma', 'Emre', 'Deniz', 'Can', 'Selin', 'Burak', 'Ece', 'Kerem', 'Merve', 'John', 'Emma', 'Liam', 'Olivia', 'Noah'];
-const LAST_NAMES = ['Yılmaz', 'Kaya', 'Demir', 'Şahin', 'Çelik', 'Yıldız', 'Aydın', 'Öztürk', 'Arslan', 'Doğan', 'Smith', 'Johnson', 'Brown', 'Garcia', 'Miller'];
-const NOTE_POOL = ['Pencere kenarı rica', 'Doğum günü kutlaması', 'Yüksek sandalye gerekli', 'Glutensiz menü', 'Sessiz köşe tercih', 'Tekerlekli sandalye erişimi', 'Yıldönümü', ''];
+const FIRST_NAMES = ['Oliver', 'Amelia', 'George', 'Isla', 'Harry', 'Ava', 'Noah', 'Mia', 'Jack', 'Ivy', 'Leo', 'Freya', 'Arthur', 'Grace', 'Oscar', 'Lily', 'Theo', 'Sophia', 'Henry', 'Chloe'];
+const LAST_NAMES = ['Smith', 'Jones', 'Taylor', 'Brown', 'Williams', 'Wilson', 'Davies', 'Evans', 'Walker', 'Wright', 'Hughes', 'Patel', 'Khan', 'Turner', 'Cooper'];
+const NOTE_POOL = ['Window table if possible', 'Celebrating a birthday', 'High chair needed', 'Gluten-free menu please', 'Quiet corner preferred', 'Wheelchair access', 'Anniversary dinner', ''];
 
+// Ofcom's range reserved for drama/fiction (07700 900000–900999): never a real line.
 function randomPhone() {
-  return `+90 5${rand(4) + 3}${rand(10)} ${100 + rand(900)} ${1000 + rand(9000)}`;
+  return `+44 7700 900${String(rand(1000)).padStart(3, '0')}`;
 }
 function randomName() {
   return `${pick(FIRST_NAMES)} ${pick(LAST_NAMES)}`;
@@ -153,7 +154,7 @@ async function ensureStaff(restaurant: { id: string; slug: string }, count: numb
 async function ensureShifts(restaurant: { id: string }, dryRun: boolean) {
   let shifts = await prisma.shift.findMany({ where: { restaurantId: restaurant.id }, select: { id: true, name: true, startTime: true, endTime: true } });
   if (shifts.length === 0) {
-    const defs = [{ name: 'Sabah Vardiyası', startTime: '09:00', endTime: '17:00' }, { name: 'Akşam Vardiyası', startTime: '15:00', endTime: '23:00' }];
+    const defs = [{ name: 'Morning Shift', startTime: '09:00', endTime: '17:00' }, { name: 'Evening Shift', startTime: '15:00', endTime: '23:00' }];
     if (dryRun) return defs.map((d, i) => ({ id: `dry-shift-${i}`, ...d }));
     for (const d of defs) {
       const s = await prisma.shift.create({ data: { restaurantId: restaurant.id, ...d } });
@@ -221,8 +222,8 @@ async function main() {
   // Tables + categories: create a small demo set if the restaurant has none.
   let tables = await prisma.bookableResource.findMany({ where: { restaurantId: restaurant.id }, select: { id: true, identifier: true, capacity: true } });
   if (tables.length === 0 && !dryRun) {
-    const zone = await prisma.zone.create({ data: { restaurantId: restaurant.id, name: 'Salon', description: 'Demo zone' } });
-    const specs = [['M1', 2], ['M2', 2], ['M3', 4], ['M4', 4], ['M5', 4], ['M6', 6], ['M7', 6], ['M8', 8]] as const;
+    const zone = await prisma.zone.create({ data: { restaurantId: restaurant.id, name: 'Main Dining', description: 'Demo zone' } });
+    const specs = [['T1', 2], ['T2', 2], ['T3', 4], ['T4', 4], ['T5', 4], ['T6', 6], ['T7', 6], ['T8', 8]] as const;
     await prisma.bookableResource.createMany({ data: specs.map(([identifier, capacity]) => ({ restaurantId: restaurant.id, tableTypeId: zone.id, identifier, capacity })) });
     tables = await prisma.bookableResource.findMany({ where: { restaurantId: restaurant.id }, select: { id: true, identifier: true, capacity: true } });
     console.log(`  + created ${tables.length} demo tables (restaurant had none)`);
@@ -233,7 +234,7 @@ async function main() {
     await prisma.reservationCategory.createMany({
       data: [
         { restaurantId: restaurant.id, name: 'Online', color: '#3b82f6' },
-        { restaurantId: restaurant.id, name: 'Telefon', color: '#10b981' },
+        { restaurantId: restaurant.id, name: 'Phone', color: '#10b981' },
         { restaurantId: restaurant.id, name: 'Walk-In', color: '#f59e0b' },
       ],
     });
@@ -247,39 +248,39 @@ async function main() {
   let menuCreated = false;
   const demoMenuCategories = [
     {
-      name: 'Başlangıçlar',
+      name: 'Starters',
       order: 0,
       items: [
-        { name: 'Mercimek Çorbası', description: 'Geleneksel kırmızı mercimek çorbası', price: 65, order: 0, dietaryTags: 'Vegan', isHighlight: true },
-        { name: 'Çoban Salata', description: 'Domates, salatalık, biber, soğan', price: 75, order: 1, dietaryTags: 'Vegan,Gluten-Free' },
-        { name: 'Sigara Böreği', description: 'Peynirli kızarmış börek (6 adet)', price: 95, order: 2, dietaryTags: 'Vegetarian', allergens: 'Gluten,Dairy' },
+        { name: 'Roasted Tomato Soup', description: 'Basil oil, sourdough croutons', price: 7.5, order: 0, dietaryTags: 'Vegan', isHighlight: true },
+        { name: 'Garden Salad', description: 'Little gem, cucumber, radish, lemon dressing', price: 6.5, order: 1, dietaryTags: 'Vegan,Gluten-Free' },
+        { name: 'Halloumi Fries', description: 'Pomegranate, mint yoghurt (6 pieces)', price: 8, order: 2, dietaryTags: 'Vegetarian', allergens: 'Gluten,Dairy' },
       ],
     },
     {
-      name: 'Ana Yemekler',
+      name: 'Mains',
       order: 1,
       items: [
-        { name: 'Izgara Levrek', description: 'Mevsim sebzeleri ile', price: 340, order: 0, isHighlight: true, allergens: 'Fish', spiceLevel: 0 },
-        { name: 'Adana Kebap', description: 'Acılı kıyma kebabı, közlenmiş biber ve domates', price: 285, order: 1, spiceLevel: 2 },
-        { name: 'Tavuk Şiş', description: 'Marine edilmiş tavuk göğsü, pilav eşliğinde', price: 230, order: 2 },
-        { name: 'Karnabahar Kavurma', description: 'Zeytinyağlı, közlenmiş karnabahar', price: 165, order: 3, dietaryTags: 'Vegan,Gluten-Free' },
+        { name: 'Grilled Sea Bass', description: 'With seasonal vegetables', price: 22, order: 0, isHighlight: true, allergens: 'Fish', spiceLevel: 0 },
+        { name: 'Spiced Lamb Kofta', description: 'Charred peppers, tomatoes, flatbread', price: 18.5, order: 1, spiceLevel: 2 },
+        { name: 'Chicken Skewers', description: 'Marinated chicken breast with rice', price: 16, order: 2 },
+        { name: 'Roasted Cauliflower Steak', description: 'Olive oil, tahini, herbs', price: 14, order: 3, dietaryTags: 'Vegan,Gluten-Free' },
       ],
     },
     {
-      name: 'Tatlılar',
+      name: 'Desserts',
       order: 2,
       items: [
-        { name: 'Künefe', description: 'Antep fıstıklı, sıcak servis', price: 145, order: 0, isHighlight: true, allergens: 'Dairy,Nuts' },
-        { name: 'Sütlaç', description: 'Fırınlanmış geleneksel sütlaç', price: 95, order: 1, allergens: 'Dairy' },
+        { name: 'Sticky Toffee Pudding', description: 'Butterscotch sauce, served warm', price: 8, order: 0, isHighlight: true, allergens: 'Dairy,Gluten,Eggs' },
+        { name: 'Vanilla Rice Pudding', description: 'Baked, with cinnamon', price: 6.5, order: 1, allergens: 'Dairy' },
       ],
     },
     {
-      name: 'İçecekler',
+      name: 'Drinks',
       order: 3,
       items: [
-        { name: 'Ayran', price: 35, order: 0, dietaryTags: 'Vegetarian,Gluten-Free' },
-        { name: 'Taze Sıkılmış Portakal Suyu', price: 55, order: 1, dietaryTags: 'Vegan,Gluten-Free' },
-        { name: 'Türk Kahvesi', price: 65, order: 2, dietaryTags: 'Vegan,Gluten-Free' },
+        { name: 'House Lemonade', price: 4, order: 0, dietaryTags: 'Vegan,Gluten-Free' },
+        { name: 'Fresh Orange Juice', price: 4.5, order: 1, dietaryTags: 'Vegan,Gluten-Free' },
+        { name: 'Flat White', price: 3.5, order: 2, allergens: 'Dairy' },
       ],
     },
   ];
@@ -454,7 +455,7 @@ async function main() {
         for (const shift of shifts) {
           for (const s of staffInfo.staff) {
             const ok = chance(0.85);
-            availability.push({ userId: s.id, shiftId: shift.id, date: day, isAvailable: ok, notes: ok ? null : pick(['İzinli', 'Müsait değil', 'Doktor randevusu']) });
+            availability.push({ userId: s.id, shiftId: shift.id, date: day, isAvailable: ok, notes: ok ? null : pick(['Holiday', 'Not available', 'Doctor appointment']) });
           }
         }
       }
