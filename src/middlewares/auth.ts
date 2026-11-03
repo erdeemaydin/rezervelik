@@ -5,6 +5,7 @@ import prisma from '../config/prisma';
 import { parseCookies } from '../utils/cookies';
 import { TOKEN_COOKIE } from '../utils/authCookie';
 import { SystemPermissionKey } from '../config/systemPermissions';
+import { isBlockedDemoWrite } from './demoGuard';
 
 declare global {
   namespace Express {
@@ -96,6 +97,12 @@ export const authMiddleware = async (req: Request, res: Response, next: NextFunc
   if (!isRootSuperAdmin && req.restaurantId && req.restaurantId !== decoded.restaurantId) {
     console.log(`[AuthMiddleware] Tenant mismatch. Request tenant: ${req.restaurantId}, Token tenant: ${decoded.restaurantId}`);
     return errorResponse(res, 'errors.unauthorized', 403);
+  }
+
+  // Public showcase tenant: account- and tenant-critical writes are read-only
+  // (see demoGuard.ts). Checked here so every authenticated route is covered.
+  if (isBlockedDemoWrite(req, decoded)) {
+    return errorResponse(res, 'errors.demo_read_only', 403);
   }
 
   req.user = { ...decoded, isRootAdmin: liveIsRootAdmin, permissions: livePermissions };

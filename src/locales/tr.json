@@ -3,6 +3,7 @@
     "restaurant_not_found": "Restoran bulunamadı",
     "not_found": "Bulunamadı",
     "unauthorized": "Yetkisiz erişim",
+    "demo_read_only": "Bu işlem herkese açık demoda devre dışıdır. Diğer her şey çalışır — demo her gece sıfırlanır.",
     "forbidden": "Bu kaynağa erişiminiz yok",
     "validation_error": "Doğrulama hatası",
     "internal_error": "Sunucu hatası",
