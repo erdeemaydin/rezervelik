@@ -3,6 +3,7 @@
     "restaurant_not_found": "Restaurant not found",
     "not_found": "Not found",
     "unauthorized": "Unauthorized access",
+    "demo_read_only": "This action is disabled in the public demo. Everything else works — the demo resets every night.",
     "forbidden": "You do not have access to this resource",
     "validation_error": "Validation error",
     "internal_error": "Internal server error",

@@ -1812,6 +1812,13 @@
     "showPassword": "Show password",
     "hidePassword": "Hide password",
     "brandTagline": "The all-in-one platform for reservations, menus, and your team.",
+    "demoTitle": "Try the live demo",
+    "demoHint": "Sign in to Harbour & Vine, a fictional restaurant with three months of mock data. Account settings are locked and the demo resets every night.",
+    "demoRole": {
+      "admin": "Owner",
+      "manager": "Manager",
+      "host": "Host"
+    },
     "passwordRequirements": "Password requirements",
     "passwordPolicyUnmet": "Please meet all the password requirements below.",
     "passwordStrengthWeak": "Weak",

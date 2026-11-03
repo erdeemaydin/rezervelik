@@ -1812,6 +1812,13 @@
     "showPassword": "Şifreyi göster",
     "hidePassword": "Şifreyi gizle",
     "brandTagline": "Rezervasyonlar, menüler ve ekibiniz için hepsi bir arada platform.",
+    "demoTitle": "Canlı demoyu deneyin",
+    "demoHint": "Üç aylık örnek veriye sahip kurgusal bir restoran olan Harbour & Vine'a giriş yapın. Hesap ayarları kilitlidir ve demo her gece sıfırlanır.",
+    "demoRole": {
+      "admin": "Sahip",
+      "manager": "Yönetici",
+      "host": "Karşılama"
+    },
     "passwordRequirements": "Şifre gereksinimleri",
     "passwordPolicyUnmet": "Lütfen aşağıdaki tüm şifre gereksinimlerini karşılayın.",
     "passwordStrengthWeak": "Zayıf",

@@ -14,6 +14,7 @@
     "test:watch": "vitest",
     "smoke": "node scripts/smoke-test.mjs",
     "demo": "ts-node --transpile-only scripts/demo-data.ts",
+    "demo:tenant": "ts-node --transpile-only scripts/demo-tenant.ts",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
     "prisma:studio": "prisma studio"
